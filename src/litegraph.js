@@ -4055,7 +4055,7 @@
                 input[i] = extra_info[i];
             }
         }
-
+        
         if (!this.inputs) {
             this.inputs = [];
         }
@@ -7791,6 +7791,7 @@ LGraphNode.prototype.executeAction = function(action)
                     }
                 }
             }
+            
         } else if (e.type == "keyup") {
             if (e.keyCode == 32) {
                 // space
@@ -9278,7 +9279,8 @@ LGraphNode.prototype.executeAction = function(action)
                     if ( this.connecting_output && !LiteGraph.isValidConnection( slot.type , out_slot.type) ) {
                         ctx.globalAlpha = 0.4 * editor_alpha;
                     }
-
+                    /*console.debug(slot); // atlasan debug REMOVE
+                    console.debug(slot_type+" "+this.default_connection_color_byType[slot_type]);*/
                     ctx.fillStyle =
                         slot.link != null
                             ? slot.color_on ||
@@ -10187,6 +10189,8 @@ LGraphNode.prototype.executeAction = function(action)
         //choose color
         if (!color && link) {
             color = link.color || LGraphCanvas.link_type_colors[link.type];
+            /*console.debug("Render LINK which color? "+color+" "+link.type); // atlasan debug REMOVE
+            console.debug(link);*/
         }
         if (!color) {
             color = this.default_link_color;
