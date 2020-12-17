@@ -1102,6 +1102,7 @@ LiteGraph.registerNodeType("basic/jsonparse", JSONParse);
 			this._value.length = v.length;
 			for(var i = 0; i < v.length; ++i)
 				this._value[i] = v[i];
+            this.changeOutputType("arrayOut", "array");
 		}
 		this.setOutputData(0, this._value);
 		this.setOutputData(1, this._value ? ( this._value.length || 0) : 0 );
