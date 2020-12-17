@@ -12846,6 +12846,7 @@ LGraphNode.prototype.executeAction = function(action)
                     dialog.modified();
                     setValue(!!input.checked);
                 });
+                
             }
         } else {
             input = dialog.querySelector("input");
@@ -12941,7 +12942,7 @@ LGraphNode.prototype.executeAction = function(action)
             offsetx += this.canvas.width * 0.5;
             offsety += this.canvas.height * 0.5;
         }
-
+        
         dialog.style.left = offsetx + "px";
         dialog.style.top = offsety + "px";
 
