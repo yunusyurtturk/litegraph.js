@@ -1976,7 +1976,7 @@
         this.inputs[name] = { name: name, type: type, value: value };
         this.onGraphChanged({action: "addInput"}); // this._version++;
 		this.afterChange();
-
+        
         if (this.onInputAdded) {
             this.onInputAdded(name, type);
         }
@@ -3964,7 +3964,7 @@
                 output[i] = extra_info[i];
             }
         }
-
+        //registered_slot_types
         if (!this.outputs) {
             this.outputs = [];
         }
