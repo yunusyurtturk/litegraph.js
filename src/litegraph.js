@@ -7374,7 +7374,9 @@ LGraphNode.prototype.executeAction = function(action)
 					
                 }
                 this.dragging_rectangle = null;
+                
             } else if (this.connecting_node) {
+                
                 //dragging a connection
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
@@ -9266,6 +9268,7 @@ LGraphNode.prototype.executeAction = function(action)
 
         //render inputs and outputs
         if (!node.flags.collapsed) {
+            
             //input connection slots
             if (node.inputs) {
                 for (var i = 0; i < node.inputs.length; i++) {
