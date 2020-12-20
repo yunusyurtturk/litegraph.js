@@ -4530,6 +4530,8 @@
     
     // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
     
+    // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
+    
     /**
      * returns the first free input slot
      * @method findInputSlotFree
@@ -7139,10 +7141,10 @@ LGraphNode.prototype.executeAction = function(action)
                         } else {
                             //check if I have a slot below de mouse
                             var slot = this.isOverNodeOutput( node, e.canvasX, e.canvasY, pos );
-                            console.debug("check slot "+slot);
+                            //console.debug("check slot "+slot); // atlasan debug REMOVE
                             if (slot != -1 && node.outputs[slot]) {
                                 var slot_type = node.outputs[slot].type;
-                                console.debug("check slotType "+slot_type);
+                                //console.debug("check slotType "+slot_type);  // atlasan debug REMOVE
                                 if ( LiteGraph.isValidConnection( this.connecting_input.type, slot_type ) ) {
                                     this._highlight_output = pos;
                                 }
@@ -7472,13 +7474,17 @@ LGraphNode.prototype.executeAction = function(action)
                 this.connecting_pos = null;
                 this.connecting_node = null;
                 this.connecting_slot = -1;
+                
             } //not dragging connection
             else if (this.resizing_node) {
+                
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
 				this.graph.afterChange(this.resizing_node);
                 this.resizing_node = null;
+                
             } else if (this.node_dragged) {
+                
                 //node being dragged?
                 var node = this.node_dragged;
                 if (
@@ -7503,8 +7509,10 @@ LGraphNode.prototype.executeAction = function(action)
                 
 				this.graph.afterChange(this.node_dragged);
                 this.node_dragged = null;
+                
             } //no node being dragged
             else {
+                
                 //get node over
                 var node = this.graph.getNodeOnPos(
                     e.canvasX,
@@ -7531,6 +7539,7 @@ LGraphNode.prototype.executeAction = function(action)
                         e.canvasY - this.node_capturing_input.pos[1]
                     ]);
                 }
+                
             }
         } else if (e.which == 2) {
             //middle button
