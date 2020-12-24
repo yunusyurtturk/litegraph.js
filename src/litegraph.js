@@ -171,6 +171,35 @@
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
         use_uuids: false,
 
+        showCanvasOptions: true,
+        availableCanvasOptions: [  "highquality_render"
+                                    ,"use_gradients" //set to true to render titlebar with gradients
+                                    ,"pause_rendering"
+                                    ,"clear_background"
+                                    ,"read_only" //if set to true users cannot modify the graph
+                                    ,"render_only_selected"
+                                    ,"live_mode"
+                                    ,"show_info"
+                                    ,"allow_dragcanvas"
+                                    ,"allow_dragnodes"
+                                    ,"allow_interaction" //allow to control widgets, buttons, collapse, etc
+                                    ,"allow_searchbox"
+                                    ,"move_destination_link_without_shift" //old: allow_reconnect_links //allows to change a connection, no need to hold shift
+                                    ,"set_canvas_dirty_on_mouse_event" //forces to redraw the canvas if the mouse does anything
+                                    ,"always_render_background"
+                                    ,"render_shadows"
+                                    ,"render_canvas_border"
+                                    ,"render_connections_shadows" //too much cpu
+                                    ,"render_connections_border"
+                                    // ,"render_curved_connections" // always on
+                                    ,"render_connection_arrows"
+                                    ,"render_collapsed_slots"
+                                    ,"render_execution_order"
+                                    ,"render_title_colored"
+                                    ,"render_link_tooltip"
+                                  ],
+                                  //,"editor_alpha" //= 1; //used for transition
+        
         /**
          * Register a node class so it can be listed when the user wants to create a new one
          * @method registerNodeType
@@ -5905,7 +5934,6 @@ LGraphNode.prototype.executeAction = function(action)
         this.render_execution_order = false;
         this.render_title_colored = true;
 		this.render_link_tooltip = true;
-
         this.links_render_mode = LiteGraph.SPLINE_LINK;
         
         // TODO refactor: options object do need refactoring .. all the options are actually outside of it
