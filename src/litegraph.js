@@ -200,6 +200,8 @@
                                   ],
                                   //,"editor_alpha" //= 1; //used for transition
         
+        actionHistoryMaxSave: 10,
+        
         /**
          * Register a node class so it can be listed when the user wants to create a new one
          * @method registerNodeType
