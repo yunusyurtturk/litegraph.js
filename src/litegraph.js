@@ -135,7 +135,7 @@
 		
         graphDefaultConfig: {
             align_to_grid: true,
-            links_ontop: false,
+            links_ontop: false
         },
 
 		alt_drag_do_clone_nodes: false, // [true!] very handy, ALT click to clone and drag the new node
@@ -172,7 +172,8 @@
         use_uuids: false,
 
         showCanvasOptions: true,
-        availableCanvasOptions: [  "highquality_render"
+        availableCanvasOptions: [   "allow_addOutSlot_onExecuted"
+                                    ,"highquality_render"
                                     ,"use_gradients" //set to true to render titlebar with gradients
                                     ,"pause_rendering"
                                     ,"clear_background"
