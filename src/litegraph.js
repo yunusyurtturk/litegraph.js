@@ -135,7 +135,7 @@
 		
         graphDefaultConfig: {
             align_to_grid: true,
-            links_ontop: false
+            links_ontop: false,
         },
 
 		alt_drag_do_clone_nodes: false, // [true!] very handy, ALT click to clone and drag the new node
