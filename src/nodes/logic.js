@@ -179,23 +179,102 @@
     LiteGraph.registerNodeType("logic/CompareBool", logicCompare);
     
     
-    function logicBranch(){
+    function logicFor(){
         this.properties = { };
-        this.addInput("onTrigger", LiteGraph.ACTION);
-        this.addInput("condition", "boolean");
-        this.addOutput("true", LiteGraph.EVENT);
-        this.addOutput("false", LiteGraph.EVENT);
-        this.mode = LiteGraph.ON_TRIGGER;
+        this.addInput("start", "number");
+        this.addInput("nElements", "number");
+        this.addInput("do", LiteGraph.ACTION);
+        this.addInput("break", LiteGraph.ACTION);
+        //this.addInput("reset", LiteGraph.ACTION);
+        this.addOutput("do", LiteGraph.EVENT);
+        this.addOutput("index", "number");
+        this.started = false;
+        this.stopped = false;
     }
-    logicBranch.title = "Branch";
-    logicBranch.desc = "Branch execution on condition";
-    logicBranch.prototype.onExecute = function(param, options) {
-        var condtition = this.getInputData(1);
-        if (condtition){
-            this.triggerSlot(0);
-        }else{
-            this.triggerSlot(1);
+    logicFor.title = "FOR";
+    logicFor.desc = "Cycle FOR";
+    logicFor.prototype.onExecute = function(param) {
+        if (!this.started) return;
+        var iI = this.getInputData(0);
+        var num = this.getInputData(1);
+        for (k=iI;k<iI+num;k++){            
+            if (this.stopped){
+                console.debug("for cycle stopped on index "+k);
+                break;
+            }else{
+                console.debug("for cycle "+k);
+            }
+            this.triggerSlot(0, param);
+            this.setOutputData(1, k);
         }
+        this.started = false;
+        this.stopped = true;
     };
-    LiteGraph.registerNodeType("logic/IF", logicBranch);
+    logicFor.prototype.onAction = function(action, param){
+        /*console.debug(action);
+        console.debug(param);
+        console.debug(this);*/
+        switch(action){
+            case "break":
+                this.stopped = true;
+            break;
+            /*case "reset":
+                this.stopped = false;
+            break;*/
+            case "do":
+                this.started = true;
+                this.stopped = false;
+                this.execute();
+            break;
+        }
+    }
+    LiteGraph.registerNodeType("logic/CycleFOR", logicFor);
+    
+    
+    function logicWhile(){
+        this.properties = { cycleLimit: 999 };
+        this.addInput("do", LiteGraph.ACTION);
+        this.addInput("condition", "boolean");
+        this.addInput("break", LiteGraph.ACTION);
+        this.addOutput("do", LiteGraph.EVENT);
+        this.addOutput("index", "number");
+        this.started = false;
+        this.stopped = false;
+    }
+    logicWhile.title = "WHILE";
+    logicWhile.desc = "Cycle WHILE";
+    logicWhile.prototype.onExecute = function(param) {
+        if (!this.started) return;
+        var cond = this.getInputData(1);
+        var k = 0;
+        cycleLimit = this.properties.cycleLimit || 999;
+        while (cond && k<cycleLimit){
+            if (this.stopped){
+                console.debug("while cycle stopped on index "+k);
+                break;
+            }else{
+                console.debug("while cycle "+k);
+            }
+            this.triggerSlot(0, param);
+            this.setOutputData(1, k);
+            k++;
+            cond = this.getInputData(1);
+        }
+        this.started = false;
+        this.stopped = true;
+    };
+    logicWhile.prototype.onAction = function(action, param){
+        switch(action){
+            case "break":
+                this.stopped = true;
+            break;
+            case "do":
+                this.started = true;
+                this.stopped = false;
+                this.execute();
+            break;
+        }
+    }
+    LiteGraph.registerNodeType("logic/CycleWHILE", logicWhile);
+    
 })(this);
