@@ -3864,10 +3864,7 @@
                 continue;
             }
 
-            //used to mark events in graph
-            var target_connection = node.inputs[link_info.target_slot];
-
-			if (node.mode === LiteGraph.ON_TRIGGER)
+            if (node.mode === LiteGraph.ON_TRIGGER)
 			{
 				// generate unique trigger ID if not present
 				if (!options.action_call) options.action_call = this.id+"_trigg_"+Math.floor(Math.random()*9999);
