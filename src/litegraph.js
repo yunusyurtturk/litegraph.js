@@ -208,6 +208,8 @@
         canRenameSlots: true,
         canRenameSlots_onlyOptional: true,
         
+        ensureNodeSingleExecution: true, // this will prevent nodes to be executed more than once for step (comparing graph.iteration)
+        
         /**
          * Register a node class so it can be listed when the user wants to create a new one
          * @method registerNodeType
@@ -3724,6 +3726,7 @@
 
             this.onExecute(param, options);
             
+            this.exec_version = this.graph.iteration;
             //console.debug(this.graph.nodes_executing.pop()+" << pop");
             this.graph.nodes_executing[this.id] = false; //.pop();
             
