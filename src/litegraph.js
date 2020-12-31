@@ -178,7 +178,7 @@
                                     ,"pause_rendering"
                                     ,"clear_background"
                                     ,"read_only" //if set to true users cannot modify the graph
-                                    ,"render_only_selected"
+                                    //,"render_only_selected" // not implemented
                                     ,"live_mode"
                                     ,"show_info"
                                     ,"allow_dragcanvas"
@@ -192,7 +192,7 @@
                                     ,"render_canvas_border"
                                     ,"render_connections_shadows" //too much cpu
                                     ,"render_connections_border"
-                                    // ,"render_curved_connections" // always on
+                                    // ,"render_curved_connections" // always on, or specific fixed graph
                                     ,"render_connection_arrows"
                                     ,"render_collapsed_slots"
                                     ,"render_execution_order"
@@ -202,6 +202,11 @@
                                   //,"editor_alpha" //= 1; //used for transition
         
         actionHistoryMaxSave: 10,
+        
+        canRemoveSlots: true,
+        canRemoveSlots_onlyOptional: true,
+        canRenameSlots: true,
+        canRenameSlots_onlyOptional: true,
         
         /**
          * Register a node class so it can be listed when the user wants to create a new one
@@ -4081,7 +4086,7 @@
      * @method addInput
      * @param {string} name
      * @param {string} type string defining the input type ("vec3","number",...), it its a generic one use 0
-     * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, etc)
+     * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, optional, etc)
      */
     LGraphNode.prototype.addInput = function(name, type, extra_info) {
         type = type || 0;
@@ -5928,7 +5933,7 @@ LGraphNode.prototype.executeAction = function(action)
         this.render_canvas_border = true;
         this.render_connections_shadows = false; //too much cpu
         this.render_connections_border = true;
-        this.render_curved_connections = false;
+        this.render_curved_connections = true;
         this.render_connection_arrows = false;
         this.render_collapsed_slots = true;
         this.render_execution_order = false;
