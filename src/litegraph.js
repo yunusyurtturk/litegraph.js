@@ -11613,6 +11613,7 @@ LGraphNode.prototype.executeAction = function(action)
                 
                 var slotOpts = {}; // TODO CHECK THIS :: can be removed: removabled:true? .. optional: true?
                 if (v.value[2]) slotOpts = Object.assign(slotOpts, v.value[2]);
+                //if(v.opts) slotOpts = Object.assign(slotOpts, v.opts);
                 
                 node.addOutput(v.value[0], v.value[1], slotOpts);
                 if (node.onNodeOutputAdd) { // callback to the node when adding a slot
