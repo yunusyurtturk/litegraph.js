@@ -14155,9 +14155,10 @@ LGraphNode.prototype.executeAction = function(action)
             } else {
                 if (
                     slot &&
-                    slot.output &&
-                    slot.output.links &&
-                    slot.output.links.length
+                    (
+                        (slot.output && slot.output.links && slot.output.links.length)
+                        || (slot.input && slot.input.link)
+                    )
                 ) {
                     menu_info.push({ content: "Disconnect Links", slot: slot });
                 }
