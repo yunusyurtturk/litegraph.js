@@ -201,7 +201,7 @@
                                   ],
                                   //,"editor_alpha" //= 1; //used for transition
         
-        actionHistoryMaxSave: 10,
+        actionHistoryMaxSave: 40,
         
         canRemoveSlots: true,
         canRemoveSlots_onlyOptional: true,
@@ -2408,6 +2408,9 @@
         if(opts.doSave){
             console.debug("onGraphChanged SAVE :: "+opts.action); // debug history
         }
+        if(opts.doSave){ // atlasan DEBUG REMOVE
+            console.debug("onGraphChanged SAVE :: "+opts.action);
+        }*/
         
         if(opts.doSave && LiteGraph.actionHistory_enabled){
 
@@ -8292,6 +8295,7 @@ LGraphNode.prototype.executeAction = function(action)
         this.current_node = null;
         this.highlighted_links = {};
         this.setDirty(true);
+        
 		this.graph.afterChange();
     };
     
@@ -12523,6 +12527,7 @@ LGraphNode.prototype.executeAction = function(action)
                     }
 
 					graphcanvas.graph.beforeChange();
+                    
                     var node = LiteGraph.createNode(name);
                     if (node) {
                         node.pos = graphcanvas.convertEventToCanvasOffset(
