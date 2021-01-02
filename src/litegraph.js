@@ -210,6 +210,8 @@
         
         ensureNodeSingleExecution: true, // this will prevent nodes to be executed more than once for step (comparing graph.iteration)
         
+        allowMultiOutputForEvents: false, // being events, it is strongly reccomanded to use them sequentually, one by one
+        
         /**
          * Register a node class so it can be listed when the user wants to create a new one
          * @method registerNodeType
