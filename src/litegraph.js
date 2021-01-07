@@ -208,9 +208,15 @@
         canRenameSlots: true,
         canRenameSlots_onlyOptional: true,
         
-        ensureNodeSingleExecution: true, // this will prevent nodes to be executed more than once for step (comparing graph.iteration)
+        ensureNodeSingleExecution: false/*MMMM*/, // this will prevent nodes to be executed more than once for step (comparing graph.iteration)
         
-        allowMultiOutputForEvents: false, // being events, it is strongly reccomanded to use them sequentually, one by one
+        ensureNodeSingleAction: false,/*MMMM*/ // this will prevent nodes to be executed more than once for action call!
+        
+        ensureUniqueExecutionAndActionCall: true, // the new tecnique.. let's make it working best of
+        
+        preventAncestorRecalculation: false/*MMMM*/, // when calculating the ancestors, set a flag to prevent recalculate the subtree
+        
+        allowMultiOutputForEvents: false, // being events, it is strongly reccomended to use them sequentually, one by one
         
         /**
          * Register a node class so it can be listed when the user wants to create a new one
@@ -3711,7 +3717,7 @@
 			if (!options.action_call) options.action_call = this.id+"_exec_"+Math.floor(Math.random()*9999);
             
             if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]){
-                //console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
+                console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
                 return;
             }
             if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined){
@@ -3731,7 +3737,6 @@
 
             this.onExecute(param, options);
             
-            this.exec_version = this.graph.iteration;
             //console.debug(this.graph.nodes_executing.pop()+" << pop");
             this.graph.nodes_executing[this.id] = false; //.pop();
             
@@ -4913,6 +4918,11 @@
         if (target_node.onBeforeConnectInput) {
             // This way node can choose another slot (or make a new one?)
             target_slot = target_node.onBeforeConnectInput(target_slot); //callback
+        }
+        if (this.onConnectOutput) {
+            if ( this.onConnectOutput(slot, input.type, input, target_node, target_slot) === false ) {
+                return null;
+            }
         }
 
 		//check target_slot and check connection types
