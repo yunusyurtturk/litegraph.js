@@ -17912,32 +17912,41 @@ LiteGraph.registerNodeType("events/waitAll", WaitAll);
 
 })(this);
 
+
 (function(global) {
     var LiteGraph = global.LiteGraph;
-
     //Converter
     function Converter() {
         this.addInput("in", 0);
 		this.addOutput("out", 0);
-        this.size = [80, 30];
     }
 
-    Converter.title = "Converter";
-    Converter.desc = "type A to type B";
 
-    Converter.prototype.onExecute = function() {
-        var v = this.getInputData(0);
-        if (v == null) {
             return;
         }
 
+
+
+        }
+    };
+
+    };
+
+
+    }
+
+        this.size = [80, 30];
+    Converter.title = "Converter";
+    Converter.desc = "type A to type B";
+    Converter.prototype.onExecute = function() {
+        var v = this.getInputData(0);
+        if (v == null) {
         if (this.outputs) {
             for (var i = 0; i < this.outputs.length; i++) {
                 var output = this.outputs[i];
                 if (!output.links || !output.links.length) {
                     continue;
                 }
-
                 var result = null;
                 switch (output.name) {
                     case "number":
@@ -17959,7 +17968,6 @@ LiteGraph.registerNodeType("events/waitAll", WaitAll);
                                 count = 4;
                                 break;
                         }
-
                         var result = new Float32Array(count);
                         if (v.length) {
                             for (
@@ -17976,9 +17984,6 @@ LiteGraph.registerNodeType("events/waitAll", WaitAll);
                 }
                 this.setOutputData(i, result);
             }
-        }
-    };
-
     Converter.prototype.onGetOutputs = function() {
         return [
             ["number", "number"],
@@ -17986,17 +17991,12 @@ LiteGraph.registerNodeType("events/waitAll", WaitAll);
             ["vec3", "vec3"],
             ["vec4", "vec4"]
         ];
-    };
-
     LiteGraph.registerNodeType("math/converter", Converter);
-
     //Bypass
     function Bypass() {
         this.addInput("in");
         this.addOutput("out");
         this.size = [80, 30];
-    }
-
     Bypass.title = "Bypass";
     Bypass.desc = "removes the type";
 
