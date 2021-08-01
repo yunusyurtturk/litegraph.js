@@ -8038,6 +8038,14 @@ LGraphNode.prototype.executeAction = function(action)
 			// --- BREAK ---
 		}
 
+		var x = e.localX;
+		var y = e.localY;
+		var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
+		if(!is_inside){
+			return;
+			// --- BREAK ---
+		}
+
         var pos = [e.canvasX, e.canvasY];
 
 
@@ -13264,6 +13272,8 @@ LGraphNode.prototype.executeAction = function(action)
 						return false;
 					}
 				});
+
+            }
             }
 
 			root.content.appendChild(elem);
