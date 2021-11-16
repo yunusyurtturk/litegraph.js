@@ -30,3 +30,13 @@ LiteGraph.middle_click_slot_add_default_node = true;  //[true!] allows to create
 LiteGraph.release_link_on_empty_shows_menu = true; //[true!] dragging a link to empty space will open a menu, add from list, search or defaults
 LiteGraph.pointerevents_method = "pointer"; // "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now)
 LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+
+LiteGraph.two_fingers_opens_menu = true;
+
+LiteGraph.actionHistory_enabled = true; // [true!] cntrlZ, cntrlY
+LiteGraph.actionHistoryMaxSave = 40;
+
+/* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
+LiteGraph.refreshAncestorsOnTriggers = true; //[true!]
+LiteGraph.refreshAncestorsOnActions = true; //[true!]
+LiteGraph.ensureUniqueExecutionAndActionCall = true;
