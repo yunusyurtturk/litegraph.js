@@ -51,7 +51,7 @@ js_files_lists = [
 build_folder = "build"
 # Function to concatenate JS files
 def concatenate_js_files(js_files, output_filename):
-    concatenated_data = "// packer version\n\n"
+    concatenated_data = "// readable version"
     for js_file in js_files:
         print("Processing " + js_file + " ", end="")
         try:
@@ -67,7 +67,7 @@ def concatenate_js_files(js_files, output_filename):
         print("Concatenated JS files saved to: " + output_filename)
 
 def pack_js_files(js_files, output_filename):
-    concatenated_data = "// packer version\n\n"
+    concatenated_data = "/*packed*/"
     
     for js_file in js_files:
         print("Processing " + js_file + " ", end="")
