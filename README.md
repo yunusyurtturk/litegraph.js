@@ -166,19 +166,20 @@ The demo includes some examples of graphs. In order to try them you can visit [d
 ```sh
 $ git clone https://github.com/jagenjo/litegraph.js.git
 $ cd litegraph.js
-$ npm install
-$ node utils/server.js
-Example app listening on port 80!
+$ npm i
+$ npm run server
+Example app listening on port 8000!
 ```
 Open your browser and point it to http://localhost:8000/. You can select a demo from the dropdown at the top of the page.
 
 ## Feedback
 --------
 
-You can write any feedback to javi.agenjo@gmail.com
+You can write any feedback to daniel.lewis.ab@gmail.com
 
 ## Contributors
 
+- Javi (Javengo) is original author
 - atlasan
 - kriffe
 - rappestad
