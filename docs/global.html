@@ -401,7 +401,7 @@
     
 
     
-    <h4 class="name" id="addConnection"><span class="type-signature"></span>addConnection<span class="signature">(name, type, direction)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="addConnection"><span class="type-signature"></span>addConnection<span class="signature">(name, type, pos, direction)</span><span class="type-signature"></span></h4>
     
 
     
@@ -409,7 +409,7 @@
 
 
 <div class="description">
-    add an special connection to this node (used for special kinds of graphs)
+    Add a special connection to this node (used for special kinds of graphs)
 </div>
 
 
@@ -461,7 +461,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last">The name of the connection</td>
         </tr>
 
     
@@ -484,17 +484,22 @@
 
             
 
-            <td class="description last">string defining the input type ("vec3","number",...)</td>
+            <td class="description last">String defining the input type ("vec3", "number", etc.)</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code></code></td>
+                <td class="name"><code>pos</code></td>
             
 
             <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Float32></span>
+
+
             
             </td>
 
@@ -502,7 +507,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last">Position of the connection inside the node as an array [x, y]</td>
         </tr>
 
     
@@ -525,7 +530,7 @@
 
             
 
-            <td class="description last">if is input or output</td>
+            <td class="description last">Specifies if it is an input or output connection</td>
         </tr>
 
     
@@ -9237,7 +9242,7 @@ It doesn't include the node itself
     
 
     
-    <h4 class="name" id="getBounding"><span class="type-signature"></span>getBounding<span class="signature">(compute_outer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getBounding"><span class="type-signature"></span>getBounding<span class="signature">(out<span class="signature-attributes">opt</span>, compute_outer<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Float32>}</span></h4>
     
 
     
@@ -9245,7 +9250,7 @@ It doesn't include the node itself
 
 
 <div class="description">
-    returns the bounding of the object, used for rendering purposes
+    Returns the bounding box of the object, used for rendering purposes
 </div>
 
 
@@ -9283,15 +9288,22 @@ It doesn't include the node itself
 
         <tr>
             
-                <td class="name"><code></code></td>
+                <td class="name"><code>out</code></td>
             
 
             <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Float32></span>
+
+
             
             </td>
 
             
                 <td class="attributes">
+                
+                    &lt;optional><br>
                 
 
                 
@@ -9302,7 +9314,7 @@ It doesn't include the node itself
 
             
 
-            <td class="description last"></td>
+            <td class="description last">[Optional] A place to store the output to reduce garbage</td>
         </tr>
 
     
@@ -9324,9 +9336,9 @@ It doesn't include the node itself
             
                 <td class="attributes">
                 
-
+                    &lt;optional><br>
                 
-                    &lt;nullable><br>
+
                 
 
                 
@@ -9335,7 +9347,7 @@ It doesn't include the node itself
 
             
 
-            <td class="description last">[optional] set to true to include the shadow and connection points in the bounding calculation</td>
+            <td class="description last">[Optional] Set to true to include the shadow and connection points in the bounding calculation</td>
         </tr>
 
     
@@ -9404,7 +9416,23 @@ It doesn't include the node itself
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    The bounding box in the format of [topLeftCornerX, topLeftCornerY, width, height]
+</div>
 
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Float32></span>
+
+
+    </dd>
+</dl>
 
     
 
@@ -9528,7 +9556,7 @@ It doesn't include the node itself
     
 
     
-    <h4 class="name" id="getConnectionPos"><span class="type-signature"></span>getConnectionPos<span class="signature">(is_input, slot, out)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getConnectionPos"><span class="type-signature"></span>getConnectionPos<span class="signature">(is_input, slot, out<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Float32>}</span></h4>
     
 
     
@@ -9536,7 +9564,7 @@ It doesn't include the node itself
 
 
 <div class="description">
-    returns the center of a connection point in canvas coords
+    Returns the center of a connection point in canvas coordinates
 </div>
 
 
@@ -9559,6 +9587,8 @@ It doesn't include the node itself
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -9585,10 +9615,18 @@ It doesn't include the node itself
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">true if if a input slot, false if it is an output</td>
+            <td class="description last">True if it is an input slot, false if it is an output slot</td>
         </tr>
 
     
@@ -9601,17 +9639,28 @@ It doesn't include the node itself
             <td class="type">
             
                 
-<span class="param-type">number_or_string</span>
+<span class="param-type">number</span>
+|
+
+<span class="param-type">string</span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">(could be the number of the slot or the string with the name of the slot)</td>
+            <td class="description last">Could be the number of the slot or the string with the name of the slot</td>
         </tr>
 
     
@@ -9631,10 +9680,20 @@ It doesn't include the node itself
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">[optional] a place to store the output, to free garbage</td>
+            <td class="description last">[Optional] A place to store the output to reduce garbage</td>
         </tr>
 
     
@@ -9703,7 +9762,23 @@ It doesn't include the node itself
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    The position as [x, y]
+</div>
 
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Float32></span>
+
+
+    </dd>
+</dl>
 
     
 
@@ -21467,7 +21542,7 @@ Useful to wrap simple methods that do not require properties, and that only proc
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat May 04 2024 08:59:54 GMT-0600 (Mountain Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sat May 04 2024 10:34:24 GMT-0600 (Mountain Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
