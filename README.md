@@ -139,7 +139,7 @@ graph.start()
 ```
 
 
-## Projects using it
+## Projects using original litegraph.js
 
 ### [comfyUI](https://github.com/comfyanonymous/ComfyUI)
 ![screenshot](https://github.com/comfyanonymous/ComfyUI/blob/6efe561c2a7321501b1b27f47039c7616dda1860/comfyui_screenshot.png)
@@ -159,7 +159,19 @@ graph.start()
 ## Utils
 -----
 
-It includes several commands in the utils folder to generate doc, check errors and build minifyed version.
+```
+These all work to some extent right now:
+npm run doc
+npm run prettifier
+npm run build
+npm run test
+npm run lint
+npm run server
+```
+
+I have also run:
+
+`npm audit`
 
 
 ## Demo
