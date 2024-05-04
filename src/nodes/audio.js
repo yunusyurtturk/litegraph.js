@@ -1,11 +1,7 @@
 
 import { LiteGraph } from "../litegraph.js";
 
-(function (global) {
-    var LiteGraph = global.LiteGraph;
-
     var LGAudio = {};
-    global.LGAudio = LGAudio;
 
     LGAudio.getAudioContext = function () {
         if (!this._audio_context) {
@@ -1466,4 +1462,5 @@ LiteGraph.registerNodeType("audio/waveShaper", LGAudioWaveShaper);
     LGAudioDestination.title = "Destination";
     LGAudioDestination.desc = "Audio output";
     LiteGraph.registerNodeType("audio/destination", LGAudioDestination);
-})(this);
+
+export { LGAudio };
