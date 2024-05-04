@@ -33,7 +33,9 @@ Although it is easy to create new node types, LiteGraph comes with some default 
 
 You can install it using npm 
 ```
-npm install litegraph.js
+git clone https://github.com/daniel-lewis-ab/litegraph.js.git
+cd litegraph.js
+npm i
 ```
 
 Or downloading the ```build/litegraph.js``` and ```css/litegraph.css``` version from this repository.
