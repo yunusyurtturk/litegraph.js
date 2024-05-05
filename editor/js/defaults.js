@@ -38,7 +38,7 @@ LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
 
 /* METHOD 2 */
-LiteGraph.use_deferred_actions = false; // DISABLING
+LiteGraph.use_deferred_actions = true; // default
 
 /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
 LiteGraph.refreshAncestorsOnTriggers = false; //[true!]
