@@ -37,7 +37,10 @@ LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows
 LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
 
+/* DISABLING DEFERRED ACTIONS */
+LiteGraph.use_deferred_actions = false;
+
 /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
-LiteGraph.refreshAncestorsOnTriggers = false; //[true!]
-LiteGraph.refreshAncestorsOnActions = false; //[true!]
-LiteGraph.ensureUniqueExecutionAndActionCall = false; //[true!]
+LiteGraph.refreshAncestorsOnTriggers = true; //[true!]
+LiteGraph.refreshAncestorsOnActions = true; //[true!]
+LiteGraph.ensureUniqueExecutionAndActionCall = true; //[true!]
