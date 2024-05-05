@@ -12,7 +12,7 @@ import { LiteGraph, LGraphNode } from "../src/litegraph.js";
     vs the code that's broken.
 */
 
-describe("register node types", () => {
+describe("Registering node types", () => {
     
     let Sum;
     let node;
@@ -30,9 +30,7 @@ describe("register node types", () => {
         node = LiteGraph.registered_node_types["math/sum"];
     });
 
-    afterEach(() => {});
-
-    it("normal case", () => {
+    it("should correctly construct nodes", () => {
 
         assert(node);
         assert.strictEqual(node.type, "math/sum");
@@ -41,7 +39,19 @@ describe("register node types", () => {
         assert.strictEqual(node.prototype.configure, LGraphNode.prototype.configure);
     });
 
-    it("callback triggers", () => {
+    it("should handle errors for passing invalid arguments", () => {
+        assert.throws(() => {
+            LiteGraph.registerNodeType("math/sum", { simple: "type" });
+        }, "Cannot register a simple object");
+    });
+
+    it("should correctly construct the title", () => {
+        Sum.title = "The sum title";
+        assert.strictEqual(node.title, "The sum title");
+        assert.notStrictEqual(node.title, node.name);
+    });
+
+    it("should correctly have callbacks that trigger", () => {
 
         LiteGraph.onNodeTypeRegistered = function() {};
         LiteGraph.onNodeTypeReplaced = function() {};
@@ -53,19 +63,8 @@ describe("register node types", () => {
     //    assert(consoleLogStub.calledWith(sinon.match("math/sum")));
     });
 
-    it("node with title", () => {
-        Sum.title = "The sum title";
-        assert.strictEqual(node.title, "The sum title");
-        assert.notStrictEqual(node.title, node.name);
-    });
+    it("should correctly map shapes", () => {
 
-    it("handle error simple object", () => {
-        assert.throws(() => {
-            LiteGraph.registerNodeType("math/sum", { simple: "type" });
-        }, "Cannot register a simple object");
-    });
-
-    it("check shape mapping", () => {
         LiteGraph.registerNodeType("math/sum", Sum);
 
         const node_type = LiteGraph.registered_node_types["math/sum"];
@@ -97,19 +96,7 @@ describe("register node types", () => {
     //    consoleLogStub.restore();
     });
 
-    it("onPropertyChanged warning", () => {
-    //    const consoleLogStub = sinon.stub(console, "log");
-        
-        Sum.prototype.onPropertyChange = true;
-        LiteGraph.registerNodeType("math/sum", Sum);
-    //    assert(consoleLogStub.calledOnce);
-    //    assert(consoleLogStub.calledWith(sinon.match("has onPropertyChange method")));
-    //    assert(consoleLogStub.calledWith(sinon.match("math/sum")));
-        
-    //   consoleLogStub.restore();
-    });
-
-    it("registering supported file extensions", () => {
+    it("should correctly register supported file extensions", () => {
     //    expect(LiteGraph.node_types_by_file_extension).toEqual({});
 
         // Create two node types with calc_times overriding .pdf
@@ -137,7 +124,7 @@ describe("register node types", () => {
     //    assert.strictEqual(LiteGraph.node_types_by_file_extension.jpg, Times);
     });
 
-    it("register in/out slot types", () => {
+    it("should correctly register in/out slot types", () => {
     //    expect(LiteGraph.registered_slot_in_types).toEqual({});
     //    expect(LiteGraph.registered_slot_out_types).toEqual({});
 
@@ -170,7 +157,7 @@ describe("register node types", () => {
     });
 });
 
-describe("unregister node types", () => {
+describe("Unregistering node types", () => {
     let Sum;
 
     beforeEach(() => {
@@ -187,7 +174,7 @@ describe("unregister node types", () => {
     afterEach(() => {
     });
 
-    it("remove by name", () => {
+    it("should remove by name", () => {
         LiteGraph.registerNodeType("math/sum", Sum);
     //    expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
 
@@ -195,7 +182,7 @@ describe("unregister node types", () => {
     //    expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
     });
 
-    it("remove by object", () => {
+    it("should remove by object", () => {
         LiteGraph.registerNodeType("math/sum", Sum);
     //    expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
 
@@ -203,13 +190,13 @@ describe("unregister node types", () => {
     //    expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
     });
 
-    it("try removing with wrong name", () => {
+    it("should handle attempting to remove with wrong name", () => {
     //    expect(() => LiteGraph.unregisterNodeType("missing/type")).toThrow(
     //        "node type not found: missing/type"
     //    );
     });
 
-    it("no constructor name", () => {
+    it("should handle not having constructor name", () => {
         function BlankNode() {}
         BlankNode.constructor = {}
         LiteGraph.registerNodeType("blank/node", BlankNode);
