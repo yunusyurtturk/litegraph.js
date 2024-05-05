@@ -34,8 +34,11 @@ LiteGraph.release_link_on_empty_shows_menu = true; //[true!] dragging a link to 
 LiteGraph.pointerevents_method = "mouse"; // "mouse"|"pointer" use mouse for compatibility issues, touch will work only with pointer 
 LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
-LiteGraph.actionHistory_enabled = true; // [true!] cntrlZ, cntrlY
+LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
+
+/* METHOD 2 */
+LiteGraph.use_deferred_actions = false; // DISABLING
 
 /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
 LiteGraph.refreshAncestorsOnTriggers = true; //[true!]
