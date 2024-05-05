@@ -2416,9 +2416,6 @@
         if(opts.doSave){
             console.debug("onGraphChanged SAVE :: "+opts.action); // debug history
         }
-        if(opts.doSave){ // atlasan DEBUG REMOVE
-            console.debug("onGraphChanged SAVE :: "+opts.action);
-        }*/
         
         if(opts.doSave && LiteGraph.actionHistory_enabled){
 
@@ -13269,7 +13266,6 @@ LGraphNode.prototype.executeAction = function(action)
 					}
 				});
 
-            }
             }
 
 			root.content.appendChild(elem);
