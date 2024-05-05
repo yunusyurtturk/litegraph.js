@@ -97,11 +97,8 @@ describe("Registering node types", () => {
     });
 
     it("should correctly register supported file extensions", () => {
-    //    expect(LiteGraph.node_types_by_file_extension).toEqual({});
-
-        // Create two node types with calc_times overriding .pdf
-        Sum.supported_extensions = ["PDF", "exe", null];
-
+        assert.deepEqual(LiteGraph.node_types_by_file_extension, {});
+        
         function Times() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -113,10 +110,25 @@ describe("Registering node types", () => {
         Times.supported_extensions = ["pdf", "jpg"];
 
         LiteGraph.registerNodeType("math/times", Times);
+        
+        Sum = function Sum() {
+            this.addInput("a", "number");
+            this.addInput("b", "number");
+            this.addOutput("sum", "number");
+        };
+        Sum.prototype.onExecute = function (a, b) {
+            this.setOutputData(0, a + b);
+        };
+        // Create two node types with calc_times overriding .pdf
+        Sum.supported_extensions = ["PDF", "exe", null];
 
-    //    assert.strictEqual(Object.keys(LiteGraph.node_types_by_file_extension).length, 3);
+        LiteGraph.registerNodeType("math/sum", Sum);
+        // this should generate a console.log() saying "replacing node type: math/sum"
+
+
+        assert.strictEqual(Object.keys(LiteGraph.node_types_by_file_extension).length, 3);
         assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("pdf"));
-    //    assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("exe"));
+        assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("exe"));
         assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("jpg"));
     //    assert.strictEqual(LiteGraph.node_types_by_file_extension.exe, Times);
     //    assert.strictEqual(LiteGraph.node_types_by_file_extension.pdf, Times);
@@ -168,9 +180,6 @@ describe("Unregistering node types", () => {
         Sum.prototype.onExecute = function (a, b) {
             this.setOutputData(0, a + b);
         };
-    });
-
-    afterEach(() => {
     });
 
     it("should remove by name", () => {
