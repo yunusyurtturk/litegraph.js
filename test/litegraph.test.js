@@ -1,6 +1,6 @@
 
 import { strict as assert } from 'assert';
-import { Console } from 'console';
+
 
 import { LiteGraph, LGraphNode } from "../src/litegraph.js";
 
@@ -16,8 +16,10 @@ describe("Registering node types", () => {
     
     let Sum;
     let node;
+    let flagonNodeTypeRegistered = false;
+    let flagonNodeTypeReplaced = false;
 
-    beforeEach(() => {
+    before(() => {
         Sum = function Sum() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -26,13 +28,22 @@ describe("Registering node types", () => {
         Sum.prototype.onExecute = function (a, b) {
             this.setOutputData(0, a + b);
         };
+
+        LiteGraph.onNodeTypeRegistered = () => {
+            flagonNodeTypeRegistered = true;
+        };
+
+        LiteGraph.onNodeTypeReplaced = () => {
+            flagonNodeTypeReplaced = true;
+        };
+
         LiteGraph.registerNodeType("math/sum", Sum);
         node = LiteGraph.registered_node_types["math/sum"];
     });
 
     it("should correctly construct nodes", () => {
-
         assert(node);
+        assert.equal(flagonNodeTypeRegistered, true);
         assert.strictEqual(node.type, "math/sum");
         assert.strictEqual(node.title, "Sum");
         assert.strictEqual(node.category, "math");
@@ -41,7 +52,7 @@ describe("Registering node types", () => {
 
     it("should handle errors for passing invalid arguments", () => {
         assert.throws(() => {
-            LiteGraph.registerNodeType("math/sum", { simple: "type" });
+            LiteGraph.registerNodeType("math/sub", { simple: "type" });
         }, "Cannot register a simple object");
     });
 
@@ -51,49 +62,38 @@ describe("Registering node types", () => {
         assert.notStrictEqual(node.title, node.name);
     });
 
-    it("should correctly have callbacks that trigger", () => {
-
-        LiteGraph.onNodeTypeRegistered = function() {};
-        LiteGraph.onNodeTypeReplaced = function() {};
-    //    assert(LiteGraph.onNodeTypeRegistered.called);
-    //    assert(!LiteGraph.onNodeTypeReplaced.called);
-    //    assert(LiteGraph.onNodeTypeReplaced.called);
-
-    //    assert(consoleLogStub.calledWith(sinon.match("replacing node type")));
-    //    assert(consoleLogStub.calledWith(sinon.match("math/sum")));
-    });
-
     it("should correctly map shapes", () => {
 
-        LiteGraph.registerNodeType("math/sum", Sum);
+        assert.strictEqual(new node().shape, undefined);
+        node.prototype.shape = "default";
+        assert.strictEqual(new node().shape, undefined);
+        node.prototype.shape = "box";
+        assert.strictEqual(new node().shape, LiteGraph.BOX_SHAPE);
+        node.prototype.shape = "round";
+        assert.strictEqual(new node().shape, LiteGraph.ROUND_SHAPE);
+        node.prototype.shape = "circle";
+        assert.strictEqual(new node().shape, LiteGraph.CIRCLE_SHAPE);
+        node.prototype.shape = "card";
+        assert.strictEqual(new node().shape, LiteGraph.CARD_SHAPE);
+        node.prototype.shape = "custom_shape";
+        assert.strictEqual(new node().shape, "custom_shape");
+    });
 
-        const node_type = LiteGraph.registered_node_types["math/sum"];
-        assert.strictEqual(new node_type().shape, undefined);
-        node_type.prototype.shape = "default";
-        assert.strictEqual(new node_type().shape, undefined);
-        node_type.prototype.shape = "box";
-        assert.strictEqual(new node_type().shape, LiteGraph.BOX_SHAPE);
-        node_type.prototype.shape = "round";
-        assert.strictEqual(new node_type().shape, LiteGraph.ROUND_SHAPE);
-        node_type.prototype.shape = "circle";
-        assert.strictEqual(new node_type().shape, LiteGraph.CIRCLE_SHAPE);
-        node_type.prototype.shape = "card";
-        assert.strictEqual(new node_type().shape, LiteGraph.CARD_SHAPE);
-        node_type.prototype.shape = "custom_shape";
-        assert.strictEqual(new node_type().shape, "custom_shape");
-
-        // Check that it also works for replaced node types
-    //    const consoleLogStub = sinon.stub(console, "log");
+    it("should correctly replace node types with callbacks", () => {
+        
         function NewCalcSum(a, b) {
             return a + b;
         }
-
+        
+        assert.equal(flagonNodeTypeReplaced, false);       
         LiteGraph.registerNodeType("math/sum", NewCalcSum);
+        assert.equal(flagonNodeTypeReplaced, true);
+
         const new_node_type = LiteGraph.registered_node_types["math/sum"];
+        // this should generate a console.log() saying "replacing node type: math/sum"
+
         new_node_type.prototype.shape = "box";
         assert.strictEqual(new new_node_type().shape, LiteGraph.BOX_SHAPE);
-
-    //    consoleLogStub.restore();
     });
 
     it("should correctly register supported file extensions", () => {
@@ -112,7 +112,6 @@ describe("Registering node types", () => {
         };
         Times.supported_extensions = ["pdf", "jpg"];
 
-        LiteGraph.registerNodeType("math/sum", Sum);
         LiteGraph.registerNodeType("math/times", Times);
 
     //    assert.strictEqual(Object.keys(LiteGraph.node_types_by_file_extension).length, 3);
@@ -130,7 +129,6 @@ describe("Registering node types", () => {
 
         // Test slot type registration with first type
         LiteGraph.auto_load_slot_types = true;
-        LiteGraph.registerNodeType("math/sum", Sum);
     //    expect(LiteGraph.registered_slot_in_types).toEqual({
     //        number: { nodes: ["math/sum"] },
     //    });
@@ -159,8 +157,9 @@ describe("Registering node types", () => {
 
 describe("Unregistering node types", () => {
     let Sum;
+    let node;
 
-    beforeEach(() => {
+    before(() => {
         Sum = function Sum() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -175,7 +174,6 @@ describe("Unregistering node types", () => {
     });
 
     it("should remove by name", () => {
-        LiteGraph.registerNodeType("math/sum", Sum);
     //    expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
 
         LiteGraph.unregisterNodeType("math/sum");
