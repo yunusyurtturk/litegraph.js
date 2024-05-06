@@ -540,7 +540,7 @@ DataStore.prototype.onAction = function (action, param, options) {
 DataStore.prototype.onSerialize = function (o) {
     if (o.data == null) return;
     if (
-        this.properties.serialize == false ||
+        !this.properties.serialize ||
         (o.data.constructor !== String &&
             o.data.constructor !== Number &&
             o.data.constructor !== Boolean &&

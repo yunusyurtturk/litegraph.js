@@ -98,8 +98,6 @@ if (typeof GL != "undefined") {
                 break;
             case LGraphTexture.REUSE:
                 return origin;
-                break;
-            case LGraphTexture.COPY:
             default:
                 tex_type = origin ? origin.type : gl.UNSIGNED_BYTE;
                 break;
@@ -1937,7 +1935,6 @@ if (typeof GL != "undefined") {
             );
         }
 
-        var temp = this._temp_texture;
         var type = gl.UNSIGNED_BYTE;
         if (tex.type != type) {
             //force floats, half floats cannot be read with gl.readPixels
@@ -1950,7 +1947,6 @@ if (typeof GL != "undefined") {
             !this._textures_chain.length ||
             this._textures_chain[0].type != type
         ) {
-            var index = 0;
             while (i) {
                 this._textures_chain[i] = new GL.Texture(size, size, {
                     type: type,
@@ -1964,11 +1960,8 @@ if (typeof GL != "undefined") {
         }
 
         tex.copyTo(this._textures_chain[0]);
-        var prev = this._textures_chain[0];
         for (var i = 1; i <= this._textures_chain.length; ++i) {
             var tex = this._textures_chain[i];
-
-            prev = tex;
         }
 
         var shader = LGraphTextureMinMax._shader;

@@ -483,15 +483,15 @@ Subgraph.prototype.buildFromNodes = function (nodes) {
                 var output = node.outputs[j];
                 if (!output || !output.links || !output.links.length)
                     continue;
-                var is_external = false;
+            //    var is_external = false;
                 for (var k = 0; k < output.links.length; ++k) {
                     var link = node.graph.links[output.links[k]];
                     if (!link) continue;
                     if (ids[link.target_id]) continue;
-                    is_external = true;
+            //        is_external = true;
                     break;
                 }
-                if (!is_external) continue;
+                // if (!is_external) continue;
                 //this.addOutput(output.name,output.type);
                 /*
                 var output_node = LiteGraph.createNode("graph/output");
@@ -1353,12 +1353,11 @@ Variable.prototype.onExecute = function () {
 Variable.prototype.getContainer = function () {
     switch (this.properties.container) {
         case Variable.GRAPH:
-            if (this.graph) return this.graph.vars;
+            if (this.graph) 
+                return this.graph.vars;
             return {};
-            break;
         case Variable.GLOBALSCOPE:
             return global; // @BUG: not sure what to do with this now
-        case Variable.LITEGRAPH:
         default:
             return LiteGraph.Globals;
     }
