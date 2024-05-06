@@ -46,7 +46,7 @@ Or downloading the ```build/litegraph.js``` and ```css/litegraph.css``` version 
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="litegraph.css">
-	<script type="text/javascript" src="litegraph.js"></script>
+	<script type="module" src="litegraph.js"></script>
 </head>
 <body style='width:100%; height:100%'>
 <canvas id='mycanvas' width='1024' height='720' style='border: 1px solid'></canvas>
@@ -122,9 +122,9 @@ LiteGraph.wrapFunctionAsNode("math/sum",sum, ["Number","Number"],"Number");
 It also works server-side using NodeJS although some nodes do not work in server (audio, graphics, input, etc).
 
 ```js
-var LiteGraph = require("./litegraph.js").LiteGraph;
+import { LiteGraph, LGraph } from "./litegraph.js";
 
-var graph = new LiteGraph.LGraph();
+var graph = new LGraph();
 
 var node_time = LiteGraph.createNode("basic/time");
 graph.add(node_time);
