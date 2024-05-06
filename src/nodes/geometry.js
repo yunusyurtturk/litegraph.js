@@ -12,7 +12,7 @@ var global_uniforms = {
     u_model: model_matrix,
 };
 
-LGraphRender = {
+const LGraphRender = {
     onRequestCameraMatrices: null, //overwrite with your 3D engine specifics, it will receive (view_matrix, projection_matrix,viewprojection_matrix) and must be filled
 };
 
@@ -315,7 +315,6 @@ LGraphPoints3D.generateInsideCircle = function (points, size, radius) {
         var r1 = Math.random();
         var r2 = Math.random();
         var x = Math.cos(2 * Math.PI * r1) * Math.sqrt(1 - r2 * r2);
-        var y = r2;
         var z = Math.sin(2 * Math.PI * r1) * Math.sqrt(1 - r2 * r2);
         points[i] = x * radius;
         points[i + 1] = 0;
@@ -573,10 +572,8 @@ LGraphPointsToInstances.prototype.updateInstances = function (geometry) {
     if (matrices.length != num_points) matrices.length = num_points;
     var identity = mat4.create();
     var temp = vec3.create();
-    var zero = vec3.create();
     var UP = vec3.fromValues(0, 1, 0);
     var FRONT = vec3.fromValues(0, 0, -1);
-    var RIGHT = vec3.fromValues(1, 0, 0);
     var R = quat.create();
 
     var front = vec3.create();
@@ -831,9 +828,6 @@ LGraphGeometryPolygon.prototype.updateGeometry = function (sides, radius) {
         vertices[i * 3] = x;
         vertices[i * 3 + 1] = y;
         vertices[i * 3 + 2] = z;
-
-        if (gen_uvs) {
-        }
     }
     this.geometry._id = ++this.geometry_id;
     this.geometry._version = ++this.version;
@@ -1595,7 +1589,6 @@ if (typeof GL != "undefined") {
     };
 
     LGraphRenderPoints.prototype.updateMesh = function (geometry) {
-        var buffer = this.buffer;
         if (
             !this.buffer ||
             !this.buffer.data ||

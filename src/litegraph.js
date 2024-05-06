@@ -483,8 +483,6 @@ const LiteGraph = {
             return null;
         }
 
-        var prototype = base_class.prototype || base_class;
-
         title = title || base_class.title || type;
 
         var node = null;
@@ -744,7 +742,6 @@ const LiteGraph = {
      * @return {FileReader|Promise} returns the object used to 
      */
     fetchFile: function( url, type, on_complete, on_error ) {
-        var that = this;
         if(!url)
             return null;
 
@@ -1200,10 +1197,7 @@ LGraph.prototype.computeExecutionOrder = function(
         }
     }
 
-    while (true) {
-        if (S.length == 0) {
-            break;
-        }
+    while (S.length != 0) {
 
         //get an starting node
         var node = S.shift();
@@ -1758,7 +1752,6 @@ LGraph.prototype.getGroupOnPos = function(x, y) {
  * @method checkNodeTypes
  */
 LGraph.prototype.checkNodeTypes = function() {
-    var changes = false;
     for (var i = 0; i < this._nodes.length; i++) {
         var node = this._nodes[i];
         var ctor = LiteGraph.registered_node_types[node.type];
@@ -1767,7 +1760,6 @@ LGraph.prototype.checkNodeTypes = function() {
         }
         console.log("node being replaced by newer version: " + node.type);
         var newnode = LiteGraph.createNode(node.type);
-        changes = true;
         this._nodes[i] = newnode;
         newnode.configure(node.serialize());
         newnode.graph = this;
@@ -4135,7 +4127,6 @@ LGraphNode.prototype.findSlotByType = function(input, type, returnObj, preferFre
     // !! empty string type is considered 0, * !!
     if (type == "" || type == "*") type = 0; 
     for (var i = 0, l = aSlots.length; i < l; ++i) {
-        var tFound = false;
         var aSource = (type+"").toLowerCase().split(",");
         var aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
         aDest = (aDest+"").toLowerCase().split(",");
@@ -4155,7 +4146,6 @@ LGraphNode.prototype.findSlotByType = function(input, type, returnObj, preferFre
     // if didnt find some, stop checking for free slots
     if (preferFreeSlot && !doNotUseOccupied){
         for (var i = 0, l = aSlots.length; i < l; ++i) {
-            var tFound = false;
             var aSource = (type+"").toLowerCase().split(",");
             var aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
             aDest = (aDest+"").toLowerCase().split(",");
@@ -5612,7 +5602,6 @@ LGraphCanvas.prototype.getCurrentGraph = function() {
  * @param {Canvas} assigns a canvas (also accepts the ID of the element (not a selector)
  */
 LGraphCanvas.prototype.setCanvas = function(canvas, skip_events) {
-    var that = this;
 
     if (canvas) {
         if (canvas.constructor === String) {
@@ -5959,7 +5948,6 @@ LGraphCanvas.prototype.processMouseDown = function(e) {
     }
 
     var node = this.graph.getNodeOnPos( e.canvasX, e.canvasY, this.visible_nodes, 5 );
-    var skip_dragging = false;
     var skip_action = false;
     var now = LiteGraph.getTime();
     var is_primary = (e.isPrimary === undefined || !e.isPrimary);
@@ -7053,7 +7041,6 @@ LGraphCanvas.prototype.isOverNodeInput = function(
 ) {
     if (node.inputs) {
         for (var i = 0, l = node.inputs.length; i < l; ++i) {
-            var input = node.inputs[i];
             var link_pos = node.getConnectionPos(true, i);
             var is_inside = false;
             if (node.horizontal) {
@@ -7099,7 +7086,6 @@ LGraphCanvas.prototype.isOverNodeOutput = function(
 ) {
     if (node.outputs) {
         for (var i = 0, l = node.outputs.length; i < l; ++i) {
-            var output = node.outputs[i];
             var link_pos = node.getConnectionPos(false, i);
             var is_inside = false;
             if (node.horizontal) {
@@ -7399,7 +7385,6 @@ LGraphCanvas.prototype.processDrop = function(e) {
             for (var i = 0; i < files.length; i++) {
                 var file = e.dataTransfer.files[0];
                 var filename = file.name;
-                var ext = LGraphCanvas.getFileExtension(filename);
                 //console.log(file);
 
                 if (node.onDropFile) {
@@ -8209,7 +8194,7 @@ LGraphCanvas.prototype.drawSubgraphPanelRight = function (subgraph, subnode, ctx
     ctx.fillStyle = "#888";
     ctx.font = "14px Arial";
     ctx.textAlign = "left";
-    var title_text = "Graph Outputs"
+    var title_text = "Graph Outputs";
     var tw = ctx.measureText(title_text).width
     ctx.fillText(title_text, (canvas_w - tw) - 20, 34);
     // var pos = this.mouse;
@@ -8307,9 +8292,7 @@ LGraphCanvas.prototype.drawButton = function( x,y,w,h, text, bgcolor, hovercolor
 
 LGraphCanvas.prototype.isAreaClicked = function( x,y,w,h, hold_click )
 {
-    var pos = this.mouse;
-    var hover = LiteGraph.isInsideRectangle( pos[0], pos[1], x,y,w,h );
-    pos = this.last_click_position;
+    var pos = this.last_click_position;
     var clicked = pos && LiteGraph.isInsideRectangle( pos[0], pos[1], x,y,w,h );
     var was_clicked = clicked && !this.block_click;
     if(clicked && hold_click)
@@ -8375,7 +8358,6 @@ LGraphCanvas.prototype.drawBackCanvas = function() {
     //show subgraph stack header
     if (this._graph_stack && this._graph_stack.length) {
         ctx.save();
-        var parent_graph = this._graph_stack[this._graph_stack.length - 1];
         var subgraph_node = this.graph._subgraph_node;
         ctx.strokeStyle = subgraph_node.bgcolor;
         ctx.lineWidth = 10;
@@ -10890,7 +10872,6 @@ LGraphCanvas.onShowMenuNodeProperties = function(
         return;
     }
 
-    var that = this;
     var canvas = LGraphCanvas.active_canvas;
     var ref_window = canvas.getCanvasWindow();
 
@@ -10984,7 +10965,8 @@ LGraphCanvas.prototype.showLinkMenu = function(link, e) {
     var destType = false;
     if (node_right && node_right.outputs && node_right.outputs[link.target_slot]) destType = node_right.inputs[link.target_slot].type;
     
-    var options = ["Add Node",null,"Delete",null];
+    //@TODO: See if deleting this is a bug:  
+    // var options = ["Add Node",null,"Delete",null];
     
     
     var menu = new LiteGraph.ContextMenu(options, {
@@ -11092,7 +11074,7 @@ LGraphCanvas.prototype.createDefaultNodeForSlot = function(optPass) { // addNode
         }else{
             // is not not connected
         }
-        nodeNewType = false;
+        var nodeNewType = false;
         if(typeof slotTypesDefault[fromSlotType] == "object" || typeof slotTypesDefault[fromSlotType] == "array"){
             for(var typeX in slotTypesDefault[fromSlotType]){
                 if (opts.nodeType == slotTypesDefault[fromSlotType][typeX] || opts.nodeType == "AUTO"){
@@ -11271,15 +11253,9 @@ LGraphCanvas.prototype.showConnectionMenu = function(optPass) { // addNodeMenu f
                 break;
             default:
                 // check for defaults nodes for this slottype
-                var nodeCreated = that.createDefaultNodeForSlot(Object.assign(opts,{ position: [opts.e.canvasX, opts.e.canvasY]
-                                                                                    ,nodeType: v
-                                                                                }));
-                if (nodeCreated){
-                    // new node created
-                    //console.log("node "+v+" created")
-                }else{
-                    // failed or v is not in defaults
-                }
+                that.createDefaultNodeForSlot(Object.assign(
+                    opts,{ position: [opts.e.canvasX, opts.e.canvasY], nodeType: v }
+                ));
                 break;
         }
     }   
@@ -11289,7 +11265,6 @@ LGraphCanvas.prototype.showConnectionMenu = function(optPass) { // addNodeMenu f
 
 // TODO refactor :: this is used fot title but not for properties!
 LGraphCanvas.onShowPropertyEditor = function(item, options, e, menu, node) {
-    var input_html = "";
     var property = item.property || "title";
     var value = node[property];
 
@@ -11385,7 +11360,7 @@ LGraphCanvas.onShowPropertyEditor = function(item, options, e, menu, node) {
 // refactor: there are different dialogs, some uses createDialog some dont
 LGraphCanvas.prototype.prompt = function(title, value, callback, event, multiline) {
     var that = this;
-    var input_html = "";
+
     title = title || "";
 
     var dialog = document.createElement("div");
@@ -11443,10 +11418,6 @@ LGraphCanvas.prototype.prompt = function(title, value, callback, event, multilin
         that.prompt_box.close();
     }
     that.prompt_box = dialog;
-
-    var first = null;
-    var timeout = null;
-    var selected = null;
 
     var name_element = dialog.querySelector(".name");
     name_element.innerText = title;
@@ -11523,7 +11494,6 @@ LGraphCanvas.prototype.showSearchBox = function(event, options) {
     //console.log(options);
     
     var that = this;
-    var input_html = "";
     var graphcanvas = LGraphCanvas.active_canvas;
     var canvas = graphcanvas.canvas;
     var root_document = canvas.ownerDocument || document;
@@ -12077,12 +12047,11 @@ LGraphCanvas.prototype.showEditPropertyValue = function( node, property, options
     }
 
     options = options || {};
-    var that = this;
 
     var info = node.getPropertyInfo(property);
     var type = info.type;
 
-    var input_html = "";
+    let input_html;
 
     if (type == "string" || type == "number" || type == "array" || type == "object") {
         input_html = "<input autofocus type='text' class='value'/>";
@@ -12466,7 +12435,7 @@ LGraphCanvas.prototype.createPanel = function(title, options) {
                 var values = options.values || [];
                 var propname = this.parentNode.dataset["property"];
                 var elem_that = this;
-                var menu = new LiteGraph.ContextMenu(values,{
+                new LiteGraph.ContextMenu(values,{
                         event: event,
                         className: "dark",
                         callback: inner_clicked
@@ -12609,7 +12578,6 @@ LGraphCanvas.prototype.showShowGraphOptionsPanel = function(refOpts, obEv, refMe
             panel.addWidget( "boolean", pX, graphcanvas[pX], {key: pX, on: "True", off: "False"}, fUpdate);
         }
         
-        var aLinks = [ graphcanvas.links_render_mode ];
         panel.addWidget( "combo", "Render mode", LiteGraph.LINK_RENDER_MODES[graphcanvas.links_render_mode], {key: "links_render_mode", values: LiteGraph.LINK_RENDER_MODES}, fUpdate);
         
         panel.addSeparator();
@@ -12627,7 +12595,7 @@ LGraphCanvas.prototype.showShowNodePanel = function( node )
     this.SELECTED_NODE = node;
     this.closePanels();
     var ref_window = this.getCanvasWindow();
-    var that = this;
+
     var graphcanvas = this;
     var panel = this.createPanel(node.title || "",{
                                                 closable: true
@@ -12697,7 +12665,8 @@ LGraphCanvas.prototype.showShowNodePanel = function( node )
         {
             var value = node.properties[pName];
             var info = node.getPropertyInfo(pName);
-            var type = info.type || "string";
+            //@TODO: Figure out if deleting this is a bug: 
+            // var type = info.type || "string";
 
             //in case the user wants control over the side panel widget
             if( node.onAddPropertyToPanel && node.onAddPropertyToPanel(pName,panel) )
@@ -12832,7 +12801,7 @@ LGraphCanvas.prototype.showSubgraphPropertiesDialog = function(node)
 LGraphCanvas.prototype.showSubgraphPropertiesDialogRight = function (node) {
 
     // console.log("showing subgraph properties dialog");
-    var that = this;
+
     // old_panel if old_panel is exist close it
     var old_panel = this.canvas.parentNode.querySelector(".subgraph_dialog");
     if (old_panel)
@@ -13172,7 +13141,6 @@ LGraphCanvas.node_colors = {
 
 LGraphCanvas.prototype.getCanvasMenuOptions = function() {
     var options = null;
-    var that = this;
     if (this.getMenuOptions) {
         options = this.getMenuOptions();
     } else {
@@ -13306,7 +13274,7 @@ LGraphCanvas.prototype.getNodeMenuOptions = function(node) {
         });
     }
 
-    if(0) //TODO
+    if(0) // @TODO: Figure out what this was for
     options.push({
         content: "To Subgraph",
         callback: LGraphCanvas.onMenuNodeToSubgraph
@@ -13948,7 +13916,7 @@ ContextMenu.prototype.addItem = function(name, value, options) {
                 if (!value.submenu.options) {
                     throw "ContextMenu submenu needs options";
                 }
-                var submenu = new that.constructor(value.submenu.options, {
+                new that.constructor(value.submenu.options, {
                     callback: value.submenu.callback,
                     event: e,
                     parentMenu: that,

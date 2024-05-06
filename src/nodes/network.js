@@ -364,7 +364,6 @@ LiteGraph.registerNodeType("network/sillyclient", LGSillyClient);
 
 //HTTP Request
 function HTTPRequestNode() {
-    var that = this;
     this.addInput("request", LiteGraph.ACTION);
     this.addInput("url", "string");
     this.addProperty("url", "");

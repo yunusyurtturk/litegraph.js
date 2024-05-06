@@ -73,7 +73,6 @@ Sequence.prototype.onAction = function (action, param, options) {
     if (this.outputs) {
         options = options || {};
         for (var i = 0; i < this.outputs.length; ++i) {
-            var output = this.outputs[i];
             //needs more info about this...
             if (options.action_call)
                 // CREATE A NEW ID FOR THE ACTION

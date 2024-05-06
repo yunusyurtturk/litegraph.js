@@ -1143,8 +1143,6 @@ MathFormula.prototype.onExecute = function () {
         y = this.properties["y"];
     }
 
-    var f = this.properties["formula"];
-
     var value;
     try {
         if (!this._func || this._func_code != this.properties.formula) {

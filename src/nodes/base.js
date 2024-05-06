@@ -19,7 +19,6 @@ LiteGraph.registerNodeType("basic/time", Time);
 
 //Subgraph: a node that contains a graph
 function Subgraph() {
-    var that = this;
     this.size = [140, 80];
     this.properties = { enabled: true };
     this.enabled = true;
@@ -446,8 +445,6 @@ Subgraph.prototype.buildFromNodes = function (nodes) {
     //TODO
 
     //nodes that connect data between parent graph and subgraph
-    var subgraph_inputs = [];
-    var subgraph_outputs = [];
 
     //mark inner nodes
     var ids = {};
@@ -459,9 +456,6 @@ Subgraph.prototype.buildFromNodes = function (nodes) {
         min_x = Math.min(node.pos[0], min_x);
         max_x = Math.max(node.pos[0], min_x);
     }
-
-    var last_input_y = 0;
-    var last_output_y = 0;
 
     for (var i = 0; i < nodes.length; ++i) {
         var node = nodes[i];
@@ -626,7 +620,6 @@ GraphInput.prototype.onPropertyChanged = function (name, v) {
         this.name_in_graph = v;
     } else if (name == "type") {
         this.updateType();
-    } else if (name == "value") {
     }
 };
 
@@ -673,7 +666,6 @@ function GraphOutput() {
 
     this.name_in_graph = "";
     this.properties = { name: "", type: "" };
-    var that = this;
 
     // Object.defineProperty(this.properties, "name", {
     //     get: function() {
@@ -754,7 +746,6 @@ GraphOutput.prototype.onPropertyChanged = function (name, v) {
         this.name_in_graph = v;
     } else if (name == "type") {
         this.updateType();
-    } else if (name == "value") {
     }
 };
 
@@ -1367,11 +1358,9 @@ Variable.prototype.getContainer = function () {
             break;
         case Variable.GLOBALSCOPE:
             return global; // @BUG: not sure what to do with this now
-            break;
         case Variable.LITEGRAPH:
         default:
             return LiteGraph.Globals;
-            break;
     }
 };
 
@@ -1570,7 +1559,7 @@ function Alert() {
     this.mode = LiteGraph.ON_EVENT;
     this.addProperty("msg", "");
     this.addInput("", LiteGraph.EVENT);
-    var that = this;
+
     this.widget = this.addWidget("text", "Text", "", "msg");
     this.widgets_up = true;
     this.size = [200, 30];

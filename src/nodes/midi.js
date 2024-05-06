@@ -1036,7 +1036,6 @@ LGMIDICC.desc = "gets a Controller Change";
 LGMIDICC.color = MIDI_COLOR;
 
 LGMIDICC.prototype.onExecute = function () {
-    var props = this.properties;
     if (MIDIInterface.input) {
         this.properties.value =
             MIDIInterface.input.state.cc[this.properties.cc];
@@ -1489,7 +1488,6 @@ LGMIDIKeys.prototype.onDrawForeground = function (ctx) {
 };
 
 LGMIDIKeys.prototype.getKeyIndex = function (pos) {
-    var num_keys = this.properties.num_octaves * 12;
     var key_width = this.size[0] / (this.properties.num_octaves * 7);
     var key_height = this.size[1];
 
