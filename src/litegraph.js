@@ -840,8 +840,6 @@ function LGraph(o) {
     }
 }
 
-LiteGraph.LGraph = LGraph;
-
 //default supported types
 LGraph.supported_types = ["number", "string", "boolean"];
 
@@ -1539,7 +1537,7 @@ LGraph.prototype.add = function(node, skip_compute_order) {
  */
 
 LGraph.prototype.remove = function(node) {
-    if (node.constructor === LiteGraph.LGraphGroup) {
+    if (node.constructor === LGraphGroup) {
         var index = this._groups.indexOf(node);
         if (index != -1) {
             this._groups.splice(index, 1);
@@ -2304,7 +2302,7 @@ LGraph.prototype.configure = function(data, keep_old) {
     this._groups.length = 0;
     if (data.groups) {
         for (var i = 0; i < data.groups.length; ++i) {
-            var group = new LiteGraph.LGraphGroup();
+            var group = new LGraphGroup();
             group.configure(data.groups[i]);
             this.add(group);
         }
@@ -2405,8 +2403,6 @@ LLink.prototype.serialize = function() {
     ];
 };
 
-LiteGraph.LLink = LLink;
-
 // *************************************************************
 //   Node CLASS                                          *******
 // *************************************************************
@@ -2471,8 +2467,6 @@ supported callbacks:
 function LGraphNode(title) {
     this._ctor(title);
 }
-
-LiteGraph.LGraphNode = LGraphNode;
 
 LGraphNode.prototype._ctor = function(title) {
     this.title = title || "Unnamed";
@@ -4980,8 +4974,6 @@ function LGraphGroup(title) {
     this._ctor(title);
 }
 
-LiteGraph.LGraphGroup = LGraphGroup;
-
 LGraphGroup.prototype._ctor = function(title) {
     this.title = title || "Group";
     this.font_size = 24;
@@ -5432,8 +5424,6 @@ function LGraphCanvas(canvas, graph, options) {
 
     this.autoresize = options.autoresize;
 }
-
-LiteGraph.LGraphCanvas = LGraphCanvas;
 
 LGraphCanvas.DEFAULT_BACKGROUND_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII=";
 
@@ -10452,7 +10442,7 @@ LGraphCanvas.onGroupAdd = function(info, entry, mouse_event) {
     var canvas = LGraphCanvas.active_canvas;
     var ref_window = canvas.getCanvasWindow();
 
-    var group = new LiteGraph.LGraphGroup();
+    var group = new LGraphGroup();
     group.pos = canvas.convertEventToCanvasOffset(mouse_event);
     canvas.graph.add(group);
 };
@@ -12973,7 +12963,7 @@ LGraphCanvas.onMenuNodeColors = function(value, options, e, menu, node) {
         
         var fApplyColor = function(node){
             if (color) {
-                if (node.constructor === LiteGraph.LGraphGroup) {
+                if (node.constructor === LGraphGroup) {
                     node.color = color.groupcolor;
                 } else {
                     node.color = color.color;
