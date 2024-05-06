@@ -33,7 +33,6 @@ h2 {
 	color: #FAA;
 	font-size: 18px;
 	padding: 5px;
-	/*border-radius: 5px;*/
 	width: -moz-calc( 50% - 30px);
 	min-height: 30px;
 	overflow: hidden;
@@ -44,7 +43,6 @@ h2 {
 	padding: 2px;
 	font-size: 0.8em;
 	background-color: #464;
-	/*border-radius: 2px;*/
 }
 
 #content {
@@ -54,8 +52,6 @@ h2 {
 }
 
 .fullscreen #content {
-	min-height: -moz-calc(100% - 80px);
-	min-height: -webkit-calc(100% - 80px);
 	min-height: calc(100% - 80px);
 }
 
@@ -87,18 +83,13 @@ h2 {
 	color: #999;
 	padding-left: 5px;
 	transition: background-color 300ms, color 300ms, padding-left 300ms;
-	-moz-transition: background-color 300ms, color 300ms, padding-left 300ms;
-	-webkit-transition: background-color 300ms, color 300ms, padding-left 300ms;
 }
 
 .item-list .item:hover {
 	background-color: #33A;
-	/*border-radius: 4px;*/
 	color: white;
 	padding-left: 15px;
 	transition: background-color 300ms, color 300ms, padding-left 300ms;
-	-moz-transition: background-color 300ms, color 300ms, padding-left 300ms;
-	-webkit-transition: background-color 300ms, color 300ms, padding-left 300ms;
 	cursor: pointer;
 }
 

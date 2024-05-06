@@ -1,23 +1,21 @@
 <!DOCTYPE html>
-<html><head>
+<html lang="en">
+<head>
     <title>LiteGraph</title>
-	<!--<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">-->
-	<meta http-equiv="X-UA-Compatible" content="chrome=1">
 
     <link rel="stylesheet" type="text/css" href="../css/litegraph.css">
     <link rel="stylesheet" type="text/css" href="../css/litegraph-editor.css">
     <link rel="stylesheet" type="text/css" href="style.css">
-	</head>
+</head>
 <body>
-	<div id="main">
-	</div>
+	<div id="main"></div>
 
-    <script type="text/javascript" src="../external/jquery-1.6.2.min.js"></script>
-    <script type="text/javascript" src="https://tamats.com/projects/sillyserver/src/sillyclient.js"></script>
-	<!-- <script type="text/javascript" src="https://unpkg.com/codeflask/build/codeflask.min.js"></script> -->
-	<script type="text/javascript" src="js/libs/gl-matrix-min.js"></script>
-    <script type="text/javascript" src="js/libs/audiosynth.js"></script>
-    <script type="text/javascript" src="js/libs/midi-parser.js"></script>
+    <script src="../external/jquery-1.6.2.min.js"></script>
+    <script src="https://tamats.com/projects/sillyserver/src/sillyclient.js"></script>
+	<!-- <script src="https://unpkg.com/codeflask/build/codeflask.min.js"></script> -->
+	<script src="js/libs/gl-matrix-min.js"></script>
+    <script src="js/libs/audiosynth.js"></script>
+    <script src="js/libs/midi-parser.js"></script>
 
     <script type="module" src="../src/litegraph.js"></script>
     <script type="module" src="../src/litegraph-editor.js"></script>
@@ -36,11 +34,11 @@
     <script type="module" src="../src/nodes/midi.js"></script>
     <script type="module" src="../src/nodes/audio.js"></script>
     <script type="module" src="../src/nodes/network.js"></script>
+	<script type="module" src="../src/nodes/others.js"></script>
 
     <script type="module" src="js/demos.js"></script>
 	<script type="module" src="js/code.js"></script>
 
-	<script type="module" src="../src/nodes/others.js"></script>
 
 </body>
 </html>
