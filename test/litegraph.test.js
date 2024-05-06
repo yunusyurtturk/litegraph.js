@@ -136,8 +136,8 @@ describe("Registering node types", () => {
     });
 
     it("should correctly register in/out slot types", () => {
-    //    expect(LiteGraph.registered_slot_in_types).toEqual({});
-    //    expect(LiteGraph.registered_slot_out_types).toEqual({});
+    //    assert.deepEqual(LiteGraph.registered_slot_in_types, {});
+    //    assert.deepEqual(LiteGraph.registered_slot_out_types, {});
 
         // Test slot type registration with first type
         LiteGraph.auto_load_slot_types = true;

@@ -1,5 +1,5 @@
 
-import { LiteGraph } from "../litegraph.js";
+import { LiteGraph, LGraph } from "../litegraph.js";
 
 var LGAudio = {};
 
@@ -440,12 +440,7 @@ LGAudioSource.prototype.loadSound = function (url) {
         return;
     }
 
-    this._request = LGAudio.loadSound(url, inner);
-
-    this._loading_audio = true;
-    this.boxcolor = "#AA4";
-
-    function inner(buffer) {
+    this._request = LGAudio.loadSound(url, (buffer) => {
         this.boxcolor = LiteGraph.NODE_DEFAULT_BOXCOLOR;
         that._audiobuffer = buffer;
         that._loading_audio = false;
@@ -453,7 +448,10 @@ LGAudioSource.prototype.loadSound = function (url) {
         if (that.graph && that.graph.status === LGraph.STATUS_RUNNING) {
             that.onStart();
         } //this controls the autoplay already
-    }
+    });
+
+    this._loading_audio = true;
+    this.boxcolor = "#AA4";
 };
 
 //Helps connect/disconnect AudioNodes when new connections are made in the node
@@ -1462,5 +1460,3 @@ function LGAudioDestination() {
 LGAudioDestination.title = "Destination";
 LGAudioDestination.desc = "Audio output";
 LiteGraph.registerNodeType("audio/destination", LGAudioDestination);
-
-export { LGAudio };

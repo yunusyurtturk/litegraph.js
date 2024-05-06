@@ -1,3 +1,6 @@
+
+import { LiteGraph, LGraph } from "../../src/litegraph.js";
+
 var webgl_canvas = null;
 
 LiteGraph.node_images_path = "../nodes_data/";

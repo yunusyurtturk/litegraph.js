@@ -1,3 +1,6 @@
+
+import { LiteGraph, LGraph, LGraphCanvas } from "./litegraph.js";
+
 //Creates an interface to access extra features from a graph (like play, stop, live, etc)
 function Editor(container_id, options) {
     options = options || {};
