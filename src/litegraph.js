@@ -5090,8 +5090,6 @@ function DragAndScale(element, skip_events) {
     }
 }
 
-LiteGraph.DragAndScale = DragAndScale;
-
 DragAndScale.prototype.bindEvents = function(element) {
     this.last_mouse = new Float32Array(2);
 
@@ -10157,7 +10155,7 @@ LGraphCanvas.prototype.processNodeWidgets = function(
                             w.value = index;
                     } else { //combo clicked 
                         var text_values = values != values_list ? Object.values(values) : values;
-                        var menu = new LiteGraph.ContextMenu(text_values, {
+                        var menu = new ContextMenu(text_values, {
                                 scale: Math.max(1, this.ds.scale),
                                 event: event,
                                 className: "dark",
@@ -10530,7 +10528,7 @@ LGraphCanvas.alignNodes = function (nodes, direction, align_to) {
 };
 
 LGraphCanvas.onNodeAlign = function(value, options, event, prev_menu, node) {
-    new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
+    new ContextMenu(["Top", "Bottom", "Left", "Right"], {
         event: event,
         callback: inner_clicked,
         parentMenu: prev_menu,
@@ -10542,7 +10540,7 @@ LGraphCanvas.onNodeAlign = function(value, options, event, prev_menu, node) {
 }
 
 LGraphCanvas.onGroupAlign = function(value, options, event, prev_menu) {
-    new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
+    new ContextMenu(["Top", "Bottom", "Left", "Right"], {
         event: event,
         callback: inner_clicked,
         parentMenu: prev_menu,
@@ -10614,7 +10612,7 @@ LGraphCanvas.onMenuAdd = function (node, options, e, prev_menu, callback) {
 
         });
 
-        new LiteGraph.ContextMenu( entries, { event: e, parentMenu: prev_menu }, ref_window );
+        new ContextMenu( entries, { event: e, parentMenu: prev_menu }, ref_window );
 
     }
 
@@ -10682,7 +10680,7 @@ LGraphCanvas.showMenuNodeOptionalInputs = function(
         return;
     }
 
-    var menu = new LiteGraph.ContextMenu(
+    var menu = new ContextMenu(
         entries,
         {
             event: e,
@@ -10787,7 +10785,7 @@ LGraphCanvas.showMenuNodeOptionalOutputs = function(
         return;
     }
 
-    var menu = new LiteGraph.ContextMenu(
+    var menu = new ContextMenu(
         entries,
         {
             event: e,
@@ -10822,7 +10820,7 @@ LGraphCanvas.showMenuNodeOptionalOutputs = function(
             for (var i in value) {
                 entries.push({ content: i, value: value[i] });
             }
-            new LiteGraph.ContextMenu(entries, {
+            new ContextMenu(entries, {
                 event: e,
                 callback: inner_clicked,
                 parentMenu: prev_menu,
@@ -10884,7 +10882,7 @@ LGraphCanvas.onShowMenuNodeProperties = function(
         return;
     }
 
-    var menu = new LiteGraph.ContextMenu(
+    var menu = new ContextMenu(
         entries,
         {
             event: e,
@@ -10952,7 +10950,7 @@ LGraphCanvas.prototype.showLinkMenu = function(link, e) {
     // var options = ["Add Node",null,"Delete",null];
     
     
-    var menu = new LiteGraph.ContextMenu(options, {
+    var menu = new ContextMenu(options, {
         event: e,
         title: link.data != null ? link.data.constructor.name : null,
         callback: inner_clicked
@@ -11208,7 +11206,7 @@ LGraphCanvas.prototype.showConnectionMenu = function(optPass) { // addNodeMenu f
     }
     
     // build menu
-    var menu = new LiteGraph.ContextMenu(options, {
+    var menu = new ContextMenu(options, {
         event: opts.e,
         title: (slotX && slotX.name!="" ? (slotX.name + (fromSlotType?" | ":"")) : "")+(slotX && fromSlotType ? fromSlotType : ""),
         callback: inner_clicked
@@ -12418,7 +12416,7 @@ LGraphCanvas.prototype.createPanel = function(title, options) {
                 var values = options.values || [];
                 var propname = this.parentNode.dataset["property"];
                 var elem_that = this;
-                new LiteGraph.ContextMenu(values,{
+                new ContextMenu(values,{
                         event: event,
                         className: "dark",
                         callback: inner_clicked
@@ -12881,7 +12879,7 @@ LGraphCanvas.onMenuNodePin = function(value, options, e, menu, node) {
 };
 
 LGraphCanvas.onMenuNodeMode = function(value, options, e, menu, node) {
-    new LiteGraph.ContextMenu(
+    new ContextMenu(
         LiteGraph.NODE_MODES,
         { event: e, callback: inner_clicked, parentMenu: menu, node: node }
     );
@@ -12940,7 +12938,7 @@ LGraphCanvas.onMenuNodeColors = function(value, options, e, menu, node) {
         };
         values.push(value);
     }
-    new LiteGraph.ContextMenu(values, {
+    new ContextMenu(values, {
         event: e,
         callback: inner_clicked,
         parentMenu: menu,
@@ -12987,7 +12985,7 @@ LGraphCanvas.onMenuNodeShapes = function(value, options, e, menu, node) {
         throw "no node passed";
     }
 
-    new LiteGraph.ContextMenu(LiteGraph.VALID_SHAPES, {
+    new ContextMenu(LiteGraph.VALID_SHAPES, {
         event: e,
         callback: inner_clicked,
         parentMenu: menu,
@@ -13392,7 +13390,7 @@ LGraphCanvas.prototype.processContextMenu = function(node, event) {
         return;
     }
 
-    var menu = new LiteGraph.ContextMenu(menu_info, options, ref_window);
+    var menu = new ContextMenu(menu_info, options, ref_window);
 
     function inner_option_clicked(v, options, e) {
         if (!v) {
@@ -13995,8 +13993,6 @@ ContextMenu.isCursorOverElement = function(event, element) {
     }
     return false;
 };
-
-LiteGraph.ContextMenu = ContextMenu;
 
 LiteGraph.closeAllContextMenus = function(ref_window) {
     ref_window = ref_window || window;
