@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function GraphicsPlot() {
@@ -96,12 +95,7 @@ GraphicsImage.prototype.onDrawBackground = function (ctx) {
     if (this.flags.collapsed) {
         return;
     }
-    if (
-        this.img &&
-        this.size[0] > 5 &&
-        this.size[1] > 5 &&
-        this.img.width
-    ) {
+    if (this.img && this.size[0] > 5 && this.size[1] > 5 && this.img.width) {
         ctx.drawImage(this.img, 0, 0, this.size[0], this.size[1]);
     }
 };
@@ -653,17 +647,13 @@ ImageVideo.prototype.loadVideo = function (url) {
                     console.error("You stopped the video.");
                     break;
                 case this.error.MEDIA_ERR_NETWORK:
-                    console.error(
-                        "Network error - please try again later.",
-                    );
+                    console.error("Network error - please try again later.");
                     break;
                 case this.error.MEDIA_ERR_DECODE:
                     console.error("Video is broken..");
                     break;
                 case this.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                    console.error(
-                        "Sorry, your browser can't play this video.",
-                    );
+                    console.error("Sorry, your browser can't play this video.");
                     break;
             }
         }
@@ -882,11 +872,7 @@ ImageWebcam.prototype.getExtraMenuOptions = function (graphcanvas) {
 };
 
 ImageWebcam.prototype.onDrawBackground = function (ctx) {
-    if (
-        this.flags.collapsed ||
-        this.size[1] <= 20 ||
-        !this.properties.show
-    ) {
+    if (this.flags.collapsed || this.size[1] <= 20 || !this.properties.show) {
         return;
     }
 

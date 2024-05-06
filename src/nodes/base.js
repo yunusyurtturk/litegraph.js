@@ -1,4 +1,3 @@
-
 import { LiteGraph, LGraph, LGraphNode } from "../litegraph.js";
 
 //Constant
@@ -131,12 +130,7 @@ Subgraph.prototype.sendEventToAllNodes = function (eventname, param, mode) {
     }
 };
 
-Subgraph.prototype.onDrawBackground = function (
-    ctx,
-    graphcanvas,
-    canvas,
-    pos,
-) {
+Subgraph.prototype.onDrawBackground = function (ctx, graphcanvas, canvas, pos) {
     if (this.flags.collapsed) return;
     var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
     // button
@@ -160,12 +154,7 @@ Subgraph.prototype.onDrawBackground = function (
     ctx.beginPath();
     if (this._shape == LiteGraph.BOX_SHAPE) {
         if (overleft) {
-            ctx.rect(
-                0,
-                y,
-                this.size[0] / 2 + 1,
-                LiteGraph.NODE_TITLE_HEIGHT,
-            );
+            ctx.rect(0, y, this.size[0] / 2 + 1, LiteGraph.NODE_TITLE_HEIGHT);
         } else {
             ctx.rect(
                 this.size[0] / 2,
@@ -373,17 +362,13 @@ Subgraph.prototype.reassignSubgraphUUIDs = function (graph) {
         const nodeTo = link[3];
 
         if (!idMap.nodeIDs[nodeFrom]) {
-            throw new Error(
-                `Old node UUID not found in mapping! ${nodeFrom}`,
-            );
+            throw new Error(`Old node UUID not found in mapping! ${nodeFrom}`);
         }
 
         link[1] = idMap.nodeIDs[nodeFrom];
 
         if (!idMap.nodeIDs[nodeTo]) {
-            throw new Error(
-                `Old node UUID not found in mapping! ${nodeTo}`,
-            );
+            throw new Error(`Old node UUID not found in mapping! ${nodeTo}`);
         }
 
         link[3] = idMap.nodeIDs[nodeTo];
@@ -401,9 +386,7 @@ Subgraph.prototype.reassignSubgraphUUIDs = function (graph) {
         if (node.outputs) {
             for (const output of node.outputs) {
                 if (output.links) {
-                    output.links = output.links.map(
-                        (l) => idMap.linkIDs[l],
-                    );
+                    output.links = output.links.map((l) => idMap.linkIDs[l]);
                 }
             }
         }
@@ -481,14 +464,13 @@ Subgraph.prototype.buildFromNodes = function (nodes) {
         if (node.outputs)
             for (var j = 0; j < node.outputs.length; ++j) {
                 var output = node.outputs[j];
-                if (!output || !output.links || !output.links.length)
-                    continue;
-            //    var is_external = false;
+                if (!output || !output.links || !output.links.length) continue;
+                //    var is_external = false;
                 for (var k = 0; k < output.links.length; ++k) {
                     var link = node.graph.links[output.links[k]];
                     if (!link) continue;
                     if (ids[link.target_id]) continue;
-            //        is_external = true;
+                    //        is_external = true;
                     break;
                 }
                 // if (!is_external) continue;
@@ -982,12 +964,8 @@ ConstantFile.prototype.onDropFile = function (file) {
         if (that.properties.type == "json") v = JSON.parse(v);
         that._data = v;
     };
-    if (that.properties.type == "arraybuffer")
-        reader.readAsArrayBuffer(file);
-    else if (
-        that.properties.type == "text" ||
-        that.properties.type == "json"
-    )
+    if (that.properties.type == "arraybuffer") reader.readAsArrayBuffer(file);
+    else if (that.properties.type == "text" || that.properties.type == "json")
         reader.readAsText(file);
     else if (that.properties.type == "blob")
         return reader.readAsBinaryString(file);
@@ -1001,12 +979,7 @@ function JSONParse() {
     this.addInput("json", "string");
     this.addOutput("done", LiteGraph.EVENT);
     this.addOutput("object", "object");
-    this.widget = this.addWidget(
-        "button",
-        "parse",
-        "",
-        this.parse.bind(this),
-    );
+    this.widget = this.addWidget("button", "parse", "", this.parse.bind(this));
     this._str = null;
     this._obj = null;
 }
@@ -1202,12 +1175,7 @@ function ObjectProperty() {
     this.addInput("obj", "object");
     this.addOutput("property", 0);
     this.addProperty("value", 0);
-    this.widget = this.addWidget(
-        "text",
-        "prop.",
-        "",
-        this.setValue.bind(this),
-    );
+    this.widget = this.addWidget("text", "prop.", "", this.setValue.bind(this));
     this.widgets_up = true;
     this.size = [140, 30];
     this._value = null;
@@ -1353,8 +1321,7 @@ Variable.prototype.onExecute = function () {
 Variable.prototype.getContainer = function () {
     switch (this.properties.container) {
         case Variable.GRAPH:
-            if (this.graph) 
-                return this.graph.vars;
+            if (this.graph) return this.graph.vars;
             return {};
         case Variable.GLOBALSCOPE:
             return global; // @BUG: not sure what to do with this now
@@ -1596,10 +1563,7 @@ function NodeScript() {
 NodeScript.prototype.onConfigure = function (o) {
     if (o.properties.onExecute && LiteGraph.allow_scripts)
         this.compileCode(o.properties.onExecute);
-    else
-        console.warn(
-            "Script not compiled, LiteGraph.allow_scripts is false",
-        );
+    else console.warn("Script not compiled, LiteGraph.allow_scripts is false");
 };
 
 NodeScript.title = "Script";
@@ -1610,12 +1574,8 @@ NodeScript.widgets_info = {
 };
 
 NodeScript.prototype.onPropertyChanged = function (name, value) {
-    if (name == "onExecute" && LiteGraph.allow_scripts)
-        this.compileCode(value);
-    else
-        console.warn(
-            "Script not compiled, LiteGraph.allow_scripts is false",
-        );
+    if (name == "onExecute" && LiteGraph.allow_scripts) this.compileCode(value);
+    else console.warn("Script not compiled, LiteGraph.allow_scripts is false");
 };
 
 NodeScript.prototype.compileCode = function (code) {

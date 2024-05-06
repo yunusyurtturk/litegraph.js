@@ -1,12 +1,10 @@
-
 import { LiteGraph, LGraph } from "../litegraph.js";
 
 var LGAudio = {};
 
 LGAudio.getAudioContext = function () {
     if (!this._audio_context) {
-        window.AudioContext =
-            window.AudioContext || window.webkitAudioContext;
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!window.AudioContext) {
             console.error("AudioContext not supported by browser");
             return null;
@@ -95,9 +93,7 @@ LGAudio.changeAllAudiosConnections = function (node, connect) {
                     origin_audionode = node.audionode;
                 }
 
-                var target_node = node.graph.getNodeById(
-                    link_info.target_id,
-                );
+                var target_node = node.graph.getNodeById(link_info.target_id);
                 var target_audionode = null;
                 if (target_node.getAudioNodeInInputSlot) {
                     target_audionode = target_node.getAudioNodeInInputSlot(
@@ -188,8 +184,7 @@ LGAudio.createAudioNodeWrapper = function (class_object) {
         }
     };
 
-    class_object.prototype.onConnectionsChange =
-        LGAudio.onConnectionsChange;
+    class_object.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
 };
 
 //contains the samples decoded of the loaded audios in AudioBuffer format
@@ -579,8 +574,7 @@ LGAudioMediaSource.prototype.streamReady = function (localMediaStream) {
         this.audiosource_node.disconnect(this.audionode);
     }
     var context = LGAudio.getAudioContext();
-    this.audiosource_node =
-        context.createMediaStreamSource(localMediaStream);
+    this.audiosource_node = context.createMediaStreamSource(localMediaStream);
     this.audiosource_node.graphnode = this;
     this.audiosource_node.connect(this.audionode);
     this.boxcolor = "white";
@@ -623,8 +617,7 @@ LGAudioMediaSource.prototype.onPropertyChanged = function (name, value) {
 };
 
 //Helps connect/disconnect AudioNodes when new connections are made in the node
-LGAudioMediaSource.prototype.onConnectionsChange =
-    LGAudio.onConnectionsChange;
+LGAudioMediaSource.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
 
 LGAudioMediaSource.prototype.onGetInputs = function () {
     return [

@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 var view_matrix = new Float32Array(16);
@@ -176,8 +175,7 @@ LGraphPoints3D.generatePoints = function (
                 }
             points = new Float32Array(points.subarray(0, side * side * 3));
             if (normals) {
-                for (var i = 0; i < normals.length; i += 3)
-                    normals.set(UP, i);
+                for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
             }
         } else if (mode == LGraphPoints3D.SPHERE) {
             var side = Math.floor(Math.sqrt(num_points));
@@ -205,8 +203,7 @@ LGraphPoints3D.generatePoints = function (
                 points[i + 2] = Math.sin(angle) * radius;
             }
             if (normals) {
-                for (var i = 0; i < normals.length; i += 3)
-                    normals.set(UP, i);
+                for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
             }
         }
     } //non regular
@@ -218,8 +215,7 @@ LGraphPoints3D.generatePoints = function (
                 points[i + 2] = (Math.random() - 0.5) * radius * 2;
             }
             if (normals) {
-                for (var i = 0; i < normals.length; i += 3)
-                    normals.set(UP, i);
+                for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
             }
         } else if (mode == LGraphPoints3D.CUBE) {
             for (var i = 0; i < size; i += 3) {
@@ -228,8 +224,7 @@ LGraphPoints3D.generatePoints = function (
                 points[i + 2] = (Math.random() - 0.5) * radius * 2;
             }
             if (normals) {
-                for (var i = 0; i < normals.length; i += 3)
-                    normals.set(UP, i);
+                for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
             }
         } else if (mode == LGraphPoints3D.SPHERE) {
             LGraphPoints3D.generateSphere(points, size, radius);
@@ -256,13 +251,7 @@ LGraphPoints3D.generatePoints = function (
                 false,
             );
         } else if (mode == LGraphPoints3D.OBJECT_UNIFORMLY) {
-            LGraphPoints3D.generateFromObject(
-                points,
-                normals,
-                size,
-                obj,
-                true,
-            );
+            LGraphPoints3D.generateFromObject(points, normals, size, obj, true);
         } else if (mode == LGraphPoints3D.OBJECT_INSIDE) {
             LGraphPoints3D.generateFromInsideObject(points, size, obj);
             //if(normals)
@@ -447,13 +436,9 @@ LGraphPoints3D.generateFromObject = function (
         var cf = t * sqrt_s;
         points[i] = af * vertices[a] + bf * vertices[b] + cf * vertices[c];
         points[i + 1] =
-            af * vertices[a + 1] +
-            bf * vertices[b + 1] +
-            cf * vertices[c + 1];
+            af * vertices[a + 1] + bf * vertices[b + 1] + cf * vertices[c + 1];
         points[i + 2] =
-            af * vertices[a + 2] +
-            bf * vertices[b + 2] +
-            cf * vertices[c + 2];
+            af * vertices[a + 2] + bf * vertices[b + 2] + cf * vertices[c + 2];
         if (normals && mesh_normals) {
             normals[i] =
                 af * mesh_normals[a] +
@@ -724,10 +709,7 @@ LGraphGeometryTransform.prototype.onExecute = function () {
     this.setOutputData(0, this.geometry);
 };
 
-LGraphGeometryTransform.prototype.updateGeometry = function (
-    geometry,
-    model,
-) {
+LGraphGeometryTransform.prototype.updateGeometry = function (geometry, model) {
     var old_vertices = geometry.vertices;
     var vertices = this.geometry.vertices;
     if (!vertices || vertices.length != old_vertices.length)
@@ -751,9 +733,7 @@ LGraphGeometryTransform.prototype.updateGeometry = function (
             !this.geometry.normals ||
             this.geometry.normals.length != geometry.normals.length
         )
-            this.geometry.normals = new Float32Array(
-                geometry.normals.length,
-            );
+            this.geometry.normals = new Float32Array(geometry.normals.length);
         var normals = this.geometry.normals;
         var normal_model = mat4.invert(mat4.create(), model);
         if (normal_model) mat4.transpose(normal_model, normal_model);
@@ -1190,10 +1170,9 @@ LGraphConnectPoints.prototype.onExecute = function () {
 
 LiteGraph.registerNodeType("geometry/connectPoints", LGraphConnectPoints);
 
-    //Works with Litegl.js to create WebGL nodes
+//Works with Litegl.js to create WebGL nodes
 if (typeof GL != "undefined") {
-        //LiteGL RELATED **********************************************
-
+    //LiteGL RELATED **********************************************
 
     function LGraphToGeometry() {
         this.addInput("mesh", "mesh");

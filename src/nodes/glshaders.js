@@ -1,8 +1,6 @@
-
 import { LiteGraph, LGraph } from "../litegraph.js";
 
 if (typeof GL != "undefined") {
-
     var SHADERNODES_COLOR = "#345";
 
     var LGShaders = (LiteGraph.Shaders = {});
@@ -1058,11 +1056,11 @@ if (typeof GL != "undefined") {
                 this.properties.value =
                     old_value && old_value.length == 4
                         ? [
-                                old_value[0],
-                                old_value[1],
-                                old_value[2],
-                                old_value[3],
-                            ]
+                              old_value[0],
+                              old_value[1],
+                              old_value[2],
+                              old_value[3],
+                          ]
                         : [0, 0, 0, 0];
                 this.addWidget(
                     "number",
@@ -2096,5 +2094,4 @@ if (typeof GL != "undefined") {
     };
 
     registerShaderNode("math/remap", LGraphShaderRemap);
-
 }

@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function LGWebSocket() {
@@ -89,10 +88,7 @@ LGWebSocket.prototype.connectSocket = function () {
             return;
         }
         if (data.type == 1) {
-            if (
-                data.data.object_class &&
-                LiteGraph[data.data.object_class]
-            ) {
+            if (data.data.object_class && LiteGraph[data.data.object_class]) {
                 var obj = null;
                 try {
                     obj = new LiteGraph[data.data.object_class](data.data);
@@ -157,12 +153,7 @@ function LGSillyClient() {
         "lgraph",
         this.setRoom.bind(this),
     );
-    this.addWidget(
-        "button",
-        "Reconnect",
-        null,
-        this.connectSocket.bind(this),
-    );
+    this.addWidget("button", "Reconnect", null, this.connectSocket.bind(this));
 
     this.addInput("send", LiteGraph.ACTION);
     this.addOutput("received", LiteGraph.EVENT);
@@ -238,8 +229,7 @@ LGSillyClient.prototype.onExecute = function () {
                             is_equal = false;
                             break;
                         }
-                } else if (this._last_sent_data[i] != data)
-                    is_equal = false;
+                } else if (this._last_sent_data[i] != data) is_equal = false;
                 if (is_equal) continue;
             }
             this._server.sendMessage({ type: 0, channel: i, data: data });
@@ -252,10 +242,7 @@ LGSillyClient.prototype.onExecute = function () {
                 else {
                     if (data.constructor === Array)
                         this._last_sent_data[i] = data.concat();
-                    else
-                        this._last_sent_data[i] = new data.constructor(
-                            data,
-                        );
+                    else this._last_sent_data[i] = new data.constructor(data);
                 }
             } else this._last_sent_data[i] = data; //should be cloned
         }
@@ -297,10 +284,7 @@ LGSillyClient.prototype.connectSocket = function () {
 
         if (data.type == 1) {
             //EVENT slot
-            if (
-                data.data.object_class &&
-                LiteGraph[data.data.object_class]
-            ) {
+            if (data.data.object_class && LiteGraph[data.data.object_class]) {
                 var obj = null;
                 try {
                     obj = new LiteGraph[data.data.object_class](data.data);

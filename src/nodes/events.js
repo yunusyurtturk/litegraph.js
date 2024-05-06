@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 //Show value inside the debug console
@@ -183,7 +182,11 @@ Stepper.prototype.onExecute = function () {
     var index = this.getInputData(0);
     if (index != null) {
         index = Math.floor(index);
-        index = LiteGraph.clamp(index, 0, this.outputs ? this.outputs.length - 2 : 0);
+        index = LiteGraph.clamp(
+            index,
+            0,
+            this.outputs ? this.outputs.length - 2 : 0,
+        );
         if (index != this.properties.index) {
             this.properties.index = index;
             this.triggerSlot(index + 1);
@@ -412,9 +415,7 @@ TimerEvent.on_color = "#AAA";
 TimerEvent.off_color = "#222";
 
 TimerEvent.prototype.onDrawBackground = function () {
-    this.boxcolor = this.triggered
-        ? TimerEvent.on_color
-        : TimerEvent.off_color;
+    this.boxcolor = this.triggered ? TimerEvent.on_color : TimerEvent.off_color;
     this.triggered = false;
 };
 
@@ -424,10 +425,7 @@ TimerEvent.prototype.onExecute = function () {
     var trigger = this.time == 0;
 
     this.time += dt;
-    this.last_interval = Math.max(
-        1,
-        this.getInputOrProperty("interval") | 0,
-    );
+    this.last_interval = Math.max(1, this.getInputOrProperty("interval") | 0);
 
     if (
         !trigger &&

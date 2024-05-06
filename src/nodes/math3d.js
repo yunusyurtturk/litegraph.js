@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function Math3DMat4() {
@@ -379,8 +378,7 @@ if (glMatrix) {
     }
 
     MathEulerToQuat.title = "Euler->Quat";
-    MathEulerToQuat.desc =
-        "Converts euler angles (in degrees) to quaternion";
+    MathEulerToQuat.desc = "Converts euler angles (in degrees) to quaternion";
 
     MathEulerToQuat.prototype.onExecute = function () {
         var euler = this.getInputData(0);
@@ -437,10 +435,7 @@ if (glMatrix) {
         if (quat == null) {
             this.setOutputData(vec);
         } else {
-            this.setOutputData(
-                0,
-                vec3.transformQuat(vec3.create(), vec, quat),
-            );
+            this.setOutputData(0, vec3.transformQuat(vec3.create(), vec, quat));
         }
     };
 

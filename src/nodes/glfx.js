@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 //Works with Litegl.js to create WebGL nodes
@@ -507,13 +506,7 @@ LGraphTextureBokeh._pixel_shader = "precision highp float;\n\
     LGraphFXGeneric.widgets_info = {
         fx: {
             widget: "combo",
-            values: [
-                "halftone",
-                "pixelate",
-                "lowpalette",
-                "noise",
-                "gamma",
-            ],
+            values: ["halftone", "pixelate", "lowpalette", "noise", "gamma"],
         },
         precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
     };

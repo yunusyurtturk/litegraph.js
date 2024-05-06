@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 //Converter
@@ -284,10 +283,8 @@ MathNoise.prototype.onExecute = function () {
     var total_amp = 0;
     for (var i = 0; i < iterations; ++i) {
         r +=
-            MathNoise.getValue(
-                f * (1 + i) * speed,
-                this.properties.smooth,
-            ) * amp;
+            MathNoise.getValue(f * (1 + i) * speed, this.properties.smooth) *
+            amp;
         total_amp += amp;
         amp *= this.properties.persistence;
         if (amp < 0.001) break;
@@ -1103,14 +1100,9 @@ function MathFormula() {
             node.properties.formula = v;
         },
     );
-    this.addWidget(
-        "toggle",
-        "allow",
-        LiteGraph.allow_scripts,
-        function (v) {
-            LiteGraph.allow_scripts = v;
-        },
-    );
+    this.addWidget("toggle", "allow", LiteGraph.allow_scripts, function (v) {
+        LiteGraph.allow_scripts = v;
+    });
     this._func = null;
 }
 

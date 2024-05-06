@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 /* Button ****************/
@@ -36,11 +35,7 @@ WidgetButton.prototype.onDrawForeground = function (ctx) {
         this.size[0] - margin * 2,
         this.size[1] - margin * 2,
     );
-    ctx.fillStyle = this.clicked
-        ? "white"
-        : this.mouseOver
-            ? "#668"
-            : "#334";
+    ctx.fillStyle = this.clicked ? "white" : this.mouseOver ? "#668" : "#334";
     ctx.fillRect(
         margin,
         margin,
@@ -197,11 +192,7 @@ WidgetNumber.prototype.onDrawForeground = function (ctx) {
     ctx.textAlign = "center";
     ctx.font = (h * 0.7).toFixed(1) + "px Arial";
     ctx.fillStyle = "#EEE";
-    ctx.fillText(
-        this.properties.value.toFixed(this._precision),
-        x,
-        h * 0.75,
-    );
+    ctx.fillText(this.properties.value.toFixed(this._precision), x, h * 0.75);
 };
 
 WidgetNumber.prototype.onExecute = function () {
@@ -368,13 +359,7 @@ WidgetKnob.prototype.onDrawForeground = function (ctx) {
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.arc(
-        0,
-        0,
-        radius - 4,
-        0,
-        Math.PI * 1.5 * Math.max(0.01, this.value),
-    );
+    ctx.arc(0, 0, radius - 4, 0, Math.PI * 1.5 * Math.max(0.01, this.value));
     ctx.closePath();
     ctx.fill();
     //ctx.stroke();

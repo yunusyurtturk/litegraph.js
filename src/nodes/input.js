@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function GamepadInput() {
@@ -152,19 +151,12 @@ GamepadInput.prototype.onExecute = function () {
                         v = gamepad.xbox.buttons["back"] ? 1 : 0;
                         break;
                     case "button_pressed":
-                        for (
-                            var j = 0;
-                            j < this._current_buttons.length;
-                            ++j
-                        ) {
+                        for (var j = 0; j < this._current_buttons.length; ++j) {
                             if (
                                 this._current_buttons[j] &&
                                 !this._previous_buttons[j]
                             ) {
-                                this.triggerSlot(
-                                    i,
-                                    GamepadInput.buttons[j],
-                                );
+                                this.triggerSlot(i, GamepadInput.buttons[j]);
                             }
                         }
                         break;

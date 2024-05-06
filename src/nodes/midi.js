@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 var MIDI_COLOR = "#243";
@@ -44,10 +43,7 @@ MIDIEvent.prototype.setup = function (data) {
 
     this.cmd_str = MIDIEvent.commands[this.cmd] || "";
 
-    if (
-        midiCommand >= MIDIEvent.NOTEON ||
-        midiCommand <= MIDIEvent.NOTEOFF
-    ) {
+    if (midiCommand >= MIDIEvent.NOTEON || midiCommand <= MIDIEvent.NOTEOFF) {
         this.channel = midiStatus & 0x0f;
     }
 };
@@ -526,8 +522,7 @@ LGMIDIIn.prototype.getPropertyInfo = function (name) {
         var values = {};
         for (var i = 0; i < this._midi.input_ports_info.length; ++i) {
             var input = this._midi.input_ports_info[i];
-            values[i] =
-                i + ".- " + input.name + " version:" + input.version;
+            values[i] = i + ".- " + input.name + " version:" + input.version;
         }
         return { type: "enum", values: values };
     }
@@ -659,8 +654,7 @@ LGMIDIOut.prototype.getMIDIOutputs = function () {
         for (var i = 0; i < this._midi.output_ports_info.length; ++i) {
             var output = this._midi.output_ports_info[i];
             if (!output) continue;
-            var name =
-                i + ".- " + output.name + " version:" + output.version;
+            var name = i + ".- " + output.name + " version:" + output.version;
             values[i] = name;
         }
     return values;
@@ -772,17 +766,12 @@ LGMIDIFilter.prototype.getTitle = function () {
         str = MIDIEvent.commands_short[this.properties.cmd] || "Unknown";
     }
 
-    if (
-        this.properties.min_value != -1 &&
-        this.properties.max_value != -1
-    ) {
+    if (this.properties.min_value != -1 && this.properties.max_value != -1) {
         str +=
             " " +
             (this.properties.min_value == this.properties.max_value
                 ? this.properties.max_value
-                : this.properties.min_value +
-                    ".." +
-                    this.properties.max_value);
+                : this.properties.min_value + ".." + this.properties.max_value);
     }
 
     return "Filter: " + str;
@@ -971,9 +960,9 @@ LGMIDIEvent.prototype.onExecute = function () {
                     v =
                         props.cmd == MIDIEvent.PITCHBEND
                             ? MIDIEvent.computePitchBend(
-                                    props.value1,
-                                    props.value2,
-                                )
+                                  props.value1,
+                                  props.value2,
+                              )
                             : null;
                     break;
                 case "gate":
@@ -1057,9 +1046,7 @@ function LGMIDIGenerator() {
         mode: "sequence",
     };
 
-    this.notes_pitches = LGMIDIGenerator.processScale(
-        this.properties.notes,
-    );
+    this.notes_pitches = LGMIDIGenerator.processScale(this.properties.notes);
     this.sequence_index = 0;
 }
 
@@ -1563,8 +1550,7 @@ LGMIDIKeys.prototype.onMouseMove = function (e, pos) {
         return true;
     }
     this.keys[this._last_key] = false;
-    var pitch =
-        (this.properties.start_octave - 1) * 12 + 29 + this._last_key;
+    var pitch = (this.properties.start_octave - 1) * 12 + 29 + this._last_key;
     var midi_event = new MIDIEvent();
     midi_event.setup([MIDIEvent.NOTEOFF, pitch, 100]);
     this.trigger("note", midi_event);

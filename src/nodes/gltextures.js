@@ -1,8 +1,6 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 if (typeof GL != "undefined") {
-
     LGraphCanvas.link_type_colors["Texture"] = "#987";
 
     function LGraphTexture() {

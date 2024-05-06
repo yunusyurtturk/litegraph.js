@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function Selector() {

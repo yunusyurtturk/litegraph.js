@@ -1,4 +1,3 @@
-
 import { LiteGraph } from "../litegraph.js";
 
 function toString(a) {
@@ -100,13 +99,9 @@ function toFixed(a) {
     return a;
 }
 
-LiteGraph.wrapFunctionAsNode(
-    "string/toFixed",
-    toFixed,
-    ["number"],
-    "string",
-    { precision: 0 },
-);
+LiteGraph.wrapFunctionAsNode("string/toFixed", toFixed, ["number"], "string", {
+    precision: 0,
+});
 
 function StringToTable() {
     this.addInput("", "string");
