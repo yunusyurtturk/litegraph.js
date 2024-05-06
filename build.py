@@ -76,7 +76,7 @@ def pack_js_files(js_files, output_filename):
         
         if os.path.exists(js_file):
             # Minify the JS file using uglifyjs
-            minified_js = subprocess.run(["uglifyjs", js_file, "-c", "--warn", "--verbose"], stdout=subprocess.PIPE, text=True)
+            minified_js = subprocess.run(["uglifyjs", js_file, "-c", "--warn"], stdout=subprocess.PIPE, text=True)
             concatenated_data += minified_js.stdout + "\n"
             print("\033[92mMinified\033[0m")
         else:
