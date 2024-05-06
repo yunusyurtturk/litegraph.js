@@ -3,10 +3,6 @@
 
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 
-# Standard Compliance
-
-Ensure HTML and CSS are standards compliant
-
 # Class Migration
 
 Convert ES5 classes to ES6 classes
