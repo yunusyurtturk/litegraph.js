@@ -554,7 +554,7 @@ if (glMatrix) {
 
         for (var i = 0; i < 3; ++i) {
             var r = range_max[i] - range_min[i];
-            this._clamped[i] = clamp(
+            this._clamped[i] = LiteGraph.clamp(
                 this._value[i],
                 range_min[i],
                 range_max[i],
@@ -565,7 +565,7 @@ if (glMatrix) {
             }
 
             var n = (this._value[i] - range_min[i]) / r;
-            if (this.properties.clamp) n = clamp(n, 0, 1);
+            if (this.properties.clamp) n = LiteGraph.clamp(n, 0, 1);
             var t = target_max[i] - target_min[i];
             this._value[i] = target_min[i] + n * t;
         }

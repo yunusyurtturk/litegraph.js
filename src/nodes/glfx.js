@@ -200,7 +200,7 @@ LGraphDepthOfField._pixel_shader = "\n\
     \n\
     float getBlurSize(float depth, float focusPoint, float focusScale)\n\
     {\n\
-        float coc = clamp((1.0 / focusPoint - 1.0 / depth)*focusScale, -1.0, 1.0);\n\
+        float coc = LiteGraph.clamp((1.0 / focusPoint - 1.0 / depth)*focusScale, -1.0, 1.0);\n\
         return abs(coc) * MAX_BLUR_SIZE;\n\
     }\n\
     \n\
@@ -220,7 +220,7 @@ LGraphDepthOfField._pixel_shader = "\n\
         float sampleDepth = texture2D(u_depth_texture, tc).r * u_far;\n\
         float sampleSize = getBlurSize( sampleDepth, focusPoint, focusScale );\n\
         if (sampleDepth > centerDepth)\n\
-        sampleSize = clamp(sampleSize, 0.0, centerSize*2.0);\n\
+        sampleSize = LiteGraph.clamp(sampleSize, 0.0, centerSize*2.0);\n\
         \n\
         float m = smoothstep(radius-0.5, radius+0.5, sampleSize);\n\
         color += mix(color/tot, sampleColor, m);\n\

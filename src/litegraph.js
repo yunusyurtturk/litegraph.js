@@ -10114,7 +10114,7 @@ LGraphCanvas.prototype.processNodeWidgets = function(
                 break;
             case "slider":
                 var old_value = w.value;
-                var nvalue = clamp((x - 15) / (widget_width - 30), 0, 1);
+                var nvalue = LiteGraph.clamp((x - 15) / (widget_width - 30), 0, 1);
                 if(w.options.read_only) break;
                 w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
                 if (old_value != w.value) {
@@ -14211,10 +14211,10 @@ CurveEditor.prototype.onMouseMove = function( localpos, graphcanvas )
             return;
         }
         if( !is_edge_point ) //not edges
-            point[0] = clamp(x, 0, 1);
+            point[0] = LiteGraph.clamp(x, 0, 1);
         else
             point[0] = s == 0 ? 0 : 1;
-        point[1] = 1.0 - clamp(y, 0, 1);
+        point[1] = 1.0 - LiteGraph.clamp(y, 0, 1);
         points.sort(function(a,b){ return a[0] - b[0]; });
         this.selected = points.indexOf(point);
         this.must_update = true;
@@ -14363,7 +14363,7 @@ LiteGraph.pointerListenerRemove = function(oDOM, sEvent, fCall, capture=false) {
     }
 }
 
-function clamp(v, a, b) {
+LiteGraph.clamp = (v, a, b) => {
     return a > v ? a : b < v ? b : v;
 };
 
