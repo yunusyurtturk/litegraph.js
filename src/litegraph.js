@@ -5913,7 +5913,6 @@ LGraphCanvas.prototype.processMouseDown = function(e) {
     this.adjustMouseEvent(e);
 
     var ref_window = this.getCanvasWindow();
-    var document = ref_window.document;
     LGraphCanvas.active_canvas = this;
     var that = this;
 
@@ -5963,7 +5962,7 @@ LGraphCanvas.prototype.processMouseDown = function(e) {
 
     if (this.onMouse)
     {
-        if (this.onMouse(e) == true)
+        if (this.onMouse(e))
             return;
     }
 
@@ -8184,7 +8183,7 @@ LGraphCanvas.prototype.drawSubgraphPanelRight = function (subgraph, subnode, ctx
     ctx.fillStyle = "#888";
     ctx.font = "14px Arial";
     ctx.textAlign = "left";
-    var title_text = "Graph Outputs";
+    const title_text = "Graph Outputs";
     var tw = ctx.measureText(title_text).width
     ctx.fillText(title_text, (canvas_w - tw) - 20, 34);
     // var pos = this.mouse;
@@ -8508,17 +8507,11 @@ var temp_vec2 = new Float32Array(2);
  * @method drawNode
  **/
 LGraphCanvas.prototype.drawNode = function(node, ctx) {
-    var glow = false;
+
     this.current_node = node;
 
     var color = node.color || node.constructor.color || LiteGraph.NODE_DEFAULT_COLOR;
     var bgcolor = node.bgcolor || node.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR;
-
-    //shadow and glow
-    if (node.mouseOver) {
-        glow = true;
-    }
-
     var low_quality = this.ds.scale < 0.6; //zoomed out
 
     //only render if it forces it to do it
@@ -8548,7 +8541,7 @@ LGraphCanvas.prototype.drawNode = function(node, ctx) {
     if (
         node.flags.collapsed &&
         node.onDrawCollapsed &&
-        node.onDrawCollapsed(ctx, this) == true
+        node.onDrawCollapsed(ctx, this)
     ) {
         return;
     }
@@ -8950,7 +8943,7 @@ LGraphCanvas.prototype.drawLinkTooltip = function( ctx, link )
         return;
 
     if(this.onDrawLinkTooltip)
-        if( this.onDrawLinkTooltip(ctx,link,this) == true )
+        if( this.onDrawLinkTooltip(ctx,link,this))
             return;
 
     var data = link.data;
@@ -10927,7 +10920,7 @@ LGraphCanvas.onMenuResizeNode = function(value, options, e, menu, node) {
         return;
     }
     
-    var fApplyMultiNode = function(node){
+    const fApplyMultiNode = (node) => {
         node.size = node.computeSize();
         if (node.onResize)
             node.onResize(node.size);
@@ -11043,7 +11036,6 @@ LGraphCanvas.prototype.createDefaultNodeForSlot = function(optPass) { // addNode
             iSlotConn = slotX;
             slotX = isFrom ? nodeX.outputs[slotX] : nodeX.inputs[slotX];
         break;
-        case "undefined":
         default:
             // bad ?
             //iSlotConn = 0;
@@ -11135,10 +11127,11 @@ LGraphCanvas.prototype.createDefaultNodeForSlot = function(optPass) { // addNode
                     opts.nodeTo.connectByTypeOutput( iSlotConn, newNode, fromSlotType );
                 }
                 
-                // if connecting in between
+                /* if connecting in between
                 if (isFrom && isTo){
-                    // TODO
+                    //@TODO
                 }
+                */
                 
                 return true;
                 
@@ -12529,7 +12522,7 @@ LGraphCanvas.prototype.showShowGraphOptionsPanel = function(refOpts, obEv, refMe
         
         panel.content.innerHTML = ""; //clear
 
-        var fUpdate = function(name, value, options){
+        const fUpdate = (name, value, options) => {
             switch(name){
                 /*case "Render mode":
                     // Case "".. 
@@ -12610,35 +12603,35 @@ LGraphCanvas.prototype.showShowNodePanel = function( node )
 
         panel.addHTML("<h3>Properties</h3>");
 
-        var fUpdate = function(name,value){
-                        graphcanvas.graph.beforeChange(node);
-                        switch(name){
-                            case "Title":
-                                node.title = value;
-                                break;
-                            case "Mode":
-                                var kV = Object.values(LiteGraph.NODE_MODES).indexOf(value);
-                                if (kV>=0 && LiteGraph.NODE_MODES[kV]){
-                                    node.changeMode(kV);
-                                }else{
-                                    console.warn("unexpected mode: "+value);
-                                }
-                                break;
-                            case "Color":
-                                if (LGraphCanvas.node_colors[value]){
-                                    node.color = LGraphCanvas.node_colors[value].color;
-                                    node.bgcolor = LGraphCanvas.node_colors[value].bgcolor;
-                                }else{
-                                    console.warn("unexpected color: "+value);
-                                }
-                                break;
-                            default:
-                                node.setProperty(name,value);
-                                break;
-                        }
-                        graphcanvas.graph.afterChange();
-                        graphcanvas.dirty_canvas = true;
-                    };
+        const fUpdate = (name,value) => {
+            graphcanvas.graph.beforeChange(node);
+            switch(name){
+                case "Title":
+                    node.title = value;
+                    break;
+                case "Mode":
+                    var kV = Object.values(LiteGraph.NODE_MODES).indexOf(value);
+                    if (kV>=0 && LiteGraph.NODE_MODES[kV]){
+                        node.changeMode(kV);
+                    }else{
+                        console.warn("unexpected mode: "+value);
+                    }
+                    break;
+                case "Color":
+                    if (LGraphCanvas.node_colors[value]){
+                        node.color = LGraphCanvas.node_colors[value].color;
+                        node.bgcolor = LGraphCanvas.node_colors[value].bgcolor;
+                    }else{
+                        console.warn("unexpected color: "+value);
+                    }
+                    break;
+                default:
+                    node.setProperty(name,value);
+                    break;
+            }
+            graphcanvas.graph.afterChange();
+            graphcanvas.dirty_canvas = true;
+        };
         
         panel.addWidget( "string", "Title", node.title, {}, fUpdate);
         
@@ -12698,7 +12691,7 @@ LGraphCanvas.prototype.showShowNodePanel = function( node )
         {*/
             panel.alt_content.innerHTML = "<textarea class='code'></textarea>";
             var textarea = panel.alt_content.querySelector("textarea");
-            var fDoneWith = function(){
+            fDoneWith = () => {
                 panel.toggleAltContent(false); //if(node_prop_div) node_prop_div.style.display = "block"; // panel.close();
                 panel.toggleFooterVisibility(true);
                 textarea.parentNode.removeChild(textarea);
@@ -12898,7 +12891,7 @@ LGraphCanvas.onMenuNodeMode = function(value, options, e, menu, node) {
             return;
         }
         var kV = Object.values(LiteGraph.NODE_MODES).indexOf(v);
-        var fApplyMultiNode = function(node){
+        fApplyMultiNode = (node) => {
             if (kV>=0 && LiteGraph.NODE_MODES[kV])
                 node.changeMode(kV);
             else{
@@ -12961,7 +12954,7 @@ LGraphCanvas.onMenuNodeColors = function(value, options, e, menu, node) {
 
         var color = v.value ? LGraphCanvas.node_colors[v.value] : null;
         
-        var fApplyColor = function(node){
+        const fApplyColor = (node) => {
             if (color) {
                 if (node.constructor === LGraphGroup) {
                     node.color = color.groupcolor;
@@ -13007,7 +13000,7 @@ LGraphCanvas.onMenuNodeShapes = function(value, options, e, menu, node) {
         }
         node.graph.beforeChange(/*?*/); //node
         
-        var fApplyMultiNode = function(node){
+        const fApplyMultiNode = (node) => {
             node.shape = v;
         }
 
@@ -13036,7 +13029,7 @@ LGraphCanvas.onMenuNodeRemove = function(value, options, e, menu, node) {
     graph.beforeChange();
     
     
-    var fApplyMultiNode = function(node){
+    const fApplyMultiNode = (node) => {
         if (node.removable === false) {
             return;
         }
@@ -13082,7 +13075,7 @@ LGraphCanvas.onMenuNodeClone = function(value, options, e, menu, node) {
     
     var newSelected = {};
     
-    var fApplyMultiNode = function(node){
+    const fApplyMultiNode = (node) => {
         if (node.clonable === false) {
             return;
         }
@@ -13263,13 +13256,13 @@ LGraphCanvas.prototype.getNodeMenuOptions = function(node) {
             callback: LGraphCanvas.onMenuNodeClone
         });
     }
-
+    /*
     if(0) // @TODO: Figure out what this was for
     options.push({
         content: "To Subgraph",
         callback: LGraphCanvas.onMenuNodeToSubgraph
     });
-
+    */
     if (Object.keys(this.selected_nodes).length > 1) {
         options.push({
             content: "Align Selected To",
