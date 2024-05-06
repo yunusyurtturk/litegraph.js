@@ -161,7 +161,7 @@ graph.start()
 
 ```
 These all work to some extent right now:
-npm run doc
+npm run docs
 npm run prettifier
 npm run build
 npm run test
