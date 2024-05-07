@@ -13,6 +13,8 @@ js_files_lists = [
            "./src/dragandscale.js",
            "./src/lgraphnode.js",
            "./src/lgraphgroup.js",
+           "./src/lgraph.js",
+           "./src/llink.js",
            
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -41,6 +43,8 @@ js_files_lists = [
            "./src/dragandscale.js",
            "./src/lgraphnode.js",
            "./src/lgraphgroup.js",
+           "./src/lgraph.js",
+           "./src/llink.js",
             
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -60,6 +64,8 @@ js_files_lists = [
            "./src/dragandscale.js",
            "./src/lgraphnode.js",
            "./src/lgraphgroup.js",
+           "./src/lgraph.js",
+           "./src/llink.js",
         ]
     }
 ]

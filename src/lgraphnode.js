@@ -1,4 +1,5 @@
 import { LiteGraph } from "./litegraph.js";
+import { LLink } from "./llink.js";
 
 // *************************************************************
 //   Node CLASS                                          *******
