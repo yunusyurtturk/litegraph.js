@@ -33,7 +33,6 @@ h2 {
 	color: #FAA;
 	font-size: 18px;
 	padding: 5px;
-	width: -moz-calc( 50% - 30px);
 	min-height: 30px;
 	overflow: hidden;
 	background-color: #644;
