@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: LiteGraph</title>
+    <title>JSDoc: Class: exports</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: LiteGraph</h1>
+    <h1 class="page-title">Class: exports</h1>
 
     
 
@@ -28,9 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>LiteGraph<span class="signature">()</span><span class="type-signature"></span></h2>
-        
-            <div class="class-description">LiteGraph</div>
+        <h2><span class="attribs"><span class="type-signature"></span></span>exports<span class="signature">(values, options)</span><span class="type-signature"></span></h2>
         
     
 </header>
@@ -41,27 +39,97 @@
         
 
     
-    <h2>Constructor</h2>
+
+    
+    <h4 class="name" id="exports"><span class="type-signature"></span>new exports<span class="signature">(values, options)</span><span class="type-signature"></span></h4>
     
 
     
-    <h4 class="name" id="LiteGraph"><span class="type-signature"></span>new LiteGraph<span class="signature">()</span><span class="type-signature"></span></h4>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
     
 
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
+        <tr>
+            
+                <td class="name"><code>values</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
 
 
-<div class="description">
-    The Global Scope. It contains all the registered node classes.
-</div>
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">(allows object { title: "Nice text", callback: function ... })</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
+            
+            </td>
 
+            
 
+            
 
+            <td class="description last">[optional] Some options:\
+- title: title to show on top of the menu
+- callback: function to call when an option is clicked, it receives the item information
+- ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
+- event: you can pass a MouseEvent, this way the ContextMenu appears in that position</td>
+        </tr>
 
-
+    
+    </tbody>
+</table>
 
 
 
@@ -97,7 +165,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="litegraph.js.html">litegraph.js</a>, <a href="litegraph.js.html#line13">line 13</a>
+        <a href="contextmenu.js.html">contextmenu.js</a>, <a href="contextmenu.js.html#line15">line 15</a>
     </li></ul></dd>
     
 
@@ -144,98 +212,6 @@
 
     
 
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".clearRegisteredTypes"><span class="type-signature">(static) </span>clearRegisteredTypes<span class="signature">()</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Removes all previously registered node's types
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="litegraph.js.html">litegraph.js</a>, <a href="litegraph.js.html#line447">line 447</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
     
 
     

@@ -1,18 +1,17 @@
 import LiteGraph from "./litegraph.js";
 
-/**
- * ContextMenu from LiteGUI
- *
- * @class ContextMenu
- * @constructor
- * @param {Array} values (allows object { title: "Nice text", callback: function ... })
- * @param {Object} options [optional] Some options:\
- * - title: title to show on top of the menu
- * - callback: function to call when an option is clicked, it receives the item information
- * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
- * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
- */
+// @class ContextMenu
 export default class ContextMenu {
+    
+    /**
+    * @constructor
+    * @param {Array} values (allows object { title: "Nice text", callback: function ... })
+    * @param {Object} options [optional] Some options:\
+    * - title: title to show on top of the menu
+    * - callback: function to call when an option is clicked, it receives the item information
+    * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
+    * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
+    */
     constructor(values, options) {
         options = options || {};
         this.options = options;
