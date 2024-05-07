@@ -497,9 +497,7 @@ export default class LGraph {
             }
         }
 
-        ancestors.sort((a, b) => {
-            return a.order - b.order;
-        });
+        ancestors.sort((a, b) => a.order - b.order);
         return ancestors;
     }
 

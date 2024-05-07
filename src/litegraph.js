@@ -577,7 +577,7 @@ const LiteGraph = {
         }
 
         if (this.auto_sort_node_types) {
-            r.sort((a, b) => {return a.title.localeCompare(b.title)});
+            r.sort((a, b) => a.title.localeCompare(b.title));
         }
 
         return r;
@@ -1011,17 +1011,16 @@ LiteGraph.extendClass = (target, origin) => {
 };
 
 //used to create nodes from wrapping functions
-LiteGraph.getParameterNames = func => {
-    return (func + "")
-        .replace(/[/][/].*$/gm, "") // strip single-line comments
-        .replace(/\s+/g, "") // strip white space
-        .replace(/[/][*][^/*]*[*][/]/g, "") // strip multi-line comments  /**/
-        .split("){", 1)[0]
-        .replace(/^[^(]*[(]/, "") // extract the parameters
-        .replace(/=[^,]+/g, "") // strip any ES6 defaults
-        .split(",")
-        .filter(Boolean); // split & filter [""]
-};
+LiteGraph.getParameterNames = func => // split & filter [""]
+(func + "")
+    .replace(/[/][/].*$/gm, "") // strip single-line comments
+    .replace(/\s+/g, "") // strip white space
+    .replace(/[/][*][^/*]*[*][/]/g, "") // strip multi-line comments  /**/
+    .split("){", 1)[0]
+    .replace(/^[^(]*[(]/, "") // extract the parameters
+    .replace(/=[^,]+/g, "") // strip any ES6 defaults
+    .split(",")
+    .filter(Boolean);
 
 /* helper for interaction: pointer, touch, mouse Listeners
 used by LGraphCanvas DragAndScale ContextMenu*/
@@ -1115,9 +1114,7 @@ LiteGraph.pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
     }
 }
 
-LiteGraph.clamp = (v, a, b) => {
-    return a > v ? a : b < v ? b : v;
-};
+LiteGraph.clamp = (v, a, b) => a > v ? a : b < v ? b : v;
 
 if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =
