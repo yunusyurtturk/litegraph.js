@@ -12,8 +12,7 @@ export default class ContextMenu {
     * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
     * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
     */
-    constructor(values, options) {
-        options = options || {};
+    constructor(values, options = {}) {
         this.options = options;
         var that = this;
 

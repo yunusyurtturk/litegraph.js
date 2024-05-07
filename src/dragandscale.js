@@ -148,8 +148,7 @@ export default class DragAndScale {
         ];
     }
 
-    convertCanvasToOffset(pos, out) {
-        out = out || [0, 0];
+    convertCanvasToOffset(pos, out = [0, 0]) {
         out[0] = pos[0] / this.scale - this.offset[0];
         out[1] = pos[1] / this.scale - this.offset[1];
         return out;

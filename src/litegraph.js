@@ -280,8 +280,7 @@ const LiteGraph = {
     * @param {String|Object} type name of the node or the node constructor itself
     * @param {String} slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
     */
-    registerNodeAndSlotType: function(type, slot_type, out){
-        out = out || false;
+    registerNodeAndSlotType: function(type, slot_type, out = false) {
         const base_class =
             type.constructor === String &&
             this.registered_node_types[type] !== "anonymous"
@@ -945,9 +944,7 @@ function num2hex(triplet) {
 
 LiteGraph.num2hex = num2hex;
 
-LiteGraph.closeAllContextMenus = ref_window => {
-    ref_window = ref_window || window;
-
+LiteGraph.closeAllContextMenus = (ref_window = window) => {
     var elements = ref_window.document.querySelectorAll(".litecontextmenu");
     if (!elements.length) {
         return;

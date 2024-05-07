@@ -227,15 +227,13 @@ export default class LGraph {
      * @param {number} limit max number of nodes to execute (used to execute from start to a node)
      */
 
-    runStep(num, do_not_catch_errors, limit) {
-        num = num || 1;
-
+    runStep(num = 1, do_not_catch_errors, limit) {
         var start = LiteGraph.getTime();
         this.globaltime = 0.001 * (start - this.starttime);
 
         //not optimal: executes possible pending actions in node, problem is it is not optimized
         //it is done here as if it was done in the later loop it wont be called in the node missed the onExecute
-        
+
         //from now on it will iterate only on executable nodes which is faster
         var nodes = this._nodes_executable
             ? this._nodes_executable
@@ -505,9 +503,7 @@ export default class LGraph {
      * Positions every node in a more readable manner
      * @method arrange
      */
-    arrange(margin, layout) {
-        margin = margin || 100;
-
+    arrange(margin = 100, layout) {
         const nodes = this.computeExecutionOrder(false, true);
         const columns = [];
         for (let i = 0; i < nodes.length; ++i) {
@@ -581,9 +577,7 @@ export default class LGraph {
      * @param {String} eventname the name of the event (function to be called)
      * @param {Array} params parameters in array format
      */
-    sendEventToAllNodes(eventname, params, mode) {
-        mode = mode || LiteGraph.ALWAYS;
-
+    sendEventToAllNodes(eventname, params, mode = LiteGraph.ALWAYS) {
         var nodes = this._nodes_in_order ? this._nodes_in_order : this._nodes;
         if (!nodes) {
             return;
@@ -819,8 +813,7 @@ export default class LGraph {
      * @param {Class} classObject the class itself (not an string)
      * @return {Array} a list with all the nodes of this type
      */
-    findNodesByClass(classObject, result) {
-        result = result || [];
+    findNodesByClass(classObject, result = []) {
         result.length = 0;
         for (var i = 0, l = this._nodes.length; i < l; ++i) {
             if (this._nodes[i].constructor === classObject) {
@@ -887,8 +880,7 @@ export default class LGraph {
      * @param {Array} nodes_list a list with all the nodes to search from, by default is all the nodes in the graph
      * @return {LGraphNode} the node at this position or null
      */
-    getNodeOnPos(x, y, nodes_list, margin) {
-        nodes_list = nodes_list || this._nodes;
+    getNodeOnPos(x, y, nodes_list = this._nodes, margin) {
         var nRet = null;
         for (var i = nodes_list.length - 1; i >= 0; i--) {
             var n = nodes_list[i];

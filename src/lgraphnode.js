@@ -792,8 +792,7 @@ export default class LGraphNode {
      * @param {*} param
      * @param {*} options
      */
-    doExecute(param, options) {
-        options = options || {};
+    doExecute(param, options = {}) {
         if (this.onExecute){
             
             // enable this to give the event an ID
@@ -824,8 +823,7 @@ export default class LGraphNode {
      * @param {String} action name
      * @param {*} param
      */
-    actionDo(action, param, options, action_slot) {
-        options = options || {};
+    actionDo(action, param, options = {}, action_slot) {
         if (this.onAction){
             
             // enable this to give the event an ID
@@ -876,8 +874,7 @@ export default class LGraphNode {
      * @param {*} param
      * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
      */
-    triggerSlot(slot, param, link_id, options) {
-        options = options || {};
+    triggerSlot(slot, param, link_id, options = {}) {
         if (!this.outputs) {
             return;
         }
@@ -1131,8 +1128,7 @@ export default class LGraphNode {
      * @param {string} type string defining the input type ("vec3","number",...), it its a generic one use 0
      * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, etc)
      */
-    addInput(name, type, extra_info) {
-        type = type || 0;
+    addInput(name, type = 0, extra_info) {
         var input = { name: name, type: type, link: null };
         if (extra_info) {
             for (var i in extra_info) {
@@ -1150,7 +1146,7 @@ export default class LGraphNode {
         if (this.onInputAdded) {
             this.onInputAdded(input);
         }
-        
+
         LiteGraph.registerNodeAndSlotType(this,type);
 
         this.setDirtyCanvas(true, true);
@@ -1442,18 +1438,17 @@ export default class LGraphNode {
      * @param {boolean} [compute_outer] - [Optional] Set to true to include the shadow and connection points in the bounding calculation
      * @return {Float32[]} The bounding box in the format of [topLeftCornerX, topLeftCornerY, width, height]
      */
-    getBounding(out, compute_outer) {
-        out = out || new Float32Array(4);
+    getBounding(out = new Float32Array(4), compute_outer) {
         const nodePos = this.pos;
         const isCollapsed = this.flags.collapsed;
         const nodeSize = this.size;
-        
+
         let left_offset = 0;
         // 1 offset due to how nodes are rendered
         let right_offset =  1 ;
         let top_offset = 0;
         let bottom_offset = 0;
-        
+
         if (compute_outer) {
             // 4 offset for collapsed node connection points
             left_offset = 4;
@@ -1464,7 +1459,7 @@ export default class LGraphNode {
             // 5 offset for bottom shadow and collapsed node connection points
             bottom_offset = 5 + top_offset;
         }
-        
+
         out[0] = nodePos[0] - left_offset;
         out[1] = nodePos[1] - LiteGraph.NODE_TITLE_HEIGHT - top_offset;
         out[2] = isCollapsed ?
@@ -1487,9 +1482,7 @@ export default class LGraphNode {
      * @param {number} y
      * @return {boolean}
      */
-    isPointInside(x, y, margin, skip_title) {
-        margin = margin || 0;
-
+    isPointInside(x, y, margin = 0, skip_title) {
         var margin_top = this.graph && this.graph.isLive() ? 0 : LiteGraph.NODE_TITLE_HEIGHT;
         if (skip_title) {
             margin_top = 0;
@@ -1597,8 +1590,7 @@ export default class LGraphNode {
      * @param {boolean} returnObj if the obj itself wanted
      * @return {number_or_object} the slot (-1 if not found)
      */
-    findOutputSlot(name, returnObj) {
-        returnObj = returnObj || false;
+    findOutputSlot(name, returnObj = false) {
         if (!this.outputs) {
             return -1;
         }
@@ -1689,17 +1681,19 @@ export default class LGraphNode {
      * @param {boolean} preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
      * @return {number_or_object} the slot (-1 if not found)
      */
-    findSlotByType(input, type, returnObj, preferFreeSlot, doNotUseOccupied) {
-        input = input || false;
-        returnObj = returnObj || false;
-        preferFreeSlot = preferFreeSlot || false;
-        doNotUseOccupied = doNotUseOccupied || false;
+    findSlotByType(
+        input = false,
+        type,
+        returnObj = false,
+        preferFreeSlot = false,
+        doNotUseOccupied = false
+    ) {
         var aSlots = input ? this.inputs : this.outputs;
         if (!aSlots) {
             return -1;
         }
         // !! empty string type is considered 0, * !!
-        if (type == "" || type == "*") type = 0; 
+        if (type == "" || type == "*") type = 0;
         for (var i = 0, l = aSlots.length; i < l; ++i) {
             var aSource = (type+"").toLowerCase().split(",");
             var aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
@@ -1853,9 +1847,7 @@ export default class LGraphNode {
      * @param {number_or_string} target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
      * @return {Object} the link_info is created, otherwise null
      */
-    connect(slot, target_node, target_slot) {
-        target_slot = target_slot || 0;
-
+    connect(slot, target_node, target_slot = 0) {
         if (!this.graph) {
             //could be connected before adding it to a graph
             console.log(
@@ -1929,7 +1921,7 @@ export default class LGraphNode {
         var input = target_node.inputs[target_slot];
         var link_info = null;
         var output = this.outputs[slot];
-        
+
         if (!this.outputs[slot]){
             /*console.debug("Invalid slot passed: "+slot);
             console.debug(this.outputs);*/
@@ -1990,7 +1982,7 @@ export default class LGraphNode {
             nextId = LiteGraph.uuidv4();
         else
             nextId = ++this.graph.last_link_id;
-        
+
         //create link class
         link_info = new LLink(
             nextId,
@@ -2314,8 +2306,7 @@ export default class LGraphNode {
      * @param {vec2} [out] - [Optional] A place to store the output to reduce garbage
      * @return {Float32[]} The position as [x, y]
      */
-    getConnectionPos(is_input, slot_number, out) {
-        out = out || new Float32Array(2);
+    getConnectionPos(is_input, slot_number, out = new Float32Array(2)) {
         var num_slots = 0;
         if (is_input && this.inputs) {
             num_slots = this.inputs.length;
