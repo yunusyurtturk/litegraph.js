@@ -10,6 +10,7 @@ js_files_lists = [
            "./src/litegraph.js",
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
+           "./src/dragandscale.js",
            
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -35,6 +36,7 @@ js_files_lists = [
             "./src/litegraph.js",
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
+           "./src/dragandscale.js",
             
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -51,6 +53,7 @@ js_files_lists = [
             "./src/litegraph.js",
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
+           "./src/dragandscale.js",
         ]
     }
 ]
