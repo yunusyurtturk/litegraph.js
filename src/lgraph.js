@@ -1490,6 +1490,7 @@ export class LGraph {
     }
 
     load(url, callback) {
+        var that = this;
 
         //from file
         if(url.constructor === File || url.constructor === Blob)
@@ -1497,7 +1498,7 @@ export class LGraph {
             var reader = new FileReader();
             reader.addEventListener('load', event => {
                 var data = JSON.parse(event.target.result);
-                this.configure(data);
+                that.configure(data);
                 if(callback)
                     callback();
             });
@@ -1507,27 +1508,22 @@ export class LGraph {
         }
 
         //is a string, then an URL
-        const ws = new WebSocket(url);
-
-        ws.addEventListener('open', () => {
-            console.log('WebSocket connection established.');
-        });
-
-        ws.addEventListener('message', event => {
-            const data = JSON.parse(event.data);
-            this.configure(data);
-            if (callback) {
-                callback();
+        var req = new XMLHttpRequest();
+        req.open("GET", url, true);
+        req.send(null);
+        req.onload = oEvent => {
+            if (req.status !== 200) {
+                console.error("Error loading graph:", req.status, req.response);
+                return;
             }
-        });
-
-        ws.addEventListener('error', error => {
-            console.error('WebSocket error:', error);
-        });
-
-        ws.addEventListener('close', () => {
-            console.log('WebSocket connection closed.');
-        });
+            var data = JSON.parse( req.response );
+            that.configure(data);
+            if(callback)
+                callback();
+        };
+        req.onerror = err => {
+            console.error("Error loading graph:", err);
+        };
     }
 
     onNodeTrace(node, msg, color) {

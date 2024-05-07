@@ -188,7 +188,7 @@ class LGAudio {
     static cached_audios = {};
 
     static loadSound(url, on_complete, on_error) {
-        if (LGAudio.cached_audios[url] && url.indexOf("blob:") == -1) {
+        if (LGAudio.cached_audios[url] && url.includes("blob:")) {
             if (on_complete) {
                 on_complete(LGAudio.cached_audios[url]);
             }
