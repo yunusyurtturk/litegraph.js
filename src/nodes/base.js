@@ -1,4 +1,5 @@
-import { LiteGraph, LGraph, LGraphNode } from "../litegraph.js";
+import { LiteGraph, LGraph } from "../litegraph.js";
+import { LGraphNode } from "../lgraphnode.js";
 
 //Constant
 class Time {

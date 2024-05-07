@@ -1,6 +1,7 @@
 import { LiteGraph } from "./litegraph.js";
 import { ContextMenu } from "./contextmenu.js";
 import { DragAndScale } from "./dragandscale.js";
+import { LGraphGroup } from "./lgraphgroup.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.

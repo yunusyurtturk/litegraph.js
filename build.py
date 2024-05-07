@@ -11,6 +11,8 @@ js_files_lists = [
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
            "./src/dragandscale.js",
+           "./src/lgraphnode.js",
+           "./src/lgraphgroup.js",
            
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -37,6 +39,8 @@ js_files_lists = [
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
            "./src/dragandscale.js",
+           "./src/lgraphnode.js",
+           "./src/lgraphgroup.js",
             
             "./src/nodes/base.js",
             "./src/nodes/events.js",
@@ -54,6 +58,8 @@ js_files_lists = [
            "./src/contextmenu.js",
            "./src/lgraphcanvas.js",
            "./src/dragandscale.js",
+           "./src/lgraphnode.js",
+           "./src/lgraphgroup.js",
         ]
     }
 ]
