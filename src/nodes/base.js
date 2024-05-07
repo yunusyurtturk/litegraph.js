@@ -496,10 +496,10 @@ class Subgraph {
 
         //connect edge subgraph nodes to extarnal connections nodes
     }
-}
 
+    static title_color = "#334";
+}
 //@TODO: Excise this
-Subgraph.title_color = "#334";
 LiteGraph.Subgraph = Subgraph;
 LiteGraph.registerNodeType("graph/subgraph", Subgraph);
 
@@ -647,9 +647,10 @@ class GraphInput {
         }
     }
 }
-
+//@TODO: Excise this
 LiteGraph.GraphInput = GraphInput;
 LiteGraph.registerNodeType("graph/input", GraphInput);
+
 
 //Output for a subgraph
 class GraphOutput {
@@ -784,10 +785,9 @@ class GraphOutput {
         return this.title;
     }
 }
-
-
 LiteGraph.GraphOutput = GraphOutput;
 LiteGraph.registerNodeType("graph/output", GraphOutput);
+
 
 //Constant
 class ConstantNumber {
@@ -987,11 +987,12 @@ class ConstantFile {
         else if (that.properties.type == "blob")
             return reader.readAsBinaryString(file);
     }
+
+    static "@type" = {
+        type: "enum",
+        values: ["text", "arraybuffer", "blob", "json"],
+    };
 }
-ConstantFile["@type"] = {
-    type: "enum",
-    values: ["text", "arraybuffer", "blob", "json"],
-};
 ConstantFile.prototype.setValue = ConstantNumber.prototype.setValue;
 LiteGraph.registerNodeType("basic/file", ConstantFile);
 
@@ -1034,9 +1035,8 @@ class JSONParse {
         if (name == "parse") this.parse();
     }
 }
-
-
 LiteGraph.registerNodeType("basic/jsonparse", JSONParse);
+
 
 //to store json objects
 class ConstantData {
@@ -1372,7 +1372,9 @@ class Variable {
     getTitle() {
         return this.properties.varname;
     }
+    
 }
+//@TODO:Enum
 Variable.LITEGRAPH = 0; //between all graphs
 Variable.GRAPH = 1; //only inside this graph
 Variable.GLOBALSCOPE = 2; //attached to Window
@@ -1403,7 +1405,6 @@ LiteGraph.wrapFunctionAsNode(
     [""],
     "boolean",
 );
-
 
 
 class DownloadData {
@@ -1465,8 +1466,8 @@ class DownloadData {
         return this.title;
     }
 }
-
 LiteGraph.registerNodeType("basic/download", DownloadData);
+
 
 //Watch a value in the editor
 class Watch {
@@ -1535,6 +1536,7 @@ class Cast {
     }
 }
 LiteGraph.registerNodeType("basic/cast", Cast);
+
 
 //Show value inside the debug console
 class Console {
@@ -1611,8 +1613,9 @@ class Alert {
             alert(msg);
         }, 10);
     }
+
+    static color = "#510";
 }
-Alert.color = "#510";
 LiteGraph.registerNodeType("basic/alert", Alert);
 
 
@@ -1692,10 +1695,11 @@ class NodeScript {
     onGetOutputs() {
         return [["C", ""]];
     }
+
+    static widgets_info = {
+        onExecute: { type: "code" },
+    };
 }
-NodeScript.widgets_info = {
-    onExecute: { type: "code" },
-};
 LiteGraph.registerNodeType("basic/script", NodeScript);
 
 
@@ -1790,11 +1794,13 @@ class GenericCompare {
         this.setOutputData(0, result);
         this.setOutputData(1, !result);
     }
+
+    static values = ["==", "!="]; //[">", "<", "==", "!=", "<=", ">=", "||", "&&" ];
+
+    static "@OP" = {
+        type: "enum",
+        title: "operation",
+        values: GenericCompare.values,
+    };
 }
-GenericCompare.values = ["==", "!="]; //[">", "<", "==", "!=", "<=", ">=", "||", "&&" ];
-GenericCompare["@OP"] = {
-    type: "enum",
-    title: "operation",
-    values: GenericCompare.values,
-};
 LiteGraph.registerNodeType("basic/CompareValues", GenericCompare);
