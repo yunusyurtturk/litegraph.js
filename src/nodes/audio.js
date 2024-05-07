@@ -237,7 +237,7 @@ class LGAudio {
 class LGAudioSource {
 
     static title = "Source";
-    static desc = "Plays audio";
+    static desc = "Plays an audio file";
 
     constructor() {
         this.properties = {
@@ -472,15 +472,12 @@ class LGAudioSource {
         this.loadSound(url);
         this._dropped_url = url;
     }
+
+    static supported_extensions = ["wav", "ogg", "mp3"];
+    static "@src" = { widget: "resource" };
 }
-
-LGAudioSource.desc = "Plays an audio file";
-LGAudioSource["@src"] = { widget: "resource" };
-LGAudioSource.supported_extensions = ["wav", "ogg", "mp3"];
-
 //Helps connect/disconnect AudioNodes when new connections are made in the node
 LGAudioSource.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
-
 LiteGraph.registerNodeType("audio/source", LGAudioSource);
 
 //****************************************************
@@ -629,13 +626,10 @@ class LGAudioMediaSource {
         ];
     }
 }
-
 //Helps connect/disconnect AudioNodes when new connections are made in the node
 LGAudioMediaSource.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
-
 LiteGraph.registerNodeType("audio/media_source", LGAudioMediaSource);
 
-//*****************************************************
 
 class LGAudioAnalyser {
 
@@ -725,10 +719,8 @@ class LGAudioAnalyser {
         ];
     }
 }
-
 LiteGraph.registerNodeType("audio/analyser", LGAudioAnalyser);
 
-//*****************************************************
 
 class LGAudioGain {
 
@@ -837,6 +829,7 @@ class LGAudioConvolver {
 LGAudio.createAudioNodeWrapper(LGAudioConvolver);
 LiteGraph.registerNodeType("audio/convolver", LGAudioConvolver);
 
+
 class LGAudioDynamicsCompressor {
 
     static title = "DynamicsCompressor";
@@ -885,12 +878,9 @@ class LGAudioDynamicsCompressor {
         ];
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioDynamicsCompressor);
-LiteGraph.registerNodeType(
-    "audio/dynamicsCompressor",
-    LGAudioDynamicsCompressor,
-);
+LiteGraph.registerNodeType("audio/dynamicsCompressor", LGAudioDynamicsCompressor);
+
 
 class LGAudioWaveShaper {
 
@@ -922,12 +912,10 @@ class LGAudioWaveShaper {
         this.audionode.curve = shape;
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioWaveShaper);
+// disabled till I dont find a way to do a wave shape
+// LiteGraph.registerNodeType("audio/waveShaper", LGAudioWaveShaper);
 
-/* disabled till I dont find a way to do a wave shape
-LiteGraph.registerNodeType("audio/waveShaper", LGAudioWaveShaper);
-*/
 
 class LGAudioMixer {
 
@@ -1063,6 +1051,7 @@ class LGAudioADSR {
 }
 LGAudio.createAudioNodeWrapper(LGAudioADSR);
 LiteGraph.registerNodeType("audio/adsr", LGAudioADSR);
+
 
 class LGAudioDelay {
 
@@ -1479,8 +1468,8 @@ class LGAudioScript {
             }
         };
     }
+    "@code" = { widget: "code", type: "code" };
 }
-LGAudioScript["@code"] = { widget: "code", type: "code" };
 LGAudio.createAudioNodeWrapper(LGAudioScript);
 LiteGraph.registerNodeType("audio/script", LGAudioScript);
 
