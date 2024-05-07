@@ -1,7 +1,9 @@
 import os
 import subprocess
 import json
-"""
+
+# Define the lists of JS files to concatenate
+js_files_lists = [
     {
         "output_filename": "litegraph.js",
         "js_files": [
@@ -37,10 +39,6 @@ import json
             "./src/nodes/network.js",
         ]
     },
-"""
-# Define the lists of JS files to concatenate
-js_files_lists = [
-
     {
         "output_filename": "litegraph-core.js",
         "js_files": [    

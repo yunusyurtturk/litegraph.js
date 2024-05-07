@@ -1,7 +1,12 @@
 import { LiteGraph } from "../litegraph.js";
 
+
 //Show value inside the debug console
 class LogEvent {
+
+    static title = "Log Event";
+    static desc = "Log event in console";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("event", LiteGraph.ACTION);
@@ -11,14 +16,15 @@ class LogEvent {
         console.log(action, param);
     }
 }
-
-LogEvent.title = "Log Event";
-LogEvent.desc = "Log event in console";
-
 LiteGraph.registerNodeType("events/log", LogEvent);
+
 
 //convert to Event if the value is true
 class TriggerEvent {
+    
+    static title = "TriggerEvent";
+    static desc = "Triggers event if input evaluates to true";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("if", "");
@@ -43,13 +49,15 @@ class TriggerEvent {
     }
 }
 
-TriggerEvent.title = "TriggerEvent";
-TriggerEvent.desc = "Triggers event if input evaluates to true";
 
 LiteGraph.registerNodeType("events/trigger", TriggerEvent);
 
 //Sequence of events
 class Sequence {
+
+    static title = "Sequence";
+    static desc = "Triggers a sequence of events when an event arrives";
+
     constructor() {
         var that = this;
         this.addInput("", LiteGraph.ACTION);
@@ -92,14 +100,15 @@ class Sequence {
         }
     }
 }
-
-Sequence.title = "Sequence";
-Sequence.desc = "Triggers a sequence of events when an event arrives";
-
 LiteGraph.registerNodeType("events/sequence", Sequence);
+
 
 //Sequence of events
 class WaitAll {
+
+    static title = "WaitAll";
+    static desc = "Wait until all input events arrive then triggers output";
+
     constructor() {
         var that = this;
         this.addInput("", LiteGraph.ACTION);
@@ -144,14 +153,15 @@ class WaitAll {
         this.ready.length = 0;
     }
 }
-
-WaitAll.title = "WaitAll";
-WaitAll.desc = "Wait until all input events arrive then triggers output";
-
 LiteGraph.registerNodeType("events/waitAll", WaitAll);
+
 
 //Sequencer for events
 class Stepper {
+
+    static title = "Stepper";
+    static desc = "Trigger events sequentially when an tick arrives";
+
     constructor() {
         var that = this;
         this.properties = { index: 0 };
@@ -211,14 +221,14 @@ class Stepper {
         }
     }
 }
-
-Stepper.title = "Stepper";
-Stepper.desc = "Trigger events sequentially when an tick arrives";
-
 LiteGraph.registerNodeType("events/stepper", Stepper);
 
 //Filter events
 class FilterEvent {
+
+    static title = "Filter Event";
+    static desc = "Blocks events that do not match the filter";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("event", LiteGraph.ACTION);
@@ -256,13 +266,13 @@ class FilterEvent {
         this.triggerSlot(0, param, null, options);
     }
 }
-
-FilterEvent.title = "Filter Event";
-FilterEvent.desc = "Blocks events that do not match the filter";
-
 LiteGraph.registerNodeType("events/filter", FilterEvent);
 
 class EventBranch {
+
+    static title = "Branch";
+    static desc = "If condition is true, outputs triggers true, otherwise false";
+
     constructor() {
         this.addInput("in", LiteGraph.ACTION);
         this.addInput("cond", "boolean");
@@ -281,15 +291,15 @@ class EventBranch {
         this.triggerSlot(this._value ? 0 : 1, param, null, options);
     }
 }
-
-EventBranch.title = "Branch";
-EventBranch.desc =
-    "If condition is true, outputs triggers true, otherwise false";
-
 LiteGraph.registerNodeType("events/branch", EventBranch);
+
 
 //Show value inside the debug console
 class EventCounter {
+
+    static title = "Counter";
+    static desc = "Counts events";
+
     constructor() {
         this.addInput("inc", LiteGraph.ACTION);
         this.addInput("dec", LiteGraph.ACTION);
@@ -346,20 +356,20 @@ class EventCounter {
         this.setOutputData(1, this.num);
     }
 }
-
-EventCounter.title = "Counter";
-EventCounter.desc = "Counts events";
-
 LiteGraph.registerNodeType("events/counter", EventCounter);
+
 
 //Show value inside the debug console
 class DelayEvent {
+
+    static title = "Delay";
+    static desc = "Delays one event";
+
     constructor() {
         this.size = [60, 30];
         this.addProperty("time_in_ms", 1000);
         this.addInput("event", LiteGraph.ACTION);
         this.addOutput("on_time", LiteGraph.EVENT);
-
         this._pending = [];
     }
 
@@ -402,14 +412,15 @@ class DelayEvent {
         ];
     }
 }
-
-DelayEvent.title = "Delay";
-DelayEvent.desc = "Delays one event";
-
 LiteGraph.registerNodeType("events/delay", DelayEvent);
+
 
 //Show value inside the debug console
 class TimerEvent {
+
+    static title = "Timer";
+    static desc = "Sends an event every N milliseconds";
+
     constructor() {
         this.addProperty("interval", 1000);
         this.addProperty("event", "tick");
@@ -466,16 +477,16 @@ class TimerEvent {
         return [["tick", "boolean"]];
     }
 }
-
-TimerEvent.title = "Timer";
-TimerEvent.desc = "Sends an event every N milliseconds";
-
 TimerEvent.on_color = "#AAA";
 TimerEvent.off_color = "#222";
-
 LiteGraph.registerNodeType("events/timer", TimerEvent);
 
+
 class SemaphoreEvent {
+
+    static title = "Semaphore Event";
+    static desc = "Until both events are not triggered, it doesnt continue.";
+
     constructor() {
         this.addInput("go", LiteGraph.ACTION);
         this.addInput("green", LiteGraph.ACTION);
@@ -502,14 +513,14 @@ class SemaphoreEvent {
         else if (action == "red") this._ready = false;
     }
 }
-
-SemaphoreEvent.title = "Semaphore Event";
-SemaphoreEvent.desc =
-    "Until both events are not triggered, it doesnt continue.";
-
 LiteGraph.registerNodeType("events/semaphore", SemaphoreEvent);
 
+
 class OnceEvent {
+
+    static title = "Once";
+    static desc = "Only passes an event once, then gets locked";
+
     constructor() {
         this.addInput("in", LiteGraph.ACTION);
         this.addInput("reset", LiteGraph.ACTION);
@@ -529,13 +540,14 @@ class OnceEvent {
         } else if (action == "reset") this._once = false;
     }
 }
-
-OnceEvent.title = "Once";
-OnceEvent.desc = "Only passes an event once, then gets locked";
-
 LiteGraph.registerNodeType("events/once", OnceEvent);
 
+
 class DataStore {
+
+    static title = "Data Store";
+    static desc = "Stores data and only changes when event is received";
+
     constructor() {
         this.addInput("data", 0);
         this.addInput("assign", LiteGraph.ACTION);
@@ -570,8 +582,4 @@ class DataStore {
             o.data = null;
     }
 }
-
-DataStore.title = "Data Store";
-DataStore.desc = "Stores data and only changes when event is received";
-
 LiteGraph.registerNodeType("basic/data_store", DataStore);
