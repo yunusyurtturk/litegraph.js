@@ -1,6 +1,7 @@
 
-import { LiteGraph, LGraph } from "../../src/litegraph.js";
+import { LiteGraph } from "../../src/litegraph.js";
 import { Editor } from "../../src/litegraph-editor.js";
+import { LGraph } from "../../src/lgraph.js";
 
 var webgl_canvas = null;
 
