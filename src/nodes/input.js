@@ -1,6 +1,10 @@
 import { LiteGraph } from "../litegraph.js";
 
 class GamepadInput {
+
+    static title = "Gamepad";
+    static desc = "gets the input of the gamepad";
+
     constructor() {
         this.addOutput("left_x_axis", "number");
         this.addOutput("left_y_axis", "number");
@@ -315,61 +319,60 @@ class GamepadInput {
             ["button_pressed", LiteGraph.EVENT],
         ];
     }
+
+    static zero = new Float32Array(2);
+    static buttons = [
+        "a",
+        "b",
+        "x",
+        "y",
+        "lb",
+        "rb",
+        "lt",
+        "rt",
+        "back",
+        "start",
+        "ls",
+        "rs",
+        "home",
+    ];
+
+    static mapping = {
+        a: 0,
+        b: 1,
+        x: 2,
+        y: 3,
+        lb: 4,
+        rb: 5,
+        lt: 6,
+        rt: 7,
+        back: 8,
+        start: 9,
+        ls: 10,
+        rs: 11,
+    };
+
+    static mapping_array = [
+        "a",
+        "b",
+        "x",
+        "y",
+        "lb",
+        "rb",
+        "lt",
+        "rt",
+        "back",
+        "start",
+        "ls",
+        "rs",
+    ];
 }
 
-GamepadInput.title = "Gamepad";
-GamepadInput.desc = "gets the input of the gamepad";
-
+//@TODO: Enums
 GamepadInput.CENTER = 0;
 GamepadInput.LEFT = 1;
 GamepadInput.RIGHT = 2;
 GamepadInput.UP = 4;
 GamepadInput.DOWN = 8;
-
-GamepadInput.zero = new Float32Array(2);
-GamepadInput.buttons = [
-    "a",
-    "b",
-    "x",
-    "y",
-    "lb",
-    "rb",
-    "lt",
-    "rt",
-    "back",
-    "start",
-    "ls",
-    "rs",
-    "home",
-];
-
-GamepadInput.mapping = {
-    a: 0,
-    b: 1,
-    x: 2,
-    y: 3,
-    lb: 4,
-    rb: 5,
-    lt: 6,
-    rt: 7,
-    back: 8,
-    start: 9,
-    ls: 10,
-    rs: 11,
-};
-GamepadInput.mapping_array = [
-    "a",
-    "b",
-    "x",
-    "y",
-    "lb",
-    "rb",
-    "lt",
-    "rt",
-    "back",
-    "start",
-    "ls",
-    "rs",
-];
 
 LiteGraph.registerNodeType("input/gamepad", GamepadInput);
