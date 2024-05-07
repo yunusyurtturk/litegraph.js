@@ -235,6 +235,10 @@ class LGAudio {
 
 
 class LGAudioSource {
+
+    static title = "Source";
+    static desc = "Plays audio";
+
     constructor() {
         this.properties = {
             src: "",
@@ -477,13 +481,15 @@ LGAudioSource.supported_extensions = ["wav", "ogg", "mp3"];
 //Helps connect/disconnect AudioNodes when new connections are made in the node
 LGAudioSource.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
 
-LGAudioSource.title = "Source";
-LGAudioSource.desc = "Plays audio";
 LiteGraph.registerNodeType("audio/source", LGAudioSource);
 
 //****************************************************
 
 class LGAudioMediaSource {
+
+    static title = "MediaSource";
+    static desc = "Plays microphone";
+
     constructor() {
         this.properties = {
             gain: 0.5,
@@ -627,13 +633,15 @@ class LGAudioMediaSource {
 //Helps connect/disconnect AudioNodes when new connections are made in the node
 LGAudioMediaSource.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
 
-LGAudioMediaSource.title = "MediaSource";
-LGAudioMediaSource.desc = "Plays microphone";
 LiteGraph.registerNodeType("audio/media_source", LGAudioMediaSource);
 
 //*****************************************************
 
 class LGAudioAnalyser {
+
+    static title = "Analyser";
+    static desc = "Audio Analyser";
+
     constructor() {
         this.properties = {
             fftSize: 2048,
@@ -718,13 +726,15 @@ class LGAudioAnalyser {
     }
 }
 
-LGAudioAnalyser.title = "Analyser";
-LGAudioAnalyser.desc = "Audio Analyser";
 LiteGraph.registerNodeType("audio/analyser", LGAudioAnalyser);
 
 //*****************************************************
 
 class LGAudioGain {
+
+    static title = "Gain";
+    static desc = "Audio gain";
+
     constructor() {
         //default
         this.properties = {
@@ -751,14 +761,15 @@ class LGAudioGain {
         }
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioGain);
-
-LGAudioGain.title = "Gain";
-LGAudioGain.desc = "Audio gain";
 LiteGraph.registerNodeType("audio/gain", LGAudioGain);
 
+
 class LGAudioConvolver {
+
+    static title = "Convolver";
+    static desc = "Convolves the signal (used for reverb)";
+
     constructor() {
         //default
         this.properties = {
@@ -823,14 +834,14 @@ class LGAudioConvolver {
         }
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioConvolver);
-
-LGAudioConvolver.title = "Convolver";
-LGAudioConvolver.desc = "Convolves the signal (used for reverb)";
 LiteGraph.registerNodeType("audio/convolver", LGAudioConvolver);
 
 class LGAudioDynamicsCompressor {
+
+    static title = "DynamicsCompressor";
+    static desc = "Dynamics Compressor";
+
     constructor() {
         //default
         this.properties = {
@@ -876,15 +887,16 @@ class LGAudioDynamicsCompressor {
 }
 
 LGAudio.createAudioNodeWrapper(LGAudioDynamicsCompressor);
-
-LGAudioDynamicsCompressor.title = "DynamicsCompressor";
-LGAudioDynamicsCompressor.desc = "Dynamics Compressor";
 LiteGraph.registerNodeType(
     "audio/dynamicsCompressor",
     LGAudioDynamicsCompressor,
 );
 
 class LGAudioWaveShaper {
+
+    static title = "WaveShaper";
+    static desc = "Distortion using wave shape";
+
     constructor() {
         //default
         this.properties = {};
@@ -914,12 +926,14 @@ class LGAudioWaveShaper {
 LGAudio.createAudioNodeWrapper(LGAudioWaveShaper);
 
 /* disabled till I dont find a way to do a wave shape
-LGAudioWaveShaper.title = "WaveShaper";
-LGAudioWaveShaper.desc = "Distortion using wave shape";
 LiteGraph.registerNodeType("audio/waveShaper", LGAudioWaveShaper);
 */
 
 class LGAudioMixer {
+
+    static title = "Mixer";
+    static desc = "Audio mixer";
+
     constructor() {
         //default
         this.properties = {
@@ -986,14 +1000,15 @@ class LGAudioMixer {
         }
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioMixer);
-
-LGAudioMixer.title = "Mixer";
-LGAudioMixer.desc = "Audio mixer";
 LiteGraph.registerNodeType("audio/mixer", LGAudioMixer);
 
+
 class LGAudioADSR {
+
+    static title = "ADSR";
+    static desc = "Audio envelope";
+
     constructor() {
         //default
         this.properties = {
@@ -1046,14 +1061,14 @@ class LGAudioADSR {
         ];
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioADSR);
-
-LGAudioADSR.title = "ADSR";
-LGAudioADSR.desc = "Audio envelope";
 LiteGraph.registerNodeType("audio/adsr", LGAudioADSR);
 
 class LGAudioDelay {
+
+    static title = "Delay";
+    static desc = "Audio delay";
+
     constructor() {
         //default
         this.properties = {
@@ -1074,14 +1089,15 @@ class LGAudioDelay {
         }
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioDelay);
-
-LGAudioDelay.title = "Delay";
-LGAudioDelay.desc = "Audio delay";
 LiteGraph.registerNodeType("audio/delay", LGAudioDelay);
 
+
 class LGAudioBiquadFilter {
+
+    static title = "BiquadFilter";
+    static desc = "Audio filter";
+
     constructor() {
         //default
         this.properties = {
@@ -1135,14 +1151,15 @@ class LGAudioBiquadFilter {
         ];
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioBiquadFilter);
-
-LGAudioBiquadFilter.title = "BiquadFilter";
-LGAudioBiquadFilter.desc = "Audio filter";
 LiteGraph.registerNodeType("audio/biquadfilter", LGAudioBiquadFilter);
 
+
 class LGAudioOscillatorNode {
+
+    static title = "Oscillator";
+    static desc = "Oscillator";
+
     constructor() {
         //default
         this.properties = {
@@ -1210,18 +1227,15 @@ class LGAudioOscillatorNode {
         ];
     }
 }
-
 LGAudio.createAudioNodeWrapper(LGAudioOscillatorNode);
-
-LGAudioOscillatorNode.title = "Oscillator";
-LGAudioOscillatorNode.desc = "Oscillator";
 LiteGraph.registerNodeType("audio/oscillator", LGAudioOscillatorNode);
 
-//*****************************************************
-
-//EXTRA
 
 class LGAudioVisualization {
+
+    static title = "Visualization";
+    static desc = "Audio Visualization";
+
     constructor() {
         this.properties = {
             continuous: true,
@@ -1290,12 +1304,14 @@ class LGAudioVisualization {
         }
     }
 }
-
-LGAudioVisualization.title = "Visualization";
-LGAudioVisualization.desc = "Audio Visualization";
 LiteGraph.registerNodeType("audio/visualization", LGAudioVisualization);
 
+
 class LGAudioBandSignal {
+
+    static title = "Signal";
+    static desc = "extract the signal of some frequency";
+
     constructor() {
         //default
         this.properties = {
@@ -1343,12 +1359,14 @@ class LGAudioBandSignal {
         return [["band", "number"]];
     }
 }
-
-LGAudioBandSignal.title = "Signal";
-LGAudioBandSignal.desc = "extract the signal of some frequency";
 LiteGraph.registerNodeType("audio/signal", LGAudioBandSignal);
 
+
 class LGAudioScript {
+
+    static title = "Script";
+    static desc = "apply script to signal";
+
     constructor() {
         if (!LGAudioScript.default_code) {
             var code = LGAudioScript.default_function.toString();
@@ -1462,20 +1480,19 @@ class LGAudioScript {
         };
     }
 }
-
 LGAudioScript["@code"] = { widget: "code", type: "code" };
-
 LGAudio.createAudioNodeWrapper(LGAudioScript);
-
-LGAudioScript.title = "Script";
-LGAudioScript.desc = "apply script to signal";
 LiteGraph.registerNodeType("audio/script", LGAudioScript);
 
-function LGAudioDestination() {
-    this.audionode = LGAudio.getAudioContext().destination;
-    this.addInput("in", "audio");
-}
 
-LGAudioDestination.title = "Destination";
-LGAudioDestination.desc = "Audio output";
+class LGAudioDestination {
+
+    static title = "Destination";
+    static desc = "Audio output";
+
+    constructor() {
+        this.audionode = LGAudio.getAudioContext().destination;
+        this.addInput("in", "audio");
+    }
+}
 LiteGraph.registerNodeType("audio/destination", LGAudioDestination);
