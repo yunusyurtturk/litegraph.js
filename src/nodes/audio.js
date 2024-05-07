@@ -1,5 +1,5 @@
-import LiteGraph from "../litegraph.js";
-import LGraph from "../lgraph.js";
+import { LiteGraph } from "../litegraph.js";
+import { LGraph } from "../lgraph.js";
 
 class LGAudio {
 

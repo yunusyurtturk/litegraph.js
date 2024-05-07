@@ -1,5 +1,5 @@
-import LiteGraph from "./litegraph.js";
-import LLink from "./llink.js";
+import { LiteGraph } from "./litegraph.js";
+import { LLink } from "./llink.js";
 
 /*
 title: string
@@ -58,7 +58,7 @@ supported callbacks:
  * @param {String} name a name for the node
  */
 
-export default class LGraphNode {
+export class LGraphNode {
     constructor(title) {
         this.title = title || "Unnamed";
         this.size = [LiteGraph.NODE_WIDTH, 60];

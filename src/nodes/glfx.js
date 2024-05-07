@@ -1,4 +1,4 @@
-import LiteGraph from "../litegraph.js";
+import { LiteGraph } from "../litegraph.js";
 
 //Works with Litegl.js to create WebGL nodes
 if (typeof GL != "undefined") {

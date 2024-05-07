@@ -1,10 +1,10 @@
 
-import LiteGraph from "./litegraph.js";
-import LGraphCanvas from "./lgraphcanvas.js";
-import LGraph from "./lgraph.js";
+import { LiteGraph } from "./litegraph.js";
+import { LGraphCanvas } from "./lgraphcanvas.js";
+import { LGraph } from "./lgraph.js";
 
 //Creates an interface to access extra features from a graph (like play, stop, live, etc)
-export default class Editor {
+export class Editor {
     constructor(container_id, options = {}) {
         //fill container
         var html = "<div class='header'><div class='tools tools-left'></div><div class='tools tools-right'></div></div>";

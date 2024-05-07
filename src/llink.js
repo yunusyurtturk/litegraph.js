@@ -1,6 +1,6 @@
 
 //this is the class in charge of storing link information
-export default class LLink {
+export class LLink {
     constructor(id, type, origin_id, origin_slot, target_id, target_slot) {
         this.id = id;
         this.type = type;

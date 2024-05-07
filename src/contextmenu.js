@@ -1,7 +1,7 @@
-import LiteGraph from "./litegraph.js";
+import { LiteGraph } from "./litegraph.js";
 
 // @class ContextMenu
-export default class ContextMenu {
+export class ContextMenu {
     
     /**
     * @constructor

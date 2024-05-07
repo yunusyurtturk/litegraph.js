@@ -1,8 +1,8 @@
-import LiteGraph from "./litegraph.js";
-import LGraphCanvas from "./lgraphcanvas.js";
-import LGraphNode from "./lgraphnode.js";
+import { LiteGraph } from "./litegraph.js";
+import { LGraphCanvas } from "./lgraphcanvas.js";
+import { LGraphNode } from "./lgraphnode.js";
 
-export default class LGraphGroup {
+export class LGraphGroup {
     constructor(title) {
         this.title = title || "Group";
         this.font_size = 24;

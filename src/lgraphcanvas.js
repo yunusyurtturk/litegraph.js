@@ -1,7 +1,7 @@
-import LiteGraph from "./litegraph.js";
-import ContextMenu from "./contextmenu.js";
-import DragAndScale from "./dragandscale.js";
-import LGraphGroup from "./lgraphgroup.js";
+import { LiteGraph } from "./litegraph.js";
+import { ContextMenu } from "./contextmenu.js";
+import { DragAndScale } from "./dragandscale.js";
+import { LGraphGroup } from "./lgraphgroup.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -13,7 +13,7 @@ import LGraphGroup from "./lgraphgroup.js";
  * @param {LGraph} graph [optional]
  * @param {Object} options [optional] { skip_rendering, autoresize, viewport }
  */
-export default class LGraphCanvas {
+export class LGraphCanvas {
     constructor(canvas, graph, options) {
         this.options = options = options || {};
 

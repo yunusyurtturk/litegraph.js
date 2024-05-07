@@ -1,7 +1,7 @@
-import LiteGraph from "./litegraph.js";
+import { LiteGraph } from "./litegraph.js";
 
 //used by some widgets to render a curve editor
-export default class CurveEditor {
+export class CurveEditor {
     constructor(points) {
         this.points = points;
         this.selected = -1;

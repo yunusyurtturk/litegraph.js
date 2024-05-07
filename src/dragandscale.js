@@ -1,7 +1,7 @@
-import LiteGraph from "./litegraph.js";
+import { LiteGraph } from "./litegraph.js";
 
 //Scale and Offset
-export default class DragAndScale {
+export class DragAndScale {
     constructor(element, skip_events) {
         this.offset = new Float32Array([0, 0]);
         this.scale = 1;
