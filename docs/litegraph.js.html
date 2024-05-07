@@ -308,8 +308,7 @@ const LiteGraph = {
     * @param {String|Object} type name of the node or the node constructor itself
     * @param {String} slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
     */
-    registerNodeAndSlotType: function(type, slot_type, out){
-        out = out || false;
+    registerNodeAndSlotType: function(type, slot_type, out = false) {
         const base_class =
             type.constructor === String &amp;&amp;
             this.registered_node_types[type] !== "anonymous"
@@ -605,7 +604,7 @@ const LiteGraph = {
         }
 
         if (this.auto_sort_node_types) {
-            r.sort(function(a,b){return a.title.localeCompare(b.title)});
+            r.sort((a, b) => a.title.localeCompare(b.title));
         }
 
         return r;
@@ -729,7 +728,7 @@ const LiteGraph = {
         type_b = type_b.toLowerCase();
 
         // For nodes supporting multiple connection types
-        if (type_a.indexOf(",") == -1 &amp;&amp; type_b.indexOf(",") == -1) {
+        if (!type_a.includes(",") &amp;&amp; !type_b.includes(",")) {
             return type_a == type_b;
         }
 
@@ -784,7 +783,7 @@ const LiteGraph = {
                 url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
             }
             return fetch(url)
-            .then(function(response) {
+            .then(response => {
                 if(!response.ok)
                         throw new Error("File not found"); //it will be catch below
                 if(type == "arraybuffer")
@@ -796,11 +795,11 @@ const LiteGraph = {
                 else if(type == "blob")
                     return response.blob();
             })
-            .then(function(data) {
+            .then(data => {
                 if(on_complete)
                     on_complete(data);
             })
-            .catch(function(error) {
+            .catch(error => {
                 console.error("error fetching file:",url);
                 if(on_error)
                     on_error(error);
@@ -809,8 +808,7 @@ const LiteGraph = {
         else if( url.constructor === File || url.constructor === Blob)
         {
             var reader = new FileReader();
-            reader.onload = function(e)
-            {
+            reader.onload = e => {
                 var v = e.target.result;
                 if( type == "json" )
                     v = JSON.parse(v);
@@ -834,7 +832,7 @@ if (typeof performance != "undefined") {
 } else if (typeof Date != "undefined" &amp;&amp; Date.now) {
     LiteGraph.getTime = Date.now.bind(Date);
 } else if (typeof process != "undefined") {
-    LiteGraph.getTime = function() {
+    LiteGraph.getTime = () => {
         var t = process.hrtime();
         return t[0] * 0.001 + t[1] * 1e-6;
     };
@@ -974,9 +972,7 @@ function num2hex(triplet) {
 
 LiteGraph.num2hex = num2hex;
 
-LiteGraph.closeAllContextMenus = function(ref_window) {
-    ref_window = ref_window || window;
-
+LiteGraph.closeAllContextMenus = (ref_window = window) => {
     var elements = ref_window.document.querySelectorAll(".litecontextmenu");
     if (!elements.length) {
         return;
@@ -996,7 +992,7 @@ LiteGraph.closeAllContextMenus = function(ref_window) {
     }
 };
 
-LiteGraph.extendClass = function(target, origin) {
+LiteGraph.extendClass = (target, origin) => {
     for (var i in origin) {
         //copy class properties
         if (target.hasOwnProperty(i)) {
@@ -1040,21 +1036,20 @@ LiteGraph.extendClass = function(target, origin) {
 };
 
 //used to create nodes from wrapping functions
-LiteGraph.getParameterNames = function(func) {
-    return (func + "")
-        .replace(/[/][/].*$/gm, "") // strip single-line comments
-        .replace(/\s+/g, "") // strip white space
-        .replace(/[/][*][^/*]*[*][/]/g, "") // strip multi-line comments  /**/
-        .split("){", 1)[0]
-        .replace(/^[^(]*[(]/, "") // extract the parameters
-        .replace(/=[^,]+/g, "") // strip any ES6 defaults
-        .split(",")
-        .filter(Boolean); // split &amp; filter [""]
-};
+LiteGraph.getParameterNames = func => // split &amp; filter [""]
+(func + "")
+    .replace(/[/][/].*$/gm, "") // strip single-line comments
+    .replace(/\s+/g, "") // strip white space
+    .replace(/[/][*][^/*]*[*][/]/g, "") // strip multi-line comments  /**/
+    .split("){", 1)[0]
+    .replace(/^[^(]*[(]/, "") // extract the parameters
+    .replace(/=[^,]+/g, "") // strip any ES6 defaults
+    .split(",")
+    .filter(Boolean);
 
 /* helper for interaction: pointer, touch, mouse Listeners
 used by LGraphCanvas DragAndScale ContextMenu*/
-LiteGraph.pointerListenerAdd = function(oDOM, sEvIn, fCall, capture=false) {
+LiteGraph.pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
     if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall!=="function"){
         //console.log("cant pointerListenerAdd "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
@@ -1118,7 +1113,7 @@ LiteGraph.pointerListenerAdd = function(oDOM, sEvIn, fCall, capture=false) {
             return oDOM.addEventListener(sEvent, fCall, capture);
     }
 }
-LiteGraph.pointerListenerRemove = function(oDOM, sEvent, fCall, capture=false) {
+LiteGraph.pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
     if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall!=="function"){
         //console.log("cant pointerListenerRemove "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
@@ -1144,17 +1139,15 @@ LiteGraph.pointerListenerRemove = function(oDOM, sEvent, fCall, capture=false) {
     }
 }
 
-LiteGraph.clamp = (v, a, b) => {
-    return a > v ? a : b &lt; v ? b : v;
-};
+LiteGraph.clamp = (v, a, b) => a > v ? a : b &lt; v ? b : v;
 
 if (typeof window != "undefined" &amp;&amp; !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame ||
-        function(callback) {
+        (callback => {
             window.setTimeout(callback, 1000 / 60);
-        };
+        });
 }
 
 export default LiteGraph;</code></pre>
@@ -1173,7 +1166,7 @@ export default LiteGraph;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon May 06 2024 21:43:18 GMT-0600 (Mountain Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Mon May 06 2024 22:37:48 GMT-0600 (Mountain Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
