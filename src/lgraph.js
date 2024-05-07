@@ -489,7 +489,7 @@ export default class LGraph {
 
             for (var i = 0; i < current.inputs.length; ++i) {
                 var input = current.getInputNode(i);
-                if (input && ancestors.indexOf(input) == -1) {
+                if (input && !ancestors.includes(input)) {
                     pending.push(input);
                 }
             }
