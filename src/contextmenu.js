@@ -16,32 +16,9 @@ export class ContextMenu {
         this.options = options;
         var that = this;
 
-        //to link a menu with its parent
-        if (options.parentMenu) {
-            if (options.parentMenu.constructor !== this.constructor) {
-                console.error(
-                    "parentMenu must be of class ContextMenu, ignoring it"
-                );
-                options.parentMenu = null;
-            } else {
-                this.parentMenu = options.parentMenu;
-                this.parentMenu.lock = true;
-                this.parentMenu.current_submenu = this;
-            }
-        }
+        this.#linkToParent();
+        this.#validateEventClass();
 
-        var eventClass = null;
-        if(options.event) //use strings because comparing classes between windows doesnt work
-            eventClass = options.event.constructor.name;
-        if ( eventClass !== "MouseEvent" &&
-            eventClass !== "CustomEvent" &&
-            eventClass !== "PointerEvent"
-        ) {
-            console.error(
-                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`
-            );
-            options.event = null;
-        }
 
         var root = document.createElement("div");
         root.className = "litegraph litecontextmenu litemenubar-panel";
@@ -106,13 +83,7 @@ export class ContextMenu {
 
         this.root = root;
 
-        //title
-        if (options.title) {
-            var element = document.createElement("div");
-            element.className = "litemenu-title";
-            element.innerHTML = options.title;
-            root.appendChild(element);
-        }
+        this.#addTitle();
 
         //entries
         var num = 0;
@@ -125,19 +96,6 @@ export class ContextMenu {
             this.addItem(name, value, options);
             num++;
         }
-
-        //close on leave? touch enabled devices won't work TODO use a global device detector and condition on that
-        /*LiteGraph.pointerListenerAdd(root,"leave", function(e) {
-            console.log("pointerevents: ContextMenu leave");
-            if (that.lock) {
-                return;
-            }
-            if (root.closing_timer) {
-                clearTimeout(root.closing_timer);
-            }
-            root.closing_timer = setTimeout(that.close.bind(that, e), 500);
-            //that.close(e);
-        });*/
 
         LiteGraph.pointerListenerAdd(root,"enter", e => {
             //console.log("pointerevents: ContextMenu enter");
@@ -197,9 +155,48 @@ export class ContextMenu {
         }
     }
 
-    addItem(name, value, options) {
+    #linkToParent() {
+        const parentMenu = this.options.parentMenu;
+        if (!parentMenu)
+            return;
+        if (parentMenu.constructor !== this.constructor) {
+            console.error("parentMenu must be of class ContextMenu, ignoring it");
+            this.options.parentMenu = null;
+            return;
+        }
+        this.parentMenu = parentMenu;
+        this.parentMenu.lock = true;
+        this.parentMenu.current_submenu = this;
+    }
+
+    #validateEventClass() {
+        if(!this.options.event)
+            return;
+
+        //use strings because comparing classes between windows doesnt work
+        const eventClass = this.options.event.constructor.name;
+        if ( eventClass !== "MouseEvent" &&
+            eventClass !== "CustomEvent" &&
+            eventClass !== "PointerEvent"
+        ) {
+            console.error(
+                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`
+            );
+            this.options.event = null;
+        }
+    }
+
+    #addTitle() {
+        if (!this.options.title)
+            return;
+        const element = document.createElement("div");
+        element.className = "litemenu-title";
+        element.innerHTML = this.options.title;
+        this.root.appendChild(element);
+    }
+
+    addItem(name, value, options = {}) {
         var that = this;
-        options = options || {};
 
         var element = document.createElement("div");
         element.className = "litemenu-entry submenu";
