@@ -2,6 +2,10 @@ import { LiteGraph, LGraph, LGraphNode } from "../litegraph.js";
 
 //Constant
 class Time {
+
+    static title = "Time";
+    static desc = "Time";
+
     constructor() {
         this.addOutput("in ms", "number");
         this.addOutput("in sec", "number");
@@ -12,14 +16,14 @@ class Time {
         this.setOutputData(1, this.graph.globaltime);
     }
 }
-
-Time.title = "Time";
-Time.desc = "Time";
-
 LiteGraph.registerNodeType("basic/time", Time);
 
 //Subgraph: a node that contains a graph
 class Subgraph {
+
+    static title = "Subgraph";
+    static desc = "Graph inside a node";
+
     constructor() {
         this.size = [140, 80];
         this.properties = { enabled: true };
@@ -302,8 +306,6 @@ class Subgraph {
         this.removeOutput(slot);
     }
 
-    // *****************************************************
-
     getExtraMenuOptions(graphcanvas) {
         var that = this;
         return [
@@ -327,7 +329,6 @@ class Subgraph {
     }
 
     //no need to define node.configure, the default method detects node.subgraph and passes the object to node.subgraph.configure()
-
     reassignSubgraphUUIDs(graph) {
         const idMap = { nodeIDs: {}, linkIDs: {} };
 
@@ -497,15 +498,17 @@ class Subgraph {
     }
 }
 
-Subgraph.title = "Subgraph";
-Subgraph.desc = "Graph inside a node";
+//@TODO: Excise this
 Subgraph.title_color = "#334";
-
 LiteGraph.Subgraph = Subgraph;
 LiteGraph.registerNodeType("graph/subgraph", Subgraph);
 
-//Input for a subgraph
+
 class GraphInput {
+
+    static title = "Input";
+    static desc = "Input of the graph";
+
     constructor() {
         this.addOutput("", "number");
 
@@ -645,14 +648,15 @@ class GraphInput {
     }
 }
 
-GraphInput.title = "Input";
-GraphInput.desc = "Input of the graph";
-
 LiteGraph.GraphInput = GraphInput;
 LiteGraph.registerNodeType("graph/input", GraphInput);
 
 //Output for a subgraph
 class GraphOutput {
+
+    static title = "Output";
+    static desc = "Output of the graph";
+
     constructor() {
         this.addInput("", "");
 
@@ -781,14 +785,16 @@ class GraphOutput {
     }
 }
 
-GraphOutput.title = "Output";
-GraphOutput.desc = "Output of the graph";
 
 LiteGraph.GraphOutput = GraphOutput;
 LiteGraph.registerNodeType("graph/output", GraphOutput);
 
 //Constant
 class ConstantNumber {
+
+    static title = "Const Number";
+    static desc = "Constant number";
+
     constructor() {
         this.addOutput("value", "number");
         this.addProperty("value", 1.0);
@@ -817,13 +823,13 @@ class ConstantNumber {
         this.outputs[0].label = this.properties["value"].toFixed(3);
     }
 }
-
-ConstantNumber.title = "Const Number";
-ConstantNumber.desc = "Constant number";
-
 LiteGraph.registerNodeType("basic/const", ConstantNumber);
 
 class ConstantBoolean {
+
+    static title = "Const Boolean";
+    static desc = "Constant boolean";
+
     constructor() {
         this.addOutput("bool", "boolean");
         this.addProperty("value", true);
@@ -845,16 +851,16 @@ class ConstantBoolean {
         this.setValue(!this.properties.value);
     }
 }
-
-ConstantBoolean.title = "Const Boolean";
-ConstantBoolean.desc = "Constant boolean";
 ConstantBoolean.prototype.getTitle = ConstantNumber.prototype.getTitle;
-
 ConstantBoolean.prototype.setValue = ConstantNumber.prototype.setValue;
-
 LiteGraph.registerNodeType("basic/boolean", ConstantBoolean);
 
+
 class ConstantString {
+
+    static title = "Const String";
+    static desc = "Constant string";
+
     constructor() {
         this.addOutput("string", "string");
         this.addProperty("value", "");
@@ -876,17 +882,16 @@ class ConstantString {
         reader.readAsText(file);
     }
 }
-
-ConstantString.title = "Const String";
-ConstantString.desc = "Constant string";
-
 ConstantString.prototype.getTitle = ConstantNumber.prototype.getTitle;
-
 ConstantString.prototype.setValue = ConstantNumber.prototype.setValue;
-
 LiteGraph.registerNodeType("basic/string", ConstantString);
 
+
 class ConstantObject {
+
+    static title = "Const Object";
+    static desc = "Constant Object";
+
     constructor() {
         this.addOutput("obj", "object");
         this.size = [120, 30];
@@ -897,13 +902,14 @@ class ConstantObject {
         this.setOutputData(0, this._object);
     }
 }
-
-ConstantObject.title = "Const Object";
-ConstantObject.desc = "Constant Object";
-
 LiteGraph.registerNodeType("basic/object", ConstantObject);
 
+
 class ConstantFile {
+
+    static title = "Const File";
+    static desc = "Fetches a file from an url";
+
     constructor() {
         this.addInput("url", "string");
         this.addOutput("file", "string");
@@ -982,20 +988,20 @@ class ConstantFile {
             return reader.readAsBinaryString(file);
     }
 }
-
-ConstantFile.title = "Const File";
-ConstantFile.desc = "Fetches a file from an url";
 ConstantFile["@type"] = {
     type: "enum",
     values: ["text", "arraybuffer", "blob", "json"],
 };
-
 ConstantFile.prototype.setValue = ConstantNumber.prototype.setValue;
-
 LiteGraph.registerNodeType("basic/file", ConstantFile);
+
 
 //to store json objects
 class JSONParse {
+
+    static title = "JSON Parse";
+    static desc = "Parses JSON String into object";
+
     constructor() {
         this.addInput("parse", LiteGraph.ACTION);
         this.addInput("json", "string");
@@ -1029,13 +1035,15 @@ class JSONParse {
     }
 }
 
-JSONParse.title = "JSON Parse";
-JSONParse.desc = "Parses JSON String into object";
 
 LiteGraph.registerNodeType("basic/jsonparse", JSONParse);
 
 //to store json objects
 class ConstantData {
+
+    static title = "Const Data";
+    static desc = "Constant Data";
+
     constructor() {
         this.addOutput("data", "object");
         this.addProperty("value", "");
@@ -1063,16 +1071,16 @@ class ConstantData {
         this.setOutputData(0, this._value);
     }
 }
-
-ConstantData.title = "Const Data";
-ConstantData.desc = "Constant Data";
-
 ConstantData.prototype.setValue = ConstantNumber.prototype.setValue;
-
 LiteGraph.registerNodeType("basic/data", ConstantData);
+
 
 //to store json objects
 class ConstantArray {
+
+    static title = "Const Array";
+    static desc = "Constant Array";
+
     constructor() {
         this._value = [];
         this.addInput("json", "");
@@ -1116,15 +1124,15 @@ class ConstantArray {
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
     }
 }
-
-ConstantArray.title = "Const Array";
-ConstantArray.desc = "Constant Array";
-
 ConstantArray.prototype.setValue = ConstantNumber.prototype.setValue;
-
 LiteGraph.registerNodeType("basic/array", ConstantArray);
 
+
 class SetArray {
+
+    static title = "Set Array";
+    static desc = "Sets index of array";
+
     constructor() {
         this.addInput("arr", "array");
         this.addInput("value", "");
@@ -1148,13 +1156,14 @@ class SetArray {
         this.setOutputData(0, arr);
     }
 }
-
-SetArray.title = "Set Array";
-SetArray.desc = "Sets index of array";
-
 LiteGraph.registerNodeType("basic/set_array", SetArray);
 
+
 class ArrayElement {
+
+    static title = "Array[i]";
+    static desc = "Returns an element from an array";
+
     constructor() {
         this.addInput("array", "array,table,string");
         this.addInput("index", "number");
@@ -1170,13 +1179,14 @@ class ArrayElement {
         this.setOutputData(0, array[Math.floor(Number(index))]);
     }
 }
-
-ArrayElement.title = "Array[i]";
-ArrayElement.desc = "Returns an element from an array";
-
 LiteGraph.registerNodeType("basic/array[]", ArrayElement);
 
+
 class TableElement {
+
+    static title = "Table[row][col]";
+    static desc = "Returns an element from a table";
+
     constructor() {
         this.addInput("table", "table");
         this.addInput("row", "number");
@@ -1198,13 +1208,14 @@ class TableElement {
         else this.setOutputData(0, null);
     }
 }
-
-TableElement.title = "Table[row][col]";
-TableElement.desc = "Returns an element from a table";
-
 LiteGraph.registerNodeType("basic/table[][]", TableElement);
 
+
 class ObjectProperty {
+
+    static title = "Object property";
+    static desc = "Outputs the property of an object";
+
     constructor() {
         this.addInput("obj", "object");
         this.addOutput("property", 0);
@@ -1238,13 +1249,12 @@ class ObjectProperty {
         }
     }
 }
-
-ObjectProperty.title = "Object property";
-ObjectProperty.desc = "Outputs the property of an object";
-
 LiteGraph.registerNodeType("basic/object_property", ObjectProperty);
 
+
 class ObjectKeys {
+    static title = "Object keys";
+    static desc = "Outputs an array with the keys of an object";
     constructor() {
         this.addInput("obj", "");
         this.addOutput("keys", "array");
@@ -1258,13 +1268,14 @@ class ObjectKeys {
         }
     }
 }
-
-ObjectKeys.title = "Object keys";
-ObjectKeys.desc = "Outputs an array with the keys of an object";
-
 LiteGraph.registerNodeType("basic/object_keys", ObjectKeys);
 
+
 class SetObject {
+
+    static title = "Set Object";
+    static desc = "Adds propertiesrty to object";
+
     constructor() {
         this.addInput("obj", "");
         this.addInput("value", "");
@@ -1287,13 +1298,14 @@ class SetObject {
         this.setOutputData(0, obj);
     }
 }
-
-SetObject.title = "Set Object";
-SetObject.desc = "Adds propertiesrty to object";
-
 LiteGraph.registerNodeType("basic/set_object", SetObject);
 
+
 class MergeObjects {
+
+    static title = "Merge Objects";
+    static desc = "Creates an object copying properties from others";
+
     constructor() {
         this.addInput("A", "object");
         this.addInput("B", "object");
@@ -1315,14 +1327,15 @@ class MergeObjects {
         this.setOutputData(0, C);
     }
 }
-
-MergeObjects.title = "Merge Objects";
-MergeObjects.desc = "Creates an object copying properties from others";
-
 LiteGraph.registerNodeType("basic/merge_objects", MergeObjects);
+
 
 //Store as variable
 class Variable {
+
+    static title = "Variable";
+    static desc = "store/read variable value";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("in");
@@ -1360,14 +1373,9 @@ class Variable {
         return this.properties.varname;
     }
 }
-
-Variable.title = "Variable";
-Variable.desc = "store/read variable value";
-
 Variable.LITEGRAPH = 0; //between all graphs
 Variable.GRAPH = 1; //only inside this graph
 Variable.GLOBALSCOPE = 2; //attached to Window
-
 Variable["@container"] = {
     type: "enum",
     values: {
@@ -1376,15 +1384,16 @@ Variable["@container"] = {
         global: Variable.GLOBALSCOPE,
     },
 };
-
 LiteGraph.registerNodeType("basic/variable", Variable);
+
 
 function length(v) {
     if (v && v.length != null) return Number(v.length);
     return 0;
 }
-
 LiteGraph.wrapFunctionAsNode("basic/length", length, [""], "number");
+
+
 
 LiteGraph.wrapFunctionAsNode(
     "basic/not",
@@ -1395,7 +1404,13 @@ LiteGraph.wrapFunctionAsNode(
     "boolean",
 );
 
+
+
 class DownloadData {
+
+    static title = "Download";
+    static desc = "Download some data";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("data", 0);
@@ -1451,13 +1466,14 @@ class DownloadData {
     }
 }
 
-DownloadData.title = "Download";
-DownloadData.desc = "Download some data";
-
 LiteGraph.registerNodeType("basic/download", DownloadData);
 
 //Watch a value in the editor
 class Watch {
+
+    static title = "Watch";
+    static desc = "Show value of input";
+
     constructor() {
         this.size = [60, 30];
         this.addInput("value", 0, { label: "" });
@@ -1499,14 +1515,15 @@ class Watch {
         this.inputs[0].label = Watch.toString(this.value);
     }
 }
-
-Watch.title = "Watch";
-Watch.desc = "Show value of input";
-
 LiteGraph.registerNodeType("basic/watch", Watch);
+
 
 //in case one type doesnt match other type but you want to connect them anyway
 class Cast {
+
+    static title = "Cast";
+    static desc = "Allows to connect different types";
+
     constructor() {
         this.addInput("in", 0);
         this.addOutput("out", 0);
@@ -1517,14 +1534,14 @@ class Cast {
         this.setOutputData(0, this.getInputData(0));
     }
 }
-
-Cast.title = "Cast";
-Cast.desc = "Allows to connect different types";
-
 LiteGraph.registerNodeType("basic/cast", Cast);
 
 //Show value inside the debug console
 class Console {
+
+    static title = "Console";
+    static desc = "Show value inside the console";
+
     constructor() {
         this.mode = LiteGraph.ON_EVENT;
         this.size = [80, 30];
@@ -1565,14 +1582,15 @@ class Console {
         ];
     }
 }
-
-Console.title = "Console";
-Console.desc = "Show value inside the console";
-
 LiteGraph.registerNodeType("basic/console", Console);
+
 
 //Show value inside the debug console
 class Alert {
+
+    static title = "Alert";
+    static desc = "Show an alert window";
+
     constructor() {
         this.mode = LiteGraph.ON_EVENT;
         this.addProperty("msg", "");
@@ -1594,15 +1612,16 @@ class Alert {
         }, 10);
     }
 }
-
-Alert.title = "Alert";
-Alert.desc = "Show an alert window";
 Alert.color = "#510";
-
 LiteGraph.registerNodeType("basic/alert", Alert);
+
 
 //Execites simple code
 class NodeScript {
+
+    static title = "Script";
+    static desc = "executes a code (max 256 characters)";
+
     constructor() {
         this.size = [60, 30];
         this.addProperty("onExecute", "return A;");
@@ -1674,17 +1693,17 @@ class NodeScript {
         return [["C", ""]];
     }
 }
-
-NodeScript.title = "Script";
-NodeScript.desc = "executes a code (max 256 characters)";
-
 NodeScript.widgets_info = {
     onExecute: { type: "code" },
 };
-
 LiteGraph.registerNodeType("basic/script", NodeScript);
 
+
 class GenericCompare {
+
+    static title = "Compare *";
+    static desc = "evaluates condition between A and B";
+
     constructor() {
         this.addInput("A", 0);
         this.addInput("B", 0);
@@ -1772,15 +1791,10 @@ class GenericCompare {
         this.setOutputData(1, !result);
     }
 }
-
 GenericCompare.values = ["==", "!="]; //[">", "<", "==", "!=", "<=", ">=", "||", "&&" ];
 GenericCompare["@OP"] = {
     type: "enum",
     title: "operation",
     values: GenericCompare.values,
 };
-
-GenericCompare.title = "Compare *";
-GenericCompare.desc = "evaluates condition between A and B";
-
 LiteGraph.registerNodeType("basic/CompareValues", GenericCompare);
