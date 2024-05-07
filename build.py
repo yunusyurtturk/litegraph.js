@@ -8,6 +8,8 @@ js_files_lists = [
         "output_filename": "litegraph.js",
         "js_files": [
            "./src/litegraph.js",
+           "./src/contextmenu.js",
+           
             "./src/nodes/base.js",
             "./src/nodes/events.js",
             "./src/nodes/interface.js",
@@ -30,6 +32,8 @@ js_files_lists = [
         "output_filename": "litegraph-mini.js",
         "js_files": [    
             "./src/litegraph.js",
+           "./src/contextmenu.js",
+            
             "./src/nodes/base.js",
             "./src/nodes/events.js",
             "./src/nodes/input.js",
@@ -43,6 +47,7 @@ js_files_lists = [
         "output_filename": "litegraph-core.js",
         "js_files": [    
             "./src/litegraph.js",
+           "./src/contextmenu.js",
         ]
     }
 ]
