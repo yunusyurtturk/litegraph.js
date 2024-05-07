@@ -19,5 +19,6 @@ Hunt.  Them.  Down.
 
 jquery 1.6.x
 sillyclient
+use of xmlhttprequest (lgraph.js, audio.js)
 anything else I find
 
