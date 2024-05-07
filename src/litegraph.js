@@ -2471,10 +2471,6 @@ supported callbacks:
 
 class LGraphNode {
     constructor(title) {
-        this._ctor(title);
-    }
-
-    _ctor(title) {
         this.title = title || "Unnamed";
         this.size = [LiteGraph.NODE_WIDTH, 60];
         this.graph = null;
@@ -4961,10 +4957,6 @@ class LGraphNode {
 
 class LGraphGroup {
     constructor(title) {
-        this._ctor(title);
-    }
-
-    _ctor(title) {
         this.title = title || "Group";
         this.font_size = 24;
         this.color = LGraphCanvas.node_colors.pale_blue
