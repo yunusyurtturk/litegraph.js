@@ -1,6 +1,11 @@
 import { LiteGraph } from "../litegraph.js";
 
+
 class LGWebSocket {
+
+    static title = "WebSocket";
+    static desc = "Send data through a websocket";
+    
     constructor() {
         this.size = [60, 20];
         this.addInput("send", LiteGraph.ACTION);
@@ -138,16 +143,17 @@ class LGWebSocket {
         return [["out", 0]];
     }
 }
-
-LGWebSocket.title = "WebSocket";
-LGWebSocket.desc = "Send data through a websocket";
-
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
+
+//@TODO: Excise this!
 //It is like a websocket but using the SillyServer.js server that bounces packets back to all clients connected:
 //For more information: https://github.com/jagenjo/SillyServer.js
-
 class LGSillyClient {
+
+    static title = "SillyClient";
+    static desc = "Connects to SillyServer to broadcast messages";
+
     constructor() {
         //this.size = [60,20];
         this.room_widget = this.addWidget(
@@ -344,14 +350,15 @@ class LGSillyClient {
         return [["out", 0]];
     }
 }
-
-LGSillyClient.title = "SillyClient";
-LGSillyClient.desc = "Connects to SillyServer to broadcast messages";
-
 LiteGraph.registerNodeType("network/sillyclient", LGSillyClient);
+
 
 //HTTP Request
 class HTTPRequestNode {
+
+    static title = "HTTP Request";
+    static desc = "Fetch data through HTTP";
+    
     constructor() {
         this.addInput("request", LiteGraph.ACTION);
         this.addInput("url", "string");
@@ -398,8 +405,4 @@ class HTTPRequestNode {
         return [["error", LiteGraph.EVENT]];
     }
 }
-
-HTTPRequestNode.title = "HTTP Request";
-HTTPRequestNode.desc = "Fetch data through HTTP";
-
 LiteGraph.registerNodeType("network/httprequest", HTTPRequestNode);
