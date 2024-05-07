@@ -295,7 +295,7 @@ export default class LGraph {
                     throw err;
                 }
                 if (LiteGraph.debug) {
-                    console.log("Error during execution: " + err);
+                    console.log(`Error during execution: ${err}`);
                 }
                 this.stop();
             }
@@ -925,7 +925,7 @@ export default class LGraph {
             if (node.constructor == ctor) {
                 continue;
             }
-            console.log("node being replaced by newer version: " + node.type);
+            console.log(`node being replaced by newer version: ${node.type}`);
             var newnode = LiteGraph.createNode(node.type);
             this._nodes[i] = newnode;
             newnode.configure(node.serialize());
@@ -1441,7 +1441,7 @@ export default class LGraph {
                 if (!node) {
                     if (LiteGraph.debug) {
                         console.log(
-                            "Node not found or has errors: " + n_info.type
+                            `Node not found or has errors: ${n_info.type}`
                         );
                     }
 

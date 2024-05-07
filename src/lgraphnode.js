@@ -796,7 +796,7 @@ export default class LGraphNode {
         if (this.onExecute){
             
             // enable this to give the event an ID
-            if (!options.action_call) options.action_call = this.id+"_exec_"+Math.floor(Math.random()*9999);
+            if (!options.action_call) options.action_call = `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
             
             this.graph.nodes_executing[this.id] = true; //.push(this.id);
 
@@ -827,7 +827,7 @@ export default class LGraphNode {
         if (this.onAction){
             
             // enable this to give the event an ID
-            if (!options.action_call) options.action_call = this.id+"_"+(action?action:"action")+"_"+Math.floor(Math.random()*9999);
+            if (!options.action_call) options.action_call = `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
             
             this.graph.nodes_actioning[this.id] = (action?action:"actioning"); //.push(this.id);
             
@@ -927,7 +927,7 @@ export default class LGraphNode {
             if (node.mode === LiteGraph.ON_TRIGGER)
             {
                 // generate unique trigger ID if not present
-                if (!options.action_call) options.action_call = this.id+"_trigg_"+Math.floor(Math.random()*9999);
+                if (!options.action_call) options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
                 if (node.onExecute) {
                     // -- wrapping node.onExecute(param); --
                     node.doExecute(param, options);
@@ -935,7 +935,7 @@ export default class LGraphNode {
             }
             else if (node.onAction) {
                 // generate unique action ID if not present
-                if (!options.action_call) options.action_call = this.id+"_act_"+Math.floor(Math.random()*9999);
+                if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 //pass the action name
                 var target_connection = node.inputs[link_info.target_slot];
 
@@ -1340,8 +1340,8 @@ export default class LGraphNode {
             }
         }
         //litescene mode using the constructor
-        if(this.constructor["@" + property])
-            info = this.constructor["@" + property];
+        if(this.constructor[`@${property}`])
+            info = this.constructor[`@${property}`];
 
         if(this.constructor.widgets_info && this.constructor.widgets_info[property])
             info = this.constructor.widgets_info[property];
@@ -1861,7 +1861,7 @@ export default class LGraphNode {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
                 if (LiteGraph.debug) {
-                    console.log("Connect: Error, no slot of name " + slot);
+                    console.log(`Connect: Error, no slot of name ${slot}`);
                 }
                 return null;
             }
@@ -1890,7 +1890,7 @@ export default class LGraphNode {
             if (target_slot == -1) {
                 if (LiteGraph.debug) {
                     console.log(
-                        "Connect: Error, no slot of name " + target_slot
+                        `Connect: Error, no slot of name ${target_slot}`
                     );
                 }
                 return null;
@@ -2060,7 +2060,7 @@ export default class LGraphNode {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
                 if (LiteGraph.debug) {
-                    console.log("Connect: Error, no slot of name " + slot);
+                    console.log(`Connect: Error, no slot of name ${slot}`);
                 }
                 return false;
             }
@@ -2217,7 +2217,7 @@ export default class LGraphNode {
             slot = this.findInputSlot(slot);
             if (slot == -1) {
                 if (LiteGraph.debug) {
-                    console.log("Connect: Error, no slot of name " + slot);
+                    console.log(`Connect: Error, no slot of name ${slot}`);
                 }
                 return false;
             }

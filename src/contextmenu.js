@@ -38,7 +38,7 @@ export default class ContextMenu {
             eventClass !== "PointerEvent"
         ) {
             console.error(
-                "Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. ("+eventClass+")"
+                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`
             );
             options.event = null;
         }
@@ -189,11 +189,11 @@ export default class ContextMenu {
             }
         }
 
-        root.style.left = left + "px";
-        root.style.top = top + "px";
+        root.style.left = `${left}px`;
+        root.style.top = `${top}px`;
 
         if (options.scale) {
-            root.style.transform = "scale(" + options.scale + ")";
+            root.style.transform = `scale(${options.scale})`;
         }
     }
 

@@ -98,12 +98,12 @@ export default class Editor {
 
         setInterval(() => {
             meter.querySelector(".cpuload .fgload").style.width =
-                2 * self.graph.execution_time * 90 + "px";
+                `${2 * self.graph.execution_time * 90}px`;
             if (self.graph.status == LGraph.STATUS_RUNNING) {
                 meter.querySelector(".gpuload .fgload").style.width =
-                    self.graphcanvas.render_time * 10 * 90 + "px";
+                    `${self.graphcanvas.render_time * 10 * 90}px`;
             } else {
-                meter.querySelector(".gpuload .fgload").style.width = 4 + "px";
+                meter.querySelector(".gpuload .fgload").style.width = `${4}px`;
             }
         }, 200);
     }
@@ -121,7 +121,7 @@ export default class Editor {
     createButton(name, icon_url, callback) {
         var button = document.createElement("button");
         if (icon_url) {
-            button.innerHTML = "<img src='" + icon_url + "'/> ";
+            button.innerHTML = `<img src='${icon_url}'/> `;
         }
         button.classList.add("btn");
         button.innerHTML += name;
@@ -214,11 +214,7 @@ export default class Editor {
         var miniwindow = document.createElement("div");
         miniwindow.className = "litegraph miniwindow";
         miniwindow.innerHTML =
-            "<canvas class='graphcanvas' width='" +
-            w +
-            "' height='" +
-            h +
-            "' tabindex=10></canvas>";
+            `<canvas class='graphcanvas' width='${w}' height='${h}' tabindex=10></canvas>`;
         var canvas = miniwindow.querySelector("canvas");
         var that = this;
 
