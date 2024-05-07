@@ -283,4 +283,4 @@ class Editor {
     }
 }
 
-LiteGraph.Editor = Editor;
+export { Editor };
