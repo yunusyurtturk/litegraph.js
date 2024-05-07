@@ -1,7 +1,7 @@
-import { ContextMenu } from "./contextmenu.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraphNode } from "./lgraphnode.js";
-import { LGraphGroup } from "./lgraphgroup.js";
+import ContextMenu from "./contextmenu.js";
+import LGraphCanvas from "./lgraphcanvas.js";
+import LGraphNode from "./lgraphnode.js";
+import LGraphGroup from "./lgraphgroup.js";
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -1129,4 +1129,4 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
         };
 }
 
-export { LiteGraph };
+export default LiteGraph;

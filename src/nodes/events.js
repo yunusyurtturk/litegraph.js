@@ -1,4 +1,4 @@
-import { LiteGraph } from "../litegraph.js";
+import LiteGraph from "../litegraph.js";
 
 
 //Show value inside the debug console

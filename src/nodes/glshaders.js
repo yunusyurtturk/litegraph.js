@@ -1,4 +1,5 @@
-import { LiteGraph, LGraph } from "../litegraph.js";
+import LiteGraph from "../litegraph.js";
+import LGraph from "../lgraph.js";
 
 if (typeof GL != "undefined") {
     var SHADERNODES_COLOR = "#345";

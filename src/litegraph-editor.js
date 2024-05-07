@@ -1,10 +1,10 @@
 
-import { LiteGraph } from "./litegraph.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraph } from "./lgraph.js";
+import LiteGraph from "./litegraph.js";
+import LGraphCanvas from "./lgraphcanvas.js";
+import LGraph from "./lgraph.js";
 
 //Creates an interface to access extra features from a graph (like play, stop, live, etc)
-class Editor {
+export default class Editor {
     constructor(container_id, options) {
         options = options || {};
 
@@ -284,5 +284,3 @@ class Editor {
         this.graphcanvas2.viewport = [canvas.width*0.5,0,canvas.width*0.5,canvas.height];
     }
 }
-
-export { Editor };

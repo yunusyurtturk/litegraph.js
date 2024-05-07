@@ -1,7 +1,7 @@
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraphNode } from "./lgraphnode.js";
+import LGraphCanvas from "./lgraphcanvas.js";
+import LGraphNode from "./lgraphnode.js";
 
-class LGraphGroup {
+export default class LGraphGroup {
     constructor(title) {
         this.title = title || "Group";
         this.font_size = 24;
@@ -95,5 +95,3 @@ class LGraphGroup {
 }
 LGraphGroup.prototype.isPointInside = LGraphNode.prototype.isPointInside;
 LGraphGroup.prototype.setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;
-
-export { LGraphGroup };

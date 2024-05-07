@@ -1,7 +1,7 @@
-import { LiteGraph } from "./litegraph.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraphGroup } from "./lgraphgroup.js";
-import { LLink } from "./llink.js";
+import LiteGraph from "./litegraph.js";
+import LGraphCanvas from "./lgraphcanvas.js";
+import LGraphGroup from "./lgraphgroup.js";
+import LLink from "./llink.js";
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -15,7 +15,7 @@ import { LLink } from "./llink.js";
     * @param {Object} o data from previous serialization [optional]
     */
 
-class LGraph {
+export default class LGraph {
     constructor(o) {
         if (LiteGraph.debug) {
             console.log("Graph created");
@@ -1546,5 +1546,3 @@ LGraph.supported_types = ["number", "string", "boolean"];
 
 LGraph.STATUS_STOPPED = 1;
 LGraph.STATUS_RUNNING = 2;
-
-export { LGraph };
