@@ -205,6 +205,7 @@ class logicBranch {
 
     static title = "Branch";
     static desc = "Branch execution on condition";
+    //@BUG: Seems to always execute false branch
 
     constructor() {
         this.properties = {};

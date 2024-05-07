@@ -636,6 +636,7 @@ class WidgetText {
 
     static title = "Text";
     static desc = "Shows the input value";
+    // @BUG: Will draw text straight off the node with no wrapping
 
     constructor() {
         this.addInputs("", 0);

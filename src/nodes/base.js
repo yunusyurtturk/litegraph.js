@@ -1545,6 +1545,7 @@ class Console {
 
     static title = "Console";
     static desc = "Show value inside the console";
+    //@BUG: Didn't output text to console, either in browser or cmd
 
     constructor() {
         this.mode = LiteGraph.ON_EVENT;
