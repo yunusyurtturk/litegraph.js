@@ -1,3 +1,4 @@
+import { ContextMenu } from "./contextmenu.js";
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -13871,4 +13872,4 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
 }
 
 
-export { LiteGraph, LGraph, LLink, LGraphNode, LGraphGroup, DragAndScale, LGraphCanvas, ContextMenu };
+export { LiteGraph, LGraph, LLink, LGraphNode, LGraphGroup, DragAndScale, LGraphCanvas };
