@@ -96,7 +96,7 @@ export default class CurveEditor {
         {
             var point = [x / w, 1 - y / h];
             points.push(point);
-            points.sort(function(a,b){ return a[0] - b[0]; });
+            points.sort((a, b) => { return a[0] - b[0]; });
             this.selected = points.indexOf(point);
             this.must_update = true;
         }
@@ -131,7 +131,7 @@ export default class CurveEditor {
             else
                 point[0] = s == 0 ? 0 : 1;
             point[1] = 1.0 - LiteGraph.clamp(y, 0, 1);
-            points.sort(function(a,b){ return a[0] - b[0]; });
+            points.sort((a, b) => { return a[0] - b[0]; });
             this.selected = points.indexOf(point);
             this.must_update = true;
         }

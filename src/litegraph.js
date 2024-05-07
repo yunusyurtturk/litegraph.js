@@ -577,7 +577,7 @@ const LiteGraph = {
         }
 
         if (this.auto_sort_node_types) {
-            r.sort(function(a,b){return a.title.localeCompare(b.title)});
+            r.sort((a, b) => {return a.title.localeCompare(b.title)});
         }
 
         return r;
@@ -756,7 +756,7 @@ const LiteGraph = {
                 url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
             }
             return fetch(url)
-            .then(function(response) {
+            .then(response => {
                 if(!response.ok)
                         throw new Error("File not found"); //it will be catch below
                 if(type == "arraybuffer")
@@ -768,11 +768,11 @@ const LiteGraph = {
                 else if(type == "blob")
                     return response.blob();
             })
-            .then(function(data) {
+            .then(data => {
                 if(on_complete)
                     on_complete(data);
             })
-            .catch(function(error) {
+            .catch(error => {
                 console.error("error fetching file:",url);
                 if(on_error)
                     on_error(error);
@@ -781,8 +781,7 @@ const LiteGraph = {
         else if( url.constructor === File || url.constructor === Blob)
         {
             var reader = new FileReader();
-            reader.onload = function(e)
-            {
+            reader.onload = e => {
                 var v = e.target.result;
                 if( type == "json" )
                     v = JSON.parse(v);
@@ -806,7 +805,7 @@ if (typeof performance != "undefined") {
 } else if (typeof Date != "undefined" && Date.now) {
     LiteGraph.getTime = Date.now.bind(Date);
 } else if (typeof process != "undefined") {
-    LiteGraph.getTime = function() {
+    LiteGraph.getTime = () => {
         var t = process.hrtime();
         return t[0] * 0.001 + t[1] * 1e-6;
     };
@@ -946,7 +945,7 @@ function num2hex(triplet) {
 
 LiteGraph.num2hex = num2hex;
 
-LiteGraph.closeAllContextMenus = function(ref_window) {
+LiteGraph.closeAllContextMenus = ref_window => {
     ref_window = ref_window || window;
 
     var elements = ref_window.document.querySelectorAll(".litecontextmenu");
@@ -968,7 +967,7 @@ LiteGraph.closeAllContextMenus = function(ref_window) {
     }
 };
 
-LiteGraph.extendClass = function(target, origin) {
+LiteGraph.extendClass = (target, origin) => {
     for (var i in origin) {
         //copy class properties
         if (target.hasOwnProperty(i)) {
@@ -1012,7 +1011,7 @@ LiteGraph.extendClass = function(target, origin) {
 };
 
 //used to create nodes from wrapping functions
-LiteGraph.getParameterNames = function(func) {
+LiteGraph.getParameterNames = func => {
     return (func + "")
         .replace(/[/][/].*$/gm, "") // strip single-line comments
         .replace(/\s+/g, "") // strip white space
@@ -1026,7 +1025,7 @@ LiteGraph.getParameterNames = function(func) {
 
 /* helper for interaction: pointer, touch, mouse Listeners
 used by LGraphCanvas DragAndScale ContextMenu*/
-LiteGraph.pointerListenerAdd = function(oDOM, sEvIn, fCall, capture=false) {
+LiteGraph.pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
     if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall!=="function"){
         //console.log("cant pointerListenerAdd "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
@@ -1090,7 +1089,7 @@ LiteGraph.pointerListenerAdd = function(oDOM, sEvIn, fCall, capture=false) {
             return oDOM.addEventListener(sEvent, fCall, capture);
     }
 }
-LiteGraph.pointerListenerRemove = function(oDOM, sEvent, fCall, capture=false) {
+LiteGraph.pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
     if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall!=="function"){
         //console.log("cant pointerListenerRemove "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
@@ -1124,9 +1123,9 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame ||
-        function(callback) {
+        (callback => {
             window.setTimeout(callback, 1000 / 60);
-        };
+        });
 }
 
 export default LiteGraph;

@@ -182,7 +182,7 @@ export default class LGraph {
             this.execution_timer_id = -1;
             on_frame();
         } else { //execute every 'interval' ms
-            this.execution_timer_id = setInterval(function() {
+            this.execution_timer_id = setInterval(() => {
                 //execute
                 if(that.onBeforeStep)
                     that.onBeforeStep();
@@ -450,7 +450,7 @@ export default class LGraph {
         }
 
         //sort now by priority
-        L = L.sort(function(A, B) {
+        L = L.sort((A, B) => {
             var Ap = A.constructor.priority || A.priority || 0;
             var Bp = B.constructor.priority || B.priority || 0;
             if (Ap == Bp) {
@@ -497,7 +497,7 @@ export default class LGraph {
             }
         }
 
-        ancestors.sort(function(a, b) {
+        ancestors.sort((a, b) => {
             return a.order - b.order;
         });
         return ancestors;
@@ -1506,7 +1506,7 @@ export default class LGraph {
         if(url.constructor === File || url.constructor === Blob)
         {
             var reader = new FileReader();
-            reader.addEventListener('load', function(event) {
+            reader.addEventListener('load', event => {
                 var data = JSON.parse(event.target.result);
                 that.configure(data);
                 if(callback)
@@ -1521,7 +1521,7 @@ export default class LGraph {
         var req = new XMLHttpRequest();
         req.open("GET", url, true);
         req.send(null);
-        req.onload = function(oEvent) {
+        req.onload = oEvent => {
             if (req.status !== 200) {
                 console.error("Error loading graph:", req.status, req.response);
                 return;
@@ -1531,7 +1531,7 @@ export default class LGraph {
             if(callback)
                 callback();
         };
-        req.onerror = function(err) {
+        req.onerror = err => {
             console.error("Error loading graph:", err);
         };
     }

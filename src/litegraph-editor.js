@@ -28,7 +28,7 @@ export default class Editor {
         var graph = (this.graph = new LGraph());
         var graphcanvas = this.graphcanvas = new LGraphCanvas(canvas, graph);
         graphcanvas.background_image = "imgs/grid.png";
-        graph.onAfterExecute = function() {
+        graph.onAfterExecute = () => {
             graphcanvas.draw(true);
         };
 
@@ -98,7 +98,7 @@ export default class Editor {
         this.root.querySelector(".header .tools-left").appendChild(meter);
         var self = this;
 
-        setInterval(function() {
+        setInterval(() => {
             meter.querySelector(".cpuload .fgload").style.width =
                 2 * self.graph.execution_time * 90 + "px";
             if (self.graph.status == LGraph.STATUS_RUNNING) {
@@ -182,7 +182,7 @@ export default class Editor {
             var reader = new FileReader();
             if(ext == "json")
             {
-                reader.onload = function(event) {
+                reader.onload = event => {
                     var data = JSON.parse( event.target.result );
                     that.graph.configure(data);
                 };
@@ -203,7 +203,7 @@ export default class Editor {
         }
 
         var self = this;
-        setTimeout(function() {
+        setTimeout(() => {
             self.graphcanvas.resize();
         }, 100);
     }
@@ -233,7 +233,7 @@ export default class Editor {
         graphcanvas.render_shadows = false;
         graphcanvas.max_zoom = 0.25;
         this.miniwindow_graphcanvas = graphcanvas;
-        graphcanvas.onClear = function() {
+        graphcanvas.onClear = () => {
             graphcanvas.scale = 0.25;
             graphcanvas.allow_dragnodes = false;
             graphcanvas.allow_interaction = false;
@@ -263,7 +263,7 @@ export default class Editor {
         var close_button = document.createElement("div");
         close_button.className = "corner-button";
         close_button.innerHTML = "&#10060;";
-        close_button.addEventListener("click", function(e) {
+        close_button.addEventListener("click", e => {
             graphcanvas.setGraph(null);
             miniwindow.parentNode.removeChild(miniwindow);
         });

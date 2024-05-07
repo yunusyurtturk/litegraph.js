@@ -52,13 +52,13 @@ export default class ContextMenu {
         root.style.minWidth = 100;
         root.style.minHeight = 100;
         root.style.pointerEvents = "none";
-        setTimeout(function() {
+        setTimeout(() => {
             root.style.pointerEvents = "auto";
         }, 100); //delay so the mouse up event is not caught by this element
 
         //this prevents the default context browser menu to open in case this menu was created when pressing right button
         LiteGraph.pointerListenerAdd(root,"up",
-            function(e) {
+            e => {
                 //console.log("pointerevents: ContextMenu up root prevent");
                 e.preventDefault();
                 return true;
@@ -67,7 +67,7 @@ export default class ContextMenu {
         );
         root.addEventListener(
             "contextmenu",
-            function(e) {
+            e => {
                 if (e.button != 2) {
                     //right button
                     return false;
@@ -79,7 +79,7 @@ export default class ContextMenu {
         );
 
         LiteGraph.pointerListenerAdd(root,"down",
-            function(e) {
+            e => {
                 //console.log("pointerevents: ContextMenu down");
                 if (e.button == 2) {
                     that.close();
@@ -140,7 +140,7 @@ export default class ContextMenu {
             //that.close(e);
         });*/
 
-        LiteGraph.pointerListenerAdd(root,"enter", function(e) {
+        LiteGraph.pointerListenerAdd(root,"enter", e => {
             //console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
