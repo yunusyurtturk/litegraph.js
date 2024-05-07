@@ -2,7 +2,8 @@
 import { strict as assert } from 'assert';
 
 
-import { LiteGraph, LGraphNode } from "../src/litegraph.js";
+import LiteGraph from "../src/litegraph.js";
+import LGraphNode from "../src/lgraphnode.js";
 
 /*
     @TODO:
