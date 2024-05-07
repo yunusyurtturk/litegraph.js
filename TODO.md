@@ -3,6 +3,10 @@
 
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 
+# Re-implement non-default exports
+
+Because we package up classes in one file for consumption, we can't use export default!
+
 # Documentation
 
 Set up JSDocs comments
