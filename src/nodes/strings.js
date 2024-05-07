@@ -1,5 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
+
 function toString(a) {
     if (a && a.constructor === Object) {
         try {
@@ -10,19 +11,19 @@ function toString(a) {
     }
     return String(a);
 }
-
 LiteGraph.wrapFunctionAsNode("string/toString", toString, [""], "string");
+
 
 function compare(a, b) {
     return a == b;
 }
-
 LiteGraph.wrapFunctionAsNode(
     "string/compare",
     compare,
     ["string", "string"],
     "boolean",
 );
+
 
 function concatenate(a, b) {
     if (a === undefined) {
@@ -33,7 +34,6 @@ function concatenate(a, b) {
     }
     return a + b;
 }
-
 LiteGraph.wrapFunctionAsNode(
     "string/concatenate",
     concatenate,
@@ -41,13 +41,13 @@ LiteGraph.wrapFunctionAsNode(
     "string",
 );
 
+
 function contains(a, b) {
     if (a === undefined || b === undefined) {
         return false;
     }
     return a.indexOf(b) != -1;
 }
-
 LiteGraph.wrapFunctionAsNode(
     "string/contains",
     contains,
@@ -55,19 +55,20 @@ LiteGraph.wrapFunctionAsNode(
     "boolean",
 );
 
+
 function toUpperCase(a) {
     if (a != null && a.constructor === String) {
         return a.toUpperCase();
     }
     return a;
 }
-
 LiteGraph.wrapFunctionAsNode(
     "string/toUpperCase",
     toUpperCase,
     ["string"],
     "string",
 );
+
 
 function split(str, separator) {
     if (separator == null) separator = this.properties.separator;
@@ -83,7 +84,6 @@ function split(str, separator) {
     }
     return null;
 }
-
 LiteGraph.wrapFunctionAsNode(
     "string/split",
     split,
@@ -92,18 +92,23 @@ LiteGraph.wrapFunctionAsNode(
     { separator: "," },
 );
 
+
 function toFixed(a) {
     if (a != null && a.constructor === Number) {
         return a.toFixed(this.properties.precision);
     }
     return a;
 }
-
 LiteGraph.wrapFunctionAsNode("string/toFixed", toFixed, ["number"], "string", {
     precision: 0,
 });
 
+
 class StringToTable {
+
+    static title = "toTable";
+    static desc = "Splits a string to table";
+
     constructor() {
         this.addInput("", "string");
         this.addOutput("table", "table");
@@ -128,8 +133,4 @@ class StringToTable {
         this.setOutputData(1, this._table ? this._table.length : 0);
     }
 }
-
-StringToTable.title = "toTable";
-StringToTable.desc = "Splits a string to table";
-
 LiteGraph.registerNodeType("string/toTable", StringToTable);
