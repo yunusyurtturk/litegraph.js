@@ -1,6 +1,10 @@
 import { LiteGraph } from "../litegraph.js";
 
 class Selector {
+
+    static title = "Selector";
+    static desc = "selects an output";
+
     constructor() {
         this.addInput("sel", "number");
         this.addInput("A");
@@ -44,13 +48,14 @@ class Selector {
         ];
     }
 }
-
-Selector.title = "Selector";
-Selector.desc = "selects an output";
-
 LiteGraph.registerNodeType("logic/selector", Selector);
 
+
 class Sequence {
+
+    static title = "Sequence";
+    static desc = "select one element from a sequence from a string";
+
     constructor() {
         this.properties = {
             sequence: "A,B,C",
@@ -84,13 +89,14 @@ class Sequence {
         this.setOutputData(0, this.values[index]);
     }
 }
-
-Sequence.title = "Sequence";
-Sequence.desc = "select one element from a sequence from a string";
-
 LiteGraph.registerNodeType("logic/sequence", Sequence);
 
+
 class logicAnd {
+
+    static title = "AND";
+    static desc = "Return true if all inputs are true";
+
     constructor() {
         this.properties = {};
         this.addInput("a", "boolean");
@@ -113,12 +119,14 @@ class logicAnd {
         return [["and", "boolean"]];
     }
 }
-
-logicAnd.title = "AND";
-logicAnd.desc = "Return true if all inputs are true";
 LiteGraph.registerNodeType("logic/AND", logicAnd);
 
+
 class logicOr {
+
+    static title = "OR";
+    static desc = "Return true if at least one input is true";
+
     constructor() {
         this.properties = {};
         this.addInput("a", "boolean");
@@ -141,12 +149,12 @@ class logicOr {
         return [["or", "boolean"]];
     }
 }
-
-logicOr.title = "OR";
-logicOr.desc = "Return true if at least one input is true";
 LiteGraph.registerNodeType("logic/OR", logicOr);
 
+
 class logicNot {
+    static title = "NOT";
+    static desc = "Return the logical negation";
     constructor() {
         this.properties = {};
         this.addInput("in", "boolean");
@@ -158,12 +166,14 @@ class logicNot {
         this.setOutputData(0, ret);
     }
 }
-
-logicNot.title = "NOT";
-logicNot.desc = "Return the logical negation";
 LiteGraph.registerNodeType("logic/NOT", logicNot);
 
+
 class logicCompare {
+
+    static title = "bool == bool";
+    static desc = "Compare for logical equality";
+
     constructor() {
         this.properties = {};
         this.addInput("a", "boolean");
@@ -188,12 +198,14 @@ class logicCompare {
         return [["bool", "boolean"]];
     }
 }
-
-logicCompare.title = "bool == bool";
-logicCompare.desc = "Compare for logical equality";
 LiteGraph.registerNodeType("logic/CompareBool", logicCompare);
 
+
 class logicBranch {
+
+    static title = "Branch";
+    static desc = "Branch execution on condition";
+
     constructor() {
         this.properties = {};
         this.addInput("onTrigger", LiteGraph.ACTION);
@@ -212,7 +224,4 @@ class logicBranch {
         }
     }
 }
-
-logicBranch.title = "Branch";
-logicBranch.desc = "Branch execution on condition";
 LiteGraph.registerNodeType("logic/IF", logicBranch);
