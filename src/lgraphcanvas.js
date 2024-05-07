@@ -7514,7 +7514,7 @@ export class LGraphCanvas {
                 return;
             }
             var kV = Object.values(LiteGraph.NODE_MODES).indexOf(v);
-            fApplyMultiNode = (node) => {
+            const fApplyMultiNode = (node) => {
                 if (kV>=0 && LiteGraph.NODE_MODES[kV])
                     node.changeMode(kV);
                 else{

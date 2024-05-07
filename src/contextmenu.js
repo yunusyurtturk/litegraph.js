@@ -14,7 +14,7 @@ export class ContextMenu {
     */
     constructor(values, options = {}) {
         this.options = options;
-        var that = this;
+        options.scroll_speed ??= 0.1;
 
         this.#linkToParent();
         this.#validateEventClass();
@@ -27,97 +27,54 @@ export class ContextMenu {
         }
         root.style.minWidth = 100;
         root.style.minHeight = 100;
+
+
         root.style.pointerEvents = "none";
         setTimeout(() => {
             root.style.pointerEvents = "auto";
         }, 100); //delay so the mouse up event is not caught by this element
 
         //this prevents the default context browser menu to open in case this menu was created when pressing right button
-        LiteGraph.pointerListenerAdd(root,"up",
-            e => {
-                //console.log("pointerevents: ContextMenu up root prevent");
+        root.addEventListener("mouseup", e => {
+            //console.log("pointerevents: ContextMenu up root prevent");
+            e.preventDefault();
+            return true;
+        });
+        root.addEventListener("contextmenu", e => {
+            if (e.button != 2) {
+                //right button
+                return false;
+            }
+            e.preventDefault();
+            return false;
+        });
+        root.addEventListener("mousedown", e => {
+            //console.log("pointerevents: ContextMenu down");
+            if (e.button == 2) {
+                this.close();
                 e.preventDefault();
                 return true;
-            },
-            true
-        );
-        root.addEventListener(
-            "contextmenu",
-            e => {
-                if (e.button != 2) {
-                    //right button
-                    return false;
-                }
-                e.preventDefault();
-                return false;
-            },
-            true
-        );
-
-        LiteGraph.pointerListenerAdd(root,"down",
-            e => {
-                //console.log("pointerevents: ContextMenu down");
-                if (e.button == 2) {
-                    that.close();
-                    e.preventDefault();
-                    return true;
-                }
-            },
-            true
-        );
-
-        function on_mouse_wheel(e) {
+            }
+        });
+        root.addEventListener("wheel", e => {
             var pos = parseInt(root.style.top);
             root.style.top =
                 (pos + e.deltaY * options.scroll_speed).toFixed() + "px";
             e.preventDefault();
             return true;
-        }
-
-        if (!options.scroll_speed) {
-            options.scroll_speed = 0.1;
-        }
-
-        root.addEventListener("wheel", on_mouse_wheel, true);
-        root.addEventListener("mousewheel", on_mouse_wheel, true);
-
-        this.root = root;
-
-        this.#addTitle();
-
-        //entries
-        var num = 0;
-        for (var i=0; i < values.length; i++) {
-            var name = values.constructor == Array ? values[i] : i;
-            if (name != null && name.constructor !== String) {
-                name = name.content === undefined ? String(name) : name.content;
-            }
-            var value = values[i];
-            this.addItem(name, value, options);
-            num++;
-        }
-
-        LiteGraph.pointerListenerAdd(root,"enter", e => {
+        });
+        root.addEventListener("mouseenter", e => {
             //console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
             }
         });
 
-        //insert before checking position
-        var root_document = document;
-        if (options.event) {
-            root_document = options.event.target.ownerDocument;
-        }
+        this.root = root;
 
-        if (!root_document) {
-            root_document = document;
-        }
-
-        if( root_document.fullscreenElement )
-            root_document.fullscreenElement.appendChild(root);
-        else
-            root_document.body.appendChild(root);
+        this.#addTitle();
+        this.#addItems(values);
+        this.#insertMenu();
 
         //compute best position
         var left = options.left || 0;
@@ -193,6 +150,28 @@ export class ContextMenu {
         element.className = "litemenu-title";
         element.innerHTML = this.options.title;
         this.root.appendChild(element);
+    }
+
+    #addItems(values) {
+        let num = 0;
+    
+        for (let i = 0; i < values.length; i++) {
+            let name = Array.isArray(values) ? values[i] : i;
+    
+            if (name && typeof name !== 'string') {
+                name = name.content === undefined ? String(name) : name.content;
+            }
+    
+            let value = values[i];
+            this.addItem(name, value, this.options);
+            num++;
+        }
+    }
+
+    #insertMenu() {
+        const doc = this.options.event?.target.ownerDocument ?? document;
+        const parent = doc.fullscreenElement ?? doc.body;
+        parent.appendChild(this.root);
     }
 
     addItem(name, value, options = {}) {
