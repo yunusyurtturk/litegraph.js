@@ -57,6 +57,7 @@ class Sequence {
 
     static title = "Sequence";
     static desc = "Triggers a sequence of events when an event arrives";
+    //@ BUG: fails to construct Node
 
     constructor() {
         var that = this;
