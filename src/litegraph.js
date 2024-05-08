@@ -944,25 +944,13 @@ function num2hex(triplet) {
 
 LiteGraph.num2hex = num2hex;
 
-LiteGraph.closeAllContextMenus = (ref_window = window) => {
-    var elements = ref_window.document.querySelectorAll(".litecontextmenu");
-    if (!elements.length) {
-        return;
-    }
-
-    var result = [];
-    for (var i = 0; i < elements.length; i++) {
-        result.push(elements[i]);
-    }
-
-    for (var i=0; i < result.length; i++) {
-        if (result[i].close) {
-            result[i].close();
-        } else if (result[i].parentNode) {
-            result[i].parentNode.removeChild(result[i]);
-        }
-    }
-};
+LiteGraph.closeAllContextMenus = (ref_window) => {
+    console.log(`
+        LiteGraph.closeAllContextMenus is deprecated 
+        and will be removed after 2024-07-01.  
+        Please use ContextMenu.closeAll`);
+    ContextMenu.closeAll(ref_window);
+}
 
 LiteGraph.extendClass = (target, origin) => {
     for (var i in origin) {

@@ -1,11 +1,10 @@
 import { LiteGraph } from "./litegraph.js";
 
-// @class ContextMenu
 export class ContextMenu {
-    
+ 
     /**
     * @constructor
-    * @param {Array} values (allows object { title: "Nice text", callback: function ... })
+    * @param {Array<Object>} values (allows object { title: "Nice text", callback: function ... })
     * @param {Object} options [optional] Some options:\
     * - title: title to show on top of the menu
     * - callback: function to call when an option is clicked, it receives the item information
@@ -18,16 +17,27 @@ export class ContextMenu {
 
         this.#linkToParent();
         this.#validateEventClass();
+        const root = this.#createRoot();
+        this.#bindEvents();
+        this.setTitle(this.options.title);
+        this.addItems(values);
+        this.#insertMenu();
+        this.#calculateBestPosition();
+    }
 
-
-        var root = document.createElement("div");
-        root.className = "litegraph litecontextmenu litemenubar-panel";
-        if (options.className) {
-            root.className += " " + options.className;
+    #createRoot() {
+        const root = this.root = document.createElement("div");        
+        if (this.options.className) {
+            root.className = this.options.className;
         }
+        root.classList.add("litegraph","litecontextmenu","litemenubar-panel");
         root.style.minWidth = 100;
         root.style.minHeight = 100;
+        return root;
+    }
 
+    #bindEvents() {
+        const root = this.root;
 
         root.style.pointerEvents = "none";
         setTimeout(() => {
@@ -59,7 +69,7 @@ export class ContextMenu {
         root.addEventListener("wheel", e => {
             var pos = parseInt(root.style.top);
             root.style.top =
-                (pos + e.deltaY * options.scroll_speed).toFixed() + "px";
+                (pos + e.deltaY * this.options.scroll_speed).toFixed() + "px";
             e.preventDefault();
             return true;
         });
@@ -69,14 +79,85 @@ export class ContextMenu {
                 clearTimeout(root.closing_timer);
             }
         });
+    }
 
-        this.root = root;
+    #linkToParent() {
+        const parentMenu = this.options.parentMenu;
+        if (!parentMenu)
+            return;
+        if (parentMenu.constructor !== this.constructor) {
+            console.error("parentMenu must be of class ContextMenu, ignoring it");
+            this.options.parentMenu = null;
+            return;
+        }
+        this.parentMenu = parentMenu;
+        this.parentMenu.lock = true;
+        this.parentMenu.current_submenu = this;
+    }
 
-        this.#addTitle();
-        this.#addItems(values);
-        this.#insertMenu();
+    #validateEventClass() {
+        if(!this.options.event)
+            return;
 
-        //compute best position
+        //use strings because comparing classes between windows doesnt work
+        const eventClass = this.options.event.constructor.name;
+        if ( eventClass !== "MouseEvent" &&
+            eventClass !== "CustomEvent" &&
+            eventClass !== "PointerEvent"
+        ) {
+            console.error(
+                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`
+            );
+            this.options.event = null;
+        }
+    }
+
+    /**
+     * Creates a title element if it doesn't have one.
+     * Sets the title of the menu.
+     * @param {string} title - The title to be set.
+     */
+    setTitle(title) {
+        if (!title)
+            return;
+        this.titleElement ??= document.createElement("div");
+        const element = this.titleElement;
+        element.className = "litemenu-title";
+        element.innerHTML = title;
+        if(!this.root.parentElement)
+            this.root.appendChild(element);
+    }
+
+    /**
+     * Adds a set of values to the menu.
+     * @param {Array<string|object>} values - An array of values to be added.
+     */
+    addItems(values) {
+        let num = 0;
+    
+        for (let i = 0; i < values.length; i++) {
+            let name = Array.isArray(values) ? values[i] : i;
+    
+            if (name && typeof name !== 'string') {
+                name = name.content === undefined ? String(name) : name.content;
+            }
+    
+            let value = values[i];
+            this.addItem(name, value, this.options);
+            num++;
+        }
+    }
+
+    #insertMenu() {
+        const doc = this.options.event?.target.ownerDocument ?? document;
+        const parent = doc.fullscreenElement ?? doc.body;
+        parent.appendChild(this.root);
+    }
+
+    #calculateBestPosition() {
+        const options = this.options;
+        const root = this.root;
+
         var left = options.left || 0;
         var top = options.top || 0;
         if (options.event) {
@@ -112,68 +193,13 @@ export class ContextMenu {
         }
     }
 
-    #linkToParent() {
-        const parentMenu = this.options.parentMenu;
-        if (!parentMenu)
-            return;
-        if (parentMenu.constructor !== this.constructor) {
-            console.error("parentMenu must be of class ContextMenu, ignoring it");
-            this.options.parentMenu = null;
-            return;
-        }
-        this.parentMenu = parentMenu;
-        this.parentMenu.lock = true;
-        this.parentMenu.current_submenu = this;
-    }
-
-    #validateEventClass() {
-        if(!this.options.event)
-            return;
-
-        //use strings because comparing classes between windows doesnt work
-        const eventClass = this.options.event.constructor.name;
-        if ( eventClass !== "MouseEvent" &&
-            eventClass !== "CustomEvent" &&
-            eventClass !== "PointerEvent"
-        ) {
-            console.error(
-                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`
-            );
-            this.options.event = null;
-        }
-    }
-
-    #addTitle() {
-        if (!this.options.title)
-            return;
-        const element = document.createElement("div");
-        element.className = "litemenu-title";
-        element.innerHTML = this.options.title;
-        this.root.appendChild(element);
-    }
-
-    #addItems(values) {
-        let num = 0;
-    
-        for (let i = 0; i < values.length; i++) {
-            let name = Array.isArray(values) ? values[i] : i;
-    
-            if (name && typeof name !== 'string') {
-                name = name.content === undefined ? String(name) : name.content;
-            }
-    
-            let value = values[i];
-            this.addItem(name, value, this.options);
-            num++;
-        }
-    }
-
-    #insertMenu() {
-        const doc = this.options.event?.target.ownerDocument ?? document;
-        const parent = doc.fullscreenElement ?? doc.body;
-        parent.appendChild(this.root);
-    }
-
+    /**
+     * Adds an item to the menu.
+     * @param {string} name - The name of the item.
+     * @param {object | null} value - The value associated with the item.
+     * @param {object} [options={}] - Additional options for the item.
+     * @returns {HTMLElement} - The created HTML element representing the added item.
+     */
     addItem(name, value, options = {}) {
         var that = this;
 
@@ -184,10 +210,8 @@ export class ContextMenu {
 
         if (value === null) {
             element.classList.add("separator");
-            //element.innerHTML = "<hr/>"
-            //continue;
         } else {
-            element.innerHTML = value && value.title ? value.title : name;
+            element.innerHTML = value?.title ?? name;
             element.value = value;
 
             if (value) {
@@ -217,16 +241,14 @@ export class ContextMenu {
             element.addEventListener("click", inner_onclick);
         }
         if (!disabled && options.autoopen) {
-            LiteGraph.pointerListenerAdd(element,"enter",inner_over);
-        }
-
-        function inner_over(e) {
-            var value = this.value;
-            if (!value || !value.has_submenu) {
-                return;
-            }
-            //if it is a submenu, autoopen like the item was clicked
-            inner_onclick.call(this, e);
+            element.addEventListener("mouseenter",(e) => {
+                const value = this.value;
+                if (!value || !value.has_submenu) {
+                    return;
+                }
+                //if it is a submenu, autoopen like the item was clicked
+                inner_onclick.call(this, e);
+            });
         }
 
         //menu option clicked
@@ -234,14 +256,12 @@ export class ContextMenu {
             var value = this.value;
             var close_parent = true;
 
-            if (that.current_submenu) {
-                that.current_submenu.close(e);
-            }
+            that.current_submenu?.close(e);
 
             //global callback
             if (options.callback) {
                 var r = options.callback.call(
-                    this,
+                    this, 
                     value,
                     options,
                     e,
@@ -295,14 +315,18 @@ export class ContextMenu {
                 that.close();
             }
         }
-
         return element;
     }
 
+    /**
+     * Closes this menu.
+     * @param {Event} [e] - The event that triggered the close action.
+     * @param {boolean} [ignore_parent_menu=false] - Whether to ignore the parent menu when closing.
+     */
     close(e, ignore_parent_menu) {
-        if (this.root.parentNode) {
-            this.root.parentNode.removeChild(this.root);
-        }
+
+        this.root.parentNode?.removeChild(this.root);
+        
         if (this.parentMenu && !ignore_parent_menu) {
             this.parentMenu.lock = false;
             this.parentMenu.current_submenu = null;
@@ -315,10 +339,8 @@ export class ContextMenu {
                 ContextMenu.trigger(this.parentMenu.root, LiteGraph.pointerevents_method+"leave", e);
             }
         }
-        if (this.current_submenu) {
-            this.current_submenu.close(e, true);
-        }
-
+        this.current_submenu?.close(e, true);
+        
         if (this.root.closing_timer) {
             clearTimeout(this.root.closing_timer);
         }
@@ -327,50 +349,54 @@ export class ContextMenu {
         // on key press, allow filtering/selecting the context menu elements
     }
 
-    //this code is used to trigger events easily (used in the context menu mouseleave
+    /**
+     * Closes all open ContextMenus in the specified window.
+     * @param {Window} [ref_window=window] - The window object to search for open menus.
+     */
+    static closeAll = (ref_window = window) => {
+        const elements = ref_window.document.querySelectorAll(".litecontextmenu");
+        if (!elements.length)
+            return;
+    
+        elements.forEach(element => {
+            if (element.close) {
+                element.close();
+            } else {
+                element.parentNode?.removeChild(element);
+            }
+        });
+    };
+
+    /**
+     * Triggers an event on the specified element with the given event name and parameters.
+     * @param {HTMLElement} element - The element on which to trigger the event.
+     * @param {string} event_name - The name of the event to trigger.
+     * @param {Object} params - Additional parameters to include in the event.
+     * @param {HTMLElement} origin - The origin of the event <currently not supported as CustomEvent can't have a target!>
+     * @returns {CustomEvent} - The created CustomEvent instance.
+     */
     static trigger(element, event_name, params, origin) {
-        var evt = document.createEvent("CustomEvent");
-        evt.initCustomEvent(event_name, true, true, params); //canBubble, cancelable, detail
-        evt.srcElement = origin;
+        const event = new CustomEvent(event_name, params);
         if (element.dispatchEvent) {
-            element.dispatchEvent(evt);
+            element.dispatchEvent(event);
         } else if (element.__events) {
-            element.__events.dispatchEvent(evt);
+            element.__events.dispatchEvent(event);
         }
-        //else nothing seems binded here so nothing to do
-        return evt;
+        return event;
     }
 
     //returns the top most menu
     getTopMenu() {
-        if (this.options.parentMenu) {
-            return this.options.parentMenu.getTopMenu();
-        }
-        return this;
+        return this.options.parentMenu?.getTopMenu() ?? this;
     }
 
     getFirstEvent() {
-        if (this.options.parentMenu) {
-            return this.options.parentMenu.getFirstEvent();
-        }
-        return this.options.event;
+        return this.options.parentMenu?.getFirstEvent() ?? this.options.event;
     }
 
     static isCursorOverElement(event, element) {
-        var left = event.clientX;
-        var top = event.clientY;
-        var rect = element.getBoundingClientRect();
-        if (!rect) {
-            return false;
-        }
-        if (
-            top > rect.top &&
-            top < rect.top + rect.height &&
-            left > rect.left &&
-            left < rect.left + rect.width
-        ) {
-            return true;
-        }
-        return false;
+        return LiteGraph.isInsideRectangle( 
+            event.clientX, event.clientY, element.left, element.top, element.width, element.height
+        );
     }
 }
