@@ -9,7 +9,7 @@
     "scripts": {
         "prebuild": "rimraf build",
         "build": "python3 build.py",
-        "docs": "jsdoc -c ./docs/.jsdoc.config -d ./docs",
+        "docs": "jsdoc -c ./docs/.jsdoc.config -d ./docs -r",
         "server": "nodemon server.js",
         "test": "mocha",
         "prettier": "npx prettier --write src/**/*.* css/**/*.*",
