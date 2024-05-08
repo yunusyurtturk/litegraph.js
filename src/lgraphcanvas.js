@@ -14,8 +14,8 @@ import { LGraphGroup } from "./lgraphgroup.js";
  * @param {Object} options [optional] { skip_rendering, autoresize, viewport }
  */
 export class LGraphCanvas {
-    constructor(canvas, graph, options) {
-        this.options = options = options || {};
+    constructor(canvas, graph, options = {}) {
+        this.options = options;
 
         //if(graph === undefined)
         //	throw ("No graph assigned");
@@ -28,9 +28,8 @@ export class LGraphCanvas {
         this.ds = new DragAndScale();
         this.zoom_modify_alpha = true; //otherwise it generates ugly patterns when scaling down too much
 
-        this.title_text_font = "" + LiteGraph.NODE_TEXT_SIZE + "px Arial";
-        this.inner_text_font =
-            "normal " + LiteGraph.NODE_SUBTEXT_SIZE + "px Arial";
+        this.title_text_font = `${LiteGraph.NODE_TEXT_SIZE}px Arial`;
+        this.inner_text_font = `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px Arial`;
         this.node_title_color = LiteGraph.NODE_TITLE_COLOR;
         this.default_link_color = LiteGraph.LINK_COLOR;
         this.default_connection_color = {
@@ -122,10 +121,7 @@ export class LGraphCanvas {
         this.viewport = options.viewport || null; //to constraint render area to a portion of the canvas
 
         //link canvas and graph
-        if (graph) {
-            graph.attachCanvas(this);
-        }
-
+        graph?.attachCanvas(this);
         this.setCanvas(canvas,options.skip_events);
         this.clear();
 
@@ -177,9 +173,7 @@ export class LGraphCanvas {
         this.pointer_is_double = false;
         this.visible_area.set([0, 0, 0, 0]);
 
-        if (this.onClear) {
-            this.onClear();
-        }
+        this.onClear?.();
     }
 
     /**
@@ -197,17 +191,15 @@ export class LGraphCanvas {
             this.clear();
         }
 
-        if (!graph && this.graph) {
-            this.graph.detachCanvas(this);
+        if (!graph) {
+            this.graph?.detachCanvas(this);
             return;
         }
 
         graph.attachCanvas(this);
 
         //remove the graph stack in case a subgraph was open
-        if (this._graph_stack)
-            this._graph_stack = null;
-
+        this._graph_stack &&= null;
         this.setDirty(true, true);
     }
 
@@ -241,9 +233,7 @@ export class LGraphCanvas {
         this.clear();
 
         if (this.graph) {
-            if (!this._graph_stack) {
-                this._graph_stack = [];
-            }
+            this._graph_stack ||= [];
             this._graph_stack.push(this.graph);
         }
 
@@ -327,12 +317,9 @@ export class LGraphCanvas {
         canvas.tabindex = "1"; //to allow key events
 
         //bg canvas: used for non changing stuff
-        this.bgcanvas = null;
-        if (!this.bgcanvas) {
-            this.bgcanvas = document.createElement("canvas");
-            this.bgcanvas.width = this.canvas.width;
-            this.bgcanvas.height = this.canvas.height;
-        }
+        this.bgcanvas = document.createElement("canvas");
+        this.bgcanvas.width = this.canvas.width;
+        this.bgcanvas.height = this.canvas.height;
 
         if (canvas.getContext == null) {
             if (canvas.localName != "canvas") {
@@ -342,7 +329,7 @@ export class LGraphCanvas {
             throw "This browser doesn't support Canvas";
         }
 
-        var ctx = (this.ctx = canvas.getContext("2d"));
+        var ctx = this.ctx = canvas.getContext("2d");
         if (ctx == null) {
             if (!canvas.webgl_enabled) {
                 console.warn(
@@ -382,8 +369,7 @@ export class LGraphCanvas {
             console.warn("LGraphCanvas: events already binded");
             return;
         }
-
-        //console.log("pointerevents: bindEvents");
+        this._events_binded = true;
         
         var canvas = this.canvas;
 
@@ -392,34 +378,16 @@ export class LGraphCanvas {
 
         this._mousedown_callback = this.processMouseDown.bind(this);
         this._mousewheel_callback = this.processMouseWheel.bind(this);
-        // why mousemove and mouseup were not binded here?
         this._mousemove_callback = this.processMouseMove.bind(this);
         this._mouseup_callback = this.processMouseUp.bind(this);
         
-        //touch events -- TODO IMPLEMENT
-        //this._touch_callback = this.touchHandler.bind(this);
-
         LiteGraph.pointerListenerAdd(canvas,"down", this._mousedown_callback, true); //down do not need to store the binded
-        canvas.addEventListener("mousewheel", this._mousewheel_callback, false);
+        canvas.addEventListener("wheel", this._mousewheel_callback, false);
 
         LiteGraph.pointerListenerAdd(canvas,"up", this._mouseup_callback, true); // CHECK: ??? binded or not
         LiteGraph.pointerListenerAdd(canvas,"move", this._mousemove_callback);
         
         canvas.addEventListener("contextmenu", this._doNothing);
-        canvas.addEventListener(
-            "DOMMouseScroll",
-            this._mousewheel_callback,
-            false
-        );
-
-        //touch events -- THIS WAY DOES NOT WORK, finish implementing pointerevents, than clean the touchevents
-        /*if( 'touchstart' in document.documentElement )
-        {
-            canvas.addEventListener("touchstart", this._touch_callback, true);
-            canvas.addEventListener("touchmove", this._touch_callback, true);
-            canvas.addEventListener("touchend", this._touch_callback, true);
-            canvas.addEventListener("touchcancel", this._touch_callback, true);
-        }*/
 
         //Keyboard ******************
         this._key_callback = this.processKey.bind(this);
@@ -435,7 +403,6 @@ export class LGraphCanvas {
         canvas.addEventListener("drop", this._ondrop_callback, false);
         canvas.addEventListener("dragenter", this._doReturnTrue, false);
 
-        this._events_binded = true;
     }
 
     /**
@@ -447,8 +414,7 @@ export class LGraphCanvas {
             console.warn("LGraphCanvas: no events binded");
             return;
         }
-
-        //console.log("pointerevents: unbindEvents");
+        this._events_binded = false;
         
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document;
@@ -456,32 +422,18 @@ export class LGraphCanvas {
         LiteGraph.pointerListenerRemove(this.canvas,"move", this._mousedown_callback);
         LiteGraph.pointerListenerRemove(this.canvas,"up", this._mousedown_callback);
         LiteGraph.pointerListenerRemove(this.canvas,"down", this._mousedown_callback);
-        this.canvas.removeEventListener(
-            "mousewheel",
-            this._mousewheel_callback
-        );
-        this.canvas.removeEventListener(
-            "DOMMouseScroll",
-            this._mousewheel_callback
-        );
+        this.canvas.removeEventListener("wheel", this._mousewheel_callback);
         this.canvas.removeEventListener("keydown", this._key_callback);
         document.removeEventListener("keyup", this._key_callback);
         this.canvas.removeEventListener("contextmenu", this._doNothing);
         this.canvas.removeEventListener("drop", this._ondrop_callback);
         this.canvas.removeEventListener("dragenter", this._doReturnTrue);
 
-        //touch events -- THIS WAY DOES NOT WORK, finish implementing pointerevents, than clean the touchevents
-        /*this.canvas.removeEventListener("touchstart", this._touch_callback );
-        this.canvas.removeEventListener("touchmove", this._touch_callback );
-        this.canvas.removeEventListener("touchend", this._touch_callback );
-        this.canvas.removeEventListener("touchcancel", this._touch_callback );*/
-
         this._mousedown_callback = null;
         this._mousewheel_callback = null;
         this._key_callback = null;
         this._ondrop_callback = null;
 
-        this._events_binded = false;
     }
 
     static getFileExtension(url) {
@@ -550,7 +502,7 @@ export class LGraphCanvas {
             return window;
         }
         var doc = this.canvas.ownerDocument;
-        return doc.defaultView || doc.parentWindow;
+        return doc.defaultView ?? doc.parentWindow;
     }
 
     /**
@@ -655,17 +607,11 @@ export class LGraphCanvas {
             this.pointer_is_double = false;
         }
         this.pointer_is_down = true;
-        
-        
         this.canvas.focus();
+        ContextMenu.closeAll(ref_window);
 
-        LiteGraph.closeAllContextMenus(ref_window);
-
-        if (this.onMouse)
-        {
-            if (this.onMouse(e))
-                return;
-        }
+        if (this.onMouse?.(e))
+            return;
 
         //left button mouse / single finger
         if (e.which == 1 && !this.pointer_is_double)
@@ -756,13 +702,9 @@ export class LGraphCanvas {
                                     }
 
                                     if (is_double_click) {
-                                        if (node.onOutputDblClick) {
-                                            node.onOutputDblClick(i, e);
-                                        }
+                                        node.onOutputDblClick?.(i, e);
                                     } else {
-                                        if (node.onOutputClick) {
-                                            node.onOutputClick(i, e);
-                                        }
+                                        node.onOutputClick?.(i, e);
                                     }
 
                                     skip_action = true;
@@ -787,13 +729,9 @@ export class LGraphCanvas {
                                     )
                                 ) {
                                     if (is_double_click) {
-                                        if (node.onInputDblClick) {
-                                            node.onInputDblClick(i, e);
-                                        }
+                                        node.onInputDblClick?.(i, e);
                                     } else {
-                                        if (node.onInputClick) {
-                                            node.onInputClick(i, e);
-                                        }
+                                        node.onInputClick?.(i, e);
                                     }
 
                                     if (input.link !== null) {
@@ -866,10 +804,7 @@ export class LGraphCanvas {
 
                     //double clicking
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
-                        //double click node
-                        if (node.onDblClick) {
-                            node.onDblClick( e, pos, this );
-                        }
+                        node.onDblClick?.( e, pos, this );
                         this.processNodeDblClicked(node);
                         block_drag_node = true;
                     }
@@ -906,7 +841,8 @@ export class LGraphCanvas {
                          * Don't call the function if the block is already selected.
                          * Otherwise, it could cause the block to be unselected while its panel is open.
                          */
-                        if (!node.is_selected) this.processNodeSelected(node, e);
+                        if (!node.is_selected) 
+                            this.processNodeSelected(node, e);
                     }
 
                     this.dirty_canvas = true;
@@ -1012,18 +948,20 @@ export class LGraphCanvas {
                             var alphaPosY = 0.5-((mClikSlot_index+1)/((mClikSlot_isOut?node.outputs.length:node.inputs.length)));
                             var node_bounding = node.getBounding();
                             // estimate a position: this is a bad semi-bad-working mess .. REFACTOR with a correct autoplacement that knows about the others slots and nodes
-                            var posRef = [	(!mClikSlot_isOut?node_bounding[0]:node_bounding[0]+node_bounding[2])// + node_bounding[0]/this.canvas.width*150
-                                            ,e.canvasY-80// + node_bounding[0]/this.canvas.width*66 // vertical "derive"
-                                            ];
-                            var nodeCreated = this.createDefaultNodeForSlot({   	nodeFrom: !mClikSlot_isOut?null:node
-                                                                                    ,slotFrom: !mClikSlot_isOut?null:mClikSlot_index
-                                                                                    ,nodeTo: !mClikSlot_isOut?node:null
-                                                                                    ,slotTo: !mClikSlot_isOut?mClikSlot_index:null
-                                                                                    ,position: posRef //,e: e
-                                                                                    ,nodeType: "AUTO" //nodeNewType
-                                                                                    ,posAdd:[!mClikSlot_isOut?-30:30, -alphaPosY*130] //-alphaPosY*30]
-                                                                                    ,posSizeFix:[!mClikSlot_isOut?-1:0, 0] //-alphaPosY*2*/
-                                                                                });
+                            var posRef = [	
+                                (!mClikSlot_isOut?node_bounding[0]:node_bounding[0]+node_bounding[2]),// + node_bounding[0]/this.canvas.width*150
+                                e.canvasY-80,// + node_bounding[0]/this.canvas.width*66 // vertical "derive"
+                            ];
+                            var nodeCreated = this.createDefaultNodeForSlot({   	
+                                nodeFrom: !mClikSlot_isOut?null:node,
+                                slotFrom: !mClikSlot_isOut?null:mClikSlot_index,
+                                nodeTo: !mClikSlot_isOut?node:null,
+                                slotTo: !mClikSlot_isOut?mClikSlot_index:null,
+                                position: posRef, //,e: e
+                                nodeType: "AUTO", //nodeNewType
+                                posAdd:[!mClikSlot_isOut?-30:30, -alphaPosY*130], //-alphaPosY*30]
+                                posSizeFix:[!mClikSlot_isOut?-1:0, 0], //-alphaPosY*2*/
+                            });
                                 
                         }
                     }
@@ -1085,11 +1023,7 @@ export class LGraphCanvas {
             e.preventDefault();
         }
         e.stopPropagation();
-
-        if (this.onMouseDown) {
-            this.onMouseDown(e);
-        }
-
+        this.onMouseDown?.(e);
         return false;
     }
 
@@ -1205,16 +1139,11 @@ export class LGraphCanvas {
                     node.mouseOver = true;
                     this.node_over = node;
                     this.dirty_canvas = true;
-
-                    if (node.onMouseEnter) {
-                        node.onMouseEnter(e);
-                    }
+                    node.onMouseEnter?.(e);
                 }
 
                 //in case the node wants to do something
-                if (node.onMouseMove) {
-                    node.onMouseMove( e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this );
-                }
+                node.onMouseMove?.( e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this );
 
                 //if dragging a link
                 if (this.connecting_node) {
@@ -1224,9 +1153,7 @@ export class LGraphCanvas {
                         var pos = this._highlight_input || [0, 0]; //to store the output of isOverNodeInput
 
                         //on top of input
-                        if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                            //mouse on top of the corner box, don't know what to do
-                        } else {
+                        if (!this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
                             //check if I have a slot below de mouse
                             var slot = this.isOverNodeInput( node, e.canvasX, e.canvasY, pos );
                             if (slot != -1 && node.inputs[slot]) {
@@ -1247,8 +1174,6 @@ export class LGraphCanvas {
 
                         //on top of output
                         if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                            //mouse on top of the corner box, don't know what to do
-                        } else {
                             //check if I have a slot below de mouse
                             var slot = this.isOverNodeOutput( node, e.canvasX, e.canvasY, pos );
                             if (slot != -1 && node.outputs[slot]) {
