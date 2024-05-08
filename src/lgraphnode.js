@@ -59,26 +59,14 @@ supported callbacks:
  */
 
 export class LGraphNode {
-    constructor(title) {
-        this.title = title || "Unnamed";
+
+    constructor(title = "Unnamed") {
+
+        this.title = title;
         this.size = [LiteGraph.NODE_WIDTH, 60];
         this.graph = null;
 
         this._pos = new Float32Array(10, 10);
-
-        Object.defineProperty(this, "pos", {
-            set: function(v) {
-                if (!v || v.length < 2) {
-                    return;
-                }
-                this._pos[0] = v[0];
-                this._pos[1] = v[1];
-            },
-            get: function() {
-                return this._pos;
-            },
-            enumerable: true
-        });
 
         if (LiteGraph.use_uuids) {
             this.id = LiteGraph.uuidv4();
@@ -100,22 +88,33 @@ export class LGraphNode {
         this.flags = {};
     }
 
+    set pos(v) {
+        if (!v || v.length < 2) {
+            return;
+        }
+        this._pos ??= new Float32Array(10, 10);
+        this._pos[0] = v[0];
+        this._pos[1] = v[1];
+    }
+    get pos() {
+        return this._pos;
+    }
+
     /**
      * configure a node from an object containing the serialized info
      * @method configure
      */
     configure(info) {
-        if (this.graph) {
+
+        if(this.graph)
             this.graph._version++;
-        }
+
         for (var j in info) {
             if (j == "properties") {
                 //i don't want to clone properties, I want to reuse the old container
                 for (var k in info.properties) {
                     this.properties[k] = info.properties[k];
-                    if (this.onPropertyChanged) {
-                        this.onPropertyChanged( k, info.properties[k] );
-                    }
+                    this.onPropertyChanged?.( k, info.properties[k] );
                 }
                 continue;
             }
@@ -143,11 +142,8 @@ export class LGraphNode {
             for (var i = 0; i < this.inputs.length; ++i) {
                 var input = this.inputs[i];
                 var link_info = this.graph ? this.graph.links[input.link] : null;
-                if (this.onConnectionsChange)
-                    this.onConnectionsChange( LiteGraph.INPUT, i, true, link_info, input ); //link_info has been created now, so its updated
-
-                if( this.onInputAdded )
-                    this.onInputAdded(input);
+                this.onConnectionsChange?.( LiteGraph.INPUT, i, true, link_info, input ); //link_info has been created now, so its updated
+                this.onInputAdded?.(input);
 
             }
         }
@@ -160,12 +156,9 @@ export class LGraphNode {
                 }
                 for (var j = 0; j < output.links.length; ++j) {
                     var link_info = this.graph 	? this.graph.links[output.links[j]] : null;
-                    if (this.onConnectionsChange)
-                        this.onConnectionsChange( LiteGraph.OUTPUT, i, true, link_info, output ); //link_info has been created now, so its updated
+                    this.onConnectionsChange?.( LiteGraph.OUTPUT, i, true, link_info, output ); //link_info has been created now, so its updated
                 }
-
-                if( this.onOutputAdded )
-                    this.onOutputAdded(output);
+                this.onOutputAdded?.(output);
             }
         }
 
@@ -181,16 +174,12 @@ export class LGraphNode {
             }
             if (info.widgets_values) {
                 for (var i = 0; i < info.widgets_values.length; ++i) {
-                    if (this.widgets[i]) {
+                    if(this.widgets[i])
                         this.widgets[i].value = info.widgets_values[i];
-                    }
                 }
             }
         }
-
-        if (this.onConfigure) {
-            this.onConfigure(info);
-        }
+        this.onConfigure?.(info);
     }
 
     /**
@@ -238,16 +227,11 @@ export class LGraphNode {
         if (this.widgets && this.serialize_widgets) {
             o.widgets_values = [];
             for (var i = 0; i < this.widgets.length; ++i) {
-                if(this.widgets[i])
-                    o.widgets_values[i] = this.widgets[i].value;
-                else
-                    o.widgets_values[i] = null;
+                o.widgets_values[i] = this.widgets[i]?.value ?? null;
             }
         }
 
-        if (!o.type) {
-            o.type = this.constructor.type;
-        }
+        o.type ||= this.constructor.type;
 
         if (this.color) {
             o.color = this.color;
@@ -262,14 +246,11 @@ export class LGraphNode {
             o.shape = this.shape;
         }
 
-        if (this.onSerialize) {
-            if (this.onSerialize(o)) {
-                console.warn(
-                    "node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter"
-                );
-            }
+        if (this.onSerialize?.(o)) {
+            console.warn(
+                "node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter"
+            );
         }
-
         return o;
     }
 
@@ -306,7 +287,6 @@ export class LGraphNode {
 
         //remove links
         node.configure(data);
-
         return node;
     }
 
@@ -327,7 +307,7 @@ export class LGraphNode {
      */
 
     getTitle() {
-        return this.title || this.constructor.title;
+        return this.title ?? this.constructor.title;
     }
 
     /**
@@ -337,17 +317,13 @@ export class LGraphNode {
      * @param {*} value
      */
     setProperty(name, value) {
-        if (!this.properties) {
-            this.properties = {};
-        }
+        this.properties ||= {};
         if( value === this.properties[name] )
             return;
         var prev_value = this.properties[name];
         this.properties[name] = value;
-        if (this.onPropertyChanged) {
-            if( this.onPropertyChanged(name, value, prev_value) === false ) //abort change
-                this.properties[name] = prev_value;
-        }
+        if( this.onPropertyChanged?.(name, value, prev_value) === false ) //abort change
+            this.properties[name] = prev_value;
         if(this.widgets) //widgets could be linked to properties
             for(var i = 0; i < this.widgets.length; ++i)
             {
