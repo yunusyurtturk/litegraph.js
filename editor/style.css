@@ -8,15 +8,15 @@ html,body {
 body {
 	background-color: #333;
 	color: #EEE;
-	font: 14px Tahoma;
+	font: 14px Tahoma, sans-serif;
 }
 
 h1 {
-	font-family: "Metro Light",Tahoma;
+	font-family: "Metro Light", Tahoma, sans-serif;
 }
 
 h2 {
-	font-family: "Metro Light";
+	font-family: "Metro Light", sans-serif;
 }
 
 #main {
@@ -121,7 +121,7 @@ label {
 	/*border-radius: 4px;*/
 	padding: 2px;
 	/*box-shadow: inset 0 0 3px #333; */
-	font-family: Verdana;
+	font-family: Verdana, sans-serif;
 	width: 250px;
 }
 
@@ -244,7 +244,5 @@ textarea {
 }
 
 .graphcanvas{
-	/*touch-action: manipulation; WONT WORK*/
-	/*touch-action: none; DESIDERABLE: implement zoom and pan*/
 	touch-action: pinch-zoom;
 }

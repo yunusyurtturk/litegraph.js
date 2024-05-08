@@ -6,13 +6,13 @@
 
     background-color: #333;
     color: #eee;
-    font: 14px Tahoma;
+    font: 14px Tahoma, sans-serif;
 
     position: relative;
 }
 
 .litegraph-editor h1 {
-    font-family: "Metro Light", Tahoma;
+    font-family: "Metro Light", Tahoma, sans-serif;
     color: #ddd;
     font-size: 28px;
     padding-left: 10px;
@@ -21,14 +21,14 @@
 }
 
 .litegraph-editor h1 span {
-    font-family: "Arial";
+    font-family: "Arial", sans-serif;
     font-size: 14px;
     font-weight: normal;
     color: #aaa;
 }
 
 .litegraph-editor h2 {
-    font-family: "Metro Light";
+    font-family: "Metro Light", sans-serif;
     padding: 5px;
     margin-left: 10px;
 }
@@ -80,7 +80,7 @@
     position: absolute;
     top: 2px;
     right: 2px;
-    font-family: "Tahoma";
+    font-family: "Tahoma", sans-serif;
     font-size: 14px;
     color: #aaa;
     cursor: pointer;
@@ -144,7 +144,7 @@
 /* METER *********************/
 
 .litegraph-editor .loadmeter {
-    font-family: "Tahoma";
+    font-family: "Tahoma", sans-serif;
     color: #aaa;
     font-size: 12px;
     border-radius: 2px;
