@@ -23,6 +23,11 @@ export class DragAndScale {
         }
     }
 
+    /**
+     * Binds mouse and wheel events to the specified HTML element.
+     *
+     * @param {HTMLElement} element - The HTML element to bind the events to.
+     */
     bindEvents(element) {
         this.last_mouse = new Float32Array(2);
         element.addEventListener("mousedown", this.onMouseDown);
@@ -100,6 +105,13 @@ export class DragAndScale {
         this.changeDeltaScale(1.0 + event.delta * 0.05);
     }
 
+    /**
+     * Computes the visible area of the DragAndScale element based on the viewport.
+     * 
+     * If the element is not set, the visible area will be reset to zero.
+     * 
+     * @param {Array<number>} [viewport] - The viewport configuration to calculate the visible area. 
+     */
     computeVisibleArea(viewport) {
         if (!this.element) {
             this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0;
@@ -124,19 +136,36 @@ export class DragAndScale {
         this.visible_area[3] = endy - starty;
     }
 
+    /**
+     * Applies the scale and offset transformations to the given 2D canvas rendering context.
+     *
+     * @param {CanvasRenderingContext2D} ctx - The 2D canvas rendering context to apply transformations to.
+     */
     toCanvasContext(ctx) {
         ctx.scale(this.scale, this.scale);
         ctx.translate(this.offset[0], this.offset[1]);
     }
 
+    /**
+     * Converts a position from DragAndScale offset coordinates to canvas coordinates.
+     *
+     * @param {Array<number>} pos - The position in DragAndScale offset coordinates to convert.
+     * @returns {Array<number>} The converted position in canvas coordinates.
+     */
     convertOffsetToCanvas(pos) {
-        //return [pos[0] / this.scale - this.offset[0], pos[1] / this.scale - this.offset[1]];
         return [
             (pos[0] + this.offset[0]) * this.scale,
             (pos[1] + this.offset[1]) * this.scale
         ];
     }
 
+    /**
+     * Converts a position from canvas coordinates to DragAndScale offset coordinates.
+     *
+     * @param {Array<number>} pos - The position in canvas coordinates to convert.
+     * @param {Array<number>} [out=[0, 0]] - The output array to store the converted position in DragAndScale offset coordinates.
+     * @returns {Array<number>} The converted position in DragAndScale offset coordinates.
+     */
     convertCanvasToOffset(pos, out = [0, 0]) {
         out[0] = pos[0] / this.scale - this.offset[0];
         out[1] = pos[1] / this.scale - this.offset[1];
@@ -150,6 +179,12 @@ export class DragAndScale {
         this.onredraw?.(this);
     }
 
+    /**
+     * Changes the scale of the DragAndScale element to the specified value around the zooming center.
+     *
+     * @param {number} value - The new scale value to set, clamped between min_scale and max_scale.
+     * @param {Array<number>} zooming_center - The center point for zooming, defaulting to the middle of the element.
+     */
     changeScale(value, zooming_center) {
 
         value = LiteGraph.clamp(value, this.min_scale, this.max_scale);
@@ -185,6 +220,12 @@ export class DragAndScale {
         this.onredraw?.(this);
     }
 
+    /**
+     * Changes the scale of the DragAndScale element by a delta value relative to the current scale.
+     *
+     * @param {number} value - The delta value by which to scale the element.
+     * @param {Array<number>} zooming_center - The center point for zooming the element.
+     */
     changeDeltaScale(value, zooming_center) {
         this.changeScale(this.scale * value, zooming_center);
     }
