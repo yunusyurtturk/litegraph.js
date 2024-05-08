@@ -11,28 +11,6 @@
     position: relative;
 }
 
-.litegraph-editor h1 {
-    font-family: "Metro Light", Tahoma, sans-serif;
-    color: #ddd;
-    font-size: 28px;
-    padding-left: 10px;
-    margin: 0;
-    font-weight: normal;
-}
-
-.litegraph-editor h1 span {
-    font-family: "Arial", sans-serif;
-    font-size: 14px;
-    font-weight: normal;
-    color: #aaa;
-}
-
-.litegraph-editor h2 {
-    font-family: "Metro Light", sans-serif;
-    padding: 5px;
-    margin-left: 10px;
-}
-
 .litegraph-editor * {
     box-sizing: border-box;
 }
