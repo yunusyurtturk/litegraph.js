@@ -55,7 +55,10 @@ export class LGraph {
         }
     }
 
-    //used to know which types of connections support this graph (some graphs do not allow certain types)
+    /**
+     * Gets the supported types of the LGraph class, falling back to the default supported types if not defined for the instance.
+     * @returns {Array} An array of supported types for the LGraph class.
+     */
     getSupportedTypes() {
         return this.supported_types ?? LGraph.supported_types;
     }
@@ -74,12 +77,9 @@ export class LGraph {
         this._version = -1; //used to detect changes
 
         //safe clear
-        if (this._nodes) {
-            for (var i = 0; i &lt; this._nodes.length; ++i) {
-                var node = this._nodes[i];
-                node.onRemoved?.();
-            }
-        }
+        this._nodes?.forEach(node => {
+            node.onRemoved?.();
+        });
 
         //nodes
         this._nodes = [];
@@ -131,7 +131,6 @@ export class LGraph {
      * @method attachCanvas
      * @param {GraphCanvas} graph_canvas
      */
-
     attachCanvas(graphcanvas) {
         if (graphcanvas.constructor != LGraphCanvas) {
             throw "attachCanvas expects a LGraphCanvas instance";
@@ -168,41 +167,36 @@ export class LGraph {
      * @method start
      * @param {number} interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
      */
-
-    start(interval) {
-        if (this.status == LGraph.STATUS_RUNNING) {
+    start(interval = 0) {
+        if (this.status === LGraph.STATUS_RUNNING) {
             return;
         }
+    
         this.status = LGraph.STATUS_RUNNING;
-
         this.onPlayEvent?.();
         this.sendEventToAllNodes("onStart");
-
-        //launch
+    
         this.starttime = LiteGraph.getTime();
         this.last_update_time = this.starttime;
-        interval ||= 0;
-        var that = this;
-
-        //execute once per frame
-        if ( interval == 0 &amp;&amp; typeof window != "undefined" &amp;&amp; window.requestAnimationFrame ) {
-            function on_frame() {
-                if (that.execution_timer_id != -1) {
-                    return;
-                }
-                window.requestAnimationFrame(on_frame);
-                that.onBeforeStep?.();
-                that.runStep(1, !that.catch_errors);
-                that.onAfterStep?.();
+    
+        const onAnimationFrame = () => {
+            if (this.execution_timer_id !== -1) {
+                return;
             }
+            window.requestAnimationFrame(onAnimationFrame);
+            this.onBeforeStep?.();
+            this.runStep(1, !this.catch_errors);
+            this.onAfterStep?.();
+        };
+    
+        if (interval === 0 &amp;&amp; typeof window === "object" &amp;&amp; window.requestAnimationFrame) {
             this.execution_timer_id = -1;
-            on_frame();
-        } else { //execute every 'interval' ms
+            onAnimationFrame();
+        } else {
             this.execution_timer_id = setInterval(() => {
-                //execute
-                that.onBeforeStep?.();
-                that.runStep(1, !that.catch_errors);
-                that.onAfterStep?.();
+                this.onBeforeStep?.();
+                this.runStep(1, !this.catch_errors);
+                this.onAfterStep?.();
             }, interval);
         }
     }
@@ -211,7 +205,6 @@ export class LGraph {
      * Stops the execution loop of the graph
      * @method stop execution
      */
-
     stop() {
         if (this.status == LGraph.STATUS_STOPPED) {
             return;
@@ -234,7 +227,6 @@ export class LGraph {
      * @param {Boolean} do_not_catch_errors [optional] if you want to try/catch errors 
      * @param {number} limit max number of nodes to execute (used to execute from start to a node)
      */
-
     runStep(num = 1, do_not_catch_errors, limit) {
         var start = LiteGraph.getTime();
         this.globaltime = 0.001 * (start - this.starttime);
@@ -251,41 +243,40 @@ export class LGraph {
         limit ||= nodes.length;
 
         if (do_not_catch_errors) {
-            //iterations
-            for (var i = 0; i &lt; num; i++) {
-                for (var j = 0; j &lt; limit; ++j) {
-                    var node = nodes[j];
-                    if(LiteGraph.use_deferred_actions &amp;&amp; node._waiting_actions &amp;&amp; node._waiting_actions.length)
+            for (let i = 0; i &lt; num; i++) {
+                nodes.forEach(node => {
+                    if (LiteGraph.use_deferred_actions &amp;&amp; node._waiting_actions?.length) {
                         node.executePendingActions();
-                    if (node.mode == LiteGraph.ALWAYS) {
+                    }
+        
+                    if (node.mode === LiteGraph.ALWAYS) {
                         node.doExecute?.();
                     }
-                }
-
+                });
+                
                 this.fixedtime += this.fixedtime_lapse;
                 this.onExecuteStep?.();
             }
             this.onAfterExecute?.();
-
         } else { //catch errors
             try {
-                //iterations
-                for (var i = 0; i &lt; num; i++) {
-                    for (var j = 0; j &lt; limit; ++j) {
-                        var node = nodes[j];
-                        if(LiteGraph.use_deferred_actions &amp;&amp; node._waiting_actions &amp;&amp; node._waiting_actions.length)
+                for (let i = 0; i &lt; num; i++) {
+                    nodes.forEach(node => {
+                        if (LiteGraph.use_deferred_actions &amp;&amp; node._waiting_actions?.length) {
                             node.executePendingActions();
-                        if (node.mode == LiteGraph.ALWAYS) {
+                        }
+                        
+                        if (node.mode === LiteGraph.ALWAYS) {
                             node.onExecute?.();
                         }
-                    }
-
+                    });
+            
                     this.fixedtime += this.fixedtime_lapse;
                     this.onExecuteStep?.();
                 }
+            
                 this.onAfterExecute?.();
                 this.errors_in_execution = false;
-
             } catch (err) {
 
                 this.errors_in_execution = true;
@@ -329,7 +320,12 @@ export class LGraph {
         }
     }
 
-    //This is more internal, it computes the executable nodes in order and returns it
+    /**
+     * Computes the execution order of nodes in the flow graph based on their connections and levels.
+     * @param {boolean} only_onExecute - Indicates whether to consider only nodes with an onExecute method.
+     * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
+     * @returns {Array} An array of nodes in the calculated execution order.
+     */
     computeExecutionOrder(only_onExecute, set_level) {
         var L = [];
         var S = [];
@@ -577,12 +573,12 @@ export class LGraph {
             return;
         }
 
-        for (var j = 0, l = nodes.length; j &lt; l; ++j) {
-            var node = nodes[j];
+        for (let j = 0, l = nodes.length; j &lt; l; ++j) {
+            const node = nodes[j];
 
             if (
                 node.constructor === LiteGraph.Subgraph &amp;&amp;
-                eventname != "onExecute"
+                eventname !== "onExecute"
             ) {
                 if (node.mode == mode) {
                     node.sendEventToAllNodes(eventname, params, mode);
@@ -590,12 +586,12 @@ export class LGraph {
                 continue;
             }
 
-            if (!node[eventname] || node.mode != mode) {
+            if (!node[eventname] || node.mode !== mode) {
                 continue;
             }
             if (params === undefined) {
                 node[eventname]();
-            } else if (params &amp;&amp; params.constructor === Array) {
+            } else if (Array.isArray(params)) {
                 node[eventname].apply(node, params);
             } else {
                 node[eventname](params);
@@ -603,14 +599,20 @@ export class LGraph {
         }
     }
 
+    /**
+     * Sends an action with parameters to the connected GraphCanvas instances for processing.
+     * @param {string} action - The action to be performed on the GraphCanvas instances.
+     * @param {Array} params - An array of parameters to be passed to the action method.
+     */
     sendActionToCanvas(action, params) {
         if (!this.list_of_graphcanvas) {
             return;
         }
-
-        for (var i = 0; i &lt; this.list_of_graphcanvas.length; ++i) {
-            var c = this.list_of_graphcanvas[i];
-            c[action]?.apply(c, params);
+    
+        for (const c of this.list_of_graphcanvas) {
+            if (c[action] &amp;&amp; params) {
+                c[action](...params);
+            }
         }
     }
 
@@ -619,7 +621,6 @@ export class LGraph {
      * @method add
      * @param {LGraphNode} node the instance of the node
      */
-
     add(node, skip_compute_order) {
         if (!node) {
             return;
@@ -694,7 +695,6 @@ export class LGraph {
      * @method remove
      * @param {LGraphNode} node the instance of the node
      */
-
     remove(node) {
         if (node.constructor === LGraphGroup) {
             var index = this._groups.indexOf(node);
@@ -782,7 +782,6 @@ export class LGraph {
      * @method getNodeById
      * @param {Number} id
      */
-
     getNodeById(id) {
         if (id == null) {
             return null;
@@ -797,12 +796,7 @@ export class LGraph {
      * @return {Array} a list with all the nodes of this type
      */
     findNodesByClass(classObject, result = []) {
-        result.length = 0;
-        for (var i = 0, l = this._nodes.length; i &lt; l; ++i) {
-            if (this._nodes[i].constructor === classObject) {
-                result.push(this._nodes[i]);
-            }
-        }
+        result = this._nodes.filter(node => node.constructor === classObject);
         return result;
     }
 
@@ -813,13 +807,8 @@ export class LGraph {
      * @return {Array} a list with all the nodes of this type
      */
     findNodesByType(type, result = []) {
-        var type = type.toLowerCase();
-        result.length = 0;
-        for (var i = 0, l = this._nodes.length; i &lt; l; ++i) {
-            if (this._nodes[i].type.toLowerCase() == type) {
-                result.push(this._nodes[i]);
-            }
-        }
+        const lowerCaseType = type.toLowerCase();
+        result = this._nodes.filter(node => node.type.toLowerCase() === lowerCaseType);
         return result;
     }
 
@@ -830,12 +819,7 @@ export class LGraph {
      * @return {Node} the node or null
      */
     findNodeByTitle(title) {
-        for (var i = 0, l = this._nodes.length; i &lt; l; ++i) {
-            if (this._nodes[i].title == title) {
-                return this._nodes[i];
-            }
-        }
-        return null;
+        return this._nodes.find(node => node.title === title) ?? null;
     }
 
     /**
@@ -845,13 +829,7 @@ export class LGraph {
      * @return {Array} a list with all the nodes with this name
      */
     findNodesByTitle(title) {
-        var result = [];
-        for (var i = 0, l = this._nodes.length; i &lt; l; ++i) {
-            if (this._nodes[i].title == title) {
-                result.push(this._nodes[i]);
-            }
-        }
-        return result;
+        return this._nodes.filter(node => node.title === title);
     }
 
     /**
@@ -862,20 +840,8 @@ export class LGraph {
      * @param {Array} nodes_list a list with all the nodes to search from, by default is all the nodes in the graph
      * @return {LGraphNode} the node at this position or null
      */
-    getNodeOnPos(x, y, nodes_list = this._nodes, margin) {
-        var nRet = null;
-        for (var i = nodes_list.length - 1; i >= 0; i--) {
-            var n = nodes_list[i];
-            if (n.isPointInside(x, y, margin)) {
-                // check for lesser interest nodes (TODO check for overlapping, use the top)
-                /*if (typeof n == "LGraphGroup"){
-                    nRet = n;
-                }else{*/
-                    return n;
-                /*}*/
-            }
-        }
-        return nRet;
+    getNodeOnPos(x, y, nodes_list = this._nodes, margin = 0) {
+        return nodes_list.reverse().find(node => node.isPointInside(x, y, margin)) ?? null;
     }
 
     /**
@@ -886,13 +852,7 @@ export class LGraph {
      * @return {LGraphGroup} the group or null
      */
     getGroupOnPos(x, y) {
-        for (var i = this._groups.length - 1; i >= 0; i--) {
-            var g = this._groups[i];
-            if (g.isPointInside(x, y, 2, true)) {
-                return g;
-            }
-        }
-        return null;
+        return this._groups.find(group => group.isPointInside(x, y, 2, true)) ?? null;
     }
 
     /**
@@ -923,8 +883,12 @@ export class LGraph {
         this.updateExecutionOrder();
     }
 
-    // ********** GLOBALS *****************
-
+    /**
+     * Executes an action on the GraphInput nodes based on the provided action name and parameters.
+     * @param {string} action - The name of the action to be executed on the GraphInput nodes.
+     * @param {any} param - The parameter to pass to the action method.
+     * @param {object} options - Additional options for the action.
+     */
     onAction(action, param, options) {
         this._input_nodes = this.findNodesByClass(
             LiteGraph.GraphInput,
@@ -1174,6 +1138,11 @@ export class LGraph {
         return true;
     }
 
+    /**
+     * Triggers the 'onTrigger' method on nodes with a specific title by passing a value to them.
+     * @param {string} name - The title of the nodes to trigger.
+     * @param {any} value - The value to pass to the 'onTrigger' method of the nodes.
+     */
     triggerInput(name, value) {
         var nodes = this.findNodesByTitle(name);
         for (var i = 0; i &lt; nodes.length; ++i) {
@@ -1181,6 +1150,11 @@ export class LGraph {
         }
     }
 
+    /**
+     * Sets a callback function on nodes with a specific title by invoking their 'setTrigger' method.
+     * @param {string} name - The title of the nodes to set the callback function on.
+     * @param {Function} func - The callback function to be set on the nodes.
+     */
     setCallback(name, func) {
         var nodes = this.findNodesByTitle(name);
         for (var i = 0; i &lt; nodes.length; ++i) {
@@ -1188,18 +1162,32 @@ export class LGraph {
         }
     }
 
-    //used for undo, called before any change is made to the graph
+    /**
+     * Executes actions before a change with the provided information detail.
+     * Calls the 'onBeforeChange' function on the class instance and sends the action to connected GraphCanvas instances.
+     * @param {object} info - The information detail about the change.
+     */
     beforeChange(info) {
         this.onBeforeChange?.(this,info);
         this.sendActionToCanvas("onBeforeChange", this);
     }
 
-    //used to resend actions, called after any change is made to the graph
+    /**
+     * Executes actions after a change with the provided information detail.
+     * Calls the 'onAfterChange' function on the class instance and sends the action to connected GraphCanvas instances.
+     * @param {object} info - The information detail about the change.
+     */
     afterChange(info) {
         this.onAfterChange?.(this,info);
         this.sendActionToCanvas("onAfterChange", this);
     }
 
+    /**
+     * Handles changes in node connections and triggers related actions.
+     * Updates the execution order, calls the 'onConnectionChange' function on the class instance and connected GraphCanvas instances, and increments the version.
+     * @param {object} node - The node where the connection change occurred.
+     * @param {object} link_info - Information about the changed connection.
+     */
     connectionChange(node, link_info) {
         this.updateExecutionOrder();
         this.onConnectionChange?.(node);
@@ -1211,7 +1199,6 @@ export class LGraph {
      * returns if the graph is in live mode
      * @method isLive
      */
-
     isLive() {
         if (!this.list_of_graphcanvas) {
             return false;
@@ -1240,7 +1227,11 @@ export class LGraph {
         }
     }
 
-    /* Called when something visually changed (not the graph!) */
+    /**
+     * Indicates a visual change in the graph (not the structure) and triggers related actions.
+     * Logs a message if in debug mode, sends a 'setDirty' action with parameters to connected GraphCanvas instances, and calls the 'on_change' function on the class instance.
+     * @method change
+     */
     change() {
         if (LiteGraph.debug) {
             console.log("Graph changed");
@@ -1267,17 +1258,13 @@ export class LGraph {
         node?.disconnectInput(link.target_slot);
     }
 
-    //save and recover app state ***************************************
     /**
      * Creates a Object containing all the info about this graph, it can be serialized
      * @method serialize
      * @return {Object} value of the node
      */
     serialize() {
-        var nodes_info = [];
-        for (var i = 0, l = this._nodes.length; i &lt; l; ++i) {
-            nodes_info.push(this._nodes[i].serialize());
-        }
+        const nodesInfo = this._nodes.map(node => node.serialize());
 
         //pack link info into a non-verbose format
         var links = [];
@@ -1300,17 +1287,14 @@ export class LGraph {
             links.push(link.serialize());
         }
 
-        var groups_info = [];
-        for (var i = 0; i &lt; this._groups.length; ++i) {
-            groups_info.push(this._groups[i].serialize());
-        }
+        const groupsInfo = this._groups.map(group => group.serialize());
 
         var data = {
             last_node_id: this.last_node_id,
             last_link_id: this.last_link_id,
-            nodes: nodes_info,
+            nodes: nodesInfo,
             links: links,
-            groups: groups_info,
+            groups: groupsInfo,
             config: this.config,
             extra: this.extra,
             version: LiteGraph.VERSION
@@ -1354,9 +1338,8 @@ export class LGraph {
         }
 
         //copy all stored fields
-        for (var i in data) {
-            if(i == "nodes" || i == "groups" ) //links must be accepted
-                continue;
+        for (const i in data) {
+            if (["nodes", "groups"].includes(i)) continue; // Accepts "nodes" and "groups"
             this[i] = data[i];
         }
 
@@ -1388,26 +1371,25 @@ export class LGraph {
             }
 
             //configure nodes afterwards so they can reach each other
-            for (var i = 0, l = nodes.length; i &lt; l; ++i) {
-                var n_info = nodes[i];
-                var node = this.getNodeById(n_info.id);
+            nodes.forEach(n_info => {
+                const node = this.getNodeById(n_info.id);
                 node?.configure(n_info);
-            }
+            });
         }
 
         //groups
         this._groups.length = 0;
         if (data.groups) {
-            for (var i = 0; i &lt; data.groups.length; ++i) {
-                var group = new LGraphGroup();
-                group.configure(data.groups[i]);
+            data.groups.forEach(groupData => {
+                const group = new LGraphGroup();
+                group.configure(groupData);
                 this.add(group);
-            }
+            });
         }
 
         this.updateExecutionOrder();
 
-        this.extra = data.extra || {};
+        this.extra = data.extra ?? {};
         
         this.onConfigure?.(data);
 
@@ -1416,6 +1398,11 @@ export class LGraph {
         return error;
     }
 
+    /**
+     * Loads graph data from a given URL or file and configures the graph accordingly.
+     * @param {string | File | Blob} url - The URL or file to load the graph data from.
+     * @param {Function} callback - An optional callback function to be executed after loading and configuring the graph.
+     */
     load(url, callback) {
         var that = this;
 
@@ -1451,7 +1438,7 @@ export class LGraph {
     }
 
     onNodeTrace(node, msg, color) {
-        //TODO
+        //@TODO
     }
 }
 
@@ -1470,13 +1457,13 @@ LGraph.STATUS_RUNNING = 2;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ContextMenu_ContextMenu.html">ContextMenu</a></li><li><a href="LGraph.html">LGraph</a></li><li><a href="LGraphCanvas.html">LGraphCanvas</a></li><li><a href="LGraphNode.html">LGraphNode</a></li><li><a href="LiteGraph.html">LiteGraph</a></li></ul><h3>Global</h3><ul><li><a href="global.html#actionDo">actionDo</a></li><li><a href="global.html#add">add</a></li><li><a href="global.html#addConnection">addConnection</a></li><li><a href="global.html#addGlobalInput">addGlobalInput</a></li><li><a href="global.html#addInput">addInput</a></li><li><a href="global.html#addInputs">addInputs</a></li><li><a href="global.html#addNodeMethod">addNodeMethod</a></li><li><a href="global.html#addOutput">addOutput</a></li><li><a href="global.html#addOutputs">addOutputs</a></li><li><a href="global.html#addProperty">addProperty</a></li><li><a href="global.html#addWidget">addWidget</a></li><li><a href="global.html#adjustMouseEvent">adjustMouseEvent</a></li><li><a href="global.html#arrange">arrange</a></li><li><a href="global.html#attachCanvas">attachCanvas</a></li><li><a href="global.html#bindEvents">bindEvents</a></li><li><a href="global.html#bringToFront">bringToFront</a></li><li><a href="global.html#buildNodeClassFromObject">buildNodeClassFromObject</a></li><li><a href="global.html#centerOnNode">centerOnNode</a></li><li><a href="global.html#changeInputType">changeInputType</a></li><li><a href="global.html#changeOutputType">changeOutputType</a></li><li><a href="global.html#checkNodeTypes">checkNodeTypes</a></li><li><a href="global.html#clear">clear</a></li><li><a href="global.html#clearTriggeredSlot">clearTriggeredSlot</a></li><li><a href="global.html#clearTriggeredSlots">clearTriggeredSlots</a></li><li><a href="global.html#closeSubgraph">closeSubgraph</a></li><li><a href="global.html#collapse">collapse</a></li><li><a href="global.html#computeSize">computeSize</a></li><li><a href="global.html#computeVisibleNodes">computeVisibleNodes</a></li><li><a href="global.html#configure">configure</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectByType">connectByType</a></li><li><a href="global.html#convertCanvasToOffset">convertCanvasToOffset</a></li><li><a href="global.html#convertOffsetToCanvas">convertOffsetToCanvas</a></li><li><a href="global.html#createNode">createNode</a></li><li><a href="global.html#deleteSelectedNodes">deleteSelectedNodes</a></li><li><a href="global.html#deselectAllNodes">deselectAllNodes</a></li><li><a href="global.html#deselectNode">deselectNode</a></li><li><a href="global.html#detachCanvas">detachCanvas</a></li><li><a href="global.html#disconnectInput">disconnectInput</a></li><li><a href="global.html#disconnectOutput">disconnectOutput</a></li><li><a href="global.html#doExecute">doExecute</a></li><li><a href="global.html#draw">draw</a></li><li><a href="global.html#drawBackCanvas">drawBackCanvas</a></li><li><a href="global.html#drawConnections">drawConnections</a></li><li><a href="global.html#drawFrontCanvas">drawFrontCanvas</a></li><li><a href="global.html#drawGroups">drawGroups</a></li><li><a href="global.html#drawNode">drawNode</a></li><li><a href="global.html#drawNodeShape">drawNodeShape</a></li><li><a href="global.html#drawNodeWidgets">drawNodeWidgets</a></li><li><a href="global.html#drawSubgraphPanel">drawSubgraphPanel</a></li><li><a href="global.html#enableWebGL">enableWebGL</a></li><li><a href="global.html#executePendingActions">executePendingActions</a></li><li><a href="global.html#fetchFile">fetchFile</a></li><li><a href="global.html#findInputSlot">findInputSlot</a></li><li><a href="global.html#findInputSlotFree">findInputSlotFree</a></li><li><a href="global.html#findNodeByTitle">findNodeByTitle</a></li><li><a href="global.html#findNodesByClass">findNodesByClass</a></li><li><a href="global.html#findNodesByTitle">findNodesByTitle</a></li><li><a href="global.html#findNodesByType">findNodesByType</a></li><li><a href="global.html#findOutputSlot">findOutputSlot</a></li><li><a href="global.html#findOutputSlotFree">findOutputSlotFree</a></li><li><a href="global.html#findSlotByType">findSlotByType</a></li><li><a href="global.html#getAncestors">getAncestors</a></li><li><a href="global.html#getBounding">getBounding</a></li><li><a href="global.html#getCanvasWindow">getCanvasWindow</a></li><li><a href="global.html#getConnectionPos">getConnectionPos</a></li><li><a href="global.html#getCurrentGraph">getCurrentGraph</a></li><li><a href="global.html#getElapsedTime">getElapsedTime</a></li><li><a href="global.html#getFixedTime">getFixedTime</a></li><li><a href="global.html#getGroupOnPos">getGroupOnPos</a></li><li><a href="global.html#getInputData">getInputData</a></li><li><a href="global.html#getInputDataByName">getInputDataByName</a></li><li><a href="global.html#getInputDataType">getInputDataType</a></li><li><a href="global.html#getInputInfo">getInputInfo</a></li><li><a href="global.html#getInputLink">getInputLink</a></li><li><a href="global.html#getInputNode">getInputNode</a></li><li><a href="global.html#getInputOrProperty">getInputOrProperty</a></li><li><a href="global.html#getNodeById">getNodeById</a></li><li><a href="global.html#getNodeOnPos">getNodeOnPos</a></li><li><a href="global.html#getNodeType">getNodeType</a></li><li><a href="global.html#getNodeTypesCategories">getNodeTypesCategories</a></li><li><a href="global.html#getOutputData">getOutputData</a></li><li><a href="global.html#getOutputInfo">getOutputInfo</a></li><li><a href="global.html#getOutputNodes">getOutputNodes</a></li><li><a href="global.html#getPropertyInfo">getPropertyInfo</a></li><li><a href="global.html#getSlotInPosition">getSlotInPosition</a></li><li><a href="global.html#getTime">getTime</a></li><li><a href="global.html#getTitle">getTitle</a></li><li><a href="global.html#getTopGraph">getTopGraph</a></li><li><a href="global.html#isAnyOutputConnected">isAnyOutputConnected</a></li><li><a href="global.html#isInputConnected">isInputConnected</a></li><li><a href="global.html#isLive">isLive</a></li><li><a href="global.html#isOutputConnected">isOutputConnected</a></li><li><a href="global.html#isOverNodeBox">isOverNodeBox</a></li><li><a href="global.html#isOverNodeInput">isOverNodeInput</a></li><li><a href="global.html#isOverNodeOuput">isOverNodeOuput</a></li><li><a href="global.html#isPointInside">isPointInside</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#openSubgraph">openSubgraph</a></li><li><a href="global.html#pin">pin</a></li><li><a href="global.html#processDrop">processDrop</a></li><li><a href="global.html#processKey">processKey</a></li><li><a href="global.html#processMouseMove">processMouseMove</a></li><li><a href="global.html#processMouseUp">processMouseUp</a></li><li><a href="global.html#processMouseWheel">processMouseWheel</a></li><li><a href="global.html#processNodeWidgets">processNodeWidgets</a></li><li><a href="global.html#registerNodeType">registerNodeType</a></li><li><a href="global.html#registerSearchboxExtra">registerSearchboxExtra</a></li><li><a href="global.html#registerSlotType">registerSlotType</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeInput">removeInput</a></li><li><a href="global.html#removeLink">removeLink</a></li><li><a href="global.html#removeOutput">removeOutput</a></li><li><a href="global.html#renameInput">renameInput</a></li><li><a href="global.html#renameOutput">renameOutput</a></li><li><a href="global.html#renderInfo">renderInfo</a></li><li><a href="global.html#renderLink">renderLink</a></li><li><a href="global.html#resize">resize</a></li><li><a href="global.html#runStep">runStep</a></li><li><a href="global.html#selectNode">selectNode</a></li><li><a href="global.html#selectNodes">selectNodes</a></li><li><a href="global.html#sendEventToAllNodes">sendEventToAllNodes</a></li><li><a href="global.html#sendToBack">sendToBack</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#setCanvas">setCanvas</a></li><li><a href="global.html#setDirty">setDirty</a></li><li><a href="global.html#setGlobalInputData">setGlobalInputData</a></li><li><a href="global.html#setGraph">setGraph</a></li><li><a href="global.html#setOutputData">setOutputData</a></li><li><a href="global.html#setOutputDataType">setOutputDataType</a></li><li><a href="global.html#setProperty">setProperty</a></li><li><a href="global.html#setSize">setSize</a></li><li><a href="global.html#setZoom">setZoom</a></li><li><a href="global.html#start">start</a></li><li><a href="global.html#startRendering">startRendering</a></li><li><a href="global.html#stopexecution">stop execution</a></li><li><a href="global.html#stopRendering">stopRendering</a></li><li><a href="global.html#switchLiveMode">switchLiveMode</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#trigger">trigger</a></li><li><a href="global.html#triggerSlot">triggerSlot</a></li><li><a href="global.html#unbindEvents">unbindEvents</a></li><li><a href="global.html#unregisterNodeType">unregisterNodeType</a></li><li><a href="global.html#updateExecutionOrder">updateExecutionOrder</a></li><li><a href="global.html#wrapFunctionAsNode">wrapFunctionAsNode</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ContextMenu_ContextMenu.html">ContextMenu</a></li><li><a href="LGraph.html">LGraph</a></li><li><a href="LGraphCanvas.html">LGraphCanvas</a></li><li><a href="LGraphNode.html">LGraphNode</a></li><li><a href="LiteGraph.html">LiteGraph</a></li></ul><h3>Global</h3><ul><li><a href="global.html#actionDo">actionDo</a></li><li><a href="global.html#add">add</a></li><li><a href="global.html#addConnection">addConnection</a></li><li><a href="global.html#addGlobalInput">addGlobalInput</a></li><li><a href="global.html#addInput">addInput</a></li><li><a href="global.html#addInputs">addInputs</a></li><li><a href="global.html#addNodeMethod">addNodeMethod</a></li><li><a href="global.html#addOutput">addOutput</a></li><li><a href="global.html#addOutputs">addOutputs</a></li><li><a href="global.html#addProperty">addProperty</a></li><li><a href="global.html#addWidget">addWidget</a></li><li><a href="global.html#adjustMouseEvent">adjustMouseEvent</a></li><li><a href="global.html#arrange">arrange</a></li><li><a href="global.html#attachCanvas">attachCanvas</a></li><li><a href="global.html#bindEvents">bindEvents</a></li><li><a href="global.html#bringToFront">bringToFront</a></li><li><a href="global.html#buildNodeClassFromObject">buildNodeClassFromObject</a></li><li><a href="global.html#centerOnNode">centerOnNode</a></li><li><a href="global.html#change">change</a></li><li><a href="global.html#changeInputType">changeInputType</a></li><li><a href="global.html#changeOutputType">changeOutputType</a></li><li><a href="global.html#checkNodeTypes">checkNodeTypes</a></li><li><a href="global.html#clear">clear</a></li><li><a href="global.html#clearTriggeredSlot">clearTriggeredSlot</a></li><li><a href="global.html#clearTriggeredSlots">clearTriggeredSlots</a></li><li><a href="global.html#closeSubgraph">closeSubgraph</a></li><li><a href="global.html#collapse">collapse</a></li><li><a href="global.html#computeSize">computeSize</a></li><li><a href="global.html#computeVisibleNodes">computeVisibleNodes</a></li><li><a href="global.html#configure">configure</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectByType">connectByType</a></li><li><a href="global.html#convertCanvasToOffset">convertCanvasToOffset</a></li><li><a href="global.html#convertOffsetToCanvas">convertOffsetToCanvas</a></li><li><a href="global.html#createNode">createNode</a></li><li><a href="global.html#deleteSelectedNodes">deleteSelectedNodes</a></li><li><a href="global.html#deselectAllNodes">deselectAllNodes</a></li><li><a href="global.html#deselectNode">deselectNode</a></li><li><a href="global.html#detachCanvas">detachCanvas</a></li><li><a href="global.html#disconnectInput">disconnectInput</a></li><li><a href="global.html#disconnectOutput">disconnectOutput</a></li><li><a href="global.html#doExecute">doExecute</a></li><li><a href="global.html#draw">draw</a></li><li><a href="global.html#drawBackCanvas">drawBackCanvas</a></li><li><a href="global.html#drawConnections">drawConnections</a></li><li><a href="global.html#drawFrontCanvas">drawFrontCanvas</a></li><li><a href="global.html#drawGroups">drawGroups</a></li><li><a href="global.html#drawNode">drawNode</a></li><li><a href="global.html#drawNodeShape">drawNodeShape</a></li><li><a href="global.html#drawNodeWidgets">drawNodeWidgets</a></li><li><a href="global.html#drawSubgraphPanel">drawSubgraphPanel</a></li><li><a href="global.html#enableWebGL">enableWebGL</a></li><li><a href="global.html#executePendingActions">executePendingActions</a></li><li><a href="global.html#fetchFile">fetchFile</a></li><li><a href="global.html#findInputSlot">findInputSlot</a></li><li><a href="global.html#findInputSlotFree">findInputSlotFree</a></li><li><a href="global.html#findNodeByTitle">findNodeByTitle</a></li><li><a href="global.html#findNodesByClass">findNodesByClass</a></li><li><a href="global.html#findNodesByTitle">findNodesByTitle</a></li><li><a href="global.html#findNodesByType">findNodesByType</a></li><li><a href="global.html#findOutputSlot">findOutputSlot</a></li><li><a href="global.html#findOutputSlotFree">findOutputSlotFree</a></li><li><a href="global.html#findSlotByType">findSlotByType</a></li><li><a href="global.html#getAncestors">getAncestors</a></li><li><a href="global.html#getBounding">getBounding</a></li><li><a href="global.html#getCanvasWindow">getCanvasWindow</a></li><li><a href="global.html#getConnectionPos">getConnectionPos</a></li><li><a href="global.html#getCurrentGraph">getCurrentGraph</a></li><li><a href="global.html#getElapsedTime">getElapsedTime</a></li><li><a href="global.html#getFixedTime">getFixedTime</a></li><li><a href="global.html#getGroupOnPos">getGroupOnPos</a></li><li><a href="global.html#getInputData">getInputData</a></li><li><a href="global.html#getInputDataByName">getInputDataByName</a></li><li><a href="global.html#getInputDataType">getInputDataType</a></li><li><a href="global.html#getInputInfo">getInputInfo</a></li><li><a href="global.html#getInputLink">getInputLink</a></li><li><a href="global.html#getInputNode">getInputNode</a></li><li><a href="global.html#getInputOrProperty">getInputOrProperty</a></li><li><a href="global.html#getNodeById">getNodeById</a></li><li><a href="global.html#getNodeOnPos">getNodeOnPos</a></li><li><a href="global.html#getNodeType">getNodeType</a></li><li><a href="global.html#getNodeTypesCategories">getNodeTypesCategories</a></li><li><a href="global.html#getOutputData">getOutputData</a></li><li><a href="global.html#getOutputInfo">getOutputInfo</a></li><li><a href="global.html#getOutputNodes">getOutputNodes</a></li><li><a href="global.html#getPropertyInfo">getPropertyInfo</a></li><li><a href="global.html#getSlotInPosition">getSlotInPosition</a></li><li><a href="global.html#getTime">getTime</a></li><li><a href="global.html#getTitle">getTitle</a></li><li><a href="global.html#getTopGraph">getTopGraph</a></li><li><a href="global.html#isAnyOutputConnected">isAnyOutputConnected</a></li><li><a href="global.html#isInputConnected">isInputConnected</a></li><li><a href="global.html#isLive">isLive</a></li><li><a href="global.html#isOutputConnected">isOutputConnected</a></li><li><a href="global.html#isOverNodeBox">isOverNodeBox</a></li><li><a href="global.html#isOverNodeInput">isOverNodeInput</a></li><li><a href="global.html#isOverNodeOuput">isOverNodeOuput</a></li><li><a href="global.html#isPointInside">isPointInside</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#openSubgraph">openSubgraph</a></li><li><a href="global.html#pin">pin</a></li><li><a href="global.html#processDrop">processDrop</a></li><li><a href="global.html#processKey">processKey</a></li><li><a href="global.html#processMouseMove">processMouseMove</a></li><li><a href="global.html#processMouseUp">processMouseUp</a></li><li><a href="global.html#processMouseWheel">processMouseWheel</a></li><li><a href="global.html#processNodeWidgets">processNodeWidgets</a></li><li><a href="global.html#registerNodeType">registerNodeType</a></li><li><a href="global.html#registerSearchboxExtra">registerSearchboxExtra</a></li><li><a href="global.html#registerSlotType">registerSlotType</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeInput">removeInput</a></li><li><a href="global.html#removeLink">removeLink</a></li><li><a href="global.html#removeOutput">removeOutput</a></li><li><a href="global.html#renameInput">renameInput</a></li><li><a href="global.html#renameOutput">renameOutput</a></li><li><a href="global.html#renderInfo">renderInfo</a></li><li><a href="global.html#renderLink">renderLink</a></li><li><a href="global.html#resize">resize</a></li><li><a href="global.html#runStep">runStep</a></li><li><a href="global.html#selectNode">selectNode</a></li><li><a href="global.html#selectNodes">selectNodes</a></li><li><a href="global.html#sendEventToAllNodes">sendEventToAllNodes</a></li><li><a href="global.html#sendToBack">sendToBack</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#setCanvas">setCanvas</a></li><li><a href="global.html#setDirty">setDirty</a></li><li><a href="global.html#setGlobalInputData">setGlobalInputData</a></li><li><a href="global.html#setGraph">setGraph</a></li><li><a href="global.html#setOutputData">setOutputData</a></li><li><a href="global.html#setOutputDataType">setOutputDataType</a></li><li><a href="global.html#setProperty">setProperty</a></li><li><a href="global.html#setSize">setSize</a></li><li><a href="global.html#setZoom">setZoom</a></li><li><a href="global.html#start">start</a></li><li><a href="global.html#startRendering">startRendering</a></li><li><a href="global.html#stopexecution">stop execution</a></li><li><a href="global.html#stopRendering">stopRendering</a></li><li><a href="global.html#switchLiveMode">switchLiveMode</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#trigger">trigger</a></li><li><a href="global.html#triggerSlot">triggerSlot</a></li><li><a href="global.html#unbindEvents">unbindEvents</a></li><li><a href="global.html#unregisterNodeType">unregisterNodeType</a></li><li><a href="global.html#updateExecutionOrder">updateExecutionOrder</a></li><li><a href="global.html#wrapFunctionAsNode">wrapFunctionAsNode</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Tue May 07 2024 21:35:31 GMT-0600 (Mountain Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed May 08 2024 10:40:39 GMT-0600 (Mountain Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

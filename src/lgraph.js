@@ -27,7 +27,10 @@ export class LGraph {
         }
     }
 
-    //used to know which types of connections support this graph (some graphs do not allow certain types)
+    /**
+     * Gets the supported types of the LGraph class, falling back to the default supported types if not defined for the instance.
+     * @returns {Array} An array of supported types for the LGraph class.
+     */
     getSupportedTypes() {
         return this.supported_types ?? LGraph.supported_types;
     }
@@ -100,7 +103,6 @@ export class LGraph {
      * @method attachCanvas
      * @param {GraphCanvas} graph_canvas
      */
-
     attachCanvas(graphcanvas) {
         if (graphcanvas.constructor != LGraphCanvas) {
             throw "attachCanvas expects a LGraphCanvas instance";
@@ -137,7 +139,6 @@ export class LGraph {
      * @method start
      * @param {number} interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
      */
-
     start(interval = 0) {
         if (this.status === LGraph.STATUS_RUNNING) {
             return;
@@ -176,7 +177,6 @@ export class LGraph {
      * Stops the execution loop of the graph
      * @method stop execution
      */
-
     stop() {
         if (this.status == LGraph.STATUS_STOPPED) {
             return;
@@ -199,7 +199,6 @@ export class LGraph {
      * @param {Boolean} do_not_catch_errors [optional] if you want to try/catch errors 
      * @param {number} limit max number of nodes to execute (used to execute from start to a node)
      */
-
     runStep(num = 1, do_not_catch_errors, limit) {
         var start = LiteGraph.getTime();
         this.globaltime = 0.001 * (start - this.starttime);
@@ -293,7 +292,12 @@ export class LGraph {
         }
     }
 
-    //This is more internal, it computes the executable nodes in order and returns it
+    /**
+     * Computes the execution order of nodes in the flow graph based on their connections and levels.
+     * @param {boolean} only_onExecute - Indicates whether to consider only nodes with an onExecute method.
+     * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
+     * @returns {Array} An array of nodes in the calculated execution order.
+     */
     computeExecutionOrder(only_onExecute, set_level) {
         var L = [];
         var S = [];
@@ -567,6 +571,11 @@ export class LGraph {
         }
     }
 
+    /**
+     * Sends an action with parameters to the connected GraphCanvas instances for processing.
+     * @param {string} action - The action to be performed on the GraphCanvas instances.
+     * @param {Array} params - An array of parameters to be passed to the action method.
+     */
     sendActionToCanvas(action, params) {
         if (!this.list_of_graphcanvas) {
             return;
@@ -584,7 +593,6 @@ export class LGraph {
      * @method add
      * @param {LGraphNode} node the instance of the node
      */
-
     add(node, skip_compute_order) {
         if (!node) {
             return;
@@ -659,7 +667,6 @@ export class LGraph {
      * @method remove
      * @param {LGraphNode} node the instance of the node
      */
-
     remove(node) {
         if (node.constructor === LGraphGroup) {
             var index = this._groups.indexOf(node);
@@ -747,7 +754,6 @@ export class LGraph {
      * @method getNodeById
      * @param {Number} id
      */
-
     getNodeById(id) {
         if (id == null) {
             return null;
@@ -849,8 +855,12 @@ export class LGraph {
         this.updateExecutionOrder();
     }
 
-    // ********** GLOBALS *****************
-
+    /**
+     * Executes an action on the GraphInput nodes based on the provided action name and parameters.
+     * @param {string} action - The name of the action to be executed on the GraphInput nodes.
+     * @param {any} param - The parameter to pass to the action method.
+     * @param {object} options - Additional options for the action.
+     */
     onAction(action, param, options) {
         this._input_nodes = this.findNodesByClass(
             LiteGraph.GraphInput,
@@ -1100,6 +1110,11 @@ export class LGraph {
         return true;
     }
 
+    /**
+     * Triggers the 'onTrigger' method on nodes with a specific title by passing a value to them.
+     * @param {string} name - The title of the nodes to trigger.
+     * @param {any} value - The value to pass to the 'onTrigger' method of the nodes.
+     */
     triggerInput(name, value) {
         var nodes = this.findNodesByTitle(name);
         for (var i = 0; i < nodes.length; ++i) {
@@ -1107,6 +1122,11 @@ export class LGraph {
         }
     }
 
+    /**
+     * Sets a callback function on nodes with a specific title by invoking their 'setTrigger' method.
+     * @param {string} name - The title of the nodes to set the callback function on.
+     * @param {Function} func - The callback function to be set on the nodes.
+     */
     setCallback(name, func) {
         var nodes = this.findNodesByTitle(name);
         for (var i = 0; i < nodes.length; ++i) {
@@ -1114,18 +1134,32 @@ export class LGraph {
         }
     }
 
-    //used for undo, called before any change is made to the graph
+    /**
+     * Executes actions before a change with the provided information detail.
+     * Calls the 'onBeforeChange' function on the class instance and sends the action to connected GraphCanvas instances.
+     * @param {object} info - The information detail about the change.
+     */
     beforeChange(info) {
         this.onBeforeChange?.(this,info);
         this.sendActionToCanvas("onBeforeChange", this);
     }
 
-    //used to resend actions, called after any change is made to the graph
+    /**
+     * Executes actions after a change with the provided information detail.
+     * Calls the 'onAfterChange' function on the class instance and sends the action to connected GraphCanvas instances.
+     * @param {object} info - The information detail about the change.
+     */
     afterChange(info) {
         this.onAfterChange?.(this,info);
         this.sendActionToCanvas("onAfterChange", this);
     }
 
+    /**
+     * Handles changes in node connections and triggers related actions.
+     * Updates the execution order, calls the 'onConnectionChange' function on the class instance and connected GraphCanvas instances, and increments the version.
+     * @param {object} node - The node where the connection change occurred.
+     * @param {object} link_info - Information about the changed connection.
+     */
     connectionChange(node, link_info) {
         this.updateExecutionOrder();
         this.onConnectionChange?.(node);
@@ -1137,7 +1171,6 @@ export class LGraph {
      * returns if the graph is in live mode
      * @method isLive
      */
-
     isLive() {
         if (!this.list_of_graphcanvas) {
             return false;
@@ -1166,7 +1199,11 @@ export class LGraph {
         }
     }
 
-    /* Called when something visually changed (not the graph!) */
+    /**
+     * Indicates a visual change in the graph (not the structure) and triggers related actions.
+     * Logs a message if in debug mode, sends a 'setDirty' action with parameters to connected GraphCanvas instances, and calls the 'on_change' function on the class instance.
+     * @method change
+     */
     change() {
         if (LiteGraph.debug) {
             console.log("Graph changed");
@@ -1193,7 +1230,6 @@ export class LGraph {
         node?.disconnectInput(link.target_slot);
     }
 
-    //save and recover app state ***************************************
     /**
      * Creates a Object containing all the info about this graph, it can be serialized
      * @method serialize
@@ -1334,6 +1370,11 @@ export class LGraph {
         return error;
     }
 
+    /**
+     * Loads graph data from a given URL or file and configures the graph accordingly.
+     * @param {string | File | Blob} url - The URL or file to load the graph data from.
+     * @param {Function} callback - An optional callback function to be executed after loading and configuring the graph.
+     */
     load(url, callback) {
         var that = this;
 
@@ -1369,7 +1410,7 @@ export class LGraph {
     }
 
     onNodeTrace(node, msg, color) {
-        //TODO
+        //@TODO
     }
 }
 

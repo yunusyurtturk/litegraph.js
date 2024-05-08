@@ -357,9 +357,10 @@ export class ContextMenu {
      * @param {Object} params - Additional parameters to include in the event.
      * @param {HTMLElement} origin - The origin of the event <currently not supported as CustomEvent can't have a target!>
      * @returns {CustomEvent} - The created CustomEvent instance.
+     * @BUG: Probable bug related to params, origin not being configured/populated correctly
      */
     static trigger(element, event_name, params, origin) {
-        const event = new CustomEvent(event_name, { detail: params} );
+        const event = new CustomEvent(event_name, params );
         if (element.dispatchEvent) {
             element.dispatchEvent(event);
         } else if (element.__events) {
