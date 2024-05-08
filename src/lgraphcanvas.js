@@ -339,10 +339,6 @@ export class LGraphCanvas {
             this.enableWebGL();
         }
 
-        //input:  (move and up could be unbinded)
-        // why here? this._mousemove_callback = this.processMouseMove.bind(this);
-        // why here? this._mouseup_callback = this.processMouseUp.bind(this);
-
         if (!skip_events) {
             this.bindEvents();
         }
@@ -437,15 +433,15 @@ export class LGraphCanvas {
     }
 
     static getFileExtension(url) {
-        var question = url.indexOf("?");
-        if (question != -1) {
-            url = url.substr(0, question);
-        }
-        var point = url.lastIndexOf(".");
-        if (point == -1) {
+        const urlObj = new URL(url);
+        const path = urlObj.pathname;
+        const lastDotIndex = path.lastIndexOf(".");
+        
+        if (lastDotIndex === -1) {
             return "";
         }
-        return url.substr(point + 1).toLowerCase();
+        
+        return path.slice(lastDotIndex + 1).toLowerCase();
     }
 
     /**
