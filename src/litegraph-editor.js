@@ -5,26 +5,34 @@ import { LGraph } from "./lgraph.js";
 
 //Creates an interface to access extra features from a graph (like play, stop, live, etc)
 export class Editor {
-    constructor(container_id, options = {}) {
-        //fill container
-        var html = "<div class='header'><div class='tools tools-left'></div><div class='tools tools-right'></div></div>";
-        html += "<div class='content'><div class='editor-area'><canvas class='graphcanvas' width='1000' height='500' tabindex=10></canvas></div></div>";
-        html += "<div class='footer'><div class='tools tools-left'></div><div class='tools tools-right'></div></div>";
 
-        var root = document.createElement("div");
-        this.root = root;
+    constructor(container_id, options = {}) {
+
+        const root = this.root = document.createElement("div");
         root.className = "litegraph litegraph-editor";
-        root.innerHTML = html;
+        root.innerHTML = `
+        <div class='header'>
+            <div class='tools tools-left'></div>
+            <div class='tools tools-right'></div>
+        </div>
+        <div class='content'>
+            <div class='editor-area'>
+                <canvas class='graphcanvas' width='1000' height='500' tabindex=10></canvas>
+            </div>
+        </div>
+        <div class='footer'>
+            <div class='tools tools-left'></div>
+            <div class='tools tools-right'></div>
+        </div>`;
 
         this.tools = root.querySelector(".tools");
         this.content = root.querySelector(".content");
         this.footer = root.querySelector(".footer");
 
-        var canvas = this.canvas = root.querySelector(".graphcanvas");
+        const canvas = this.canvas = root.querySelector(".graphcanvas");
+        const graph = this.graph = new LGraph();
+        const graphcanvas = this.graphcanvas = new LGraphCanvas(canvas, graph);
 
-        //create graph
-        var graph = (this.graph = new LGraph());
-        var graphcanvas = this.graphcanvas = new LGraphCanvas(canvas, graph);
         graphcanvas.background_image = "imgs/grid.png";
         graph.onAfterExecute = () => {
             graphcanvas.draw(true);
@@ -74,25 +82,33 @@ export class Editor {
         }
 
         //append to DOM
-        var parent = document.getElementById(container_id);
+        const parent = document.getElementById(container_id);
         if (parent) {
-            parent.appendChild(root);
+            parent?.appendChild(root);
+        } else {
+            throw new Error("Editor has no parentElement to bind to");
         }
 
         graphcanvas.resize();
-        //graphcanvas.draw(true,true);
     }
 
     addLoadCounter() {
-        var meter = document.createElement("div");
+        const meter = document.createElement("div");
         meter.className = "headerpanel loadmeter toolbar-widget";
+        meter.innerHTML = `
+            <div class='cpuload'>
+                <strong>CPU</strong> 
+                <div class='bgload'>
+                    <div class='fgload'></div>
+                </div>
+            </div>
+            <div class='gpuload'>
+                <strong>GFX</strong> 
+                <div class='bgload'>
+                    <div class='fgload'></div>
+                </div>
+            </div>`;
 
-        var html =
-            "<div class='cpuload'><strong>CPU</strong> <div class='bgload'><div class='fgload'></div></div></div>";
-        html +=
-            "<div class='gpuload'><strong>GFX</strong> <div class='bgload'><div class='fgload'></div></div></div>";
-
-        meter.innerHTML = html;
         this.root.querySelector(".header .tools-left").appendChild(meter);
         var self = this;
 
@@ -108,18 +124,14 @@ export class Editor {
         }, 200);
     }
 
-    addToolsButton(id, name, icon_url, callback, container) {
-        if (!container) {
-            container = ".tools";
-        }
-
-        var button = this.createButton(name, icon_url, callback);
+    addToolsButton(id, name, icon_url, callback, container = ".tools") {
+        const button = this.createButton(name, icon_url, callback);
         button.id = id;
         this.root.querySelector(container).appendChild(button);
     }
 
     createButton(name, icon_url, callback) {
-        var button = document.createElement("button");
+        const button = document.createElement("button");
         if (icon_url) {
             button.innerHTML = `<img src='${icon_url}'/> `;
         }
@@ -132,7 +144,8 @@ export class Editor {
 
     onLoadButton() {
         var panel = this.graphcanvas.createPanel("Load session",{closable:true});
-        //TO DO
+        
+        //@TODO
 
         this.root.appendChild(panel);
     }
