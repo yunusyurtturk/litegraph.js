@@ -3,45 +3,39 @@ import { LGraphCanvas } from "./lgraphcanvas.js";
 import { LGraphNode } from "./lgraphnode.js";
 
 export class LGraphGroup {
-    constructor(title) {
-        this.title = title || "Group";
+
+    constructor(title = "Group") {
+
+        this.title = title;
         this.font_size = 24;
-        this.color = LGraphCanvas.node_colors.pale_blue
-            ? LGraphCanvas.node_colors.pale_blue.groupcolor
-            : "#AAA";
+        this.color = LGraphCanvas.node_colors.pale_blue?.groupcolor ?? "#AAA";
         this._bounding = new Float32Array([10, 10, 140, 80]);
         this._pos = this._bounding.subarray(0, 2);
         this._size = this._bounding.subarray(2, 4);
         this._nodes = [];
         this.graph = null;
+    }
 
-        Object.defineProperty(this, "pos", {
-            set: function(v) {
-                if (!v || v.length < 2) {
-                    return;
-                }
-                this._pos[0] = v[0];
-                this._pos[1] = v[1];
-            },
-            get: function() {
-                return this._pos;
-            },
-            enumerable: true
-        });
+    set pos(v) {
+        if (!v || v.length < 2) {
+            return;
+        }
+        this._pos[0] = v[0];
+        this._pos[1] = v[1];
+    }
+    get pos() {
+        return this._pos;
+    }
 
-        Object.defineProperty(this, "size", {
-            set: function(v) {
-                if (!v || v.length < 2) {
-                    return;
-                }
-                this._size[0] = Math.max(140, v[0]);
-                this._size[1] = Math.max(80, v[1]);
-            },
-            get: function() {
-                return this._size;
-            },
-            enumerable: true
-        });
+    set size(v) {
+        if (!v || v.length < 2) {
+            return;
+        }
+        this._size[0] = Math.max(140, v[0]);
+        this._size[1] = Math.max(80, v[1]);
+    }
+    get size() {
+        return this._size;
     }
 
     configure(o) {
