@@ -133,18 +133,16 @@ export class ContextMenu {
      * @param {Array<string|object>} values - An array of values to be added.
      */
     addItems(values) {
-        let num = 0;
     
         for (let i = 0; i < values.length; i++) {
-            let name = Array.isArray(values) ? values[i] : i;
+            let name = values[i];
     
-            if (name && typeof name !== 'string') {
-                name = name.content === undefined ? String(name) : name.content;
+            if (typeof name !== 'string') {
+                name = name && name.content !== undefined ? String(name.content) : String(name);
             }
     
             let value = values[i];
             this.addItem(name, value, this.options);
-            num++;
         }
     }
 
@@ -158,23 +156,24 @@ export class ContextMenu {
         const options = this.options;
         const root = this.root;
 
-        var left = options.left || 0;
-        var top = options.top || 0;
+        let left = options.left || 0;
+        let top = options.top || 0;
         if (options.event) {
             left = options.event.clientX - 10;
             top = options.event.clientY - 10;
+            
             if (options.title) {
                 top -= 20;
             }
 
             if (options.parentMenu) {
-                var rect = options.parentMenu.root.getBoundingClientRect();
+                const rect = options.parentMenu.root.getBoundingClientRect();
                 left = rect.left + rect.width;
             }
 
-            var body_rect = document.body.getBoundingClientRect();
-            var root_rect = root.getBoundingClientRect();
-            if(body_rect.height == 0)
+            const body_rect = document.body.getBoundingClientRect();
+            const root_rect = root.getBoundingClientRect();
+            if(body_rect.height === 0)
                 console.error("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
 
             if (body_rect.width && left > body_rect.width - root_rect.width - 10) {
@@ -201,12 +200,11 @@ export class ContextMenu {
      * @returns {HTMLElement} - The created HTML element representing the added item.
      */
     addItem(name, value, options = {}) {
-        var that = this;
 
-        var element = document.createElement("div");
+        const element = document.createElement("div");
         element.className = "litemenu-entry submenu";
 
-        var disabled = false;
+        let disabled = false;
 
         if (value === null) {
             element.classList.add("separator");
@@ -238,80 +236,65 @@ export class ContextMenu {
 
         this.root.appendChild(element);
         if (!disabled) {
-            element.addEventListener("click", inner_onclick);
+            element.addEventListener("click", handleMenuItemClick);
         }
         if (!disabled && options.autoopen) {
-            element.addEventListener("mouseenter",(e) => {
+            element.addEventListener("mouseenter",(event) => {
                 const value = this.value;
                 if (!value || !value.has_submenu) {
                     return;
                 }
                 //if it is a submenu, autoopen like the item was clicked
-                inner_onclick.call(this, e);
+                handleMenuItemClick.call(this, event);
             });
         }
 
-        //menu option clicked
-        function inner_onclick(e) {
-            var value = this.value;
-            var close_parent = true;
-
-            that.current_submenu?.close(e);
-
-            //global callback
+        var that = this;
+        
+        function handleMenuItemClick(event) {
+            const value = this.value;
+            let closeParent = true;
+        
+            // Close any current submenu
+            that.current_submenu?.close(event);
+        
+            // Execute global callback
             if (options.callback) {
-                var r = options.callback.call(
-                    this, 
-                    value,
-                    options,
-                    e,
-                    that,
-                    options.node
-                );
-                if (r === true) {
-                    close_parent = false;
+                const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
+                if (globalCallbackResult === true) {
+                    closeParent = false;
                 }
             }
-
-            //special cases
+        
+            // Handle special cases
             if (value) {
-                if (
-                    value.callback &&
-                    !options.ignore_item_callbacks &&
-                    value.disabled !== true
-                ) {
-                    //item callback
-                    var r = value.callback.call(
-                        this,
-                        value,
-                        options,
-                        e,
-                        that,
-                        options.extra
-                    );
-                    if (r === true) {
-                        close_parent = false;
+                if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
+                    // Execute item callback
+                    const itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
+                    if (itemCallbackResult === true) {
+                        closeParent = false;
                     }
                 }
                 if (value.submenu) {
                     if (!value.submenu.options) {
-                        throw "ContextMenu submenu needs options";
+                        throw new Error("ContextMenu submenu needs options");
                     }
+                    // Recursively create submenu
                     new that.constructor(value.submenu.options, {
                         callback: value.submenu.callback,
-                        event: e,
+                        event: event,
                         parentMenu: that,
-                        ignore_item_callbacks:
-                            value.submenu.ignore_item_callbacks,
+                        ignore_item_callbacks: value.submenu.ignore_item_callbacks,
                         title: value.submenu.title,
                         extra: value.submenu.extra,
                         autoopen: options.autoopen
                     });
-                    close_parent = false;
+                    closeParent = false;
                 }
             }
-
-            if (close_parent && !that.lock) {
+        
+            // Close parent menu if necessary and not locked
+            if (closeParent && !that.lock) {
                 that.close();
             }
         }
@@ -376,7 +359,7 @@ export class ContextMenu {
      * @returns {CustomEvent} - The created CustomEvent instance.
      */
     static trigger(element, event_name, params, origin) {
-        const event = new CustomEvent(event_name, params);
+        const event = new CustomEvent(event_name, { detail: params} );
         if (element.dispatchEvent) {
             element.dispatchEvent(event);
         } else if (element.__events) {
