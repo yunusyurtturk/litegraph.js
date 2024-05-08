@@ -9,13 +9,12 @@ import { LLink } from "./llink.js";
     + onNodeAdded: when a new node is added to the graph
     + onNodeRemoved: when a node inside this graph is removed
     + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
-    *
-    * @class LGraph
-    * @constructor
-    * @param {Object} o data from previous serialization [optional]
-    */
-
+ */
 export class LGraph {
+    /**
+     * @constructor
+     * @param {Object} o data from previous serialization [optional]} o 
+     */
     constructor(o) {
         if (LiteGraph.debug) {
             console.log("Graph created");
@@ -30,14 +29,13 @@ export class LGraph {
 
     //used to know which types of connections support this graph (some graphs do not allow certain types)
     getSupportedTypes() {
-        return this.supported_types || LGraph.supported_types;
+        return this.supported_types ?? LGraph.supported_types;
     }
 
     /**
      * Removes all nodes from this graph
      * @method clear
      */
-
     clear() {
         this.stop();
         this.status = LGraph.STATUS_STOPPED;
@@ -51,9 +49,7 @@ export class LGraph {
         if (this._nodes) {
             for (var i = 0; i < this._nodes.length; ++i) {
                 var node = this._nodes[i];
-                if (node.onRemoved) {
-                    node.onRemoved();
-                }
+                node.onRemoved?.();
             }
         }
 
@@ -117,10 +113,7 @@ export class LGraph {
         }
 
         graphcanvas.graph = this;
-
-        if (!this.list_of_graphcanvas) {
-            this.list_of_graphcanvas = [];
-        }
+        this.list_of_graphcanvas ??= [];
         this.list_of_graphcanvas.push(graphcanvas);
     }
 
@@ -154,16 +147,13 @@ export class LGraph {
         }
         this.status = LGraph.STATUS_RUNNING;
 
-        if (this.onPlayEvent) {
-            this.onPlayEvent();
-        }
-
+        this.onPlayEvent?.();
         this.sendEventToAllNodes("onStart");
 
         //launch
         this.starttime = LiteGraph.getTime();
         this.last_update_time = this.starttime;
-        interval = interval || 0;
+        interval ||= 0;
         var that = this;
 
         //execute once per frame
@@ -173,22 +163,18 @@ export class LGraph {
                     return;
                 }
                 window.requestAnimationFrame(on_frame);
-                if(that.onBeforeStep)
-                    that.onBeforeStep();
+                that.onBeforeStep?.();
                 that.runStep(1, !that.catch_errors);
-                if(that.onAfterStep)
-                    that.onAfterStep();
+                that.onAfterStep?.();
             }
             this.execution_timer_id = -1;
             on_frame();
         } else { //execute every 'interval' ms
             this.execution_timer_id = setInterval(() => {
                 //execute
-                if(that.onBeforeStep)
-                    that.onBeforeStep();
+                that.onBeforeStep?.();
                 that.runStep(1, !that.catch_errors);
-                if(that.onAfterStep)
-                    that.onAfterStep();
+                that.onAfterStep?.();
             }, interval);
         }
     }
@@ -202,20 +188,14 @@ export class LGraph {
         if (this.status == LGraph.STATUS_STOPPED) {
             return;
         }
-
         this.status = LGraph.STATUS_STOPPED;
-
-        if (this.onStopEvent) {
-            this.onStopEvent();
-        }
-
+        this.onStopEvent?.();
         if (this.execution_timer_id != null) {
             if (this.execution_timer_id != -1) {
                 clearInterval(this.execution_timer_id);
             }
             this.execution_timer_id = null;
         }
-
         this.sendEventToAllNodes("onStop");
     }
 
@@ -235,14 +215,12 @@ export class LGraph {
         //it is done here as if it was done in the later loop it wont be called in the node missed the onExecute
 
         //from now on it will iterate only on executable nodes which is faster
-        var nodes = this._nodes_executable
-            ? this._nodes_executable
-            : this._nodes;
+        var nodes = this._nodes_executable ?? this._nodes;
         if (!nodes) {
             return;
         }
 
-        limit = limit || nodes.length;
+        limit ||= nodes.length;
 
         if (do_not_catch_errors) {
             //iterations
@@ -251,21 +229,16 @@ export class LGraph {
                     var node = nodes[j];
                     if(LiteGraph.use_deferred_actions && node._waiting_actions && node._waiting_actions.length)
                         node.executePendingActions();
-                    if (node.mode == LiteGraph.ALWAYS && node.onExecute) {
-                        //wrap node.onExecute();
-                        node.doExecute();
+                    if (node.mode == LiteGraph.ALWAYS) {
+                        node.doExecute?.();
                     }
                 }
 
                 this.fixedtime += this.fixedtime_lapse;
-                if (this.onExecuteStep) {
-                    this.onExecuteStep();
-                }
+                this.onExecuteStep?.();
             }
+            this.onAfterExecute?.();
 
-            if (this.onAfterExecute) {
-                this.onAfterExecute();
-            }
         } else { //catch errors
             try {
                 //iterations
@@ -274,22 +247,19 @@ export class LGraph {
                         var node = nodes[j];
                         if(LiteGraph.use_deferred_actions && node._waiting_actions && node._waiting_actions.length)
                             node.executePendingActions();
-                        if (node.mode == LiteGraph.ALWAYS && node.onExecute) {
-                            node.onExecute();
+                        if (node.mode == LiteGraph.ALWAYS) {
+                            node.onExecute?.();
                         }
                     }
 
                     this.fixedtime += this.fixedtime_lapse;
-                    if (this.onExecuteStep) {
-                        this.onExecuteStep();
-                    }
+                    this.onExecuteStep?.();
                 }
-
-                if (this.onAfterExecute) {
-                    this.onAfterExecute();
-                }
+                this.onAfterExecute?.();
                 this.errors_in_execution = false;
+
             } catch (err) {
+
                 this.errors_in_execution = true;
                 if (LiteGraph.throw_errors) {
                     throw err;
@@ -509,9 +479,7 @@ export class LGraph {
         for (let i = 0; i < nodes.length; ++i) {
             const node = nodes[i];
             const col = node._level || 1;
-            if (!columns[col]) {
-                columns[col] = [];
-            }
+            columns[col] ??= [];
             columns[col].push(node);
         }
 
@@ -555,7 +523,6 @@ export class LGraph {
      * @method getFixedTime
      * @return {number} number of milliseconds the graph has been running
      */
-
     getFixedTime() {
         return this.fixedtime;
     }
@@ -566,7 +533,6 @@ export class LGraph {
      * @method getElapsedTime
      * @return {number} number of milliseconds it took the last cycle
      */
-
     getElapsedTime() {
         return this.elapsed_time;
     }
@@ -616,9 +582,7 @@ export class LGraph {
 
         for (var i = 0; i < this.list_of_graphcanvas.length; ++i) {
             var c = this.list_of_graphcanvas[i];
-            if (c[action]) {
-                c[action].apply(c, params);
-            }
+            c[action]?.apply(c, params);
         }
     }
 
@@ -679,9 +643,7 @@ export class LGraph {
         this._nodes.push(node);
         this._nodes_by_id[node.id] = node;
 
-        if (node.onAdded) {
-            node.onAdded(this);
-        }
+        node.onAdded?.(this);
 
         if (this.config.align_to_grid) {
             node.alignToGrid();
@@ -691,9 +653,7 @@ export class LGraph {
             this.updateExecutionOrder();
         }
 
-        if (this.onNodeAdded) {
-            this.onNodeAdded(node);
-        }
+        this.onNodeAdded?.(node);
 
         this.setDirtyCanvas(true);
         this.change();
@@ -753,10 +713,7 @@ export class LGraph {
         //node.id = -1; //why?
 
         //callback
-        if (node.onRemoved) {
-            node.onRemoved();
-        }
-
+        node.onRemoved?.();
         node.graph = null;
         this._version++;
 
@@ -780,9 +737,7 @@ export class LGraph {
         }
         delete this._nodes_by_id[node.id];
 
-        if (this.onNodeRemoved) {
-            this.onNodeRemoved(node);
-        }
+        this.onNodeRemoved?.(node);
 
         //close panels
         this.sendActionToCanvas("checkPanels");
@@ -829,9 +784,8 @@ export class LGraph {
      * @param {String} type the name of the node type
      * @return {Array} a list with all the nodes of this type
      */
-    findNodesByType(type, result) {
+    findNodesByType(type, result = []) {
         var type = type.toLowerCase();
-        result = result || [];
         result.length = 0;
         for (var i = 0, l = this._nodes.length; i < l; ++i) {
             if (this._nodes[i].type.toLowerCase() == type) {
@@ -960,9 +914,7 @@ export class LGraph {
     }
 
     trigger(action, param) {
-        if (this.onTrigger) {
-            this.onTrigger(action, param);
-        }
+        this.onTrigger?.(action, param);
     }
 
     /**
@@ -983,14 +935,8 @@ export class LGraph {
         this.inputs[name] = { name: name, type: type, value: value };
         this._version++;
         this.afterChange();
-
-        if (this.onInputAdded) {
-            this.onInputAdded(name, type);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onInputAdded?.(name, type);
+        this.onInputsOutputsChange?.();
     }
 
     /**
@@ -1045,13 +991,8 @@ export class LGraph {
         delete this.inputs[old_name];
         this._version++;
 
-        if (this.onInputRenamed) {
-            this.onInputRenamed(old_name, name);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onInputRenamed?.(old_name, name);
+        this.onInputsOutputsChange?.();
     }
 
     /**
@@ -1075,9 +1016,7 @@ export class LGraph {
 
         this.inputs[name].type = type;
         this._version++;
-        if (this.onInputTypeChanged) {
-            this.onInputTypeChanged(name, type);
-        }
+        this.onInputTypeChanged?.(name, type);
     }
 
     /**
@@ -1094,13 +1033,8 @@ export class LGraph {
         delete this.inputs[name];
         this._version++;
 
-        if (this.onInputRemoved) {
-            this.onInputRemoved(name);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onInputRemoved?.(name);
+        this.onInputsOutputsChange?.();
         return true;
     }
 
@@ -1115,13 +1049,8 @@ export class LGraph {
         this.outputs[name] = { name: name, type: type, value: value };
         this._version++;
 
-        if (this.onOutputAdded) {
-            this.onOutputAdded(name, type);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onOutputAdded?.(name, type);
+        this.onInputsOutputsChange?.();
     }
 
     /**
@@ -1172,13 +1101,8 @@ export class LGraph {
         delete this.outputs[old_name];
         this._version++;
 
-        if (this.onOutputRenamed) {
-            this.onOutputRenamed(old_name, name);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onOutputRenamed?.(old_name, name);
+        this.onInputsOutputsChange?.();
     }
 
     /**
@@ -1202,9 +1126,7 @@ export class LGraph {
 
         this.outputs[name].type = type;
         this._version++;
-        if (this.onOutputTypeChanged) {
-            this.onOutputTypeChanged(name, type);
-        }
+        this.onOutputTypeChanged?.(name, type);
     }
 
     /**
@@ -1219,13 +1141,8 @@ export class LGraph {
         delete this.outputs[name];
         this._version++;
 
-        if (this.onOutputRemoved) {
-            this.onOutputRemoved(name);
-        }
-
-        if (this.onInputsOutputsChange) {
-            this.onInputsOutputsChange();
-        }
+        this.onOutputRemoved?.(name);
+        this.onInputsOutputsChange?.();
         return true;
     }
 
@@ -1245,25 +1162,19 @@ export class LGraph {
 
     //used for undo, called before any change is made to the graph
     beforeChange(info) {
-        if (this.onBeforeChange) {
-            this.onBeforeChange(this,info);
-        }
+        this.onBeforeChange?.(this,info);
         this.sendActionToCanvas("onBeforeChange", this);
     }
 
     //used to resend actions, called after any change is made to the graph
     afterChange(info) {
-        if (this.onAfterChange) {
-            this.onAfterChange(this,info);
-        }
+        this.onAfterChange?.(this,info);
         this.sendActionToCanvas("onAfterChange", this);
     }
 
     connectionChange(node, link_info) {
         this.updateExecutionOrder();
-        if (this.onConnectionChange) {
-            this.onConnectionChange(node);
-        }
+        this.onConnectionChange?.(node);
         this._version++;
         this.sendActionToCanvas("onConnectionChange");
     }
@@ -1297,9 +1208,7 @@ export class LGraph {
             if (!link_info) {
                 continue;
             }
-            if (link_info._last_time) {
-                link_info._last_time = 0;
-            }
+            link_info._last_time &&= 0;
         }
     }
 
@@ -1309,9 +1218,7 @@ export class LGraph {
             console.log("Graph changed");
         }
         this.sendActionToCanvas("setDirty", [true, true]);
-        if (this.on_change) {
-            this.on_change(this);
-        }
+        this.on_change?.(this);
     }
 
     setDirtyCanvas(fg, bg) {
@@ -1329,9 +1236,7 @@ export class LGraph {
             return;
         }
         var node = this.getNodeById(link.target_id);
-        if (node) {
-            node.disconnectInput(link.target_slot);
-        }
+        node?.disconnectInput(link.target_slot);
     }
 
     //save and recover app state ***************************************
@@ -1382,10 +1287,7 @@ export class LGraph {
             extra: this.extra,
             version: LiteGraph.VERSION
         };
-
-        if(this.onSerialize)
-            this.onSerialize(data);
-
+        this.onSerialize?.(data);
         return data;
     }
 
@@ -1461,9 +1363,7 @@ export class LGraph {
             for (var i = 0, l = nodes.length; i < l; ++i) {
                 var n_info = nodes[i];
                 var node = this.getNodeById(n_info.id);
-                if (node) {
-                    node.configure(n_info);
-                }
+                node?.configure(n_info);
             }
         }
 
@@ -1480,9 +1380,8 @@ export class LGraph {
         this.updateExecutionOrder();
 
         this.extra = data.extra || {};
-
-        if(this.onConfigure)
-            this.onConfigure(data);
+        
+        this.onConfigure?.(data);
 
         this._version++;
         this.setDirtyCanvas(true, true);
@@ -1499,10 +1398,8 @@ export class LGraph {
             reader.addEventListener('load', event => {
                 var data = JSON.parse(event.target.result);
                 that.configure(data);
-                if(callback)
-                    callback();
+                callback?.();
             });
-            
             reader.readAsText(url);
             return;
         }
@@ -1518,8 +1415,7 @@ export class LGraph {
             }
             var data = JSON.parse( req.response );
             that.configure(data);
-            if(callback)
-                callback();
+            callback?.();
         };
         req.onerror = err => {
             console.error("Error loading graph:", err);
