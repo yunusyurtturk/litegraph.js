@@ -31,8 +31,8 @@ export class ContextMenu {
             root.className = this.options.className;
         }
         root.classList.add("litegraph","litecontextmenu","litemenubar-panel");
-        root.style.minWidth = 100;
-        root.style.minHeight = 100;
+        root.style.minWidth = "80px";
+        root.style.minHeight = "10px";
         return root;
     }
 
