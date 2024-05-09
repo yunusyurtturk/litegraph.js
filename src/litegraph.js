@@ -12,6 +12,9 @@ import { LGraphGroup } from "./lgraphgroup.js";
  * belongs.
  * 
  * https://dzone.com/articles/singleton-anti-pattern
+ * 
+ * The plan is to use get x() and set x(v) to provide deprecation messaging for all of the properties
+ * and methods below, and deprecate with 90 day warning.
  */
 
 export const LiteGraph = new class {
@@ -982,119 +985,119 @@ export const LiteGraph = new class {
     clamp = (v, a, b) => {
         a > v ? a : b < v ? b : v;
     }
-}
 
-/*@NOTE: Below code is already deprecated */
-
-LiteGraph.closeAllContextMenus = (ref_window) => {
-    console.log(`
-        LiteGraph.closeAllContextMenus is deprecated 
-        and will be removed after 2024-07-01.  
-        Please use ContextMenu.closeAll`);
-    ContextMenu.closeAll(ref_window);
-}
-
-/* helper for interaction: pointer, touch, mouse Listeners
-used by LGraphCanvas DragAndScale ContextMenu*/
-LiteGraph.pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
-    console.log(
-        `LiteGraph.pointerListenerAdd is deprecated
-        and will be removed any time after 2024-07-01
-        Please use EventTarget.prototype.addEventListener`
-    );
-
-    if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall!=="function"){
-        //console.log("cant pointerListenerAdd "+oDOM+", "+sEvent+", "+fCall);
-        return; // -- break --
+    /* DEPRECATED */
+    closeAllContextMenus = (ref_window) => {
+        console.log(`
+            LiteGraph.closeAllContextMenus is deprecated 
+            and will be removed after 2024-07-01.  
+            Please use ContextMenu.closeAll`);
+        ContextMenu.closeAll(ref_window);
     }
+
+    /* DEPRECATED helper for interaction: pointer, touch, mouse Listeners
+    used by LGraphCanvas DragAndScale ContextMenu*/
+    pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
+        console.log(
+            `LiteGraph.pointerListenerAdd is deprecated
+            and will be removed any time after 2024-07-01
+            Please use EventTarget.prototype.addEventListener`
+        );
     
-    var sMethod = LiteGraph.pointerevents_method;
-    var sEvent = sEvIn;
+        if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall!=="function"){
+            //console.log("cant pointerListenerAdd "+oDOM+", "+sEvent+", "+fCall);
+            return; // -- break --
+        }
+        
+        var sMethod = LiteGraph.pointerevents_method;
+        var sEvent = sEvIn;
+        
+        // convert pointerevents to touch event when not available
+        if (sMethod=="pointer" && !window.PointerEvent){ 
+            console.warn("sMethod=='pointer' && !window.PointerEvent");
+            console.log("Converting pointer["+sEvent+"] : down move up cancel enter TO touchstart touchmove touchend, etc ..");
+            switch(sEvent){
+                case "down":{
+                    sMethod = "touch";
+                    sEvent = "start";
+                    break;
+                }
+                case "move":{
+                    sMethod = "touch";
+                    //sEvent = "move";
+                    break;
+                }
+                case "up":{
+                    sMethod = "touch";
+                    sEvent = "end";
+                    break;
+                }
+                case "cancel":{
+                    sMethod = "touch";
+                    //sEvent = "cancel";
+                    break;
+                }
+                case "enter":{
+                    console.log("debug: Should I send a move event?"); // ???
+                    break;
+                }
+                // case "over": case "out": not used at now
+                default:{
+                    console.warn("PointerEvent not available in this browser ? The event "+sEvent+" would not be called");
+                }
+            }
+        }
     
-    // UNDER CONSTRUCTION
-    // convert pointerevents to touch event when not available
-    if (sMethod=="pointer" && !window.PointerEvent){ 
-        console.warn("sMethod=='pointer' && !window.PointerEvent");
-        console.log("Converting pointer["+sEvent+"] : down move up cancel enter TO touchstart touchmove touchend, etc ..");
         switch(sEvent){
-            case "down":{
-                sMethod = "touch";
-                sEvent = "start";
-                break;
+            //both pointer and move events
+            case "down": case "up": case "move": case "over": case "out": case "enter":
+            {
+                oDOM.addEventListener(sMethod+sEvent, fCall, capture);
             }
-            case "move":{
-                sMethod = "touch";
-                //sEvent = "move";
-                break;
+            // only pointerevents
+            case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
+            {
+                if (sMethod!="mouse"){
+                    return oDOM.addEventListener(sMethod+sEvent, fCall, capture);
+                }
             }
-            case "up":{
-                sMethod = "touch";
-                sEvent = "end";
-                break;
-            }
-            case "cancel":{
-                sMethod = "touch";
-                //sEvent = "cancel";
-                break;
-            }
-            case "enter":{
-                console.log("debug: Should I send a move event?"); // ???
-                break;
-            }
-            // case "over": case "out": not used at now
-            default:{
-                console.warn("PointerEvent not available in this browser ? The event "+sEvent+" would not be called");
-            }
+            // not "pointer" || "mouse"
+            default:
+                return oDOM.addEventListener(sEvent, fCall, capture);
         }
     }
 
-    switch(sEvent){
-        //both pointer and move events
-        case "down": case "up": case "move": case "over": case "out": case "enter":
-        {
-            oDOM.addEventListener(sMethod+sEvent, fCall, capture);
+    /* DEPRECATED */
+    pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
+        console.log(
+            `LiteGraph.pointerListenerRemove is deprecated
+            and will be removed any time after 2024-07-01.
+            Please use EventTarget.prototype.removeEventListener`
+        );
+    
+        if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall!=="function"){
+            //console.log("cant pointerListenerRemove "+oDOM+", "+sEvent+", "+fCall);
+            return; // -- break --
         }
-        // only pointerevents
-        case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
-        {
-            if (sMethod!="mouse"){
-                return oDOM.addEventListener(sMethod+sEvent, fCall, capture);
+        switch(sEvent){
+            //both pointer and move events
+            case "down": case "up": case "move": case "over": case "out": case "enter":
+            {
+                if (LiteGraph.pointerevents_method=="pointer" || LiteGraph.pointerevents_method=="mouse"){
+                    oDOM.removeEventListener(LiteGraph.pointerevents_method+sEvent, fCall, capture);
+                }
             }
-        }
-        // not "pointer" || "mouse"
-        default:
-            return oDOM.addEventListener(sEvent, fCall, capture);
-    }
-}
-LiteGraph.pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
-    console.log(
-        `LiteGraph.pointerListenerRemove is deprecated
-        and will be removed any time after 2024-07-01.
-        Please use EventTarget.prototype.removeEventListener`
-    );
-
-    if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall!=="function"){
-        //console.log("cant pointerListenerRemove "+oDOM+", "+sEvent+", "+fCall);
-        return; // -- break --
-    }
-    switch(sEvent){
-        //both pointer and move events
-        case "down": case "up": case "move": case "over": case "out": case "enter":
-        {
-            if (LiteGraph.pointerevents_method=="pointer" || LiteGraph.pointerevents_method=="mouse"){
-                oDOM.removeEventListener(LiteGraph.pointerevents_method+sEvent, fCall, capture);
+            // only pointerevents
+            case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
+            {
+                if (LiteGraph.pointerevents_method=="pointer"){
+                    return oDOM.removeEventListener(LiteGraph.pointerevents_method+sEvent, fCall, capture);
+                }
             }
+            // not "pointer" || "mouse"
+            default:
+                return oDOM.removeEventListener(sEvent, fCall, capture);
         }
-        // only pointerevents
-        case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
-        {
-            if (LiteGraph.pointerevents_method=="pointer"){
-                return oDOM.removeEventListener(LiteGraph.pointerevents_method+sEvent, fCall, capture);
-            }
-        }
-        // not "pointer" || "mouse"
-        default:
-            return oDOM.removeEventListener(sEvent, fCall, capture);
     }
 }
 
