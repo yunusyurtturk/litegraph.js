@@ -1010,6 +1010,14 @@ LiteGraph.getParameterNames = func => // split & filter [""]
 /* helper for interaction: pointer, touch, mouse Listeners
 used by LGraphCanvas DragAndScale ContextMenu*/
 LiteGraph.pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
+    console.log(
+        `LiteGraph.pointerListenerAdd is deprecated
+        and will be removed any time after 2024-07-01
+        Please use EventTarget.prototype.addEventListener`
+    );
+
+
+
     if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall!=="function"){
         //console.log("cant pointerListenerAdd "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
@@ -1074,6 +1082,13 @@ LiteGraph.pointerListenerAdd = (oDOM, sEvIn, fCall, capture=false) => {
     }
 }
 LiteGraph.pointerListenerRemove = (oDOM, sEvent, fCall, capture=false) => {
+    console.log(
+        `LiteGraph.pointerListenerRemove is deprecated
+        and will be removed any time after 2024-07-01.
+        Please use EventTarget.prototype.removeEventListener`
+    );
+
+    
     if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall!=="function"){
         //console.log("cant pointerListenerRemove "+oDOM+", "+sEvent+", "+fCall);
         return; // -- break --
