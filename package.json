@@ -1,6 +1,6 @@
 {
     "name": "litegraph",
-    "version": "0.7.39",
+    "version": "0.8.39",
     "description": "A flow graph node editor on the web.",
     "main": "build/litegraph.js",
     "type": "module",

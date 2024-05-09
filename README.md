@@ -1,3 +1,18 @@
+# Fork
+
+This fork takes the 2011-2014 code for LiteGraph and renews it.  Major changes:
+
+## Non-Breaking
+
+Replacing/revising alot of old event handler code
+Cleaned up alot of loops and condition logic
+
+## Breaking
+
+Replaced the IIFE with ES6 modules
+Replaced ES5 classes with ES6 ones
+Replaced LiteGraph.*class* with just *class*
+
 # litegraph.js
 
 A library in Javascript to create graphs in the browser similar to Unreal Blueprints. Nodes can be programmed easily and it includes an editor to construct and tests the graphs.
