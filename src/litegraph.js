@@ -17,7 +17,7 @@ import { LGraphGroup } from "./lgraphgroup.js";
  * and methods below, and deprecate with 90 day warning.
  */
 
-export const LiteGraph = new class {
+export var LiteGraph = new class {
     constructor() {
         //@TODO: This is awful, and these settings need to be put where they belong.
 
@@ -983,7 +983,7 @@ export const LiteGraph = new class {
     }
 
     clamp = (v, a, b) => {
-        a > v ? a : b < v ? b : v;
+        return a > v ? a : b < v ? b : v;
     }
 
     /* DEPRECATED */
