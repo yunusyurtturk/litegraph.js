@@ -4,6 +4,10 @@ import { LGraphNode } from "./lgraphnode.js";
 
 export class LGraphGroup {
 
+    /**
+     * Constructor for the LGraphGroup class.
+     * @param {string} [title="Group"] - The title of the group.
+     */
     constructor(title = "Group") {
 
         this.title = title;
@@ -38,6 +42,14 @@ export class LGraphGroup {
         return this._size;
     }
 
+    /**
+     * Updates the properties of the LGraphGroup instance based on the provided configuration object.
+     * @param {Object} o - The configuration object with properties to update.
+     * @param {string} o.title - The new title for the group.
+     * @param {Float32Array} o.bounding - The new bounding box for the group.
+     * @param {string} o.color - The new color for the group.
+     * @param {number} o.font_size - The new font size for the group.
+     */
     configure(o) {
         this.title = o.title;
         this._bounding.set(o.bounding);
@@ -45,6 +57,14 @@ export class LGraphGroup {
         this.font_size = o.font_size;
     }
 
+    /**
+     * Serializes the LGraphGroup instance into a plain JavaScript object.
+     * @returns {Object} - The serialized representation of the LGraphGroup instance.
+     * - title: string - The title of the group.
+     * - bounding: Array<number> - The bounding box coordinates [x, y, width, height].
+     * - color: string - The color of the group.
+     * - font_size: number - The font size of the group.
+     */
     serialize() {
         var b = this._bounding;
         return {
@@ -60,6 +80,12 @@ export class LGraphGroup {
         };
     }
 
+    /**
+     * Moves the LGraphGroup instance by the specified deltas and optionally updates the positions of contained nodes.
+     * @param {number} deltax - The amount to move the group along the x-axis.
+     * @param {number} deltay - The amount to move the group along the y-axis.
+     * @param {boolean} ignore_nodes - Flag to indicate whether to move contained nodes along with the group.
+     */
     move(deltax, deltay, ignore_nodes) {
         this._pos[0] += deltax;
         this._pos[1] += deltay;
@@ -73,6 +99,10 @@ export class LGraphGroup {
         }
     }
 
+    /**
+     * Recomputes and updates the list of nodes inside the LGraphGroup based on their bounding boxes.
+     * This method checks for nodes that overlap with the group's bounding box and updates the internal nodes list accordingly.
+     */
     recomputeInsideNodes() {
         this._nodes.length = 0;
         var nodes = this.graph._nodes;
@@ -87,6 +117,7 @@ export class LGraphGroup {
             this._nodes.push(node);
         }
     }
+
+    isPointInside = LGraphNode.prototype.isPointInside;
+    setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;
 }
-LGraphGroup.prototype.isPointInside = LGraphNode.prototype.isPointInside;
-LGraphGroup.prototype.setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;

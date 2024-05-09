@@ -5,11 +5,11 @@ Expand on Jest testing to run tests for each class, both in core and in src/node
 
 # Documentation
 
-Set up JSDocs comments for LGraphNode, LGraphGroup, LLink, LGraphCanvas
+Set up JSDocs comments for LGraphNode, LLink, LGraphCanvas
 
 # Layout Errors (width/height/font/top/left)
 
-Hunt.  Them.  Down.
+Removed ones for context menu.  Others likely on lgraphcanvas, editor, code, etc.
 
 # Replace deprecated dependencies
 
