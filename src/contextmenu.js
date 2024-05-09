@@ -319,7 +319,7 @@ export class ContextMenu {
                 e &&
                 !ContextMenu.isCursorOverElement(e, this.parentMenu.root)
             ) {
-                ContextMenu.trigger(this.parentMenu.root, LiteGraph.pointerevents_method+"leave", e);
+                ContextMenu.trigger(this.parentMenu.root, "mouseleave", e);
             }
         }
         this.current_submenu?.close(e, true);
