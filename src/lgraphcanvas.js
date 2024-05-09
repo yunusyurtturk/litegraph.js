@@ -366,39 +366,32 @@ export class LGraphCanvas {
             return;
         }
         this._events_binded = true;
-        
         var canvas = this.canvas;
-
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document; //hack used when moving canvas between windows
 
+        // Pointer
         this._mousedown_callback = this.processMouseDown.bind(this);
-        this._mousewheel_callback = this.processMouseWheel.bind(this);
         this._mousemove_callback = this.processMouseMove.bind(this);
         this._mouseup_callback = this.processMouseUp.bind(this);
-        
-        canvas.addEventListener("mousedown", this._mousedown_callback, true); //down do not need to store the binded
-        canvas.addEventListener("wheel", this._mousewheel_callback, false);
-
-        canvas.addEventListener("mouseup", this._mouseup_callback, true); // CHECK: ??? binded or not
+        canvas.addEventListener("mousedown", this._mousedown_callback, true);
         canvas.addEventListener("mousemove", this._mousemove_callback);
-        
+        canvas.addEventListener("mouseup", this._mouseup_callback, true);
         canvas.addEventListener("contextmenu", this._doNothing);
 
-        //Keyboard ******************
-        this._key_callback = this.processKey.bind(this);
+        // Wheel
+        canvas.addEventListener("wheel", this.processMouseWheel);
+
+        // Keyboard
         canvas.setAttribute("tabindex",1); //otherwise key events are ignored
-        canvas.addEventListener("keydown", this._key_callback, true);
-        document.addEventListener("keyup", this._key_callback, true); //in document, otherwise it doesn't fire keyup
+        canvas.addEventListener("keydown", this.processKey);
+        document.addEventListener("keyup", this.processKey); //in document, otherwise it doesn't fire keyup
 
-        //Dropping Stuff over nodes ************************************
-        this._ondrop_callback = this.processDrop.bind(this);
-
+        // Drop
         canvas.addEventListener("dragover", this._doNothing, false);
         canvas.addEventListener("dragend", this._doNothing, false);
-        canvas.addEventListener("drop", this._ondrop_callback, false);
+        canvas.addEventListener("drop", this.processDrop);
         canvas.addEventListener("dragenter", this._doReturnTrue, false);
-
     }
 
     /**
@@ -411,24 +404,30 @@ export class LGraphCanvas {
             return;
         }
         this._events_binded = false;
-        
+        var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document;
 
-        this.canvas.removeEventListener("mousemove", this._mousedown_callback);
-        this.canvas.removeEventListener("mouseup", this._mousedown_callback);
-        this.canvas.removeEventListener("mousedown", this._mousedown_callback);
-        this.canvas.removeEventListener("wheel", this._mousewheel_callback);
-        this.canvas.removeEventListener("keydown", this._key_callback);
-        document.removeEventListener("keyup", this._key_callback);
-        this.canvas.removeEventListener("contextmenu", this._doNothing);
-        this.canvas.removeEventListener("drop", this._ondrop_callback);
-        this.canvas.removeEventListener("dragenter", this._doReturnTrue);
+        // Pointer
+        canvas.removeEventListener("mousedown", this._mousedown_callback);
+        canvas.removeEventListener("mousemove", this._mousemove_callback);
+        canvas.removeEventListener("mouseup", this._mouseup_callback);
+        canvas.removeEventListener("contextmenu", this._doNothing);
+
+        // Wheel
+        canvas.removeEventListener("wheel", this.processMouseWheel);
+
+        // Keyboard
+        canvas.removeEventListener("keydown", this.processKey);
+        document.removeEventListener("keyup", this.processKey);
+        
+        // Drop
+        canvas.removeEventListener("dragover", this._doNothing, false);
+        canvas.removeEventListener("dragend", this._doNothing, false);
+        canvas.removeEventListener("drop", this.processDrop);
+        canvas.removeEventListener("dragenter", this._doReturnTrue);
 
         this._mousedown_callback = null;
-        this._mousewheel_callback = null;
-        this._key_callback = null;
-        this._ondrop_callback = null;
 
     }
 
@@ -1587,7 +1586,7 @@ export class LGraphCanvas {
      * Called when a mouse wheel event has to be processed
      * @method processMouseWheel
      **/
-    processMouseWheel(e) {
+    processMouseWheel = (e) => {
         if (!this.graph || !this.allow_dragcanvas) {
             return;
         }
@@ -1724,7 +1723,7 @@ export class LGraphCanvas {
      * process a key event
      * @method processKey
      **/
-    processKey(e) {
+    processKey = (e) => {
         if (!this.graph) {
             return;
         }
@@ -1953,7 +1952,7 @@ export class LGraphCanvas {
      * process a item drop event on top the canvas
      * @method processDrop
      **/
-    processDrop(e) {
+    processDrop = (e) => {
         e.preventDefault();
         this.adjustMouseEvent(e);
         var x = e.clientX;
