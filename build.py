@@ -35,7 +35,7 @@ js_files_lists = [
         ]
     },
     {
-        "output_filename": "litegraph-mini.js",
+        "output_filename": "litegraph.mini.js",
         "js_files": [    
             "./src/litegraph.js",
            "./src/contextmenu.js",
@@ -56,7 +56,7 @@ js_files_lists = [
         ]
     },
     {
-        "output_filename": "litegraph-core.js",
+        "output_filename": "litegraph.core.js",
         "js_files": [    
             "./src/litegraph.js",
            "./src/contextmenu.js",
