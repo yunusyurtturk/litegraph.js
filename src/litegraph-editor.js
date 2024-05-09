@@ -11,18 +11,18 @@ export class Editor {
         const root = this.root = document.createElement("div");
         root.className = "litegraph litegraph-editor";
         root.innerHTML = `
-        <div class='header'>
-            <div class='tools tools-left'></div>
-            <div class='tools tools-right'></div>
+        <div class="header">
+            <div class="tools tools-left"></div>
+            <div class="tools tools-right"></div>
         </div>
-        <div class='content'>
-            <div class='editor-area'>
-                <canvas class='graphcanvas' width='1000' height='500' tabindex=10></canvas>
+        <div class="content">
+            <div class="editor-area">
+                <canvas class="graphcanvas" width="1000" height="500" tabindex=10></canvas>
             </div>
         </div>
-        <div class='footer'>
-            <div class='tools tools-left'></div>
-            <div class='tools tools-right'></div>
+        <div class="footer">
+            <div class="tools tools-left"></div>
+            <div class="tools tools-right"></div>
         </div>`;
 
         this.tools = root.querySelector(".tools");
