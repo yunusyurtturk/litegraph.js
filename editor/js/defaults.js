@@ -37,10 +37,15 @@ LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows
 LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
 
-/* METHOD 2 */
-LiteGraph.use_deferred_actions = true; // default
+LiteGraph.showCanvasOptions = true;
 
-/* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
+
+/* -- EVENTS PROCESSING METHODS -- */
+
+/* METHOD 1 ANCESTORS : EXECUTING ACTIONS BEFORE THE NEXT FRAME, AFFECTING INPUT NODES WILL BE REPROCESSED */
 LiteGraph.refreshAncestorsOnTriggers = false; //[true!]
 LiteGraph.refreshAncestorsOnActions = false; //[true!]
 LiteGraph.ensureUniqueExecutionAndActionCall = false; //[true!]
+
+/* METHOD 2 DEFERRED ACTIONS */
+LiteGraph.use_deferred_actions = true; //
