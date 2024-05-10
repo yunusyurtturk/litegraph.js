@@ -220,7 +220,11 @@ export class Editor {
     }
 
     onFullscreenButton() {
-        this.goFullscreen();
+        if(this.isFullscreen()){
+            this.exitFullscreen();
+        } else {
+            this.goFullscreen();
+        }
     }
 
     addMiniWindow(w, h) {
@@ -295,7 +299,7 @@ export class Editor {
             window.graphcanvas = this.graphcanvas;		
             return;
         }
-        
+
         this.graphcanvas.ctx.fillStyle = "black";
         this.graphcanvas.ctx.fillRect(0,0,canvas.width,canvas.height);
         this.graphcanvas.viewport = [0,0,canvas.width*0.5-2,canvas.height];
@@ -304,5 +308,24 @@ export class Editor {
         graphcanvas.background_image = "imgs/grid.png";
         this.graphcanvas2 = graphcanvas;
         this.graphcanvas2.viewport = [canvas.width*0.5,0,canvas.width*0.5,canvas.height];
+    }
+
+    isFullscreen() {
+        return(
+            document.fullscreenElement ||
+            document.mozRequestFullscreen ||
+            document.webkitRequestFullscreen ||
+            false
+        );
+    }
+
+    exitFullscreen() {
+        if(document.exitFullscreen){
+            document.exitFullscreen();
+        } else if (document.mozCancelFullscreen) {
+            document.mozCancelFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
     }
 }
