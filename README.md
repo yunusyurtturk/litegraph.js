@@ -26,6 +26,7 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * Fixed dialog CSS mistake
 * HttpRequestNode input is acknowledged
 * Fix links sometimes not being correct when copy pasting nodes
+* Added favicon
 
 ### Breaking
 
