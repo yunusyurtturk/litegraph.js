@@ -6,12 +6,19 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.  Major changes:
 
 * Replacing/revising alot of old event handler code
 * Cleaned up alot of loops and condition logic
+* Fixed multiscreen
+* Fixed fullscreen close button
+* Fixed low FPS handling
+* Fixed dialog CSS mistake
+* HttpRequestNode input is acknowledged
+* Fix links sometimes not being correct when copy pasting nodes
 
 ## Breaking
 
 * Replaced the IIFE with ES6 modules
 * Replaced ES5 classes with ES6 ones
 * Replaced LiteGraph.*class* with just *class*
+* SubgraphOutput's location on screen is glitched
 
 # litegraph.js
 
