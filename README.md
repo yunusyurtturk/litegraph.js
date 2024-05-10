@@ -15,10 +15,18 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.  Major changes:
 
 ## Breaking
 
+### For 0.8.x:
+
 * Replaced the IIFE with ES6 modules
 * Replaced ES5 classes with ES6 ones
 * Replaced LiteGraph.*class* with just *class*
 * SubgraphOutput's location on screen is glitched
+
+### For 0.9.x/master:
+
+* Removed LiteGraph.closeAllContextMenus
+* Removed LiteGraph.pointerAddListener
+* Removed LiteGraph.pointerRemoveListener
 
 # litegraph.js
 
