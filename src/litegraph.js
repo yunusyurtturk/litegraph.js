@@ -139,6 +139,7 @@
         },
 
 		alt_drag_do_clone_nodes: false, // [true!] very handy, ALT click to clone and drag the new node
+		alt_shift_drag_connect_clone_with_input: true, // [true!] very handy, when cloning, keep input connections with SHIFT
 
 		do_add_triggers_slots: false, // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
 		
@@ -6714,36 +6715,38 @@ LGraphNode.prototype.executeAction = function(action)
                     this.graph.add(cloned,false,{doCalcSize: false});
                     node = cloned;
 
-                    //process links
-                    //DBG console.debug("altCloned",original_node,node);
-                    if (original_node.inputs && original_node.inputs.length) {
-                        //DBG("cycle original inputs",original_node.inputs);
-                        for (var j = 0; j < original_node.inputs.length; ++j) {
-                            var input = original_node.inputs[j];
-                            if (!input || input.link == null) {
-                                //DBG console.debug("not input link",input);
-                                continue;
-                            }
-                            var ob_link = this.graph.links[input.link];
-                            if (!ob_link) {
-                                //DBG console.warn("not graph link info",input);
-                                continue;
-                            }
-                            if (ob_link.type === LiteGraph.EVENT) {
-                                //DBG console.debug("skip moving events :: TODO put a sequencer in the middle or implement multi input",input);
-                                continue;
-                            }
-                            //DBG console.debug("find link node",ob_link);
-                            var source_node;
-                            if (ob_link.origin_id) {
-                                source_node = this.graph.getNodeById(ob_link.origin_id);
-                            }
-                            var target_node = node;
-                            if( source_node && target_node ){
-                                //DBG console.info("connect cloned node",ob_link.origin_slot, target_node, ob_link.target_slot);
-                                source_node.connect(ob_link.origin_slot, target_node, ob_link.target_slot);
-                            }else{
-                                //DBG console.warn("no source or dest node",source_node,target_node);
+                    if( LiteGraph.alt_shift_drag_connect_clone_with_input && e.shiftKey ){
+                        //process links
+                        //DBG console.debug("altCloned",original_node,node);
+                        if (original_node.inputs && original_node.inputs.length) {
+                            //DBG("cycle original inputs",original_node.inputs);
+                            for (var j = 0; j < original_node.inputs.length; ++j) {
+                                var input = original_node.inputs[j];
+                                if (!input || input.link == null) {
+                                    //DBG console.debug("not input link",input);
+                                    continue;
+                                }
+                                var ob_link = this.graph.links[input.link];
+                                if (!ob_link) {
+                                    //DBG console.warn("not graph link info",input);
+                                    continue;
+                                }
+                                if (ob_link.type === LiteGraph.EVENT) {
+                                    //DBG console.debug("skip moving events :: TODO put a sequencer in the middle or implement multi input",input);
+                                    continue;
+                                }
+                                //DBG console.debug("find link node",ob_link);
+                                var source_node;
+                                if (ob_link.origin_id) {
+                                    source_node = this.graph.getNodeById(ob_link.origin_id);
+                                }
+                                var target_node = node;
+                                if( source_node && target_node ){
+                                    //DBG console.info("connect cloned node",ob_link.origin_slot, target_node, ob_link.target_slot);
+                                    source_node.connect(ob_link.origin_slot, target_node, ob_link.target_slot);
+                                }else{
+                                    //DBG console.warn("no source or dest node",source_node,target_node);
+                                }
                             }
                         }
                     }
@@ -14800,12 +14803,24 @@ LGraphNode.prototype.executeAction = function(action)
 
         if(root_document){
             // TEXT FILTER by KEYPRESS
+            if(root.f_textfilter){
+                root_document.removeEventListener("keydown",root.f_textfilter,false);
+                root_document.removeEventListener("keydown",root.f_textfilter,true);
+                root.f_textfilter = false;
+            }
             root.f_textfilter = function(e) {
                 // console.debug("keyPressInsideContext",e,that,this,options);
-            
+                if(that.current_submenu){
+                    // removing listeners is buggy, this prevent parent menus to process the key event
+                    if( LiteGraph.debug ){
+                        console.debug("Prevent filtering on ParentMenu",that);
+                    }
+                    return;
+                }
                 if(!that.allOptions){
                     that.allOptions = that.menu_elements; //combo_options;
-                    that.currentOptions = [];
+                    that.currentOptions = that.allOptions; // initialize filtered to all
+                    that.selectedOption = false;
                 }
                 if(!that.filteringText){
                     that.filteringText = "";
@@ -14824,38 +14839,107 @@ LGraphNode.prototype.executeAction = function(action)
                             // should close ContextMenu
                             that.close();
                         break;
+                        case "ArrowDown":
+                            that.selectedOption = that.selectedOption!==false
+                                                    ? Math.min(that.selectedOption+1, that.currentOptions.length-1) // use currentOptions instead of allOptions
+                                                    : 0
+                                                ;
+                            kdone = true;
+                        break;
+                        case "ArrowUp":
+                            that.selectedOption = that.selectedOption!==false
+                                                    ? Math.max(that.selectedOption-1, 0)
+                                                    : 0
+                                                ;
+                            kdone = true;
+                        break;
+                        case "ArrowLeft":
+                            // should close submenu and jump back to parent
+                            // that.close(e, true);
+                            // NEED restoring events and resetting current_submenu on child close ?
+                        break;
+                        case "ArrowRight": // right do same as enter
                         case "Enter":
-                            if(that.filteringText.length){
-                                for(var iO in that.allOptions){
-                                    if( that.allOptions[iO].style.display !== "none"
-                                        && !(that.allOptions[iO].classList+"").includes("separator")
-                                        && that.allOptions[iO].textContent !== "Add Node"
-                                        && that.allOptions[iO].textContent !== "Search"
-                                    ){
-                                        console.debug("simCLICK",that.allOptions[iO]);
-                                        var ignore_parent_menu = true;
-                                        that.allOptions[iO].do_click(e, ignore_parent_menu); //.click();
-                                        return; //break;
+                            if(that.selectedOption !== false){
+                                
+                                if(that.allOptions[that.selectedOption]){
+                                    if( LiteGraph.debug ){
+                                        console.debug("ContextElement simCLICK",that.allOptions[iO]);
+                                    }
+                                    that.allOptions[that.selectedOption].do_click(e, ignore_parent_menu);
+                                }else{
+                                    if( LiteGraph.debug ){
+                                        console.debug("ContextElement selection wrong",that.selectedOption);
+                                    }
+                                    // try fix
+                                    that.selectedOption = that.selectedOption!==false
+                                                            ? Math.min(that.selectedOption+1, that.currentOptions.length-1) // use currentOptions instead of allOptions
+                                                            : 0
+                                                        ;
+                                    that.selectedOption = that.selectedOption!==false
+                                                            ? Math.max(that.selectedOption-1, 0)
+                                                            : 0
+                                                        ;
+                                }
+
+                            }else{
+                                if(that.filteringText.length){
+                                    for(var iO in that.allOptions){
+                                        if( that.allOptions[iO].style.display !== "none" // filtering for visible
+                                            && !(that.allOptions[iO].classList+"").includes("separator")
+                                            && that.allOptions[iO].textContent !== "Add Node"
+                                            && that.allOptions[iO].textContent !== "Search"
+                                        ){
+                                            if( LiteGraph.debug ){
+                                                console.debug("ContextElement simCLICK",that.allOptions[iO]);
+                                            }
+                                            // try cleaning parent listeners
+                                            if(root.f_textfilter){
+                                                if(root_document){
+                                                    root_document.removeEventListener('keydown',root.f_textfilter,false);
+                                                    root_document.removeEventListener('keydown',root.f_textfilter,true);
+                                                    if( LiteGraph.debug ){
+                                                        console.debug("Cleaned ParentContextMenu listener",root_document,that);
+                                                    }
+                                                }
+                                            }
+                                            var ignore_parent_menu = false; // ?
+                                            that.allOptions[iO].do_click(e, ignore_parent_menu); //.click();
+                                            // return; //break;
+                                            break;
+                                        }
                                     }
                                 }
                             }
+                            kdone = true;
                         break;
                         default:
+                            if( LiteGraph.debug ){
+                                console.debug("ContextMenu filter: keyEvent",e.keyCode,e.key);
+                            }
                             if (String.fromCharCode(e.key).match(/(\w|\s)/g)) {
                                 //pressed key is a char
                             } else {
                                 //pressed key is a non-char
                                 //DBG ("--not char break--")
                                 //do notr return
+                                // ?? kdone = true;
                             }
                         break;
                     }
                     if(!kdone && e.key.length == 1){
                         that.filteringText += e.key;
+                        if(that.parentMenu){
+                            // that.lock = true; // ??
+                            // that.parentMenu.close(e, true); // clean parent ?? lock ??
+                        }
                     }
                 }
+
+                // process text filtering
                 if(that.filteringText && that.filteringText!==""){
                     var aFilteredOpts = [];
+                    that.currentOptions = []; // reset filtered
                     for(var iO in that.allOptions){
                         //if(that.allOptions[iO].textContent){ //.startWith(that.filteringText)){
                             var txtCont = that.allOptions[iO].textContent;
@@ -14870,9 +14954,11 @@ LGraphNode.prototype.executeAction = function(action)
                                             || txtCont === "Add Node"
                                             || txtCont === "Search"
                                         ;
+                            
                             if(doesContainW && !isExtra){
                                 aFilteredOpts.push(that.allOptions[iO]);
                                 that.allOptions[iO].style.display = "block";
+                                that.currentOptions[iO] = that.allOptions[iO]; // push filtered options
                             }else{
                                 that.allOptions[iO].style.display = "none";
                             }
@@ -14887,14 +14973,34 @@ LGraphNode.prototype.executeAction = function(action)
                     }
                 }else{
                     aFilteredOpts = that.allOptions; //combo_options
+                    that.currentOptions = that.allOptions; // no filtered options
                     for(var iO in that.allOptions){
                         that.allOptions[iO].style.display = "block";
                         that.allOptions[iO].style.fontStyle = "inherit";
                         that.allOptions[iO].style.fontWeight = "inherit";
                     }
                 }
+                // process selection (up down)
+                var hasSelected = that.selectedOption !== false;
+                if(hasSelected){
+                    if( LiteGraph.debug ){
+                        console.debug("ContextMenu selection: ",that.selectedOption);
+                    }
+                    for(var iO in that.allOptions){
+                        var isSelected = that.selectedOption+"" === iO+"";
+                        if( LiteGraph.debug ){
+                            // console.debug("ContextMenu check sel: ",that.selectedOption,iO);
+                        }
+                        if(isSelected){
+                            that.allOptions[iO].style.backgroundColor = "#333";
+                            that.allOptions[iO].style.fontStyle = "italic";
+                        }else{
+                            that.allOptions[iO].style.backgroundColor = "none";
+                        }
+                    }
+                }
+
                 // height reset
-                
                 var body_rect = document.body.getBoundingClientRect();
                 var root_rect = root.getBoundingClientRect();
                 root.style.top = that.top_original + "px";
@@ -15092,11 +15198,16 @@ LGraphNode.prototype.executeAction = function(action)
     };
 
     ContextMenu.prototype.close = function(e, ignore_parent_menu) {
-        if (this.root.parentNode) {
-            this.root.parentNode.removeChild(this.root);
-        }
         if(this.root.f_textfilter){
-            root_document.removeEventListener('keydown',this.root.f_textfilter);
+            var root_document = document;
+            if (e && e.target) {
+                root_document = e.target.ownerDocument;
+            }
+            if (!root_document) {
+                root_document = document;
+            }
+            root_document.removeEventListener('keydown',this.root.f_textfilter,true);
+            root_document.removeEventListener('keydown',this.root.f_textfilter,false);
         }
         if (this.parentMenu && !ignore_parent_menu) {
             this.parentMenu.lock = false;
@@ -15116,6 +15227,10 @@ LGraphNode.prototype.executeAction = function(action)
 
         if (this.root.closing_timer) {
             clearTimeout(this.root.closing_timer);
+        }
+
+        if (this.root.parentNode) {
+            this.root.parentNode.removeChild(this.root);
         }
         
         // TODO implement : LiteGraph.contextMenuClosed(); :: keep track of opened / closed / current ContextMenu
