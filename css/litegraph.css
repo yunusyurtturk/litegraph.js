@@ -21,13 +21,14 @@
     min-width: 100px;
     color: #aaf;
     padding: 0;
-    box-shadow: 0 0 10px black !important;
-    background-color: #2e2e2e !important;
+    box-shadow: 0 0 10px black; /*!important*/
+    background-color: #2e2e2e; /*!important*/
 	z-index: 10;
 }
 
+
 .litegraph.litecontextmenu.dark {
-    background-color: #000 !important;
+    background-color: #000; /*!important*/
 }
 
 .litegraph.litecontextmenu .litemenu-title img {
@@ -42,11 +43,15 @@
 }
 
 .litegraph.litecontextmenu .litemenu-entry.submenu {
-    background-color: #2e2e2e !important;
+    background-color: #2e2e2e; /*!important*/
 }
 
 .litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-    background-color: #000 !important;
+    background-color: #000; /*!important*/
+}
+
+.litegraph.litecontextmenu .litemenu-entry.selected {
+    background-color: #444;
 }
 
 .litegraph .litemenubar ul {
@@ -145,7 +150,7 @@
 }
 
 .litegraph .litemenu-entry:hover:not(.disabled):not(.separator) {
-    background-color: #444 !important;
+    background-color: #444; /*!important*/
     color: #eee;
     transition: all 0.2s;
 }
@@ -589,7 +594,7 @@
     min-height: 2em;
     background-color: #333;
     font-size: 1.2em;
-    box-shadow: 0 0 10px black !important;
+    box-shadow: 0 0 10px black; /*!important*/
 	z-index: 10;
 }
 

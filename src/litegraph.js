@@ -14840,17 +14840,35 @@ LGraphNode.prototype.executeAction = function(action)
                             that.close();
                         break;
                         case "ArrowDown":
-                            that.selectedOption = that.selectedOption!==false
-                                                    ? Math.min(that.selectedOption+1, that.currentOptions.length-1) // use currentOptions instead of allOptions
-                                                    : 0
-                                                ;
+                            do{
+                                that.selectedOption = that.selectedOption!==false
+                                                        ? Math.min(Math.max(that.selectedOption+1, 0), that.allOptions.length-1) // currentOptions vs allOptions
+                                                        : 0
+                                                    ;
+                            } while(that.allOptions[that.selectedOption]
+                                    && that.allOptions[that.selectedOption].hidden
+                                    && that.selectedOption < that.allOptions.length-1
+                            );
+                            // fix last filtered pos
+                            if(that.allOptions[that.selectedOption].hidden){
+                                that.selectedOption = that.currentOptions[that.currentOptions.length-1].menu_index;
+                            }
                             kdone = true;
                         break;
                         case "ArrowUp":
-                            that.selectedOption = that.selectedOption!==false
-                                                    ? Math.max(that.selectedOption-1, 0)
+                            do{
+                                that.selectedOption = that.selectedOption!==false
+                                                    ? Math.min(Math.max(that.selectedOption-1, 0), that.allOptions.length-1)
                                                     : 0
                                                 ;
+                            } while(that.allOptions[that.selectedOption]
+                                    && that.allOptions[that.selectedOption].hidden
+                                    && that.selectedOption > 0
+                            );
+                            // fix first filtered pos
+                            if(that.allOptions[that.selectedOption].hidden){
+                                that.selectedOption = that.currentOptions[0].menu_index;
+                            }
                             kdone = true;
                         break;
                         case "ArrowLeft":
@@ -14871,13 +14889,9 @@ LGraphNode.prototype.executeAction = function(action)
                                     if( LiteGraph.debug ){
                                         console.debug("ContextElement selection wrong",that.selectedOption);
                                     }
-                                    // try fix
+                                    // selection fix when filtering
                                     that.selectedOption = that.selectedOption!==false
-                                                            ? Math.min(that.selectedOption+1, that.currentOptions.length-1) // use currentOptions instead of allOptions
-                                                            : 0
-                                                        ;
-                                    that.selectedOption = that.selectedOption!==false
-                                                            ? Math.max(that.selectedOption-1, 0)
+                                                            ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
                                                             : 0
                                                         ;
                                 }
@@ -14887,7 +14901,7 @@ LGraphNode.prototype.executeAction = function(action)
                                     for(var iO in that.allOptions){
                                         if( that.allOptions[iO].style.display !== "none" // filtering for visible
                                             && !(that.allOptions[iO].classList+"").includes("separator")
-                                            && that.allOptions[iO].textContent !== "Add Node"
+                                            // && that.allOptions[iO].textContent !== "Add Node"
                                             && that.allOptions[iO].textContent !== "Search"
                                         ){
                                             if( LiteGraph.debug ){
@@ -14922,7 +14936,7 @@ LGraphNode.prototype.executeAction = function(action)
                             } else {
                                 //pressed key is a non-char
                                 //DBG ("--not char break--")
-                                //do notr return
+                                //do not return
                                 // ?? kdone = true;
                             }
                         break;
@@ -14951,16 +14965,21 @@ LGraphNode.prototype.executeAction = function(action)
                             isStartLast =   ( (wSplits.length>1) && wSplits[wSplits.length-1].toLocaleLowerCase().startsWith(that.filteringText.toLocaleLowerCase()) )
                                             || ( wSplits.length==1 && isStartW );
                             var isExtra = (that.allOptions[iO].classList+"").includes("separator")
-                                            || txtCont === "Add Node"
+                                            // || txtCont === "Add Node"
                                             || txtCont === "Search"
                                         ;
                             
+                            that.allOptions[iO].menu_index = iO; // original allOptions index
                             if(doesContainW && !isExtra){
                                 aFilteredOpts.push(that.allOptions[iO]);
                                 that.allOptions[iO].style.display = "block";
-                                that.currentOptions[iO] = that.allOptions[iO]; // push filtered options
+                                that.allOptions[iO].hidden = false;
+                                that.currentOptions.push(that.allOptions[iO]); // push filtered options
+                                that.allOptions[iO].filtered_index = that.currentOptions.length-1; // filtered index
                             }else{
+                                that.allOptions[iO].hidden = true;
                                 that.allOptions[iO].style.display = "none";
+                                that.allOptions[iO].filtered_index = false;
                             }
                             if (isStartLast){
                                 //DBG("isStartLast"+that.filteringText,that.allOptions[iO].textContent);
@@ -14971,6 +14990,11 @@ LGraphNode.prototype.executeAction = function(action)
                             }
                         //}
                     }
+                    // selection clamp fix when filtering
+                    that.selectedOption = that.selectedOption!==false
+                        ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
+                        : 0
+                    ;
                 }else{
                     aFilteredOpts = that.allOptions; //combo_options
                     that.currentOptions = that.allOptions; // no filtered options
@@ -14978,6 +15002,9 @@ LGraphNode.prototype.executeAction = function(action)
                         that.allOptions[iO].style.display = "block";
                         that.allOptions[iO].style.fontStyle = "inherit";
                         that.allOptions[iO].style.fontWeight = "inherit";
+                        that.allOptions[iO].hidden = false;
+                        that.allOptions[iO].filtered_index = false;
+                        that.allOptions[iO].menu_index = iO;
                     }
                 }
                 // process selection (up down)
@@ -14992,10 +15019,12 @@ LGraphNode.prototype.executeAction = function(action)
                             // console.debug("ContextMenu check sel: ",that.selectedOption,iO);
                         }
                         if(isSelected){
-                            that.allOptions[iO].style.backgroundColor = "#333";
-                            that.allOptions[iO].style.fontStyle = "italic";
+                            //that.allOptions[iO].style.backgroundColor = "#333";
+                            that.allOptions[iO].classList.add("selected");
+                            // that.allOptions[iO].style.fontStyle = "italic";
                         }else{
-                            that.allOptions[iO].style.backgroundColor = "none";
+                            that.allOptions[iO].classList.remove("selected");
+                            //that.allOptions[iO].style.backgroundColor = "none";
                         }
                     }
                 }
