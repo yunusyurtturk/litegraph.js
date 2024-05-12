@@ -127,30 +127,29 @@ function enableWebGL()
 		return;
 	}
 
-	var libs = [
-		"js/libs/gl-matrix-min.js",
-		"js/libs/litegl.js",
+	const libs = [
+		"./libs/gl-matrix-min.js",
+		"./libs/litegl.js",
 		"../src/nodes/gltextures.js",
 		"../src/nodes/glfx.js",
 		"../src/nodes/glshaders.js",
 		"../src/nodes/geometry.js"
 	];
-
-	function fetchJS()
-	{
-		if(libs.length == 0)
-			return on_ready();
-
-		var script = null;
-		script = document.createElement("script");
-		script.onload = fetchJS;
-		script.src = libs.shift();
-		document.head.appendChild(script);
+	  
+	async function fetchJS(scriptPath) {
+		if (libs.length === 0) {
+		 	return on_ready();
+		}
+	  	try {
+		 	const module = await import(scriptPath);
+		  	console.log(`${scriptPath} loaded successfully`);
+		} catch (error) {
+		  	console.error(`Error loading ${scriptPath}: ${error}`);
+		}
 	}
+	libs.forEach(lib => fetchJS(lib));
 
-	fetchJS();
-
-	function on_ready()
+	const on_ready = () =>
 	{
 		console.log(this.src);
 		if(!window.GL)

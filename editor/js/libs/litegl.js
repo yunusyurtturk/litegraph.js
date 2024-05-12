@@ -1,22 +1,21 @@
 //packer version
 //litegl.js by Javi Agenjo 2014 @tamat (tamats.com)
 //forked from lightgl.js by Evan Wallace (madebyevan.com)
-"use strict";
 
-(function(global){
-
-var GL = global.GL = {};
+export const GL = {};
 
 if(typeof(glMatrix) == "undefined")
 	throw("litegl.js requires gl-matrix to work. It must be included before litegl.");
 else
 {
-	if(!global.vec2)
-		throw("litegl.js does not support gl-matrix 3.0, download 2.8 https://github.com/toji/gl-matrix/releases/tag/v2.8.1");
+//	if(!global.vec2)
+//		throw("litegl.js does not support gl-matrix 3.0, download 2.8 https://github.com/toji/gl-matrix/releases/tag/v2.8.1");
 }
 
 //polyfill
-global.requestAnimationFrame = global.requestAnimationFrame || global.mozRequestAnimationFrame || global.webkitRequestAnimationFrame || function(callback) { setTimeout(callback, 1000 / 60); };
+window.requestAnimationFrame ??= window.mozRequestAnimationFrame ?? 
+	window.webkitRequestAnimationFrame ??
+	function(callback) { setTimeout(callback, 1000 / 60); };
 
 GL.blockable_keys = {"Up":true,"Down":true,"Left":true,"Right":true};
 
@@ -209,10 +208,9 @@ GL.temp_quat = quat.create();
 GL.temp_mat3 = mat3.create();
 GL.temp_mat4 = mat4.create();
 
-
-global.DEG2RAD = 0.0174532925;
-global.RAD2DEG = 57.295779578552306;
-global.EPSILON = 0.000001;
+const DEG2RAD = 0.0174532925;
+const RAD2DEG = 57.295779578552306;
+const EPSILON = 0.000001;
 
 /**
 * Tells if one number is power of two (used for textures)
@@ -220,8 +218,7 @@ global.EPSILON = 0.000001;
 * @param {v} number
 * @return {boolean}
 */
-global.isPowerOfTwo = GL.isPowerOfTwo = function isPowerOfTwo(v)
-{
+GL.isPowerOfTwo = (v) => {
 	return ((Math.log(v) / Math.log(2)) % 1) == 0;
 }
 
@@ -231,8 +228,7 @@ global.isPowerOfTwo = GL.isPowerOfTwo = function isPowerOfTwo(v)
 * @param {v} number
 * @return {boolean}
 */
-global.nearestPowerOfTwo = GL.nearestPowerOfTwo = function nearestPowerOfTwo(v)
-{
+GL.nearestPowerOfTwo = (v) => {
 	return Math.pow(2, Math.round( Math.log( v ) / Math.log(2) ) )
 }
 
@@ -1957,13 +1953,13 @@ quat.toEuler = function(out, quat) {
 	{
 		heading = 2 * Math.atan2(q[0],q[3]);
 		bank = 0;
-		attitude = 0; //¿?
+		attitude = 0; //ï¿½?
 	}
 	else if( (q[0]*q[1] + q[2]*q[3]) == 0.5 )
 	{
 		heading = -2 * Math.atan2(q[0],q[3]);
 		bank = 0;
-		attitude = 0; //¿?
+		attitude = 0; //ï¿½?
 	}
 	else
 	{
@@ -10998,8 +10994,8 @@ global.geo = {
 		var dd = vec3.dot(d, d);
 
 		// Test if segment fully outside either endcap of cylinder
-		if (md < 0.0 && md + nd < 0.0) return false; // Segment outside ’p’ side of cylinder
-		if (md > dd && md + nd > dd) return false; // Segment outside ’q’ side of cylinder
+		if (md < 0.0 && md + nd < 0.0) return false; // Segment outside ï¿½pï¿½ side of cylinder
+		if (md > dd && md + nd > dd) return false; // Segment outside ï¿½qï¿½ side of cylinder
 
 		var nn = vec3.dot(n, n);
 		var mn = vec3.dot(m, n);
@@ -11011,15 +11007,15 @@ global.geo = {
 		{
 			// Segment runs parallel to cylinder axis
 			if (c > 0.0) return false;
-			// ’a’ and thus the segment lie outside cylinder
+			// ï¿½aï¿½ and thus the segment lie outside cylinder
 			// Now known that segment intersects cylinder; figure out how it intersects
 			if (md < 0.0) t = -mn/nn;
-			// Intersect segment against ’p’ endcap
+			// Intersect segment against ï¿½pï¿½ endcap
 			else if (md > dd)
 				t=(nd-mn)/nn;
-			// Intersect segment against ’q’ endcap
+			// Intersect segment against ï¿½qï¿½ endcap
 			else t = 0.0;
-			// ’a’ lies inside cylinder
+			// ï¿½aï¿½ lies inside cylinder
 			if(result) 
 				vec3.add(result, sa, vec3.scale(result, n,t) );
 			return true;
@@ -11035,7 +11031,7 @@ global.geo = {
 		// Intersection lies outside segment
 		if(md+t*nd < 0.0)
 		{
-			// Intersection outside cylinder on ’p’ side
+			// Intersection outside cylinder on ï¿½pï¿½ side
 			if (nd <= 0.0) 
 				return false;
 			// Segment pointing away from endcap
@@ -11046,7 +11042,7 @@ global.geo = {
 			return k+2*t*(mn+t*nn) <= 0.0;
 		} else if (md+t*nd>dd)
 		{
-			// Intersection outside cylinder on ’q’ side
+			// Intersection outside cylinder on ï¿½qï¿½ side
 			if (nd >= 0.0) return false; //Segment pointing away from endcap
 			t = (dd - md) / nd;
 			// Keep intersection if Dot(S(t) - q, S(t) - q) <= r^2
@@ -13428,5 +13424,3 @@ Mesh.decompressors["bounding_compressed"] = function(o)
 	}
 }
 
-//footer.js
-})( typeof(window) != "undefined" ? window : (typeof(self) != "undefined" ? self : global ) );

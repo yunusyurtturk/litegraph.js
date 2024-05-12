@@ -1,5 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
+const DEG2RAD = 0.0174532925;
 
 class Math3DMat4 {
 
