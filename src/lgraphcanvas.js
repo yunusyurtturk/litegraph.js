@@ -2057,18 +2057,13 @@ export class LGraphCanvas {
             this.showShowNodePanel(n);
         }
 
-        if (this.onNodeDblClicked) {
-            this.onNodeDblClicked(n);
-        }
-
+        this.onNodeDblClicked?.(n);
         this.setDirty(true);
     }
 
     processNodeSelected(node, e) {
         this.selectNode(node, e && (e.shiftKey || e.ctrlKey || this.multi_select));
-        if (this.onNodeSelected) {
-            this.onNodeSelected(node);
-        }
+        this.onNodeSelected?.(node);
     }
 
     /**
@@ -2094,39 +2089,28 @@ export class LGraphCanvas {
 
         nodes = nodes || this.graph._nodes;
         if (typeof nodes == "string") nodes = [nodes];
-        for (var i in nodes) {
-            var node = nodes[i];
+        Object.values(nodes).forEach(node => {
             if (node.is_selected) {
                 this.deselectNode(node);
-                continue;
+                return;
             }
-
-            if (!node.is_selected && node.onSelected) {
-                node.onSelected();
-            }
+        
             node.is_selected = true;
             this.selected_nodes[node.id] = node;
-
-            if (node.inputs) {
-                for (var j = 0; j < node.inputs.length; ++j) {
-                    this.highlighted_links[node.inputs[j].link] = true;
-                }
-            }
-            if (node.outputs) {
-                for (var j = 0; j < node.outputs.length; ++j) {
-                    var out = node.outputs[j];
-                    if (out.links) {
-                        for (var k = 0; k < out.links.length; ++k) {
-                            this.highlighted_links[out.links[k]] = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if(	this.onSelectionChange )
-            this.onSelectionChange( this.selected_nodes );
-
+        
+            node.onSelected?.();
+        
+            node.inputs?.forEach(input => {
+                this.highlighted_links[input.link] = true;
+            });
+        
+            node.outputs?.forEach(out => {
+                out.links?.forEach(link => {
+                    this.highlighted_links[link] = true;
+                });
+            });
+        });
+        this.onSelectionChange?.( this.selected_nodes );
         this.setDirty(true);
     }
 
@@ -2135,35 +2119,21 @@ export class LGraphCanvas {
      * @method deselectNode
      **/
     deselectNode(node) {
-        if (!node.is_selected) {
-            return;
-        }
-        if (node.onDeselected) {
-            node.onDeselected();
-        }
+        if (!node.is_selected) return;
+    
+        node.onDeselected?.();
         node.is_selected = false;
-
-        if (this.onNodeDeselected) {
-            this.onNodeDeselected(node);
-        }
-
-        //remove highlighted
-        if (node.inputs) {
-            for (var i = 0; i < node.inputs.length; ++i) {
-                delete this.highlighted_links[node.inputs[i].link];
-            }
-        }
-        if (node.outputs) {
-            for (var i = 0; i < node.outputs.length; ++i) {
-                var out = node.outputs[i];
-                if (out.links) {
-                    for (var j = 0; j < out.links.length; ++j) {
-                        delete this.highlighted_links[out.links[j]];
-                    }
-                }
-            }
-        }
+        this.onNodeDeselected?.(node);
+    
+        // Remove highlighted
+        node.inputs?.forEach(input => 
+            delete this.highlighted_links?.[input.link]
+        );
+        node.outputs?.forEach(out => 
+            out.links?.forEach(link => delete this.highlighted_links?.[link])
+        );
     }
+    
 
     /**
      * removes all nodes from the current selection
@@ -2173,27 +2143,23 @@ export class LGraphCanvas {
         if (!this.graph) {
             return;
         }
-        var nodes = this.graph._nodes;
-        for (var i = 0, l = nodes.length; i < l; ++i) {
-            var node = nodes[i];
-            if (!node.is_selected) {
-                continue;
-            }
-            if (node.onDeselected) {
-                node.onDeselected();
-            }
+        
+        this.graph._nodes?.forEach(node => {
+            if (!node.is_selected) return;
+    
+            node.onDeselected?.();
             node.is_selected = false;
-            if (this.onNodeDeselected) {
-                this.onNodeDeselected(node);
-            }
-        }
+            this.onNodeDeselected?.(node);
+        });
+    
         this.selected_nodes = {};
         this.current_node = null;
         this.highlighted_links = {};
-        if(	this.onSelectionChange )
-            this.onSelectionChange( this.selected_nodes );
+    
+        this.onSelectionChange?.(this.selected_nodes);
         this.setDirty(true);
     }
+    
 
     /**
      * deletes all nodes in the current selection from the graph
@@ -2795,7 +2761,7 @@ export class LGraphCanvas {
 
     drawSubgraphPanelRight(subgraph, subnode, ctx) {
         var num = subnode.outputs ? subnode.outputs.length : 0;
-        var canvas_w = this.bgcanvas.width
+        var canvas_w = this.bgcanvas.width;
         var w = 200;
         var h = Math.floor(LiteGraph.NODE_SLOT_HEIGHT * 1.6);
 

@@ -17,7 +17,7 @@ export class Editor {
         </div>
         <div class="content">
             <div class="editor-area">
-                <canvas class="graphcanvas" width="1000" height="500" tabindex=10></canvas>
+                <canvas class="graphcanvas" width="1000" height="500" tabindex="10"></canvas>
             </div>
         </div>
         <div class="footer">
