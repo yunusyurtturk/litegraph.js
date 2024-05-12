@@ -53,6 +53,9 @@
 .litegraph.litecontextmenu .litemenu-entry.selected {
     background-color: #444;
 }
+.litegraph.litecontextmenu.dark .litemenu-entry.submenu.selected {
+    background-color: #444;
+}
 
 .litegraph .litemenubar ul {
     font-family: Tahoma, sans-serif;

@@ -9804,7 +9804,7 @@ LGraphNode.prototype.executeAction = function(action)
         text = (text+"").trim();
         if(!text || text == ""){
             if (LiteGraph.debug) {
-                console.debug("Empty tooltip");
+                //DBG("Empty tooltip");
             }
             return;
         }
@@ -14819,8 +14819,10 @@ LGraphNode.prototype.executeAction = function(action)
                 }
                 if(!that.allOptions){
                     that.allOptions = that.menu_elements; //combo_options;
-                    that.currentOptions = that.allOptions; // initialize filtered to all
                     that.selectedOption = false;
+                }
+                if(!that.currentOptions){
+                    that.currentOptions = that.allOptions; // initialize filtered to all
                 }
                 if(!that.filteringText){
                     that.filteringText = "";
@@ -14867,7 +14869,11 @@ LGraphNode.prototype.executeAction = function(action)
                             );
                             // fix first filtered pos
                             if(that.allOptions[that.selectedOption].hidden){
-                                that.selectedOption = that.currentOptions[0].menu_index;
+                                if(that.currentOptions && that.currentOptions.length){
+                                    that.selectedOption = that.currentOptions[0].menu_index;
+                                }else{
+                                    that.selectedOption = false;
+                                }
                             }
                             kdone = true;
                         break;
