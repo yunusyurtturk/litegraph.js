@@ -3260,11 +3260,11 @@
             return;
         }
 
-        //this maybe slow and a niche case
-        //if(slot && slot.constructor === String)
-        //	slot = this.findOutputSlot(slot);
-
-        if (slot == -1 || slot >= this.outputs.length) {
+        if(slot && slot.constructor === String){
+            // this maybe slow and a niche case ?
+            // no: not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+        	slot = this.findOutputSlot(slot);
+        }else if (slot == -1 || slot >= this.outputs.length) {
             return;
         }
 
@@ -14884,7 +14884,8 @@ LGraphNode.prototype.executeAction = function(action)
                                     if( LiteGraph.debug ){
                                         console.debug("ContextElement simCLICK",that.allOptions[iO]);
                                     }
-                                    that.allOptions[that.selectedOption].do_click(e, ignore_parent_menu);
+                                    // that.allOptions[that.selectedOption].do_click(e, ignore_parent_menu);
+                                    that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                 }else{
                                     if( LiteGraph.debug ){
                                         console.debug("ContextElement selection wrong",that.selectedOption);
@@ -14995,6 +14996,10 @@ LGraphNode.prototype.executeAction = function(action)
                         ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
                         : 0
                     ;
+                    // fix first filtered pos
+                    if(that.allOptions[that.selectedOption].hidden){
+                        that.selectedOption = that.currentOptions[0].menu_index;
+                    }
                 }else{
                     aFilteredOpts = that.allOptions; //combo_options
                     that.currentOptions = that.allOptions; // no filtered options

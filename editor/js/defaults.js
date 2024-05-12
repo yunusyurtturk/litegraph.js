@@ -38,8 +38,9 @@ LiteGraph.backspace_delete = false;  // [false!] delete key is enough, don't mes
 LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
 
-LiteGraph.showCanvasOptions = true;
+LiteGraph.showCanvasOptions = true;// enable canvas options panel, customize in LiteGrpah.availableCanvasOptions
 
+LiteGraph.use_uuids = false; // why not? maybe not good for comparison?
 
 /* -- EVENTS PROCESSING METHODS -- */
 

@@ -40,8 +40,9 @@ LiteGraph.two_fingers_opens_menu = true;
 LiteGraph.actionHistory_enabled = false; // [true!] cntrlZ, cntrlY
 LiteGraph.actionHistoryMaxSave = 40;
 
-LiteGraph.showCanvasOptions = true;
+LiteGraph.showCanvasOptions = true; // enable canvas options panel, customize in LiteGrpah.availableCanvasOptions
 
+LiteGraph.use_uuids = false; // why not? maybe not good for comparison?
 
 /* -- EVENTS PROCESSING METHODS -- */
 
