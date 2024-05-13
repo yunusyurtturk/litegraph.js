@@ -137,75 +137,64 @@ export class LGraphNode {
         if(this.graph)
             this.graph._version++;
 
-        for (var j in info) {
-            if (j == "properties") {
-                //i don't want to clone properties, I want to reuse the old container
-                for (var k in info.properties) {
-                    this.properties[k] = info.properties[k];
-                    this.onPropertyChanged?.( k, info.properties[k] );
+        Object.entries(info).forEach(([key, value]) => {
+            if (key === "properties") {
+                for (var k in value) {
+                    this.properties[k] = value[k];
+                    this.onPropertyChanged?.(k, value[k]);
                 }
-                continue;
+                return;
             }
-
-            if (info[j] == null) {
-                continue;
-            } else if (typeof info[j] == "object") {
-                //object
-                if (this[j] &amp;&amp; this[j].configure) {
-                    this[j].configure(info[j]);
+        
+            if (value === null) {
+                return;
+            } else if (typeof value === "object") {
+                if (this[key] &amp;&amp; this[key].configure) {
+                    this[key].configure(value);
                 } else {
-                    this[j] = LiteGraph.cloneObject(info[j], this[j]);
+                    this[key] = LiteGraph.cloneObject(value, this[key]);
                 }
-            } //value
-            else {
-                this[j] = info[j];
+            } else {
+                this[key] = value;
             }
-        }
+        });
 
         if (!info.title) {
             this.title = this.constructor.title;
         }
 
-        if (this.inputs) {
-            for (var i = 0; i &lt; this.inputs.length; ++i) {
-                var input = this.inputs[i];
-                var link_info = this.graph ? this.graph.links[input.link] : null;
-                this.onConnectionsChange?.( LiteGraph.INPUT, i, true, link_info, input ); //link_info has been created now, so its updated
-                this.onInputAdded?.(input);
+        this.inputs?.forEach((input, i) => {
+            const link_info = this.graph ? this.graph.links[input.link] : null;
+            this.onConnectionsChange?.(LiteGraph.INPUT, i, true, link_info, input);
+            this.onInputAdded?.(input);
+        });
 
+        this.outputs?.forEach((output, i) => {
+            if (!output.links) {
+                return;
             }
-        }
+            output.links.forEach((link) => {
+                const link_info = this.graph?.links[link] || null;
+                this.onConnectionsChange?.(LiteGraph.OUTPUT, i, true, link_info, output);
+            });
+            this.onOutputAdded?.(output);
+        });
 
-        if (this.outputs) {
-            for (var i = 0; i &lt; this.outputs.length; ++i) {
-                var output = this.outputs[i];
-                if (!output.links) {
-                    continue;
+        if (this.widgets) {
+            this.widgets.forEach((w, i) => {
+                if (!w) {
+                    return;
                 }
-                for (var j = 0; j &lt; output.links.length; ++j) {
-                    var link_info = this.graph 	? this.graph.links[output.links[j]] : null;
-                    this.onConnectionsChange?.( LiteGraph.OUTPUT, i, true, link_info, output ); //link_info has been created now, so its updated
+                if (w.options &amp;&amp; w.options.property &amp;&amp; this.properties[w.options.property] !== undefined) {
+                    w.value = JSON.parse(JSON.stringify(this.properties[w.options.property]));
                 }
-                this.onOutputAdded?.(output);
-            }
-        }
-
-        if( this.widgets )
-        {
-            for (var i = 0; i &lt; this.widgets.length; ++i)
-            {
-                var w = this.widgets[i];
-                if(!w)
-                    continue;
-                if(w.options &amp;&amp; w.options.property &amp;&amp; (this.properties[ w.options.property ] != undefined))
-                    w.value = JSON.parse( JSON.stringify( this.properties[ w.options.property ] ) );
-            }
-            if (info.widgets_values) {
-                for (var i = 0; i &lt; info.widgets_values.length; ++i) {
-                    if(this.widgets[i])
-                        this.widgets[i].value = info.widgets_values[i];
+            });
+        
+            info.widgets_values?.forEach((value, i) => {
+                if (this.widgets[i]) {
+                    this.widgets[i].value = value;
                 }
-            }
+            });
         }
         this.onConfigure?.(info);
     }
@@ -238,9 +227,9 @@ export class LGraphNode {
 
         if (this.outputs) {
             //clear outputs last data (because data in connections is never serialized but stored inside the outputs info)
-            for (var i = 0; i &lt; this.outputs.length; i++) {
-                delete this.outputs[i]._data;
-            }
+            this.outputs.forEach((output) => {
+                delete output._data;
+            });
             o.outputs = this.outputs;
         }
 
@@ -253,13 +242,10 @@ export class LGraphNode {
         }
 
         if (this.widgets &amp;&amp; this.serialize_widgets) {
-            o.widgets_values = [];
-            for (var i = 0; i &lt; this.widgets.length; ++i) {
-                o.widgets_values[i] = this.widgets[i]?.value ?? null;
-            }
+            o.widgets_values = this.widgets.map(widget => widget?.value ?? null);
         }
 
-        o.type ||= this.constructor.type;
+        o.type ??= this.constructor.type;
 
         if (this.color) {
             o.color = this.color;
@@ -293,19 +279,14 @@ export class LGraphNode {
         var data = LiteGraph.cloneObject(this.serialize());
 
         //remove links
-        if (data.inputs) {
-            for (var i = 0; i &lt; data.inputs.length; ++i) {
-                data.inputs[i].link = null;
-            }
-        }
+        data.inputs?.forEach(input => {
+            input.link = null;
+        });
 
-        if (data.outputs) {
-            for (var i = 0; i &lt; data.outputs.length; ++i) {
-                if (data.outputs[i].links) {
-                    data.outputs[i].links.length = 0;
-                }
-            }
-        }
+        data.outputs?.forEach(output => {
+            if(output.links)
+                output.links.length = 0;
+        });
 
         delete data["id"];
 
@@ -395,14 +376,12 @@ export class LGraphNode {
         output_info._data = data;
 
         //if there are connections, pass the data to the connections
-        if (this.outputs[slot].links) {
-            for (var i = 0; i &lt; this.outputs[slot].links.length; i++) {
-                var link_id = this.outputs[slot].links[i];
-                var link = this.graph.links[link_id];
-                if(link)
-                    link.data = data;
+        this.outputs[slot].links?.forEach(link_id => {
+            const link = this.graph.links[link_id];
+            if (link) {
+                link.data = data;
             }
-        }
+        });
     }
 
     /**
@@ -426,12 +405,11 @@ export class LGraphNode {
         output_info.type = type;
 
         //if there are connections, pass the data to the connections
-        if (this.outputs[slot].links) {
-            for (var i = 0; i &lt; this.outputs[slot].links.length; i++) {
-                var link_id = this.outputs[slot].links[i];
+        this.outputs[slot]?.links?.forEach(link_id => {
+            if (this.graph.links[link_id]) {
                 this.graph.links[link_id].type = type;
             }
-        }
+        });
     }
 
     /**
@@ -599,20 +577,16 @@ export class LGraphNode {
      * @return {*} value
      */
     getInputOrProperty(name) {
-        if (!this.inputs || !this.inputs.length) {
-            return this.properties ? this.properties[name] : null;
-        }
-
-        for (var i = 0, l = this.inputs.length; i &lt; l; ++i) {
-            var input_info = this.inputs[i];
-            if (name == input_info.name &amp;&amp; input_info.link != null) {
-                var link = this.graph.links[input_info.link];
+        if (this.inputs) {
+            const input = this.inputs.find(input_info => input_info.name === name &amp;&amp; input_info.link !== null);
+            if (input) {
+                const link = this.graph.links[input.link];
                 if (link) {
                     return link.data;
                 }
             }
         }
-        return this.properties[name];
+        return this.properties ? this.properties[name] : null;
     }
 
     /**
@@ -672,15 +646,7 @@ export class LGraphNode {
      * @return {boolean}
      */
     isAnyOutputConnected() {
-        if (!this.outputs) {
-            return false;
-        }
-        for (var i = 0; i &lt; this.outputs.length; ++i) {
-            if (this.outputs[i].links &amp;&amp; this.outputs[i].links.length) {
-                return true;
-            }
-        }
-        return false;
+        return this.outputs ? this.outputs.some(output => output.links &amp;&amp; output.links.length) : false;
     }
 
     /**
@@ -690,31 +656,20 @@ export class LGraphNode {
      * @return {array}
      */
     getOutputNodes(slot) {
-        if (!this.outputs || this.outputs.length == 0) {
+        if (!this.outputs || slot >= this.outputs.length) {
             return null;
         }
-
-        if (slot >= this.outputs.length) {
+    
+        const output = this.outputs[slot];
+        if (!output.links || output.links.length === 0) {
             return null;
         }
-
-        var output = this.outputs[slot];
-        if (!output.links || output.links.length == 0) {
-            return null;
-        }
-
-        var r = [];
-        for (var i = 0; i &lt; output.links.length; i++) {
-            var link_id = output.links[i];
-            var link = this.graph.links[link_id];
-            if (link) {
-                var target_node = this.graph.getNodeById(link.target_id);
-                if (target_node) {
-                    r.push(target_node);
-                }
-            }
-        }
-        return r;
+    
+        return output.links
+            .map(link_id => this.graph.links[link_id])
+            .filter(link => link)
+            .map(link => this.graph.getNodeById(link.target_id))
+            .filter(target_node => target_node);
     }
 
     addOnTriggerInput() {
@@ -782,11 +737,9 @@ export class LGraphNode {
     executePendingActions() {
         if(!this._waiting_actions || !this._waiting_actions.length)
             return;
-        for(var i = 0; i &lt; this._waiting_actions.length;++i)
-        {
-            var p = this._waiting_actions[i];
-            this.onAction(p[0],p[1],p[2],p[3],p[4]);
-        }        
+        this._waiting_actions.forEach(p => {
+            this.onAction(p[0], p[1], p[2], p[3], p[4]);
+        });      
         this._waiting_actions.length = 0;
     }
 
@@ -800,7 +753,7 @@ export class LGraphNode {
         if (this.onExecute){
             
             // enable this to give the event an ID
-            if (!options.action_call) options.action_call = `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
+            options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
             
             this.graph.nodes_executing[this.id] = true; //.push(this.id);
 
@@ -815,10 +768,8 @@ export class LGraphNode {
                 this.graph.nodes_executedAction[this.id] = options.action_call;
             }
         }
-        else {
-        }
         this.execute_triggered = 2; // the nFrames it will be used (-- each step), means "how old" is the event
-        if(this.onAfterExecuteNode) this.onAfterExecuteNode(param, options); // callback
+        this.onAfterExecuteNode?.(param, options); // callback
     }
 
     /**
@@ -831,7 +782,7 @@ export class LGraphNode {
         if (this.onAction){
             
             // enable this to give the event an ID
-            if (!options.action_call) options.action_call = `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
+            options.action_call ??= `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
             
             this.graph.nodes_actioning[this.id] = (action?action:"actioning"); //.push(this.id);
             
@@ -846,7 +797,7 @@ export class LGraphNode {
             }
         }
         this.action_triggered = 2; // the nFrames it will be used (-- each step), means "how old" is the event
-        if(this.onAfterExecuteNode) this.onAfterExecuteNode(param, options);
+        this.onAfterExecuteNode?.(param, options);
     }
 
     /**
@@ -856,19 +807,17 @@ export class LGraphNode {
      * @param {*} param
      */
     trigger(action, param, options) {
-        if (!this.outputs || !this.outputs.length) {
+        if (!this.outputs || this.outputs.length === 0) {
             return;
         }
-
-        if (this.graph)
-            this.graph._last_trigger_time = LiteGraph.getTime();
-
-        for (var i = 0; i &lt; this.outputs.length; ++i) {
-            var output = this.outputs[i];
-            if ( !output || output.type !== LiteGraph.EVENT || (action &amp;&amp; output.name != action) )
-                continue;
-            this.triggerSlot(i, param, null, options);
-        }
+    
+        this.graph &amp;&amp; (this.graph._last_trigger_time = LiteGraph.getTime());
+    
+        this.outputs.forEach((output, i) => {
+            if (output &amp;&amp; output.type === LiteGraph.EVENT &amp;&amp; (!action || output.name === action)) {
+                this.triggerSlot(i, param, null, options);
+            }
+        });
     }
 
     /**
@@ -966,34 +915,24 @@ export class LGraphNode {
      * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
      */
     clearTriggeredSlot(slot, link_id) {
-        if (!this.outputs) {
+        if (!this.outputs || !this.outputs[slot] || !this.outputs[slot].links) {
             return;
         }
-
-        var output = this.outputs[slot];
-        if (!output) {
-            return;
-        }
-
-        var links = output.links;
-        if (!links || !links.length) {
-            return;
-        }
-
-        //for every link attached here
-        for (var k = 0; k &lt; links.length; ++k) {
-            var id = links[k];
-            if (link_id != null &amp;&amp; link_id != id) {
-                //to skip links
-                continue;
+    
+        this.outputs[slot].links.forEach(id => {
+            if (link_id !== null &amp;&amp; link_id !== id) {
+                // Skip links
+                return;
             }
-            var link_info = this.graph.links[links[k]];
+    
+            const link_info = this.graph.links[id];
             if (!link_info) {
-                //not connected
-                continue;
+                // Not connected
+                return;
             }
+    
             link_info._last_time = 0;
-        }
+        });
     }
 
     /**
@@ -1003,8 +942,7 @@ export class LGraphNode {
      */
     setSize(size) {
         this.size = size;
-        if(this.onResize)
-            this.onResize(this.size);
+        this.onResize?.(this.size);
     }
 
     /**
@@ -1016,20 +954,13 @@ export class LGraphNode {
      * @param {Object} extra_info this can be used to have special properties of the property (like values, etc)
      */
     addProperty(name, default_value, type, extra_info) {
-        var o = { name: name, type: type, default_value: default_value };
-        if (extra_info) {
-            for (var i in extra_info) {
-                o[i] = extra_info[i];
-            }
-        }
-        if (!this.properties_info) {
-            this.properties_info = [];
-        }
+        const o = { name, type, default_value, ...extra_info };
+        this.properties_info = this.properties_info ?? [];
         this.properties_info.push(o);
-        if (!this.properties) {
-            this.properties = {};
-        }
+        
+        this.properties = this.properties ?? {};
         this.properties[name] = default_value;
+        
         return o;
     }
 
@@ -1043,27 +974,22 @@ export class LGraphNode {
      * @param {Object} extra_info this can be used to have special properties of an output (label, special color, position, etc)
      */
     addOutput(name, type, extra_info) {
-        var output = { name: name, type: type, links: null };
-        if (extra_info) {
-            for (var i in extra_info) {
-                output[i] = extra_info[i];
-            }
-        }
-
-        if (!this.outputs) {
-            this.outputs = [];
-        }
+        const output = { name, type, links: null, ...extra_info };
+    
+        this.outputs = this.outputs ?? [];
         this.outputs.push(output);
-        if (this.onOutputAdded) {
-            this.onOutputAdded(output);
+        this.onOutputAdded?.(output);
+    
+        if (LiteGraph.auto_load_slot_types) {
+            LiteGraph.registerNodeAndSlotType(this, type, true);
         }
-        
-        if (LiteGraph.auto_load_slot_types) LiteGraph.registerNodeAndSlotType(this,type,true);
-        
-        this.setSize( this.computeSize() );
+    
+        this.setSize(this.computeSize());
         this.setDirtyCanvas(true, true);
+    
         return output;
     }
+    
 
     /**
      * add a new output slot to use in this node
@@ -1071,29 +997,24 @@ export class LGraphNode {
      * @param {Array} array of triplets like [[name,type,extra_info],[...]]
      */
     addOutputs(array) {
-        for (var i = 0; i &lt; array.length; ++i) {
-            var info = array[i];
-            var o = { name: info[0], type: info[1], link: null };
-            if (array[2]) {
-                for (var j in info[2]) {
-                    o[j] = info[2][j];
-                }
-            }
-
-            if (!this.outputs) {
-                this.outputs = [];
-            }
+        array.map(info => {
+            const o = {
+                name: info[0],
+                type: info[1],
+                link: null,
+                ...info[2]
+            };
+        
+            this.outputs = this.outputs ?? [];
             this.outputs.push(o);
-            if (this.onOutputAdded) {
-                this.onOutputAdded(o);
-            }
-            
-            if (LiteGraph.auto_load_slot_types) LiteGraph.registerNodeAndSlotType(this,info[1],true);
-            
-        }
-
-        this.setSize( this.computeSize() );
-        this.setDirtyCanvas(true, true);
+        
+            this.onOutputAdded?.(o);
+        
+            LiteGraph.auto_load_slot_types &amp;&amp; LiteGraph.registerNodeAndSlotType(this, info[1], true);
+        });
+    
+        this.setSize(this.computeSize());
+        this.setDirtyCanvas?.(true, true);
     }
 
     /**
@@ -1103,27 +1024,26 @@ export class LGraphNode {
      */
     removeOutput(slot) {
         this.disconnectOutput(slot);
-        this.outputs.splice(slot, 1);
-        for (var i = slot; i &lt; this.outputs.length; ++i) {
-            if (!this.outputs[i] || !this.outputs[i].links) {
-                continue;
+        this.outputs = this.outputs.filter((_, index) => index !== slot);
+      
+        this.outputs.slice(slot).forEach(output => {
+            if (!output || !output.links) {
+                return;
             }
-            var links = this.outputs[i].links;
-            for (var j = 0; j &lt; links.length; ++j) {
-                var link = this.graph.links[links[j]];
-                if (!link) {
-                    continue;
+            
+            output.links.forEach(linkId => {
+                const link = this.graph.links[linkId];
+                if (link) {
+                    link.origin_slot -= 1;
                 }
-                link.origin_slot -= 1;
-            }
-        }
-
-        this.setSize( this.computeSize() );
-        if (this.onOutputRemoved) {
-            this.onOutputRemoved(slot);
-        }
+            });
+        });
+    
+        this.setSize(this.computeSize());
+        this.onOutputRemoved?.(slot);        
         this.setDirtyCanvas(true, true);
     }
+    
 
     /**
      * add a new input slot to use in this node
@@ -1133,29 +1053,16 @@ export class LGraphNode {
      * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, etc)
      */
     addInput(name, type = 0, extra_info) {
-        var input = { name: name, type: type, link: null };
-        if (extra_info) {
-            for (var i in extra_info) {
-                input[i] = extra_info[i];
-            }
-        }
-
-        if (!this.inputs) {
-            this.inputs = [];
-        }
-
+        const input = { name, type, link: null, ...extra_info };
+        this.inputs = this.inputs ?? [];
         this.inputs.push(input);
-        this.setSize( this.computeSize() );
-
-        if (this.onInputAdded) {
-            this.onInputAdded(input);
-        }
-
-        LiteGraph.registerNodeAndSlotType(this,type);
-
+        this.setSize(this.computeSize());
+        this.onInputAdded?.(input);
+        LiteGraph.registerNodeAndSlotType(this, type);
         this.setDirtyCanvas(true, true);
         return input;
     }
+    
 
     /**
      * add several new input slots in this node
@@ -1194,23 +1101,18 @@ export class LGraphNode {
      */
     removeInput(slot) {
         this.disconnectInput(slot);
-        var slot_info = this.inputs.splice(slot, 1);
-        for (var i = slot; i &lt; this.inputs.length; ++i) {
-            if (!this.inputs[i]) {
-                continue;
-            }
-            var link = this.graph.links[this.inputs[i].link];
-            if (!link) {
-                continue;
-            }
-            link.target_slot -= 1;
-        }
-        this.setSize( this.computeSize() );
-        if (this.onInputRemoved) {
-            this.onInputRemoved(slot, slot_info[0] );
-        }
+        const removedInput = this.inputs.splice(slot, 1)[0];
+        
+        this.inputs.slice(slot).filter(input => !!input).forEach(input => {
+            const link = this.graph.links[input.link];
+            link?.target_slot &amp;&amp; link.target_slot--;
+        });
+    
+        this.setSize(this.computeSize());
+        this.onInputRemoved?.(slot, removedInput);        
         this.setDirtyCanvas(true, true);
     }
+    
 
     /**
      * Add a special connection to this node (used for special kinds of graphs)
@@ -1256,25 +1158,19 @@ export class LGraphNode {
         var output_width = 0;
 
         if (this.inputs) {
-            for (var i = 0, l = this.inputs.length; i &lt; l; ++i) {
-                var input = this.inputs[i];
-                var text = input.label || input.name || "";
-                var text_width = compute_text_size(text);
-                if (input_width &lt; text_width) {
-                    input_width = text_width;
-                }
-            }
+            const input_width = this.inputs.reduce((maxWidth, input) => {
+                const text = input.label || input.name || "";
+                const text_width = compute_text_size(text);
+                return Math.max(maxWidth, text_width);
+            }, 0);
         }
-
         if (this.outputs) {
-            for (var i = 0, l = this.outputs.length; i &lt; l; ++i) {
-                var output = this.outputs[i];
-                var text = output.label || output.name || "";
-                var text_width = compute_text_size(text);
-                if (output_width &lt; text_width) {
-                    output_width = text_width;
-                }
-            }
+            const output_width = this.outputs.reduce((maxWidth, output) => {
+                const text = output.label || output.name || "";
+                const text_width = compute_text_size(text);
+                
+                return Math.max(maxWidth, text_width);
+            }, 0);
         }
 
         size[0] = Math.max(input_width + output_width + 10, title_width);
@@ -2548,13 +2444,13 @@ export class LGraphNode {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ContextMenu_ContextMenu.html">ContextMenu</a></li><li><a href="LGraph.html">LGraph</a></li><li><a href="LGraphCanvas.html">LGraphCanvas</a></li><li><a href="LGraphNode.html">LGraphNode</a></li><li><a href="LiteGraph.html">LiteGraph</a></li></ul><h3>Global</h3><ul><li><a href="global.html#actionDo">actionDo</a></li><li><a href="global.html#add">add</a></li><li><a href="global.html#addConnection">addConnection</a></li><li><a href="global.html#addGlobalInput">addGlobalInput</a></li><li><a href="global.html#addInput">addInput</a></li><li><a href="global.html#addInputs">addInputs</a></li><li><a href="global.html#addNodeMethod">addNodeMethod</a></li><li><a href="global.html#addOutput">addOutput</a></li><li><a href="global.html#addOutputs">addOutputs</a></li><li><a href="global.html#addProperty">addProperty</a></li><li><a href="global.html#addWidget">addWidget</a></li><li><a href="global.html#adjustMouseEvent">adjustMouseEvent</a></li><li><a href="global.html#arrange">arrange</a></li><li><a href="global.html#attachCanvas">attachCanvas</a></li><li><a href="global.html#bindEvents">bindEvents</a></li><li><a href="global.html#bringToFront">bringToFront</a></li><li><a href="global.html#buildNodeClassFromObject">buildNodeClassFromObject</a></li><li><a href="global.html#centerOnNode">centerOnNode</a></li><li><a href="global.html#change">change</a></li><li><a href="global.html#changeInputType">changeInputType</a></li><li><a href="global.html#changeOutputType">changeOutputType</a></li><li><a href="global.html#checkNodeTypes">checkNodeTypes</a></li><li><a href="global.html#clear">clear</a></li><li><a href="global.html#clearTriggeredSlot">clearTriggeredSlot</a></li><li><a href="global.html#clearTriggeredSlots">clearTriggeredSlots</a></li><li><a href="global.html#closeSubgraph">closeSubgraph</a></li><li><a href="global.html#collapse">collapse</a></li><li><a href="global.html#computeSize">computeSize</a></li><li><a href="global.html#computeVisibleNodes">computeVisibleNodes</a></li><li><a href="global.html#configure">configure</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectByType">connectByType</a></li><li><a href="global.html#convertCanvasToOffset">convertCanvasToOffset</a></li><li><a href="global.html#convertOffsetToCanvas">convertOffsetToCanvas</a></li><li><a href="global.html#createNode">createNode</a></li><li><a href="global.html#deleteSelectedNodes">deleteSelectedNodes</a></li><li><a href="global.html#deselectAllNodes">deselectAllNodes</a></li><li><a href="global.html#deselectNode">deselectNode</a></li><li><a href="global.html#detachCanvas">detachCanvas</a></li><li><a href="global.html#disconnectInput">disconnectInput</a></li><li><a href="global.html#disconnectOutput">disconnectOutput</a></li><li><a href="global.html#doExecute">doExecute</a></li><li><a href="global.html#draw">draw</a></li><li><a href="global.html#drawBackCanvas">drawBackCanvas</a></li><li><a href="global.html#drawConnections">drawConnections</a></li><li><a href="global.html#drawFrontCanvas">drawFrontCanvas</a></li><li><a href="global.html#drawGroups">drawGroups</a></li><li><a href="global.html#drawNode">drawNode</a></li><li><a href="global.html#drawNodeShape">drawNodeShape</a></li><li><a href="global.html#drawNodeWidgets">drawNodeWidgets</a></li><li><a href="global.html#drawSubgraphPanel">drawSubgraphPanel</a></li><li><a href="global.html#enableWebGL">enableWebGL</a></li><li><a href="global.html#executePendingActions">executePendingActions</a></li><li><a href="global.html#fetchFile">fetchFile</a></li><li><a href="global.html#findInputSlot">findInputSlot</a></li><li><a href="global.html#findInputSlotFree">findInputSlotFree</a></li><li><a href="global.html#findNodeByTitle">findNodeByTitle</a></li><li><a href="global.html#findNodesByClass">findNodesByClass</a></li><li><a href="global.html#findNodesByTitle">findNodesByTitle</a></li><li><a href="global.html#findNodesByType">findNodesByType</a></li><li><a href="global.html#findOutputSlot">findOutputSlot</a></li><li><a href="global.html#findOutputSlotFree">findOutputSlotFree</a></li><li><a href="global.html#findSlotByType">findSlotByType</a></li><li><a href="global.html#getAncestors">getAncestors</a></li><li><a href="global.html#getBounding">getBounding</a></li><li><a href="global.html#getCanvasWindow">getCanvasWindow</a></li><li><a href="global.html#getConnectionPos">getConnectionPos</a></li><li><a href="global.html#getCurrentGraph">getCurrentGraph</a></li><li><a href="global.html#getElapsedTime">getElapsedTime</a></li><li><a href="global.html#getFixedTime">getFixedTime</a></li><li><a href="global.html#getGroupOnPos">getGroupOnPos</a></li><li><a href="global.html#getInputData">getInputData</a></li><li><a href="global.html#getInputDataByName">getInputDataByName</a></li><li><a href="global.html#getInputDataType">getInputDataType</a></li><li><a href="global.html#getInputInfo">getInputInfo</a></li><li><a href="global.html#getInputLink">getInputLink</a></li><li><a href="global.html#getInputNode">getInputNode</a></li><li><a href="global.html#getInputOrProperty">getInputOrProperty</a></li><li><a href="global.html#getNodeById">getNodeById</a></li><li><a href="global.html#getNodeOnPos">getNodeOnPos</a></li><li><a href="global.html#getNodeType">getNodeType</a></li><li><a href="global.html#getNodeTypesCategories">getNodeTypesCategories</a></li><li><a href="global.html#getOutputData">getOutputData</a></li><li><a href="global.html#getOutputInfo">getOutputInfo</a></li><li><a href="global.html#getOutputNodes">getOutputNodes</a></li><li><a href="global.html#getPropertyInfo">getPropertyInfo</a></li><li><a href="global.html#getSlotInPosition">getSlotInPosition</a></li><li><a href="global.html#getTime">getTime</a></li><li><a href="global.html#getTitle">getTitle</a></li><li><a href="global.html#getTopGraph">getTopGraph</a></li><li><a href="global.html#isAnyOutputConnected">isAnyOutputConnected</a></li><li><a href="global.html#isInputConnected">isInputConnected</a></li><li><a href="global.html#isLive">isLive</a></li><li><a href="global.html#isOutputConnected">isOutputConnected</a></li><li><a href="global.html#isOverNodeBox">isOverNodeBox</a></li><li><a href="global.html#isOverNodeInput">isOverNodeInput</a></li><li><a href="global.html#isOverNodeOuput">isOverNodeOuput</a></li><li><a href="global.html#isPointInside">isPointInside</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#openSubgraph">openSubgraph</a></li><li><a href="global.html#pin">pin</a></li><li><a href="global.html#processDrop">processDrop</a></li><li><a href="global.html#processKey">processKey</a></li><li><a href="global.html#processMouseMove">processMouseMove</a></li><li><a href="global.html#processMouseUp">processMouseUp</a></li><li><a href="global.html#processMouseWheel">processMouseWheel</a></li><li><a href="global.html#processNodeWidgets">processNodeWidgets</a></li><li><a href="global.html#registerNodeType">registerNodeType</a></li><li><a href="global.html#registerSearchboxExtra">registerSearchboxExtra</a></li><li><a href="global.html#registerSlotType">registerSlotType</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeInput">removeInput</a></li><li><a href="global.html#removeLink">removeLink</a></li><li><a href="global.html#removeOutput">removeOutput</a></li><li><a href="global.html#renameInput">renameInput</a></li><li><a href="global.html#renameOutput">renameOutput</a></li><li><a href="global.html#renderInfo">renderInfo</a></li><li><a href="global.html#renderLink">renderLink</a></li><li><a href="global.html#resize">resize</a></li><li><a href="global.html#runStep">runStep</a></li><li><a href="global.html#selectNode">selectNode</a></li><li><a href="global.html#selectNodes">selectNodes</a></li><li><a href="global.html#sendEventToAllNodes">sendEventToAllNodes</a></li><li><a href="global.html#sendToBack">sendToBack</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#setCanvas">setCanvas</a></li><li><a href="global.html#setDirty">setDirty</a></li><li><a href="global.html#setGlobalInputData">setGlobalInputData</a></li><li><a href="global.html#setGraph">setGraph</a></li><li><a href="global.html#setOutputData">setOutputData</a></li><li><a href="global.html#setOutputDataType">setOutputDataType</a></li><li><a href="global.html#setProperty">setProperty</a></li><li><a href="global.html#setSize">setSize</a></li><li><a href="global.html#setZoom">setZoom</a></li><li><a href="global.html#start">start</a></li><li><a href="global.html#startRendering">startRendering</a></li><li><a href="global.html#stopexecution">stop execution</a></li><li><a href="global.html#stopRendering">stopRendering</a></li><li><a href="global.html#switchLiveMode">switchLiveMode</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#trigger">trigger</a></li><li><a href="global.html#triggerSlot">triggerSlot</a></li><li><a href="global.html#unbindEvents">unbindEvents</a></li><li><a href="global.html#unregisterNodeType">unregisterNodeType</a></li><li><a href="global.html#updateExecutionOrder">updateExecutionOrder</a></li><li><a href="global.html#wrapFunctionAsNode">wrapFunctionAsNode</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ContextMenu_ContextMenu.html">ContextMenu</a></li><li><a href="DragAndScale.html">DragAndScale</a></li><li><a href="LGraph.html">LGraph</a></li><li><a href="LGraphCanvas.html">LGraphCanvas</a></li><li><a href="LGraphGroup_LGraphGroup.html">LGraphGroup</a></li><li><a href="LGraphNode.html">LGraphNode</a></li><li><a href="LiteGraph.html">LiteGraph</a></li></ul><h3>Global</h3><ul><li><a href="global.html#actionDo">actionDo</a></li><li><a href="global.html#add">add</a></li><li><a href="global.html#addConnection">addConnection</a></li><li><a href="global.html#addGlobalInput">addGlobalInput</a></li><li><a href="global.html#addInput">addInput</a></li><li><a href="global.html#addInputs">addInputs</a></li><li><a href="global.html#addNodeMethod">addNodeMethod</a></li><li><a href="global.html#addOutput">addOutput</a></li><li><a href="global.html#addOutputs">addOutputs</a></li><li><a href="global.html#addProperty">addProperty</a></li><li><a href="global.html#addWidget">addWidget</a></li><li><a href="global.html#adjustMouseEvent">adjustMouseEvent</a></li><li><a href="global.html#arrange">arrange</a></li><li><a href="global.html#attachCanvas">attachCanvas</a></li><li><a href="global.html#bindEvents">bindEvents</a></li><li><a href="global.html#bringToFront">bringToFront</a></li><li><a href="global.html#buildNodeClassFromObject">buildNodeClassFromObject</a></li><li><a href="global.html#centerOnNode">centerOnNode</a></li><li><a href="global.html#change">change</a></li><li><a href="global.html#changeInputType">changeInputType</a></li><li><a href="global.html#changeOutputType">changeOutputType</a></li><li><a href="global.html#checkNodeTypes">checkNodeTypes</a></li><li><a href="global.html#clear">clear</a></li><li><a href="global.html#clearRegisteredTypes">clearRegisteredTypes</a></li><li><a href="global.html#clearTriggeredSlot">clearTriggeredSlot</a></li><li><a href="global.html#clearTriggeredSlots">clearTriggeredSlots</a></li><li><a href="global.html#closeSubgraph">closeSubgraph</a></li><li><a href="global.html#collapse">collapse</a></li><li><a href="global.html#computeSize">computeSize</a></li><li><a href="global.html#computeVisibleNodes">computeVisibleNodes</a></li><li><a href="global.html#configure">configure</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectByType">connectByType</a></li><li><a href="global.html#convertCanvasToOffset">convertCanvasToOffset</a></li><li><a href="global.html#convertOffsetToCanvas">convertOffsetToCanvas</a></li><li><a href="global.html#createNode">createNode</a></li><li><a href="global.html#deleteSelectedNodes">deleteSelectedNodes</a></li><li><a href="global.html#deselectAllNodes">deselectAllNodes</a></li><li><a href="global.html#deselectNode">deselectNode</a></li><li><a href="global.html#detachCanvas">detachCanvas</a></li><li><a href="global.html#disconnectInput">disconnectInput</a></li><li><a href="global.html#disconnectOutput">disconnectOutput</a></li><li><a href="global.html#doExecute">doExecute</a></li><li><a href="global.html#draw">draw</a></li><li><a href="global.html#drawBackCanvas">drawBackCanvas</a></li><li><a href="global.html#drawConnections">drawConnections</a></li><li><a href="global.html#drawFrontCanvas">drawFrontCanvas</a></li><li><a href="global.html#drawGroups">drawGroups</a></li><li><a href="global.html#drawNode">drawNode</a></li><li><a href="global.html#drawNodeShape">drawNodeShape</a></li><li><a href="global.html#drawNodeWidgets">drawNodeWidgets</a></li><li><a href="global.html#drawSubgraphPanel">drawSubgraphPanel</a></li><li><a href="global.html#enableWebGL">enableWebGL</a></li><li><a href="global.html#executePendingActions">executePendingActions</a></li><li><a href="global.html#fetchFile">fetchFile</a></li><li><a href="global.html#findInputSlot">findInputSlot</a></li><li><a href="global.html#findInputSlotFree">findInputSlotFree</a></li><li><a href="global.html#findNodeByTitle">findNodeByTitle</a></li><li><a href="global.html#findNodesByClass">findNodesByClass</a></li><li><a href="global.html#findNodesByTitle">findNodesByTitle</a></li><li><a href="global.html#findNodesByType">findNodesByType</a></li><li><a href="global.html#findOutputSlot">findOutputSlot</a></li><li><a href="global.html#findOutputSlotFree">findOutputSlotFree</a></li><li><a href="global.html#findSlotByType">findSlotByType</a></li><li><a href="global.html#getAncestors">getAncestors</a></li><li><a href="global.html#getBounding">getBounding</a></li><li><a href="global.html#getCanvasWindow">getCanvasWindow</a></li><li><a href="global.html#getConnectionPos">getConnectionPos</a></li><li><a href="global.html#getCurrentGraph">getCurrentGraph</a></li><li><a href="global.html#getElapsedTime">getElapsedTime</a></li><li><a href="global.html#getFixedTime">getFixedTime</a></li><li><a href="global.html#getGroupOnPos">getGroupOnPos</a></li><li><a href="global.html#getInputData">getInputData</a></li><li><a href="global.html#getInputDataByName">getInputDataByName</a></li><li><a href="global.html#getInputDataType">getInputDataType</a></li><li><a href="global.html#getInputInfo">getInputInfo</a></li><li><a href="global.html#getInputLink">getInputLink</a></li><li><a href="global.html#getInputNode">getInputNode</a></li><li><a href="global.html#getInputOrProperty">getInputOrProperty</a></li><li><a href="global.html#getNodeById">getNodeById</a></li><li><a href="global.html#getNodeOnPos">getNodeOnPos</a></li><li><a href="global.html#getNodeType">getNodeType</a></li><li><a href="global.html#getNodeTypesCategories">getNodeTypesCategories</a></li><li><a href="global.html#getOutputData">getOutputData</a></li><li><a href="global.html#getOutputInfo">getOutputInfo</a></li><li><a href="global.html#getOutputNodes">getOutputNodes</a></li><li><a href="global.html#getPropertyInfo">getPropertyInfo</a></li><li><a href="global.html#getSlotInPosition">getSlotInPosition</a></li><li><a href="global.html#getTime">getTime</a></li><li><a href="global.html#getTitle">getTitle</a></li><li><a href="global.html#getTopGraph">getTopGraph</a></li><li><a href="global.html#isAnyOutputConnected">isAnyOutputConnected</a></li><li><a href="global.html#isInputConnected">isInputConnected</a></li><li><a href="global.html#isLive">isLive</a></li><li><a href="global.html#isOutputConnected">isOutputConnected</a></li><li><a href="global.html#isOverNodeBox">isOverNodeBox</a></li><li><a href="global.html#isOverNodeInput">isOverNodeInput</a></li><li><a href="global.html#isOverNodeOuput">isOverNodeOuput</a></li><li><a href="global.html#isPointInside">isPointInside</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#openSubgraph">openSubgraph</a></li><li><a href="global.html#pin">pin</a></li><li><a href="global.html#processDrop">processDrop</a></li><li><a href="global.html#processKey">processKey</a></li><li><a href="global.html#processMouseMove">processMouseMove</a></li><li><a href="global.html#processMouseUp">processMouseUp</a></li><li><a href="global.html#processMouseWheel">processMouseWheel</a></li><li><a href="global.html#processNodeWidgets">processNodeWidgets</a></li><li><a href="global.html#registerNodeType">registerNodeType</a></li><li><a href="global.html#registerSearchboxExtra">registerSearchboxExtra</a></li><li><a href="global.html#registerSlotType">registerSlotType</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeInput">removeInput</a></li><li><a href="global.html#removeLink">removeLink</a></li><li><a href="global.html#removeOutput">removeOutput</a></li><li><a href="global.html#renameInput">renameInput</a></li><li><a href="global.html#renameOutput">renameOutput</a></li><li><a href="global.html#renderInfo">renderInfo</a></li><li><a href="global.html#renderLink">renderLink</a></li><li><a href="global.html#resize">resize</a></li><li><a href="global.html#runStep">runStep</a></li><li><a href="global.html#selectNode">selectNode</a></li><li><a href="global.html#selectNodes">selectNodes</a></li><li><a href="global.html#sendEventToAllNodes">sendEventToAllNodes</a></li><li><a href="global.html#sendToBack">sendToBack</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#setCanvas">setCanvas</a></li><li><a href="global.html#setDirty">setDirty</a></li><li><a href="global.html#setGlobalInputData">setGlobalInputData</a></li><li><a href="global.html#setGraph">setGraph</a></li><li><a href="global.html#setOutputData">setOutputData</a></li><li><a href="global.html#setOutputDataType">setOutputDataType</a></li><li><a href="global.html#setProperty">setProperty</a></li><li><a href="global.html#setSize">setSize</a></li><li><a href="global.html#setZoom">setZoom</a></li><li><a href="global.html#start">start</a></li><li><a href="global.html#startRendering">startRendering</a></li><li><a href="global.html#stopexecution">stop execution</a></li><li><a href="global.html#stopRendering">stopRendering</a></li><li><a href="global.html#switchLiveMode">switchLiveMode</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#trigger">trigger</a></li><li><a href="global.html#triggerSlot">triggerSlot</a></li><li><a href="global.html#unbindEvents">unbindEvents</a></li><li><a href="global.html#unregisterNodeType">unregisterNodeType</a></li><li><a href="global.html#updateExecutionOrder">updateExecutionOrder</a></li><li><a href="global.html#wrapFunctionAsNode">wrapFunctionAsNode</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed May 08 2024 10:40:39 GMT-0600 (Mountain Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Sun May 12 2024 20:04:07 GMT-0600 (Mountain Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

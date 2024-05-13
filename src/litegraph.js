@@ -5,7 +5,9 @@ import { LGraphGroup } from "./lgraphgroup.js";
 
 /**
  * @class LiteGraph
- * @constructor Do not use, see below:
+ * 
+ * @NOTE:
+ * Do not use, see below:
  * 
  * this was just converted over from a global Object to class on 2024-05-09 in the early morning
  * and my goal is to fix the anti-pattern which involves putting all of this stuff where it *actually*
