@@ -96,16 +96,16 @@ export class Editor {
         const meter = document.createElement("div");
         meter.className = "headerpanel loadmeter toolbar-widget";
         meter.innerHTML = `
-            <div class='cpuload'>
+            <div class="cpuload">
                 <strong>CPU</strong> 
-                <div class='bgload'>
-                    <div class='fgload'></div>
+                <div class="bgload">
+                    <div class="fgload"></div>
                 </div>
             </div>
-            <div class='gpuload'>
+            <div class="gpuload">
                 <strong>GFX</strong> 
-                <div class='bgload'>
-                    <div class='fgload'></div>
+                <div class="bgload">
+                    <div class="fgload"></div>
                 </div>
             </div>`;
 
@@ -133,7 +133,7 @@ export class Editor {
     createButton(name, icon_url, callback) {
         const button = document.createElement("button");
         if (icon_url) {
-            button.innerHTML = `<img src='${icon_url}'/> `;
+            button.innerHTML = `<img src="${icon_url}"/> `;
         }
         button.classList.add("btn");
         button.innerHTML += name;
@@ -157,10 +157,10 @@ export class Editor {
         var button = this.root.querySelector("#playnode_button");
 
         if (graph.status == LGraph.STATUS_STOPPED) {
-            button.innerHTML = "<img src='imgs/icon-stop.png'/> Stop";
+            button.innerHTML = `<img src="imgs/icon-stop.png"/> Stop`;
             graph.start();
         } else {
-            button.innerHTML = "<img src='imgs/icon-play.png'/> Play";
+            button.innerHTML = `<img src="imgs/icon-play.png"/> Play`;
             graph.stop();
         }
     }
@@ -180,8 +180,8 @@ export class Editor {
             : "imgs/gauss_bg.jpg";
         var button = this.root.querySelector("#livemode_button");
         button.innerHTML = !is_live_mode
-            ? "<img src='imgs/icon-record.png'/> Live"
-            : "<img src='imgs/icon-gear.png'/> Edit";
+            ? `<img src="imgs/icon-record.png"/> Live`
+            : `<img src="imgs/icon-gear.png"/> Edit`;
     }
 
     onDropItem(e) {
@@ -231,7 +231,7 @@ export class Editor {
         var miniwindow = document.createElement("div");
         miniwindow.className = "litegraph miniwindow";
         miniwindow.innerHTML =
-            `<canvas class='graphcanvas' width='${w}' height='${h}' tabindex=10></canvas>`;
+            `<canvas class="graphcanvas" width="${w}" height="${h}" tabindex="10"></canvas>`;
         var canvas = miniwindow.querySelector("canvas");
         var that = this;
 
