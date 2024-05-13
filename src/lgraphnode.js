@@ -977,32 +977,53 @@ export class LGraphNode {
         return slot;
     }
 
-    
     /**
-     * add a new output slot to use in this node
-     * @method addOutputs
-     * @param {Array} array of triplets like [[name,type,extra_info],[...]]
+     * Add multiple input or output slots to use in this node.
+     * @param {Array} array - Array of triplets like [[name, type, extra_info], [...]].
+     * @param {boolean} isInput - Whether the slots being added are input slots.
      */
+    addInputs(array) {
+        this.addSlots(array, true);
+    }
     addOutputs(array) {
-        array.map(info => {
-            const o = {
+        this.addSlots(array, false);
+    }
+    addSlots(array, isInput) {
+        if(typeof array === 'string')
+            array = [array];
+
+        array.forEach(info => {
+            const slot = isInput ? {
                 name: info[0],
                 type: info[1],
                 link: null,
-                ...info[2]
+                ...(info[2] ?? {})
+            } : {
+                name: info[0],
+                type: info[1],
+                links: null,
+                ...(info[2] ?? {})
             };
-        
-            this.outputs = this.outputs ?? [];
-            this.outputs.push(o);
-        
-            this.onOutputAdded?.(o);
-        
-            LiteGraph.auto_load_slot_types && LiteGraph.registerNodeAndSlotType(this, info[1], true);
+    
+            if (isInput) {
+                this.inputs = this.inputs ?? [];
+                this.inputs.push(slot);
+                this.onInputAdded?.(slot);
+                LiteGraph.registerNodeAndSlotType(this, info[1]);
+            } else {
+                this.outputs = this.outputs ?? [];
+                this.outputs.push(slot);
+                this.onOutputAdded?.(slot);
+                if (LiteGraph.auto_load_slot_types) {
+                    LiteGraph.registerNodeAndSlotType(this, info[1], true);
+                }
+            }
         });
     
         this.setSize(this.computeSize());
         this.setDirtyCanvas?.(true, true);
     }
+    
 
     /**
      * remove an existing output slot
@@ -1030,38 +1051,6 @@ export class LGraphNode {
         this.onOutputRemoved?.(slot);        
         this.setDirtyCanvas(true, true);
     }
- 
-    /**
-     * add several new input slots in this node
-     * @method addInputs
-     * @param {Array|String} array of triplets like [[name,type,extra_info],[...]]
-     */
-    addInputs(array) {
-        if (typeof array === 'string') {
-            array = [array];
-        }
-        console.log('Array type:', Array.isArray(array) ? 'Array' : typeof array);
-
-        array.forEach(info => {
-            const o = {
-                name: info[0],
-                type: info[1],
-                link: null,
-                ...(info[2] || {})
-            };
-    
-            this.inputs = this.inputs || [];
-            this.inputs.push(o);
-    
-            this.onInputAdded?.(o);
-    
-            LiteGraph.registerNodeAndSlotType(this, info[1]);
-        });
-    
-        this.setSize(this.computeSize());
-        this.setDirtyCanvas?.(true, true);
-    }
-    
 
     /**
      * remove an existing input slot
