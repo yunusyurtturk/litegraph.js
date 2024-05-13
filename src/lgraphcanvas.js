@@ -2901,16 +2901,6 @@ export class LGraphCanvas {
      **/
     drawBackCanvas() {
         var canvas = this.bgcanvas;
-        /* 
-        // This is causing a weird bug where the canvas.width != canvas.style.width, and the canvas.width is wrong.
-        if (
-            canvas.width != this.canvas.width ||
-            canvas.height != this.canvas.height
-        ) {
-            canvas.width = this.canvas.width;
-            canvas.height = this.canvas.height;
-        }
-        */
 
         if (!this.bgctx) {
             this.bgctx = this.bgcanvas.getContext("2d");
