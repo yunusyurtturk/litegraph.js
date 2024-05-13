@@ -2668,6 +2668,8 @@ export class LGraphCanvas {
      **/
     drawSubgraphPanel(ctx) {
         var subgraph = this.graph;
+        if( !subgraph)
+            return;
         var subnode = subgraph._subgraph_node;
         if (!subnode) {
             console.warn("subgraph without subnode");

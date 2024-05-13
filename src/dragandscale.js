@@ -128,8 +128,8 @@ export class DragAndScale {
             this.visible_area.set([0, 0, 0, 0]);
             return;
         }
-        const width = this.element.width;
-        const height = this.element.height;
+        let width = this.element.width;
+        let height = this.element.height;
         let startx = -this.offset[0];
         let starty = -this.offset[1];
         if (viewport) {

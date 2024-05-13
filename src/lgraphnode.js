@@ -299,25 +299,29 @@ export class LGraphNode {
      */
     setProperty(name, value) {
         this.properties ||= {};
-        if( value === this.properties[name] )
+    
+        // Check if the new value is the same as the current value
+        if (value === this.properties[name]) {
             return;
-        var prev_value = this.properties[name];
+        }
+    
+        const prevValue = this.properties[name];
         this.properties[name] = value;
-        if( this.onPropertyChanged?.(name, value, prev_value) === false ) //abort change
-            this.properties[name] = prev_value;
-        if(this.widgets) //widgets could be linked to properties
-            for(var i = 0; i < this.widgets.length; ++i)
-            {
-                var w = this.widgets[i];
-                if(!w)
-                    continue;
-                if(w.options.property == name)
-                {
-                    w.value = value;
-                    break;
-                }
-            }
+    
+        // Call onPropertyChanged and revert the change if needed
+        if (this.onPropertyChanged?.(name, value, prevValue) === false) {
+            this.properties[name] = prevValue;
+        }
+    
+        // Update the widget value associated with the property name
+        const widgetToUpdate = this.widgets.find(widget => widget && widget.options?.property === name);
+    
+        if (widgetToUpdate) {
+            widgetToUpdate.value = value;
+        }
     }
+    
+    
 
     // Execution *************************
     /**
@@ -936,33 +940,44 @@ export class LGraphNode {
         return o;
     }
 
-    //connections
-
     /**
-     * add a new output slot to use in this node
-     * @method addOutput
-     * @param {string} name
-     * @param {string} type string defining the output type ("vec3","number",...)
-     * @param {Object} extra_info this can be used to have special properties of an output (label, special color, position, etc)
+     * Add a new input or output slot to use in this node.
+     * @param {string} name - Name of the slot.
+     * @param {string} type - Type of the slot ("vec3", "number", etc). For a generic type, use "0".
+     * @param {Object} extra_info - Additional information for the slot (e.g., label, color, position).
+     * @param {boolean} isInput - Whether the slot being added is an input slot.
+     * @returns {Object} The newly added slot (input or output).
      */
+    addInput(name, type, extra_info) {
+        return this.addSlot(name, type, extra_info, true);
+    }
     addOutput(name, type, extra_info) {
-        const output = { name, type, links: null, ...extra_info };
-    
-        this.outputs = this.outputs ?? [];
-        this.outputs.push(output);
-        this.onOutputAdded?.(output);
-    
-        if (LiteGraph.auto_load_slot_types) {
-            LiteGraph.registerNodeAndSlotType(this, type, true);
+        return this.addSlot(name, type, extra_info, false);
+    }
+    addSlot(name, type, extra_info, isInput) {
+        const slot = isInput ? 
+            { name, type, link: null, ...extra_info }: 
+            { name, type, links: null, ...extra_info };
+        if (isInput) {
+            this.inputs = this.inputs ?? [];
+            this.inputs.push(slot);
+            this.onInputAdded?.(slot);
+            LiteGraph.registerNodeAndSlotType(this, type);
+        } else {
+            this.outputs = this.outputs ?? [];
+            this.outputs.push(slot);
+            this.onOutputAdded?.(slot);
+            if (LiteGraph.auto_load_slot_types) {
+                LiteGraph.registerNodeAndSlotType(this, type, true);
+            }
         }
-    
+
         this.setSize(this.computeSize());
         this.setDirtyCanvas(true, true);
-    
-        return output;
+        return slot;
     }
-    
 
+    
     /**
      * add a new output slot to use in this node
      * @method addOutputs
@@ -1015,56 +1030,38 @@ export class LGraphNode {
         this.onOutputRemoved?.(slot);        
         this.setDirtyCanvas(true, true);
     }
-    
-
-    /**
-     * add a new input slot to use in this node
-     * @method addInput
-     * @param {string} name
-     * @param {string} type string defining the input type ("vec3","number",...), it its a generic one use 0
-     * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, etc)
-     */
-    addInput(name, type = 0, extra_info) {
-        const input = { name, type, link: null, ...extra_info };
-        this.inputs = this.inputs ?? [];
-        this.inputs.push(input);
-        this.setSize(this.computeSize());
-        this.onInputAdded?.(input);
-        LiteGraph.registerNodeAndSlotType(this, type);
-        this.setDirtyCanvas(true, true);
-        return input;
-    }
-    
-
+ 
     /**
      * add several new input slots in this node
      * @method addInputs
-     * @param {Array} array of triplets like [[name,type,extra_info],[...]]
+     * @param {Array|String} array of triplets like [[name,type,extra_info],[...]]
      */
     addInputs(array) {
-        for (var i = 0; i < array.length; ++i) {
-            var info = array[i];
-            var o = { name: info[0], type: info[1], link: null };
-            if (array[2]) {
-                for (var j in info[2]) {
-                    o[j] = info[2][j];
-                }
-            }
-
-            if (!this.inputs) {
-                this.inputs = [];
-            }
-            this.inputs.push(o);
-            if (this.onInputAdded) {
-                this.onInputAdded(o);
-            }
-            
-            LiteGraph.registerNodeAndSlotType(this,info[1]);
+        if (typeof array === 'string') {
+            array = [array];
         }
+        console.log('Array type:', Array.isArray(array) ? 'Array' : typeof array);
 
-        this.setSize( this.computeSize() );
-        this.setDirtyCanvas(true, true);
+        array.forEach(info => {
+            const o = {
+                name: info[0],
+                type: info[1],
+                link: null,
+                ...(info[2] || {})
+            };
+    
+            this.inputs = this.inputs || [];
+            this.inputs.push(o);
+    
+            this.onInputAdded?.(o);
+    
+            LiteGraph.registerNodeAndSlotType(this, info[1]);
+        });
+    
+        this.setSize(this.computeSize());
+        this.setDirtyCanvas?.(true, true);
     }
+    
 
     /**
      * remove an existing input slot
