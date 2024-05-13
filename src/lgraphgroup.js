@@ -69,12 +69,7 @@ export class LGraphGroup {
         var b = this._bounding;
         return {
             title: this.title,
-            bounding: [
-                Math.round(b[0]),
-                Math.round(b[1]),
-                Math.round(b[2]),
-                Math.round(b[3])
-            ],
+            bounding: b.map((value) => Math.round(value)),
             color: this.color,
             font_size: this.font_size
         };
@@ -87,16 +82,21 @@ export class LGraphGroup {
      * @param {boolean} ignore_nodes - Flag to indicate whether to move contained nodes along with the group.
      */
     move(deltax, deltay, ignore_nodes) {
+        if(isNaN(deltax))
+            console.error("LGraphGroup.move() deltax NaN");
+        if(isNaN(deltay))
+            console.error("LGraphGroup.move() deltay NaN");
+
         this._pos[0] += deltax;
         this._pos[1] += deltay;
+
         if (ignore_nodes) {
             return;
         }
-        for (var i = 0; i < this._nodes.length; ++i) {
-            var node = this._nodes[i];
+        this._nodes.forEach((node) => {
             node.pos[0] += deltax;
             node.pos[1] += deltay;
-        }
+        });
     }
 
     /**
@@ -108,14 +108,10 @@ export class LGraphGroup {
         var nodes = this.graph._nodes;
         var node_bounding = new Float32Array(4);
 
-        for (var i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
+        this._nodes = nodes.filter((node) => {
             node.getBounding(node_bounding);
-            if (!LiteGraph.overlapBounding(this._bounding, node_bounding)) {
-                continue;
-            } //out of the visible area
-            this._nodes.push(node);
-        }
+            return LiteGraph.overlapBounding(this._bounding, node_bounding);
+        });
     }
 
     isPointInside = LGraphNode.prototype.isPointInside;
