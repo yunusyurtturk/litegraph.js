@@ -10,6 +10,8 @@ export class ContextMenu {
     * - callback: function to call when an option is clicked, it receives the item information
     * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
     * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
+    * 
+    *   Rendering notes: This is only relevant to rendered graphs, and is rendered using HTML+CSS+JS.
     */
     constructor(values, options = {}) {
         this.options = options;

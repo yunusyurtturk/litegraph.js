@@ -1,7 +1,18 @@
 import { LiteGraph } from "./litegraph.js";
 
-//Scale and Offset
+/**
+ * Class responsible for handling scale and offset transformations for an HTML element, 
+ * enabling zooming and dragging functionalities.
+ */
 export class DragAndScale {
+    /**
+     * Creates an instance of DragAndScale.
+     * @param {HTMLElement} element - The HTML element to apply scale and offset transformations.
+     * @param {boolean} skip_events - Flag indicating whether to skip binding mouse and wheel events.
+     * 
+     * Rendering:
+     * toCanvasContext() is HTMLCanvas, and onredraw is probably also.  The rest is all HTML+CSS+JS
+     */
 
     constructor(element, skip_events) {
 
@@ -114,26 +125,24 @@ export class DragAndScale {
      */
     computeVisibleArea(viewport) {
         if (!this.element) {
-            this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0;
+            this.visible_area.set([0, 0, 0, 0]);
             return;
         }
-        var width = this.element.width;
-        var height = this.element.height;
-        var startx = -this.offset[0];
-        var starty = -this.offset[1];
-        if( viewport )
-        {
+        const width = this.element.width;
+        const height = this.element.height;
+        let startx = -this.offset[0];
+        let starty = -this.offset[1];
+        if (viewport) {
             startx += viewport[0] / this.scale;
             starty += viewport[1] / this.scale;
-            width = viewport[2];
-            height = viewport[3];
+            const [vpWidth, vpHeight] = viewport.slice(2);
+            width = vpWidth;
+            height = vpHeight;
         }
-        var endx = startx + width / this.scale;
-        var endy = starty + height / this.scale;
-        this.visible_area[0] = startx;
-        this.visible_area[1] = starty;
-        this.visible_area[2] = endx - startx;
-        this.visible_area[3] = endy - starty;
+    
+        const endx = startx + width / this.scale;
+        const endy = starty + height / this.scale;
+        this.visible_area.set([startx, starty, endx - startx, endy - starty]);
     }
 
     /**
