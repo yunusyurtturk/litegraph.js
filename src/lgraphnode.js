@@ -947,6 +947,9 @@ export class LGraphNode {
      * @param {Object} extra_info - Additional information for the slot (e.g., label, color, position).
      * @param {boolean} isInput - Whether the slot being added is an input slot.
      * @returns {Object} The newly added slot (input or output).
+     * 
+     * @NOTE: These methods are slightly different, and it would be optimal to keep them separate,
+     * but our goal here is to refactor them so they *aren't* slightly different.
      */
     addInput(name, type, extra_info) {
         return this.addSlot(name, type, extra_info, true);
@@ -981,6 +984,9 @@ export class LGraphNode {
      * Add multiple input or output slots to use in this node.
      * @param {Array} array - Array of triplets like [[name, type, extra_info], [...]].
      * @param {boolean} isInput - Whether the slots being added are input slots.
+     * 
+     * @NOTE: These methods are slightly different, and it would be optimal to keep them separate,
+     * but our goal here is to refactor them so they *aren't* slightly different.
      */
     addInputs(array) {
         this.addSlots(array, true);
@@ -1024,7 +1030,27 @@ export class LGraphNode {
         this.setDirtyCanvas?.(true, true);
     }
     
-
+    /**
+     * remove an existing input slot
+     * @method removeInput
+     * @param {number} slot
+     * 
+     * @NOTE: These two are different enough yet I can't even mash them together meaningfully.
+     */
+    removeInput(slot) {
+        this.disconnectInput(slot);
+        const removedInput = this.inputs.splice(slot, 1)[0];
+        
+        this.inputs.slice(slot).filter(input => !!input).forEach(input => {
+            const link = this.graph.links[input.link];
+            link?.target_slot && link.target_slot--;
+        });
+    
+        this.setSize(this.computeSize());
+        this.onInputRemoved?.(slot, removedInput);        
+        this.setDirtyCanvas(true, true);
+    }
+    
     /**
      * remove an existing output slot
      * @method removeOutput
@@ -1051,26 +1077,6 @@ export class LGraphNode {
         this.onOutputRemoved?.(slot);        
         this.setDirtyCanvas(true, true);
     }
-
-    /**
-     * remove an existing input slot
-     * @method removeInput
-     * @param {number} slot
-     */
-    removeInput(slot) {
-        this.disconnectInput(slot);
-        const removedInput = this.inputs.splice(slot, 1)[0];
-        
-        this.inputs.slice(slot).filter(input => !!input).forEach(input => {
-            const link = this.graph.links[input.link];
-            link?.target_slot && link.target_slot--;
-        });
-    
-        this.setSize(this.computeSize());
-        this.onInputRemoved?.(slot, removedInput);        
-        this.setDirtyCanvas(true, true);
-    }
-    
 
     /**
      * Add a special connection to this node (used for special kinds of graphs)
@@ -1231,10 +1237,8 @@ export class LGraphNode {
      * @return {Object} the created widget object
      */
     addWidget(type, name, value, callback, options) {
-        if (!this.widgets) {
-            this.widgets = [];
-        }
-
+        this.widgets ??= [];
+    
         if(!options && callback && callback.constructor === Object)
         {
             options = callback;
@@ -1246,8 +1250,7 @@ export class LGraphNode {
 
         if(callback && callback.constructor === String) //callback can be the property name
         {
-            if(!options)
-                options = {};
+            options ??= {};
             options.property = callback;
             callback = null;
         }
@@ -1274,7 +1277,7 @@ export class LGraphNode {
             console.warn("LiteGraph addWidget(...) without a callback or property assigned");
         }
         if (type == "combo" && !w.options.values) {
-            throw "LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }";
+            throw Error("LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }");
         }
         this.widgets.push(w);
         this.setSize( this.computeSize() );
@@ -1282,9 +1285,7 @@ export class LGraphNode {
     }
 
     addCustomWidget(custom_widget) {
-        if (!this.widgets) {
-            this.widgets = [];
-        }
+        this.widgets ??= [];
         this.widgets.push(custom_widget);
         return custom_widget;
     }

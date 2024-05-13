@@ -89,6 +89,16 @@ export class Editor {
             throw new Error("Editor has no parentElement to bind to");
         }
 
+        graph.onPlayEvent = () => {
+            const button = this.root.querySelector("#playnode_button");
+            button.innerHTML = `<img src="imgs/icon-stop.png"/> Stop`;
+        };
+
+        graph.onStopEvent = () => {
+            const button = this.root.querySelector("#playnode_button");
+            button.innerHTML = `<img src="imgs/icon-play.png"/> Play`;
+        };
+
         graphcanvas.resize();
     }
 
@@ -157,10 +167,8 @@ export class Editor {
         var button = this.root.querySelector("#playnode_button");
 
         if (graph.status == LGraph.STATUS_STOPPED) {
-            button.innerHTML = `<img src="imgs/icon-stop.png"/> Stop`;
             graph.start();
         } else {
-            button.innerHTML = `<img src="imgs/icon-play.png"/> Play`;
             graph.stop();
         }
     }
