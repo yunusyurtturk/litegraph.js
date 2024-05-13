@@ -11,6 +11,13 @@ import { LLink } from "./llink.js";
     + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
  */
 export class LGraph {
+
+    //default supported types
+    static supported_types = ["number", "string", "boolean"];
+
+    static STATUS_STOPPED = 1;
+    static STATUS_RUNNING = 2;
+
     /**
      * @constructor
      * @param {Object} o data from previous serialization [optional]} o 
@@ -1413,9 +1420,3 @@ export class LGraph {
         //@TODO
     }
 }
-
-//default supported types
-LGraph.supported_types = ["number", "string", "boolean"];
-
-LGraph.STATUS_STOPPED = 1;
-LGraph.STATUS_RUNNING = 2;
