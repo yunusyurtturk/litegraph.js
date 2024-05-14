@@ -17,7 +17,7 @@ LiteGraph.search_filter_enabled = true; // [true!] enable filtering slots type i
 LiteGraph.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
 
 LiteGraph.show_node_tooltip = true; // [true!] show a tooltip with node property "tooltip" over the selected node
-LiteGraph.show_node_tooltip_use_descr_property= false; // enabled tooltip from desc when property tooltip not set
+LiteGraph.show_node_tooltip_use_descr_property = true; // enabled tooltip from desc when property tooltip not set
 
 LiteGraph.auto_load_slot_types = true; // [if want false; use true; run; get vars values to be statically set; than disable] nodes types and nodeclass association with node types need to be calculated; if dont want this; calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
 /*// set these values if not using auto_load_slot_types

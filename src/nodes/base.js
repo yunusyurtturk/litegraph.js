@@ -1112,6 +1112,27 @@ LiteGraph.registerNodeType("basic/jsonparse", JSONParse);
 
     LiteGraph.registerNodeType("basic/array", ConstantArray);
 
+
+    function ArrayLength(){
+        this.addInput("arr", "array");
+        this.addOutput("length", "number");
+	}
+    ArrayLength.title = "aLength";
+    ArrayLength.desc = "Get the length of an array";
+    ArrayLength.prototype.onExecute = function() {
+        var arr = this.getInputData(0);
+		if(!arr)
+			return;
+        if(["array","object"].includes(typeof(arr)) && typeof(arr.length)!=="undefined"){
+		    this.setOutputData(0,arr.length);
+        }else{
+            console.debug("Not an array or object",typeof(arr),arr);
+		    this.setOutputData(0,null);
+        }
+    };
+    LiteGraph.registerNodeType("basic/array_length", ArrayLength );
+
+
 	function SetArray()
 	{
         this.addInput("arr", "array");
