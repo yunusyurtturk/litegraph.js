@@ -46,15 +46,15 @@ class LGAudio {
 
     static changeAllAudiosConnections(node, connect) {
         if (node.inputs) {
-            for (var i = 0; i < node.inputs.length; ++i) {
-                var input = node.inputs[i];
-                var link_info = node.graph.links[input.link];
+            for (let i = 0; i < node.inputs.length; ++i) {
+                let input = node.inputs[i];
+                let link_info = node.graph.links[input.link];
                 if (!link_info) {
                     continue;
                 }
     
-                var origin_node = node.graph.getNodeById(link_info.origin_id);
-                var origin_audionode = null;
+                let origin_node = node.graph.getNodeById(link_info.origin_id);
+                let origin_audionode = null;
                 if (origin_node.getAudioNodeInOutputSlot) {
                     origin_audionode = origin_node.getAudioNodeInOutputSlot(
                         link_info.origin_slot,
@@ -63,7 +63,7 @@ class LGAudio {
                     origin_audionode = origin_node.audionode;
                 }
     
-                var target_audionode = null;
+                let target_audionode = null;
                 if (node.getAudioNodeInInputSlot) {
                     target_audionode = node.getAudioNodeInInputSlot(i);
                 } else {
@@ -79,23 +79,23 @@ class LGAudio {
         }
     
         if (node.outputs) {
-            for (var i = 0; i < node.outputs.length; ++i) {
-                var output = node.outputs[i];
-                for (var j = 0; j < output.links.length; ++j) {
-                    var link_info = node.graph.links[output.links[j]];
+            for (let i = 0; i < node.outputs.length; ++i) {
+                let output = node.outputs[i];
+                for (let j = 0; j < output.links.length; ++j) {
+                    let link_info = node.graph.links[output.links[j]];
                     if (!link_info) {
                         continue;
                     }
     
-                    var origin_audionode = null;
+                    let origin_audionode = null;
                     if (node.getAudioNodeInOutputSlot) {
                         origin_audionode = node.getAudioNodeInOutputSlot(i);
                     } else {
                         origin_audionode = node.audionode;
                     }
     
-                    var target_node = node.graph.getNodeById(link_info.target_id);
-                    var target_audionode = null;
+                    let target_node = node.graph.getNodeById(link_info.target_id);
+                    let target_audionode = null;
                     if (target_node.getAudioNodeInInputSlot) {
                         target_audionode = target_node.getAudioNodeInInputSlot(
                             link_info.target_slot,
@@ -329,12 +329,12 @@ class LGAudioSource {
 
     onExecute() {
         if (this.inputs) {
-            for (var i = 0; i < this.inputs.length; ++i) {
-                var input = this.inputs[i];
+            for (let i = 0; i < this.inputs.length; ++i) {
+                let input = this.inputs[i];
                 if (input.link == null) {
                     continue;
                 }
-                var v = this.getInputData(i);
+                let v = this.getInputData(i);
                 if (v === undefined) {
                     continue;
                 }
@@ -343,7 +343,7 @@ class LGAudioSource {
                     this.setProperty("src", v);
                 } else if (input.name == "playbackRate") {
                     this.properties.playbackRate = v;
-                    for (var j = 0; j < this._audionodes.length; ++j) {
+                    for (let j = 0; j < this._audionodes.length; ++j) {
                         this._audionodes[j].playbackRate.value = v;
                     }
                 }
@@ -351,8 +351,8 @@ class LGAudioSource {
         }
 
         if (this.outputs) {
-            for (var i = 0; i < this.outputs.length; ++i) {
-                var output = this.outputs[i];
+            for (let i = 0; i < this.outputs.length; ++i) {
+                let output = this.outputs[i];
                 if (output.name == "buffer" && this._audiobuffer) {
                     this.setOutputData(i, this._audiobuffer);
                 }
@@ -668,9 +668,10 @@ class LGAudioAnalyser {
     }
 
     onExecute() {
+        let bufferLength;
         if (this.isOutputConnected(0)) {
             //send FFT
-            var bufferLength = this.audionode.frequencyBinCount;
+            bufferLength = this.audionode.frequencyBinCount;
             if (!this._freq_bin || this._freq_bin.length != bufferLength) {
                 this._freq_bin = new Uint8Array(bufferLength);
             }
@@ -681,7 +682,7 @@ class LGAudioAnalyser {
         //send analyzer
         if (this.isOutputConnected(1)) {
             //send Samples
-            var bufferLength = this.audionode.frequencyBinCount;
+            bufferLength = this.audionode.frequencyBinCount;
             if (!this._time_bin || this._time_bin.length != bufferLength) {
                 this._time_bin = new Uint8Array(bufferLength);
             }
@@ -1173,7 +1174,9 @@ class LGAudioOscillatorNode {
             this.audionode.started = true;
             try {
                 this.audionode.start();
-            } catch (err) {}
+            } catch (error) {
+                console.warn(error);
+            }
         }
     }
 
@@ -1266,12 +1269,12 @@ class LGAudioVisualization {
 
         if (this.properties.continuous) {
             ctx.moveTo(x, h);
-            for (var i = 0; i < buffer.length; i += delta) {
+            for (let i = 0; i < buffer.length; i += delta) {
                 ctx.lineTo(x, h - (buffer[i | 0] / 255) * h);
                 x++;
             }
         } else {
-            for (var i = 0; i < buffer.length; i += delta) {
+            for (let i = 0; i < buffer.length; i += delta) {
                 ctx.moveTo(x + 0.5, h);
                 ctx.lineTo(x + 0.5, h - (buffer[i | 0] / 255) * h);
                 x++;
@@ -1282,7 +1285,7 @@ class LGAudioVisualization {
         if (this.properties.mark >= 0) {
             var samplerate = LGAudio.getAudioContext().sampleRate;
             var binfreq = samplerate / buffer.length;
-            var x = (2 * (this.properties.mark / binfreq)) / delta;
+            x = (2 * (this.properties.mark / binfreq)) / delta;
             if (x >= this.size[0]) {
                 x = this.size[0] - 1;
             }
@@ -1328,7 +1331,7 @@ class LGAudioBandSignal {
         var samplerate = LGAudio.getAudioContext().sampleRate;
         var binfreq = samplerate / this._freqs.length;
         var index = 2 * (band / binfreq);
-        var v = 0;
+        v = 0;
         if (index < 0) {
             v = this._freqs[0];
         }
