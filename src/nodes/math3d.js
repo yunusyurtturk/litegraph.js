@@ -21,7 +21,7 @@ class Math3DMat4 {
         this._must_update = true;
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(_name, _value) {
         this._must_update = true;
     }
 
@@ -123,6 +123,7 @@ class Math3DOperation {
                 result[0] = Math.min(A[0], B[0]);
                 result[1] = Math.min(A[1], B[1]);
                 result[2] = Math.min(A[2], B[2]);
+                break;
             case "dot":
                 result = vec3.dot(A, B);
                 break;
@@ -441,6 +442,8 @@ if (glMatrix) {
         onExecute() {
             var q = this.getInputData(0);
             if (!q) return;
+            //@BUG: R is unused, but I don't know where it *should* be used because I don't know this math off the top
+            //It *probably* goes in one of the next two lines
             var R = quat.toEuler(this._value, q);
             vec3.scale(this._value, this._value, DEG2RAD);
             this.setOutputData(0, this._value);
