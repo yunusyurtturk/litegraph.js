@@ -19,7 +19,7 @@ export class ContextMenu {
 
         this.#linkToParent();
         this.#validateEventClass();
-        const root = this.#createRoot();
+        this.#createRoot();
         this.#bindEvents();
         this.setTitle(this.options.title);
         this.addItems(values);
@@ -75,7 +75,7 @@ export class ContextMenu {
             e.preventDefault();
             return true;
         });
-        root.addEventListener("mouseenter", e => {
+        root.addEventListener("mouseenter", (_event) => {
             //console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
