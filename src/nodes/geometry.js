@@ -170,8 +170,7 @@ class LGraphPoints3D {
                         normals.set(UP, i);
                 }
             }
-        } // non regular
-        else {
+        } else { // non regular
             if (mode == LGraphPoints3D.RECTANGLE) {
                 for (let i = 0; i < size; i += 3) {
                     points[i] = (Math.random() - 0.5) * radius * 2;
@@ -224,7 +223,6 @@ class LGraphPoints3D {
                 //	LGraphPoints3D.generateSphericalNormals( points, normals );
             } else console.warn("wrong mode in LGraphPoints3D");
         }
-
         return points;
     }
 

@@ -840,8 +840,7 @@ export class LGraphCanvas {
 
                     this.dirty_canvas = true;
                 }
-            } // clicked outside of nodes
-            else {
+            } else { // clicked outside of nodes
                 if (!skip_action) {
                     // search for link connector
                     if(!this.read_only) {
@@ -1484,8 +1483,7 @@ export class LGraphCanvas {
                 this.connecting_pos = null;
                 this.connecting_node = null;
                 this.connecting_slot = -1;
-            } // not dragging connection
-            else if (this.resizing_node) {
+            } else if (this.resizing_node) { // not dragging connection
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
                 this.graph.afterChange(this.resizing_node);
@@ -1512,8 +1510,7 @@ export class LGraphCanvas {
                     this.onNodeMoved( this.node_dragged );
                 this.graph.afterChange(this.node_dragged);
                 this.node_dragged = null;
-            } // no node being dragged
-            else {
+            } else { // no node being dragged
                 // get node over
                 var node = this.graph.getNodeOnPos(
                     e.canvasX,
@@ -4653,8 +4650,8 @@ export class LGraphCanvas {
                                 return false;
                             }
                         }
-                    } // end mousedown
-                    else if(event.type == "mouseup" && w.type == "number") {
+                        // end mousedown
+                    } else if(event.type == "mouseup" && w.type == "number") {
                         var delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
                         if (event.click_time < 200 && delta == 0) {
                             this.prompt("Value",w.value,function(v) {
@@ -6629,8 +6626,7 @@ return entry.value === category_path
         } else if (options.event) {
             offsetx += options.event.clientX;
             offsety += options.event.clientY;
-        } // centered
-        else {
+        } else { // centered
             offsetx += this.canvas.width * 0.5;
             offsety += this.canvas.height * 0.5;
         }
@@ -6836,8 +6832,7 @@ return entry.value === category_path
             } else if (type == "string" || type == "number") {
                 value_element.setAttribute("contenteditable",true);
                 value_element.addEventListener("keydown", function(e) {
-                    if(e.code == "Enter" && (type != "string" || !e.shiftKey)) // allow for multiline
-                    {
+                    if(e.code == "Enter" && (type != "string" || !e.shiftKey)) { // allow for multiline
                         e.preventDefault();
                         this.blur();
                     }

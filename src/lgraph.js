@@ -338,8 +338,7 @@ export class LGraph {
                 if (set_level) {
                     node._level = 1;
                 }
-            } // num of input links
-            else {
+            } else { // num of input links
                 if (set_level) {
                     node._level = 0;
                 }
@@ -1304,8 +1303,7 @@ export class LGraph {
             var links = [];
             for (var i = 0; i < data.links.length; ++i) {
                 var link_data = data.links[i];
-                if(!link_data) // weird bug
-                {
+                if(!link_data) { // @BUG: "weird bug" originally
                     console.warn("serialized graph link data contains errors, skipping.");
                     continue;
                 }

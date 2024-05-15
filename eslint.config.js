@@ -24,8 +24,10 @@ export default [
     */
         "@stylistic/arrow-parens": [1, "always"],
         "@stylistic/arrow-spacing": [1, { "before": true, "after": true }],
-        "@stylistic/brace-style":[1, "1tbs"],
-        "@stylistic/allowSingleLine": [0, false],
+        "@stylistic/brace-style":[1, 
+            "1tbs",
+            {"allowSingleLine":false}
+        ],
         "@stylistic/comma-dangle": [0, "always-multiline"],
         "@stylistic/comma-spacing": [0, { "before": false, "after": true }],
         "@stylistic/comma-style": [0, "last"],

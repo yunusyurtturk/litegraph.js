@@ -210,8 +210,7 @@ class GamepadInput {
                         this.trigger(
                             GamepadInput.mapping_array[j] + "_button_event",
                         );
-                } // mapping of XBOX
-                else
+                } else { // mapping of XBOX
                     switch (
                         j // I use a switch to ensure that a player with another gamepad could play
                     ) {
@@ -244,6 +243,7 @@ class GamepadInput {
                             break;
                         default:
                     }
+                }
             }
             gamepad.xbox = xbox;
             return gamepad;

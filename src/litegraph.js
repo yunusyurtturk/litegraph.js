@@ -401,8 +401,7 @@ export var LiteGraph = new class {
     ) {
         var params = Array(func.length);
         var code = "";
-        if(param_types !== null) // null means no inputs
-        {
+        if(param_types !== null) { // null means no inputs
             var names = LiteGraph.getParameterNames(func);
             for (var i = 0; i < names.length; ++i) {
                 var type = 0;

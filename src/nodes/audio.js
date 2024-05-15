@@ -1377,9 +1377,7 @@ class LGAudioScript {
         var ctx = LGAudio.getAudioContext();
         if (ctx.createScriptProcessor) {
             this.audionode = ctx.createScriptProcessor(4096, 1, 1);
-        }
-        // buffer size, input channels, output channels
-        else {
+        } else { // buffer size, input channels, output channels
             console.warn("ScriptProcessorNode deprecated");
             this.audionode = ctx.createGain(); // bypass audio
         }

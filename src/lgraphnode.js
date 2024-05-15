@@ -1240,8 +1240,7 @@ export class LGraphNode {
         if(options && options.constructor === String) // options can be the property name
             options = { property: options };
 
-        if(callback && callback.constructor === String) // callback can be the property name
-        {
+        if(callback && callback.constructor === String) { // callback can be the property name
             options ??= {};
             options.property = callback;
             callback = null;
@@ -1988,8 +1987,7 @@ export class LGraphNode {
                     break;
                 }
             }
-        } // all the links in this output slot
-        else {
+        } else { // all the links in this output slot
             for (var i = 0, l = output.links.length; i < l; i++) {
                 var link_id = output.links[i];
                 var link_info = this.graph.links[link_id];
