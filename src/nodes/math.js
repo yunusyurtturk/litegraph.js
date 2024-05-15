@@ -33,7 +33,7 @@ class Converter {
                     case "vec2":
                     case "vec3":
                     case "vec4":
-                        var result = null;
+                        result = null;
                         var count = 1;
                         switch (output.name) {
                             case "vec2":
@@ -47,7 +47,7 @@ class Converter {
                                 break;
                         }
 
-                        var result = new Float32Array(count);
+                        result = new Float32Array(count);
                         if (v.length) {
                             for (
                                 var j = 0;
@@ -143,10 +143,11 @@ class MathRange {
     }
 
     onExecute() {
+        let v;
         if (this.inputs) {
-            for (var i = 0; i < this.inputs.length; i++) {
-                var input = this.inputs[i];
-                var v = this.getInputData(i);
+            for (let i = 0; i < this.inputs.length; i++) {
+                let input = this.inputs[i];
+                v = this.getInputData(i);
                 if (v === undefined) {
                     continue;
                 }
@@ -154,7 +155,7 @@ class MathRange {
             }
         }
 
-        var v = this.properties["in"];
+        v = this.properties["in"];
         if (v === undefined || v === null || v.constructor !== Number) {
             v = 0;
         }
@@ -182,7 +183,7 @@ class MathRange {
         this.setOutputData(1, LiteGraph.clamp(this._last_v, out_min, out_max));
     }
 
-    onDrawBackground(ctx) {
+    onDrawBackground(_ctx) {
         //show the current value
         if (this._last_v) {
             this.outputs[0].label = this._last_v.toFixed(3);
@@ -233,7 +234,7 @@ class MathRand {
         this.setOutputData(0, this._last_v);
     }
 
-    onDrawBackground(ctx) {
+    onDrawBackground(_ctx) {
         //show the current value
         this.outputs[0].label = (this._last_v || 0).toFixed(3);
     }
@@ -279,7 +280,7 @@ class MathNoise {
             f += 1024;
         }
         var f_min = Math.floor(f);
-        var f = f - f_min;
+        f -= f_min;
         var r1 = MathNoise.data[f_min];
         var r2 = MathNoise.data[f_min == 1023 ? 0 : f_min + 1];
         if (smooth) {
@@ -312,7 +313,7 @@ class MathNoise {
         this.setOutputData(0, this._last_v);
     }
 
-    onDrawBackground(ctx) {
+    onDrawBackground(_ctx) {
         //show the current value
         this.outputs[0].label = (this._last_v || 0).toFixed(3);
     }
@@ -704,7 +705,7 @@ class MathOperation {
         this.properties["value"] = v;
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(name, _value) {
         if (name != "OP") return;
         this._func = MathOperation.funcs[this.properties.OP];
         if (!this._func) {
@@ -739,10 +740,12 @@ class MathOperation {
         } else if (A.constructor === Array) {
             result = this._result;
             result.length = A.length;
-            for (var i = 0; i < A.length; ++i) result[i] = func(A[i], B);
+            for (let i = 0; i < A.length; ++i) 
+                result[i] = func(A[i], B);
         } else {
             result = {};
-            for (var i in A) result[i] = func(A[i], B);
+            for (let i in A) 
+                result[i] = func(A[i], B);
         }
         this.setOutputData(0, result);
     }
