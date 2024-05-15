@@ -1,6 +1,8 @@
 import os
 import subprocess
 import json
+import sys
+import re
 
 # Define the lists of JS files to concatenate
 js_files_lists = [
@@ -108,6 +110,46 @@ def pack_js_files(js_files, output_filename):
         output_file.write(concatenated_data)
         print("Concatenated and minified JS files saved to: " + output_filename)
 
+def update_version(version, command):
+    if "--minor" in command:
+        version_parts = version.split('.')
+        version_parts[1] = str(int(version_parts[1]) + 1)
+        version = '.'.join(version_parts)
+    elif "--major" in command:
+        version_parts = version.split('.')
+        version_parts[0] = str(int(version_parts[0]) + 1)
+        version_parts[1] = '0'
+        version_parts[2] = '0'
+        version = '.'.join(version_parts)
+    else:
+        version_parts = version.split('.')
+        version_parts[2] = str(int(version_parts[2]) + 1)
+        version = '.'.join(version_parts)
+
+    return version
+
+import re
+
+def update_version_in_files(version, files):
+    for file_path in files:
+        try:
+            with open(file_path, 'r') as file:
+                data = file.read()
+                data = re.sub(r'("version": )"\d+.\d+.\d+"', r'\1"{}"'.format(update_version(version, '')), data)
+                data = re.sub(r'(this.VERSION = )"\d+.\d+.\d+";', r'\1"{}";'.format(update_version(version, '')), data)
+            with open(file_path, 'w') as file:
+                file.write(data)
+                print("Version updated in file: " + file_path)
+        except FileNotFoundError:
+            print("File not found: " + file_path)
+
+def get_version_from_package_json():
+    try:
+        with open('package.json', 'r') as file:
+            data = json.load(file)
+            return data.get('version')
+    except (FileNotFoundError, json.JSONDecodeError):
+        sys.exit()
 
 # Create build folder if it does not exist
 if not os.path.exists(build_folder):
@@ -116,3 +158,11 @@ if not os.path.exists(build_folder):
 # Concatenate JS files from each list and save to the respective output filenames
 for js_files_list in js_files_lists:
     pack_js_files(js_files_list["js_files"], js_files_list["output_filename"])
+
+# Specify the version number and files to update
+version_number = get_version_from_package_json()
+
+files_to_update = ["src/litegraph.js", "package.json"]
+
+# Update the version number in the specified files
+update_version_in_files(version_number, files_to_update)

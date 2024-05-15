@@ -23,7 +23,7 @@ export var LiteGraph = new class {
     constructor() {
         //@TODO: This is awful, and these settings need to be put where they belong.
 
-        this.VERSION = 0.4; 
+        this.VERSION = "0.9.2";
 
         this.CANVAS_GRID_SIZE = 10; 
 
