@@ -5,7 +5,7 @@ import { LGraphNode } from "./lgraphnode.js";
  * @class LiteGraph
  * 
  * @NOTE:
- * Do not use, see below:
+ * Try to avoid adding things to this class.
  * 
  * this was just converted over from a global Object to class on 2024-05-09 in the early morning
  * and my goal is to fix the anti-pattern which involves putting all of this stuff where it *actually*
@@ -13,8 +13,6 @@ import { LGraphNode } from "./lgraphnode.js";
  * 
  * https://dzone.com/articles/singleton-anti-pattern
  * 
- * The plan is to use get x() and set x(v) to provide deprecation messaging for all of the properties
- * and methods below, and deprecate with 90 day warning.
  */
 
 export var LiteGraph = new class {
