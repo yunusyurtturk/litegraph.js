@@ -1,7 +1,5 @@
-import { ContextMenu } from "./contextmenu.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
+
 import { LGraphNode } from "./lgraphnode.js";
-import { LGraphGroup } from "./lgraphgroup.js";
 
 /**
  * @class LiteGraph
@@ -353,34 +351,34 @@ export var LiteGraph = new class {
     ) {
         var ctor_code = "";
         if(object.inputs)
-        for(var i=0; i < object.inputs.length; ++i)
+        for(let i=0; i < object.inputs.length; ++i)
         {
-            var _name = object.inputs[i][0];
-            var _type = object.inputs[i][1];
+            let _name = object.inputs[i][0];
+            let _type = object.inputs[i][1];
             if(_type && _type.constructor === String)
                 _type = '"'+_type+'"';
             ctor_code += "this.addInput('"+_name+"',"+_type+");\n";
         }
         if(object.outputs)
-        for(var i=0; i < object.outputs.length; ++i)
+        for(let i=0; i < object.outputs.length; ++i)
         {
-            var _name = object.outputs[i][0];
-            var _type = object.outputs[i][1];
+            let _name = object.outputs[i][0];
+            let _type = object.outputs[i][1];
             if(_type && _type.constructor === String)
                 _type = '"'+_type+'"';
             ctor_code += "this.addOutput('"+_name+"',"+_type+");\n";
         }
         if(object.properties)
-        for(var i in object.properties)
+        for(let i in object.properties)
         {
-            var prop = object.properties[i];
+            let prop = object.properties[i];
             if(prop && prop.constructor === String)
                 prop = '"'+prop+'"';
             ctor_code += "this.addProperty('"+i+"',"+prop+");\n";
         }
         ctor_code += "if(this.onCreate)this.onCreate()";
         var classobj = Function(ctor_code);
-        for(var i in object)
+        for(let i in object)
             if(i!="inputs" && i!="outputs" && i!="properties")
                 classobj.prototype[i] = object[i];
         classobj.title = object.title || name.split("/").pop();
@@ -602,7 +600,7 @@ export var LiteGraph = new class {
      */
     getNodeTypesCategories( filter ) {
         var categories = { "": 1 };
-        for (var i in this.registered_node_types) {
+        for (let i in this.registered_node_types) {
             var type = this.registered_node_types[i];
             if ( type.category && !type.skip_list )
             {
@@ -612,7 +610,7 @@ export var LiteGraph = new class {
             }
         }
         var result = [];
-        for (var i in categories) {
+        for (let i in categories) {
             result.push(i);
         }
         return this.auto_sort_node_types ? result.sort() : result;
@@ -623,14 +621,14 @@ export var LiteGraph = new class {
         var tmp = document.getElementsByTagName("script");
         //weird, this array changes by its own, so we use a copy
         var script_files = [];
-        for (var i=0; i < tmp.length; i++) {
+        for (let i=0; i < tmp.length; i++) {
             script_files.push(tmp[i]);
         }
 
         var docHeadObj = document.getElementsByTagName("head")[0];
         folder_wildcard = document.location.href + folder_wildcard;
 
-        for (var i=0; i < script_files.length; i++) {
+        for (let i=0; i < script_files.length; i++) {
             var src = script_files[i].src;
             if (
                 !src ||
@@ -929,7 +927,7 @@ export var LiteGraph = new class {
     }
 
     extendClass = (target, origin) => {
-        for (var i in origin) {
+        for (let i in origin) {
             //copy class properties
             if (target.hasOwnProperty(i)) {
                 continue;
@@ -939,7 +937,7 @@ export var LiteGraph = new class {
     
         if (origin.prototype) {
             //copy prototype properties
-            for (var i in origin.prototype) {
+            for (let i in origin.prototype) {
                 //only enumerable
                 if (!origin.prototype.hasOwnProperty(i)) {
                     continue;
