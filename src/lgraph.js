@@ -304,6 +304,8 @@ export class LGraph {
      * @param {boolean} only_onExecute - Indicates whether to consider only nodes with an onExecute method.
      * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
      * @returns {Array} An array of nodes in the calculated execution order.
+     * 
+     * @TODO:This whole concept is a mistake.  Should call graph back from output nodes
      */
     computeExecutionOrder(only_onExecute, set_level) {
         var L = [];
@@ -313,8 +315,8 @@ export class LGraph {
         var remaining_links = {}; //to a
 
         //search for the nodes without inputs (starting nodes)
-        for (var i = 0, l = this._nodes.length; i < l; ++i) {
-            var node = this._nodes[i];
+        for (let i = 0, l = this._nodes.length; i < l; ++i) {
+            let node = this._nodes[i];
             if (only_onExecute && !node.onExecute) {
                 continue;
             }
@@ -357,8 +359,8 @@ export class LGraph {
             }
 
             //for every output
-            for (var i = 0; i < node.outputs.length; i++) {
-                var output = node.outputs[i];
+            for (let i = 0; i < node.outputs.length; i++) {
+                let output = node.outputs[i];
                 //not connected
                 if (
                     output == null ||
@@ -369,9 +371,9 @@ export class LGraph {
                 }
 
                 //for every connection
-                for (var j = 0; j < output.links.length; j++) {
-                    var link_id = output.links[j];
-                    var link = this.links[link_id];
+                for (let j = 0; j < output.links.length; j++) {
+                    let link_id = output.links[j];
+                    let link = this.links[link_id];
                     if (!link) {
                         continue;
                     }
@@ -381,7 +383,7 @@ export class LGraph {
                         continue;
                     }
 
-                    var target_node = this.getNodeById(link.target_id);
+                    let target_node = this.getNodeById(link.target_id);
                     if (target_node == null) {
                         visited_links[link.id] = true;
                         continue;
@@ -405,7 +407,7 @@ export class LGraph {
         }
 
         //the remaining ones (loops)
-        for (var i in M) {
+        for (let i in M) {
             L.push(M[i]);
         }
 
@@ -416,14 +418,14 @@ export class LGraph {
         var l = L.length;
 
         //save order number in the node
-        for (var i = 0; i < l; ++i) {
+        for (let i = 0; i < l; ++i) {
             L[i].order = i;
         }
 
         //sort now by priority
         L = L.sort((A, B) => {
-            var Ap = A.constructor.priority || A.priority || 0;
-            var Bp = B.constructor.priority || B.priority || 0;
+            let Ap = A.constructor.priority || A.priority || 0;
+            let Bp = B.constructor.priority || B.priority || 0;
             if (Ap == Bp) {
                 //if same priority, sort by order
                 return A.order - B.order;
@@ -432,7 +434,7 @@ export class LGraph {
         });
 
         //save order number in the node, again...
-        for (var i = 0; i < l; ++i) {
+        for (let i = 0; i < l; ++i) {
             L[i].order = i;
         }
 
@@ -699,8 +701,8 @@ export class LGraph {
 
         //disconnect inputs
         if (node.inputs) {
-            for (var i = 0; i < node.inputs.length; i++) {
-                var slot = node.inputs[i];
+            for (let i = 0; i < node.inputs.length; i++) {
+                let slot = node.inputs[i];
                 if (slot.link != null) {
                     node.disconnectInput(i);
                 }
@@ -709,8 +711,8 @@ export class LGraph {
 
         //disconnect outputs
         if (node.outputs) {
-            for (var i = 0; i < node.outputs.length; i++) {
-                var slot = node.outputs[i];
+            for (let i = 0; i < node.outputs.length; i++) {
+                let slot = node.outputs[i];
                 if (slot.links != null && slot.links.length) {
                     node.disconnectOutput(i);
                 }
@@ -726,8 +728,8 @@ export class LGraph {
 
         //remove from canvas render
         if (this.list_of_graphcanvas) {
-            for (var i = 0; i < this.list_of_graphcanvas.length; ++i) {
-                var canvas = this.list_of_graphcanvas[i];
+            for (let i = 0; i < this.list_of_graphcanvas.length; ++i) {
+                let canvas = this.list_of_graphcanvas[i];
                 if (canvas.selected_nodes[node.id]) {
                     delete canvas.selected_nodes[node.id];
                 }
@@ -1167,7 +1169,7 @@ export class LGraph {
      * @param {object} node - The node where the connection change occurred.
      * @param {object} link_info - Information about the changed connection.
      */
-    connectionChange(node, link_info) {
+    connectionChange(node) {
         this.updateExecutionOrder();
         this.onConnectionChange?.(node);
         this._version++;
@@ -1317,7 +1319,7 @@ export class LGraph {
         }
 
         //copy all stored fields
-        for (const i in data) {
+        for (let i in data) {
             if (["nodes", "groups"].includes(i)) continue; // Accepts "nodes" and "groups"
             this[i] = data[i];
         }
@@ -1327,7 +1329,7 @@ export class LGraph {
         //create nodes
         this._nodes = [];
         if (nodes) {
-            for (var i = 0, l = nodes.length; i < l; ++i) {
+            for (let i = 0, l = nodes.length; i < l; ++i) {
                 var n_info = nodes[i]; //stored info
                 var node = LiteGraph.createNode(n_info.type, n_info.title);
                 if (!node) {
@@ -1402,7 +1404,7 @@ export class LGraph {
         var req = new XMLHttpRequest();
         req.open("GET", url, true);
         req.send(null);
-        req.onload = oEvent => {
+        req.onload = (_event) => {
             if (req.status !== 200) {
                 console.error("Error loading graph:", req.status, req.response);
                 return;
@@ -1416,7 +1418,9 @@ export class LGraph {
         };
     }
 
+    /*
     onNodeTrace(node, msg, color) {
         //@TODO
     }
+    */
 }
