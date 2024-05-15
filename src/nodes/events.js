@@ -12,7 +12,7 @@ class LogEvent {
         this.addInput("event", LiteGraph.ACTION);
     }
 
-    onAction(action, param, options) {
+    onAction(action, param) {
         console.log(action, param);
     }
 }
@@ -326,7 +326,7 @@ class EventCounter {
         return this.title;
     }
 
-    onAction(action, param, options) {
+    onAction(action) {
         var v = this.num;
         if (action == "inc") {
             this.num += 1;
@@ -508,7 +508,7 @@ class SemaphoreEvent {
         this.boxcolor = this._ready ? "#9F9" : "#FA5";
     }
 
-    onAction(action, param) {
+    onAction(action) {
         if (action == "go") this.triggerSlot(this._ready ? 0 : 1);
         else if (action == "green") this._ready = true;
         else if (action == "red") this._ready = false;
@@ -566,7 +566,7 @@ class DataStore {
         this.setOutputData(0, this.properties.data);
     }
 
-    onAction(action, param, options) {
+    onAction() {
         this.properties.data = this._last_value;
     }
 
