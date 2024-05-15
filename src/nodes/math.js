@@ -389,7 +389,7 @@ class MathClamp {
         this.setOutputData(0, v);
     }
 
-    getCode(lang) {
+    getCode() {
         var code = "";
         if (this.isInputConnected(0)) {
             code +=

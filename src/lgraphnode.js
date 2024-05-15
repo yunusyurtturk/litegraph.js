@@ -859,7 +859,7 @@ export class LGraphNode {
                 if (!options.action_call) options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
                 if (node.onExecute) {
                     // -- wrapping node.onExecute(param); --
-                    node.doExecute(param, options);
+                    node.doExecute(param, options); //@BUG: Possible misname here
                 }
             }
             else if (node.onAction) {

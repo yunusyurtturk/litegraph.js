@@ -16,7 +16,7 @@ class GraphicsPlot {
         this.properties = { scale: 2 };
     }
 
-    onExecute(ctx) {
+    onExecute() {
         if (this.flags.collapsed) {
             return;
         }
@@ -56,17 +56,17 @@ class GraphicsPlot {
         ctx.stroke();
 
         if (this.inputs) {
-            for (var i = 0; i < 4; ++i) {
-                var values = this.values[i];
+            for (let i = 0; i < 4; ++i) {
+                let values = this.values[i];
                 if (!this.inputs[i] || !this.inputs[i].link) {
                     continue;
                 }
                 ctx.strokeStyle = colors[i];
                 ctx.beginPath();
-                var v = values[0] * scale * -1 + offset;
+                let v = values[0] * scale * -1 + offset;
                 ctx.moveTo(0, LiteGraph.clamp(v, 0, size[1]));
-                for (var j = 1; j < values.length && j < size[0]; ++j) {
-                    var v = values[j] * scale * -1 + offset;
+                for (let j = 1; j < values.length && j < size[0]; ++j) {
+                    v = values[j] * scale * -1 + offset;
                     ctx.lineTo(j, LiteGraph.clamp(v, 0, size[1]));
                 }
                 ctx.stroke();
@@ -344,7 +344,7 @@ class ImageFade {
 
     onExecute() {
         var ctx = this.canvas.getContext("2d");
-        this.canvas.width = this.canvas.width;
+        // this.canvas.width = this.canvas.width; //@BUG: Test with this excised, I couldn't find a setter
 
         var A = this.getInputData(0);
         if (A != null) {
@@ -492,7 +492,7 @@ class CanvasNode {
         this.setOutputData(0, canvas);
     }
 
-    onAction(action, param) {
+    onAction(action) {
         if (action == "clear") {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
@@ -651,7 +651,7 @@ class ImageVideo {
         this._video.autoplay = true;
 
         var that = this;
-        this._video.addEventListener("loadedmetadata", function (e) {
+        this._video.addEventListener("loadedmetadata", (_event) => {
             //onload
             console.log("Duration: " + this.duration + " seconds");
             console.log("Size: " + this.videoWidth + "," + this.videoHeight);
@@ -659,11 +659,11 @@ class ImageVideo {
             this.width = this.videoWidth;
             this.height = this.videoHeight;
         });
-        this._video.addEventListener("progress", function (e) {
+        this._video.addEventListener("progress", (_event) => {
             //onload
             console.log("video loading...");
         });
-        this._video.addEventListener("error", function (e) {
+        this._video.addEventListener("error", (_event) => {
             console.error("Error loading video: " + this.src);
             if (this.error) {
                 switch (this.error.code) {
@@ -683,7 +683,7 @@ class ImageVideo {
             }
         });
 
-        this._video.addEventListener("ended", function (e) {
+        this._video.addEventListener("ended", (_event) => {
             console.log("Video Ended.");
             this.play(); //loop
         });
@@ -733,7 +733,7 @@ class ImageVideo {
         this._video.pause();
     }
 
-    onWidget(e, widget) {
+    onWidget(_e, _widget) { //@BUG: Consider excising this, it's dead code
         /*
     if(widget.name == "demo")
     {
@@ -889,7 +889,7 @@ class ImageWebcam {
         }
     }
 
-    getExtraMenuOptions(graphcanvas) {
+    getExtraMenuOptions() {
         var that = this;
         var txt = !that.properties.show ? "Show Frame" : "Hide Frame";
         return [
