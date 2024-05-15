@@ -3,16 +3,16 @@ import { LGraphNode } from "./lgraphnode.js";
 
 /**
  * @class LiteGraph
- * 
+ *
  * @NOTE:
  * Try to avoid adding things to this class.
- * 
+ *
  * this was just converted over from a global Object to class on 2024-05-09 in the early morning
  * and my goal is to fix the anti-pattern which involves putting all of this stuff where it *actually*
  * belongs.
- * 
+ *
  * https://dzone.com/articles/singleton-anti-pattern
- * 
+ *
  */
 
 export var LiteGraph = new class {
@@ -21,87 +21,87 @@ export var LiteGraph = new class {
 
         this.VERSION = "0.9.5";
 
-        this.CANVAS_GRID_SIZE = 10; 
+        this.CANVAS_GRID_SIZE = 10;
 
-        this.NODE_TITLE_HEIGHT = 30; 
-        this.NODE_TITLE_TEXT_Y = 20; 
-        this.NODE_SLOT_HEIGHT = 20; 
-        this.NODE_WIDGET_HEIGHT = 20; 
-        this.NODE_WIDTH = 140; 
-        this.NODE_MIN_WIDTH = 50; 
-        this.NODE_COLLAPSED_RADIUS = 10; 
-        this.NODE_COLLAPSED_WIDTH = 80; 
-        this.NODE_TITLE_COLOR = "#999"; 
-        this.NODE_SELECTED_TITLE_COLOR = "#FFF"; 
-        this.NODE_TEXT_SIZE = 14; 
-        this.NODE_TEXT_COLOR = "#AAA"; 
-        this.NODE_SUBTEXT_SIZE = 12; 
-        this.NODE_DEFAULT_COLOR = "#333"; 
-        this.NODE_DEFAULT_BGCOLOR = "#353535"; 
-        this.NODE_DEFAULT_BOXCOLOR = "#666"; 
-        this.NODE_DEFAULT_SHAPE = "box"; 
-        this.NODE_BOX_OUTLINE_COLOR = "#FFF"; 
-        this.DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)"; 
-        this.DEFAULT_GROUP_FONT = 24; 
+        this.NODE_TITLE_HEIGHT = 30;
+        this.NODE_TITLE_TEXT_Y = 20;
+        this.NODE_SLOT_HEIGHT = 20;
+        this.NODE_WIDGET_HEIGHT = 20;
+        this.NODE_WIDTH = 140;
+        this.NODE_MIN_WIDTH = 50;
+        this.NODE_COLLAPSED_RADIUS = 10;
+        this.NODE_COLLAPSED_WIDTH = 80;
+        this.NODE_TITLE_COLOR = "#999";
+        this.NODE_SELECTED_TITLE_COLOR = "#FFF";
+        this.NODE_TEXT_SIZE = 14;
+        this.NODE_TEXT_COLOR = "#AAA";
+        this.NODE_SUBTEXT_SIZE = 12;
+        this.NODE_DEFAULT_COLOR = "#333";
+        this.NODE_DEFAULT_BGCOLOR = "#353535";
+        this.NODE_DEFAULT_BOXCOLOR = "#666";
+        this.NODE_DEFAULT_SHAPE = "box";
+        this.NODE_BOX_OUTLINE_COLOR = "#FFF";
+        this.DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
+        this.DEFAULT_GROUP_FONT = 24;
 
-        this.WIDGET_BGCOLOR = "#222"; 
-        this.WIDGET_OUTLINE_COLOR = "#666"; 
-        this.WIDGET_TEXT_COLOR = "#DDD"; 
-        this.WIDGET_SECONDARY_TEXT_COLOR = "#999"; 
+        this.WIDGET_BGCOLOR = "#222";
+        this.WIDGET_OUTLINE_COLOR = "#666";
+        this.WIDGET_TEXT_COLOR = "#DDD";
+        this.WIDGET_SECONDARY_TEXT_COLOR = "#999";
 
-        this.LINK_COLOR = "#9A9"; 
-        this.EVENT_LINK_COLOR = "#A86"; 
-        this.CONNECTING_LINK_COLOR = "#AFA"; 
+        this.LINK_COLOR = "#9A9";
+        this.EVENT_LINK_COLOR = "#A86";
+        this.CONNECTING_LINK_COLOR = "#AFA";
 
         this.MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
         this.DEFAULT_POSITION = [100, 100]; // default node position
         this.VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
 
         // shapes are used for nodes but also for slots
-        this.BOX_SHAPE = 1; 
-        this.ROUND_SHAPE = 2; 
-        this.CIRCLE_SHAPE = 3; 
-        this.CARD_SHAPE = 4; 
-        this.ARROW_SHAPE = 5; 
+        this.BOX_SHAPE = 1;
+        this.ROUND_SHAPE = 2;
+        this.CIRCLE_SHAPE = 3;
+        this.CARD_SHAPE = 4;
+        this.ARROW_SHAPE = 5;
         this.GRID_SHAPE = 6; // intended for slot arrays
 
         // enums
-        this.INPUT = 1; 
-        this.OUTPUT = 2; 
+        this.INPUT = 1;
+        this.OUTPUT = 2;
 
         this.EVENT = -1; // for outputs
         this.ACTION = -1; // for inputs
 
         this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger"]; // helper, will add "On Request" and more in the future
         this.NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
-        this.ALWAYS = 0; 
-        this.ON_EVENT = 1; 
-        this.NEVER = 2; 
-        this.ON_TRIGGER = 3; 
+        this.ALWAYS = 0;
+        this.ON_EVENT = 1;
+        this.NEVER = 2;
+        this.ON_TRIGGER = 3;
 
-        this.UP = 1; 
-        this.DOWN = 2; 
-        this.LEFT = 3; 
-        this.RIGHT = 4; 
-        this.CENTER = 5; 
+        this.UP = 1;
+        this.DOWN = 2;
+        this.LEFT = 3;
+        this.RIGHT = 4;
+        this.CENTER = 5;
 
         this.LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
-        this.STRAIGHT_LINK = 0; 
-        this.LINEAR_LINK = 1; 
-        this.SPLINE_LINK = 2; 
+        this.STRAIGHT_LINK = 0;
+        this.LINEAR_LINK = 1;
+        this.SPLINE_LINK = 2;
 
-        this.NORMAL_TITLE = 0; 
-        this.NO_TITLE = 1; 
-        this.TRANSPARENT_TITLE = 2; 
-        this.AUTOHIDE_TITLE = 3; 
+        this.NORMAL_TITLE = 0;
+        this.NO_TITLE = 1;
+        this.TRANSPARENT_TITLE = 2;
+        this.AUTOHIDE_TITLE = 3;
         this.VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
 
         this.proxy = null; // used to redirect calls
-        this.node_images_path = ""; 
+        this.node_images_path = "";
 
-        this.debug = false; 
-        this.catch_exceptions = true; 
-        this.throw_errors = true; 
+        this.debug = false;
+        this.catch_exceptions = true;
+        this.throw_errors = true;
         this.allow_scripts = false; // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
         this.use_deferred_actions = true; // executes actions during the graph execution flow
         this.registered_node_types = {}; // nodetypes by string
@@ -111,22 +111,22 @@ export var LiteGraph = new class {
 
         this.searchbox_extras = {}; // used to add extra features to the search box
         this.auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
-        
+
         this.node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
         this.node_box_coloured_by_mode = false; // [true!] nodebox based on node mode, visual feedback
-        
+
         this.dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-        this.dialog_close_on_mouse_leave_delay = 500; 
-        
+        this.dialog_close_on_mouse_leave_delay = 500;
+
         this.shift_click_do_break_link_from = false; // [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys
         this.click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
-        
+
         this.search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
         this.search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
         this.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
-        
+
         this.auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
-        
+
         // set these values if not using auto_load_slot_types
         this.registered_slot_in_types = {}; // slot types for nodeclass
         this.registered_slot_out_types = {}; // slot types for nodeclass
@@ -134,17 +134,17 @@ export var LiteGraph = new class {
         this.slot_types_out = []; // slot types OUT
         this.slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
         this.slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
-        
+
         this.alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
 
         this.do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
-        
+
         this.allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
 
         this.middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
-        
+
         this.release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
-        
+
         this.pointerevents_method = "mouse"; // "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now)
         // TODO implement pointercancel, gotpointercapture, lostpointercapture, (pointerover, pointerout if necessary)
 
@@ -152,7 +152,7 @@ export var LiteGraph = new class {
 
         // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
-        this.use_uuids = false; 
+        this.use_uuids = false;
     }
 
     /**
@@ -224,7 +224,7 @@ export var LiteGraph = new class {
                 enumerable: true,
                 configurable: true
             });
-            
+
 
             // used to know which nodes to create when dragging files to the canvas
             if (base_class.supported_extensions) {
@@ -256,7 +256,7 @@ export var LiteGraph = new class {
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end"
             );
         }
-        
+
         // TODO one would want to know input and ouput :: this would allow through registerNodeAndSlotType to get all the slots types
         if (this.auto_load_slot_types) {
             new base_class(base_class.title || "tmpnode");
@@ -335,7 +335,7 @@ export var LiteGraph = new class {
             }
         }
     }
-    
+
     /**
      * Create a new nodetype by passing an object with some properties
      * like onCreate, inputs:Array, outputs:Array, properties, onExecute
@@ -384,7 +384,7 @@ export var LiteGraph = new class {
         this.registerNodeType(name, classobj);
         return classobj;
     }
-    
+
     /**
      * Create a new nodetype by passing a function, it wraps it with a proper class and generates inputs according to the parameters of the function.
      * Useful to wrap simple methods that do not require properties, and that only process some input to generate an output.
@@ -416,7 +416,7 @@ export var LiteGraph = new class {
                         type = "'" + param_types[i] + "'" ;
                     else if( param_types[i] != null )
                         type = param_types[i];
-                } 
+                }
                 code +=
                     "this.addInput('" +
                     names[i] +
@@ -545,7 +545,7 @@ export var LiteGraph = new class {
         if ( node.onNodeCreated ) {
             node.onNodeCreated();
         }
-        
+
         return node;
     }
 
@@ -750,7 +750,7 @@ export var LiteGraph = new class {
      * @param {String} type an string to know how to fetch it: "text","arraybuffer","json","blob"
      * @param {Function} on_complete callback(data)
      * @param {Function} on_error in case of an error
-     * @return {FileReader|Promise} returns the object used to 
+     * @return {FileReader|Promise} returns the object used to
      */
     fetchFile( url, type, on_complete, on_error ) {
         if(!url)
@@ -849,7 +849,7 @@ export var LiteGraph = new class {
         } else if (x > bounding[2]) {
             bounding[2] = x;
         }
-    
+
         if (y < bounding[1]) {
             bounding[1] = y;
         } else if (y > bounding[3]) {
@@ -876,7 +876,7 @@ export var LiteGraph = new class {
         var A_end_y = a[1] + a[3];
         var B_end_x = b[0] + b[2];
         var B_end_y = b[1] + b[3];
-    
+
         if (
             a[0] > B_end_x ||
             a[1] > B_end_y ||
@@ -918,7 +918,7 @@ export var LiteGraph = new class {
         for (var i = 0; i < 3; i++) {
             int1 = triplet[i] / 16;
             int2 = triplet[i] % 16;
-    
+
             hex += hex_alphabets.charAt(int1) + hex_alphabets.charAt(int2);
         }
         return hex;
@@ -932,7 +932,7 @@ export var LiteGraph = new class {
             }
             target[i] = origin[i];
         }
-    
+
         if (origin.prototype) {
             // copy prototype properties
             for (let i in origin.prototype) {
@@ -940,12 +940,12 @@ export var LiteGraph = new class {
                 if (!origin.prototype.hasOwnProperty(i)) {
                     continue;
                 }
-    
+
                 if (target.prototype.hasOwnProperty(i)) {
                     // avoid overwriting existing ones
                     continue;
                 }
-    
+
                 // copy getters
                 if (origin.prototype.__lookupGetter__(i)) {
                     target.prototype.__defineGetter__(
@@ -955,7 +955,7 @@ export var LiteGraph = new class {
                 } else {
                     target.prototype[i] = origin.prototype[i];
                 }
-    
+
                 // and setters
                 if (origin.prototype.__lookupSetter__(i)) {
                     target.prototype.__defineSetter__(

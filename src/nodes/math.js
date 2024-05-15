@@ -740,11 +740,11 @@ class MathOperation {
         } else if (A.constructor === Array) {
             result = this._result;
             result.length = A.length;
-            for (let i = 0; i < A.length; ++i) 
+            for (let i = 0; i < A.length; ++i)
                 result[i] = func(A[i], B);
         } else {
             result = {};
-            for (let i in A) 
+            for (let i in A)
                 result[i] = func(A[i], B);
         }
         this.setOutputData(0, result);

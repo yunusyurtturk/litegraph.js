@@ -147,7 +147,7 @@ LGraphDepthOfField.prototype.onExecute = function()
     var depth = this.getInputData(1);
     var camera = this.getInputData(2);
 
-    if(!tex || !depth || !camera) 
+    if(!tex || !depth || !camera)
     {
         this.setOutputData(0, tex);
         return;
@@ -155,7 +155,7 @@ LGraphDepthOfField.prototype.onExecute = function()
 
     var precision = gl.UNSIGNED_BYTE;
     if(this.properties.high_precision)
-        precision = gl.half_float_ext ? gl.HALF_FLOAT_OES : gl.FLOAT;			
+        precision = gl.half_float_ext ? gl.HALF_FLOAT_OES : gl.FLOAT;
     if(!this._temp_texture || this._temp_texture.type != precision ||
         this._temp_texture.width != tex.width || this._temp_texture.height != tex.height)
         this._temp_texture = new GL.Texture( tex.width, tex.height, { type: precision, format: gl.RGBA, filter: gl.LINEAR });

@@ -399,7 +399,7 @@ class MIDIInterface {
             );
             this.num_output_ports++;
         }
-        
+
 
         var it = this.input_ports.values();
         var it_value = it.next();

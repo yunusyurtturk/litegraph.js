@@ -152,7 +152,7 @@ export class Editor {
 
     onLoadButton() {
         var panel = this.graphcanvas.createPanel("Load session",{closable:true});
-        
+
         // @TODO
 
         this.root.appendChild(panel);
@@ -298,7 +298,7 @@ export class Editor {
             graphcanvas = new LGraphCanvas( canvas, this.graph );
             graphcanvas.background_image = "imgs/grid.png";
             this.graphcanvas = graphcanvas;
-            window.graphcanvas = this.graphcanvas;		
+            window.graphcanvas = this.graphcanvas;
             return;
         }
 

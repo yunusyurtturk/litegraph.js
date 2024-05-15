@@ -1,7 +1,7 @@
 import { LiteGraph } from "./litegraph.js";
 
 export class ContextMenu {
- 
+
     /**
     * @constructor
     * @param {Array<Object>} values (allows object { title: "Nice text", callback: function ... })
@@ -10,7 +10,7 @@ export class ContextMenu {
     * - callback: function to call when an option is clicked, it receives the item information
     * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
     * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
-    * 
+    *
     *   Rendering notes: This is only relevant to rendered graphs, and is rendered using HTML+CSS+JS.
     */
     constructor(values, options = {}) {
@@ -28,7 +28,7 @@ export class ContextMenu {
     }
 
     #createRoot() {
-        const root = this.root = document.createElement("div");        
+        const root = this.root = document.createElement("div");
         if (this.options.className) {
             root.className = this.options.className;
         }
@@ -135,14 +135,14 @@ export class ContextMenu {
      * @param {Array<string|object>} values - An array of values to be added.
      */
     addItems(values) {
-    
+
         for (let i = 0; i < values.length; i++) {
             let name = values[i];
-    
+
             if (typeof name !== 'string') {
                 name = name && name.content !== undefined ? String(name.content) : String(name);
             }
-    
+
             let value = values[i];
             this.addItem(name, value, this.options);
         }
@@ -163,7 +163,7 @@ export class ContextMenu {
         if (options.event) {
             left = options.event.clientX - 10;
             top = options.event.clientY - 10;
-            
+
             if (options.title) {
                 top -= 20;
             }
@@ -252,14 +252,14 @@ export class ContextMenu {
         }
 
         var that = this;
-        
+
         function handleMenuItemClick(event) {
             const value = this.value;
             let closeParent = true;
-        
+
             // Close any current submenu
             that.current_submenu?.close(event);
-        
+
             // Execute global callback
             if (options.callback) {
                 const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
@@ -267,7 +267,7 @@ export class ContextMenu {
                     closeParent = false;
                 }
             }
-        
+
             // Handle special cases
             if (value) {
                 if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
@@ -294,7 +294,7 @@ export class ContextMenu {
                     closeParent = false;
                 }
             }
-        
+
             // Close parent menu if necessary and not locked
             if (closeParent && !that.lock) {
                 that.close();
@@ -311,7 +311,7 @@ export class ContextMenu {
     close(e, ignore_parent_menu) {
 
         this.root.parentNode?.removeChild(this.root);
-        
+
         if (this.parentMenu && !ignore_parent_menu) {
             this.parentMenu.lock = false;
             this.parentMenu.current_submenu = null;
@@ -325,11 +325,11 @@ export class ContextMenu {
             }
         }
         this.current_submenu?.close(e, true);
-        
+
         if (this.root.closing_timer) {
             clearTimeout(this.root.closing_timer);
         }
-        
+
         // TODO implement : LiteGraph.contextMenuClosed(); :: keep track of opened / closed / current ContextMenu
         // on key press, allow filtering/selecting the context menu elements
     }
@@ -342,7 +342,7 @@ export class ContextMenu {
         const elements = ref_window.document.querySelectorAll(".litecontextmenu");
         if (!elements.length)
             return;
-    
+
         elements.forEach(element => {
             if (element.close) {
                 element.close();
@@ -381,7 +381,7 @@ export class ContextMenu {
     }
 
     static isCursorOverElement(event, element) {
-        return LiteGraph.isInsideRectangle( 
+        return LiteGraph.isInsideRectangle(
             event.clientX, event.clientY, element.left, element.top, element.width, element.height
         );
     }

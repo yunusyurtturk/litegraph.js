@@ -1324,11 +1324,11 @@ class MergeObjects {
         var A = this.getInputData(0);
         var B = this.getInputData(1);
         var C = this._result;
-        if (A) 
-            for (let i in A) 
+        if (A)
+            for (let i in A)
                 C[i] = A[i];
-        if (B) 
-            for (let i in B) 
+        if (B)
+            for (let i in B)
                 C[i] = B[i];
         this.setOutputData(0, C);
     }
@@ -1378,7 +1378,7 @@ class Variable {
     getTitle() {
         return this.properties.varname;
     }
-    
+
 }
 // @TODO:Enum
 Variable.LITEGRAPH = 0; // between all graphs

@@ -552,7 +552,7 @@ if (glMatrix) {
     }
     LiteGraph.registerNodeType("math3d/quat-slerp", Math3DQuatSlerp);
 
-    
+
     class Math3DRemapRange {
 
         static title = "Remap Range";

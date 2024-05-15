@@ -21,7 +21,7 @@ LiteGraph.registerNodeType("events/log", LogEvent);
 
 // convert to Event if the value is true
 class TriggerEvent {
-    
+
     static title = "TriggerEvent";
     static desc = "Triggers event if input evaluates to true";
 

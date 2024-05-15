@@ -78,7 +78,7 @@ export default [
         "@stylistic/no-floating-decimal":[0],
         "@stylistic/no-multi-spaces":[0],
         "@stylistic/no-tabs":[0],
-        "@stylistic/no-trailing-spaces":[0],
+        "@stylistic/no-trailing-spaces":[1],
         "@stylistic/object-curly-newline":[0, "multiline"],
         "@stylistic/quotes":[0,
             "double",

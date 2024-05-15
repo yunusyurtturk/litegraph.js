@@ -117,7 +117,7 @@ export class LGraphNode {
                 }
                 return;
             }
-        
+
             if (value === null) {
                 return;
             } else if (typeof value === "object") {
@@ -161,7 +161,7 @@ export class LGraphNode {
                     w.value = JSON.parse(JSON.stringify(this.properties[w.options.property]));
                 }
             });
-        
+
             info.widgets_values?.forEach((value, i) => {
                 if (this.widgets[i]) {
                     this.widgets[i].value = value;
@@ -299,29 +299,29 @@ export class LGraphNode {
      */
     setProperty(name, value) {
         this.properties ||= {};
-    
+
         // Check if the new value is the same as the current value
         if (value === this.properties[name]) {
             return;
         }
-    
+
         const prevValue = this.properties[name];
         this.properties[name] = value;
-    
+
         // Call onPropertyChanged and revert the change if needed
         if (this.onPropertyChanged?.(name, value, prevValue) === false) {
             this.properties[name] = prevValue;
         }
-    
+
         // Update the widget value associated with the property name
         const widgetToUpdate = this.widgets.find(widget => widget && widget.options?.property === name);
-    
+
         if (widgetToUpdate) {
             widgetToUpdate.value = value;
         }
     }
-    
-    
+
+
 
     // Execution *************************
     /**
@@ -635,12 +635,12 @@ export class LGraphNode {
         if (!this.outputs || slot >= this.outputs.length) {
             return null;
         }
-    
+
         const output = this.outputs[slot];
         if (!output.links || output.links.length === 0) {
             return null;
         }
-    
+
         return output.links
             .map(link_id => this.graph.links[link_id])
             .filter(link => link)
@@ -650,7 +650,7 @@ export class LGraphNode {
 
     addOnTriggerInput() {
         var trigS = this.findInputSlot("onTrigger");
-        if (trigS == -1) { // !trigS || 
+        if (trigS == -1) { // !trigS ||
             var input = this.addInput("onTrigger", LiteGraph.EVENT, {optional: true, nameLocked: true});
             return this.findInputSlot("onTrigger");
         }
@@ -659,7 +659,7 @@ export class LGraphNode {
 
     addOnExecutedOutput() {
         var trigS = this.findOutputSlot("onExecuted");
-        if (trigS == -1) { // !trigS || 
+        if (trigS == -1) { // !trigS ||
             var output = this.addOutput("onExecuted", LiteGraph.ACTION, {optional: true, nameLocked: true});
             return this.findOutputSlot("onExecuted");
         }
@@ -669,12 +669,12 @@ export class LGraphNode {
     onAfterExecuteNode(param, options) {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
-            
+
             // console.debug(this.id+":"+this.order+" triggering slot onAfterExecute");
             // console.debug(param);
             // console.debug(options);
             this.triggerSlot(trigS, param, null, options);
-            
+
         }
     }
 
@@ -683,21 +683,21 @@ export class LGraphNode {
             case LiteGraph.ON_EVENT:
                 // this.addOnExecutedOutput();
                 break;
-                
+
             case LiteGraph.ON_TRIGGER:
                 this.addOnTriggerInput();
                 this.addOnExecutedOutput();
                 break;
-                
+
             case LiteGraph.NEVER:
                 break;
-                
+
             case LiteGraph.ALWAYS:
                 break;
-                
+
             case LiteGraph.ON_REQUEST:
                 break;
-            
+
             default:
                 return false;
                 break;
@@ -715,7 +715,7 @@ export class LGraphNode {
             return;
         this._waiting_actions.forEach(p => {
             this.onAction(p[0], p[1], p[2], p[3], p[4]);
-        });      
+        });
         this._waiting_actions.length = 0;
     }
 
@@ -727,16 +727,16 @@ export class LGraphNode {
      */
     doExecute(param, options = {}) {
         if (this.onExecute) {
-            
+
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
-            
+
             this.graph.nodes_executing[this.id] = true; // .push(this.id);
 
             this.onExecute(param, options);
-            
+
             this.graph.nodes_executing[this.id] = false; // .pop();
-            
+
             // save execution/action ref
             this.exec_version = this.graph.iteration;
             if(options && options.action_call) {
@@ -756,16 +756,16 @@ export class LGraphNode {
      */
     actionDo(action, param, options = {}, action_slot) {
         if (this.onAction) {
-            
+
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
-            
+
             this.graph.nodes_actioning[this.id] = (action?action:"actioning"); // .push(this.id);
-            
+
             this.onAction(action, param, options, action_slot);
-            
+
             this.graph.nodes_actioning[this.id] = false; // .pop();
-            
+
             // save execution/action ref
             if(options && options.action_call) {
                 this.action_call = options.action_call; // if (param)
@@ -786,9 +786,9 @@ export class LGraphNode {
         if (!this.outputs || this.outputs.length === 0) {
             return;
         }
-    
+
         this.graph && (this.graph._last_trigger_time = LiteGraph.getTime());
-    
+
         this.outputs.forEach((output, i) => {
             if (output && output.type === LiteGraph.EVENT && (!action || output.name === action)) {
                 this.triggerSlot(i, param, null, options);
@@ -894,19 +894,19 @@ export class LGraphNode {
         if (!this.outputs || !this.outputs[slot] || !this.outputs[slot].links) {
             return;
         }
-    
+
         this.outputs[slot].links.forEach(id => {
             if (link_id !== null && link_id !== id) {
                 // Skip links
                 return;
             }
-    
+
             const link_info = this.graph.links[id];
             if (!link_info) {
                 // Not connected
                 return;
             }
-    
+
             link_info._last_time = 0;
         });
     }
@@ -933,10 +933,10 @@ export class LGraphNode {
         const o = { name, type, default_value, ...extra_info };
         this.properties_info = this.properties_info ?? [];
         this.properties_info.push(o);
-        
+
         this.properties = this.properties ?? {};
         this.properties[name] = default_value;
-        
+
         return o;
     }
 
@@ -947,7 +947,7 @@ export class LGraphNode {
      * @param {Object} extra_info - Additional information for the slot (e.g., label, color, position).
      * @param {boolean} isInput - Whether the slot being added is an input slot.
      * @returns {Object} The newly added slot (input or output).
-     * 
+     *
      * @NOTE: These methods are slightly different, and it would be optimal to keep them separate,
      * but our goal here is to refactor them so they *aren't* slightly different.
      */
@@ -958,8 +958,8 @@ export class LGraphNode {
         return this.addSlot(name, type, extra_info, false);
     }
     addSlot(name, type, extra_info, isInput) {
-        const slot = isInput ? 
-            { name, type, link: null, ...extra_info }: 
+        const slot = isInput ?
+            { name, type, link: null, ...extra_info }:
             { name, type, links: null, ...extra_info };
         if (isInput) {
             this.inputs = this.inputs ?? [];
@@ -984,7 +984,7 @@ export class LGraphNode {
      * Add multiple input or output slots to use in this node.
      * @param {Array} array - Array of triplets like [[name, type, extra_info], [...]].
      * @param {boolean} isInput - Whether the slots being added are input slots.
-     * 
+     *
      * @NOTE: These methods are slightly different, and it would be optimal to keep them separate,
      * but our goal here is to refactor them so they *aren't* slightly different.
      */
@@ -1010,7 +1010,7 @@ export class LGraphNode {
                 links: null,
                 ...(info[2] ?? {})
             };
-    
+
             if (isInput) {
                 this.inputs = this.inputs ?? [];
                 this.inputs.push(slot);
@@ -1025,32 +1025,32 @@ export class LGraphNode {
                 }
             }
         });
-    
+
         this.setSize(this.computeSize());
         this.setDirtyCanvas?.(true, true);
     }
-    
+
     /**
      * remove an existing input slot
      * @method removeInput
      * @param {number} slot
-     * 
+     *
      * @NOTE: These two are different enough yet I can't even mash them together meaningfully.
      */
     removeInput(slot) {
         this.disconnectInput(slot);
         const removedInput = this.inputs.splice(slot, 1)[0];
-        
+
         this.inputs.slice(slot).filter(input => !!input).forEach(input => {
             const link = this.graph.links[input.link];
             link?.target_slot && link.target_slot--;
         });
-    
+
         this.setSize(this.computeSize());
-        this.onInputRemoved?.(slot, removedInput);        
+        this.onInputRemoved?.(slot, removedInput);
         this.setDirtyCanvas(true, true);
     }
-    
+
     /**
      * remove an existing output slot
      * @method removeOutput
@@ -1059,12 +1059,12 @@ export class LGraphNode {
     removeOutput(slot) {
         this.disconnectOutput(slot);
         this.outputs = this.outputs.filter((_, index) => index !== slot);
-      
+
         this.outputs.slice(slot).forEach(output => {
             if (!output || !output.links) {
                 return;
             }
-            
+
             output.links.forEach(linkId => {
                 const link = this.graph.links[linkId];
                 if (link) {
@@ -1072,9 +1072,9 @@ export class LGraphNode {
                 }
             });
         });
-    
+
         this.setSize(this.computeSize());
-        this.onOutputRemoved?.(slot);        
+        this.onOutputRemoved?.(slot);
         this.setDirtyCanvas(true, true);
     }
 
@@ -1132,7 +1132,7 @@ export class LGraphNode {
             const output_width = this.outputs.reduce((maxWidth, output) => {
                 const text = output.label || output.name || "";
                 const text_width = compute_text_size(text);
-                
+
                 return Math.max(maxWidth, text_width);
             }, 0);
         }
@@ -1233,12 +1233,12 @@ export class LGraphNode {
      * @param {String} name the text to show on the widget
      * @param {String} value the default value
      * @param {Function|String} callback function to call when it changes (optionally, it can be the name of the property to modify)
-     * @param {Object} options the object that contains special properties of this widget 
+     * @param {Object} options the object that contains special properties of this widget
      * @return {Object} the created widget object
      */
     addWidget(type, name, value, callback, options) {
         this.widgets ??= [];
-    
+
         if(!options && callback && callback.constructor === Object)
         {
             options = callback;
@@ -1619,7 +1619,7 @@ export class LGraphNode {
                 // console.debug("connect WILL CREATE THE onTrigger "+target_slotType+" to "+target_node);
                 return this.connect(slot, target_node, -1);
             }
-            // connect to the first general output slot if not found a specific type and 
+            // connect to the first general output slot if not found a specific type and
             if (opts.generalTypeInCase) {
                 var target_slot = target_node.findInputSlotByType(0, false, true, true);
                 // console.debug("connect TO a general type (*, 0), if not found the specific type ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
@@ -1635,10 +1635,10 @@ export class LGraphNode {
                     return this.connect(slot, target_node, target_slot);
                 }
             }
-            
+
             console.debug("no way to connect type: ",target_slotType," to targetNODE ",target_node);
             // TODO filter
-            
+
             return null;
         }
     }
@@ -1666,15 +1666,15 @@ export class LGraphNode {
             // console.debug("CONNbyTYPE OUT! type "+source_slotType+" for "+source_slot)
             return source_node.connect(source_slot, this, slot);
         }else{
-            
-            // connect to the first general output slot if not found a specific type and 
+
+            // connect to the first general output slot if not found a specific type and
             if (opts.generalTypeInCase) {
                 var source_slot = source_node.findOutputSlotByType(0, false, true, true);
                 if (source_slot >= 0) {
                     return source_node.connect(source_slot, this, slot);
                 }
             }
-            
+
             if (opts.createEventInCase && source_slotType == LiteGraph.EVENT) {
                 // WILL CREATE THE onExecuted OUT SLOT
                 if (LiteGraph.do_add_triggers_slots) {
@@ -1689,10 +1689,10 @@ export class LGraphNode {
                     return source_node.connect(source_slot, this, slot);
                 }
             }
-            
+
             console.debug("no way to connect byOUT type: ",source_slotType," to sourceNODE ",source_node);
             // TODO filter
-            
+
             // console.log("type OUT! "+source_slotType+" not found or not free?")
             return null;
         }
@@ -1755,7 +1755,7 @@ export class LGraphNode {
                 return null;
             }
         } else if (target_slot === LiteGraph.EVENT) {
-            
+
             if (LiteGraph.do_add_triggers_slots) {
                 // search for first slot with event? :: NO this is done outside
                 // console.log("Connect: Creating triggerEvent");

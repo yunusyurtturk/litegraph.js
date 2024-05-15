@@ -21,7 +21,7 @@ class LGAudio {
                 console.log("complete", msg);
             };
         }
-    
+
         // in case it crashes
         // if(this._audio_context.state == "suspended")
         //	this._audio_context.resume();
@@ -52,7 +52,7 @@ class LGAudio {
                 if (!link_info) {
                     continue;
                 }
-    
+
                 let origin_node = node.graph.getNodeById(link_info.origin_id);
                 let origin_audionode = null;
                 if (origin_node.getAudioNodeInOutputSlot) {
@@ -62,14 +62,14 @@ class LGAudio {
                 } else {
                     origin_audionode = origin_node.audionode;
                 }
-    
+
                 let target_audionode = null;
                 if (node.getAudioNodeInInputSlot) {
                     target_audionode = node.getAudioNodeInInputSlot(i);
                 } else {
                     target_audionode = node.audionode;
                 }
-    
+
                 if (connect) {
                     LGAudio.connect(origin_audionode, target_audionode);
                 } else {
@@ -77,7 +77,7 @@ class LGAudio {
                 }
             }
         }
-    
+
         if (node.outputs) {
             for (let i = 0; i < node.outputs.length; ++i) {
                 let output = node.outputs[i];
@@ -86,14 +86,14 @@ class LGAudio {
                     if (!link_info) {
                         continue;
                     }
-    
+
                     let origin_audionode = null;
                     if (node.getAudioNodeInOutputSlot) {
                         origin_audionode = node.getAudioNodeInOutputSlot(i);
                     } else {
                         origin_audionode = node.audionode;
                     }
-    
+
                     let target_node = node.graph.getNodeById(link_info.target_id);
                     let target_audionode = null;
                     if (target_node.getAudioNodeInInputSlot) {
@@ -103,7 +103,7 @@ class LGAudio {
                     } else {
                         target_audionode = target_node.audionode;
                     }
-    
+
                     if (connect) {
                         LGAudio.connect(origin_audionode, target_audionode);
                     } else {
@@ -194,18 +194,18 @@ class LGAudio {
             }
             return;
         }
-    
+
         if (LGAudio.onProcessAudioURL) {
             url = LGAudio.onProcessAudioURL(url);
         }
-    
+
         // load new sample
         var request = new XMLHttpRequest();
         request.open("GET", url, true);
         request.responseType = "arraybuffer";
-    
+
         var context = LGAudio.getAudioContext();
-    
+
         // Decode asynchronously
         request.onload = function () {
             console.log("AudioSource loaded");
@@ -222,14 +222,14 @@ class LGAudio {
             );
         };
         request.send();
-    
+
         function onError(err) {
             console.log("Audio loading sample error:", err);
             if (on_error) {
                 on_error(err);
             }
         }
-    
+
         return request;
     }
 }

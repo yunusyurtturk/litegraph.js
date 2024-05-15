@@ -20,7 +20,7 @@ export class LGraph {
 
     /**
      * @constructor
-     * @param {Object} o data from previous serialization [optional]} o 
+     * @param {Object} o data from previous serialization [optional]} o
      */
     constructor(o) {
         if (LiteGraph.debug) {
@@ -94,7 +94,7 @@ export class LGraph {
         this.nodes_executing = [];
         this.nodes_actioning = [];
         this.nodes_executedAction = [];
-        
+
         // subgraph_data
         this.inputs = {};
         this.outputs = {};
@@ -150,14 +150,14 @@ export class LGraph {
         if (this.status === LGraph.STATUS_RUNNING) {
             return;
         }
-    
+
         this.status = LGraph.STATUS_RUNNING;
         this.onPlayEvent?.();
         this.sendEventToAllNodes("onStart");
-    
+
         this.starttime = LiteGraph.getTime();
         this.last_update_time = this.starttime;
-    
+
         const onAnimationFrame = () => {
             if (this.execution_timer_id !== -1) {
                 return;
@@ -167,7 +167,7 @@ export class LGraph {
             this.runStep(1, !this.catch_errors);
             this.onAfterStep?.();
         };
-    
+
         if (interval === 0 && typeof window === "object" && window.requestAnimationFrame) {
             this.execution_timer_id = -1;
             onAnimationFrame();
@@ -203,7 +203,7 @@ export class LGraph {
      * Run N steps (cycles) of the graph
      * @method runStep
      * @param {number} num number of steps to run, default is 1
-     * @param {Boolean} do_not_catch_errors [optional] if you want to try/catch errors 
+     * @param {Boolean} do_not_catch_errors [optional] if you want to try/catch errors
      * @param {number} limit max number of nodes to execute (used to execute from start to a node)
      */
     runStep(num = 1, do_not_catch_errors, limit) {
@@ -227,12 +227,12 @@ export class LGraph {
                     if (LiteGraph.use_deferred_actions && node._waiting_actions?.length) {
                         node.executePendingActions();
                     }
-        
+
                     if (node.mode === LiteGraph.ALWAYS) {
                         node.doExecute?.();
                     }
                 });
-                
+
                 this.fixedtime += this.fixedtime_lapse;
                 this.onExecuteStep?.();
             }
@@ -244,16 +244,16 @@ export class LGraph {
                         if (LiteGraph.use_deferred_actions && node._waiting_actions?.length) {
                             node.executePendingActions();
                         }
-                        
+
                         if (node.mode === LiteGraph.ALWAYS) {
                             node.onExecute?.();
                         }
                     });
-            
+
                     this.fixedtime += this.fixedtime_lapse;
                     this.onExecuteStep?.();
                 }
-            
+
                 this.onAfterExecute?.();
                 this.errors_in_execution = false;
             } catch (err) {
@@ -304,7 +304,7 @@ export class LGraph {
      * @param {boolean} only_onExecute - Indicates whether to consider only nodes with an onExecute method.
      * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
      * @returns {Array} An array of nodes in the calculated execution order.
-     * 
+     *
      * @TODO:This whole concept is a mistake.  Should call graph back from output nodes
      */
     computeExecutionOrder(only_onExecute, set_level) {
@@ -589,7 +589,7 @@ export class LGraph {
         if (!this.list_of_graphcanvas) {
             return;
         }
-    
+
         for (const c of this.list_of_graphcanvas) {
             if (c[action] && params) {
                 c[action](...params);
@@ -1258,7 +1258,7 @@ export class LGraph {
                     "weird LLink bug, link info is not a LLink but a regular object"
                 );
                 var link2 = new LLink();
-                for (var j in link) { 
+                for (var j in link) {
                     link2[j] = link[j];
                 }
                 this.links[i] = link2;
@@ -1371,7 +1371,7 @@ export class LGraph {
         this.updateExecutionOrder();
 
         this.extra = data.extra ?? {};
-        
+
         this.onConfigure?.(data);
 
         this._version++;

@@ -5,7 +5,7 @@ class LGWebSocket {
 
     static title = "WebSocket";
     static desc = "Send data through a websocket";
-    
+
     constructor() {
         this.size = [60, 20];
         this.addInput("send", LiteGraph.ACTION);
@@ -151,7 +151,7 @@ class HTTPRequestNode {
 
     static title = "HTTP Request";
     static desc = "Fetch data through HTTP";
-    
+
     constructor() {
         this.addInput("request", LiteGraph.ACTION);
         this.addInput("url", "string");

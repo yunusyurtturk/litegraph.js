@@ -4759,7 +4759,7 @@ LGraphTextureCurve.prototype.onExecute = function () {
 
 LGraphTextureCurve.prototype.sampleCurve = function (f, points) {
     points ||= this._points.RGB;
-    if (!points) 
+    if (!points)
         return;
     for (var i = 0; i < points.length - 1; ++i) {
         var p = points[i];

@@ -1,7 +1,7 @@
 import { LiteGraph } from "./litegraph.js";
 
 /**
- * Class responsible for handling scale and offset transformations for an HTML element, 
+ * Class responsible for handling scale and offset transformations for an HTML element,
  * enabling zooming and dragging functionalities.
  */
 export class DragAndScale {
@@ -9,7 +9,7 @@ export class DragAndScale {
      * Creates an instance of DragAndScale.
      * @param {HTMLElement} element - The HTML element to apply scale and offset transformations.
      * @param {boolean} skip_events - Flag indicating whether to skip binding mouse and wheel events.
-     * 
+     *
      * Rendering:
      * toCanvasContext() is HTMLCanvas, and onredraw is probably also.  The rest is all HTML+CSS+JS
      */
@@ -57,7 +57,7 @@ export class DragAndScale {
         event.canvasx = x;
         event.canvasy = y;
         event.dragging = this.dragging;
-        
+
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
 
         if (is_inside) {
@@ -65,7 +65,7 @@ export class DragAndScale {
             this.abortController = new AbortController();
             document.addEventListener("mousemove",this.onMouseMove, { signal: this.abortController.signal });
             document.addEventListener("mouseup",this.onMouseUp, { signal: this.abortController.signal });
-        } 
+        }
 
         this.last_mouse[0] = x;
         this.last_mouse[1] = y;
@@ -84,7 +84,7 @@ export class DragAndScale {
         event.canvasx = x;
         event.canvasy = y;
         event.dragging = this.dragging;
-        
+
         var deltax = x - this.last_mouse[0];
         var deltay = y - this.last_mouse[1];
         if (this.dragging) {
@@ -103,7 +103,7 @@ export class DragAndScale {
 
     onWheel = (event) => {
         event.wheel = -event.deltaY;
-            
+
         // from stack overflow
         event.delta = event.wheelDelta
             ? event.wheelDelta / 40
@@ -115,10 +115,10 @@ export class DragAndScale {
 
     /**
      * Computes the visible area of the DragAndScale element based on the viewport.
-     * 
+     *
      * If the element is not set, the visible area will be reset to zero.
-     * 
-     * @param {Array<number>} [viewport] - The viewport configuration to calculate the visible area. 
+     *
+     * @param {Array<number>} [viewport] - The viewport configuration to calculate the visible area.
      */
     computeVisibleArea(viewport) {
         if (!this.element) {
@@ -136,7 +136,7 @@ export class DragAndScale {
             width = vpWidth;
             height = vpHeight;
         }
-    
+
         const endx = startx + width / this.scale;
         const endy = starty + height / this.scale;
         this.visible_area.set([startx, starty, endx - startx, endy - starty]);
@@ -194,7 +194,7 @@ export class DragAndScale {
     changeScale(value, zooming_center) {
 
         value = LiteGraph.clamp(value, this.min_scale, this.max_scale);
-        
+
         if (value == this.scale || !this.element) {
             return;
         }

@@ -137,7 +137,7 @@ class LGraphPoints3D {
                     }
                 points = new Float32Array(points.subarray(0, side * side * 3));
                 if (normals) {
-                    for (let i = 0; i < normals.length; i += 3) 
+                    for (let i = 0; i < normals.length; i += 3)
                         normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.SPHERE) {
@@ -166,7 +166,7 @@ class LGraphPoints3D {
                     points[i + 2] = Math.sin(angle) * radius;
                 }
                 if (normals) {
-                    for (let i = 0; i < normals.length; i += 3) 
+                    for (let i = 0; i < normals.length; i += 3)
                         normals.set(UP, i);
                 }
             }
@@ -179,7 +179,7 @@ class LGraphPoints3D {
                     points[i + 2] = (Math.random() - 0.5) * radius * 2;
                 }
                 if (normals) {
-                    for (let i = 0; i < normals.length; i += 3) 
+                    for (let i = 0; i < normals.length; i += 3)
                         normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.CUBE) {
@@ -189,7 +189,7 @@ class LGraphPoints3D {
                     points[i + 2] = (Math.random() - 0.5) * radius * 2;
                 }
                 if (normals) {
-                    for (let i = 0; i < normals.length; i += 3) 
+                    for (let i = 0; i < normals.length; i += 3)
                         normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.SPHERE) {
@@ -395,11 +395,11 @@ class LGraphPoints3D {
     }
 
     static generateFromInsideObject(points, size, mesh) {
-        if (!mesh || mesh.constructor !== GL.Mesh) 
+        if (!mesh || mesh.constructor !== GL.Mesh)
             return;
 
         var aabb = mesh.getBoundingBox();
-        if (!mesh.octree) 
+        if (!mesh.octree)
             mesh.octree = new GL.Octree(mesh);
         var octree = mesh.octree;
         var origin = vec3.create();
@@ -1120,7 +1120,7 @@ class LGraphConnectPoints {
 
             // copy
             this.geometry = {};
-            for (let i in geometry) 
+            for (let i in geometry)
                 this.geometry[i] = geometry[i];
             this.geometry._id = generateGeometryId();
             this.geometry._version = this.my_version++;
@@ -1831,7 +1831,7 @@ if (typeof GL != "undefined") {
 		var shader = null;
 
 		var texture = this.getInputData(2);
-		
+
 		if(texture)
 		{
 			shader = gl.shaders["textured_points"];
