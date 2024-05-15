@@ -187,13 +187,11 @@ export class Editor {
 
     onDropItem(e) {
         var that = this;
-        for(var i = 0; i < e.dataTransfer.files.length; ++i)
-        {
+        for(var i = 0; i < e.dataTransfer.files.length; ++i) {
             var file = e.dataTransfer.files[i];
             var ext = LGraphCanvas.getFileExtension(file.name);
             var reader = new FileReader();
-            if(ext == "json")
-            {
+            if(ext == "json") {
                 reader.onload = (event) => {
                     var data = JSON.parse( event.target.result );
                     that.graph.configure(data);

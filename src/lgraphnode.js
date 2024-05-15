@@ -70,8 +70,7 @@ export class LGraphNode {
 
         if (LiteGraph.use_uuids) {
             this.id = LiteGraph.uuidv4();
-        }
-        else {
+        } else {
             this.id = -1; // not know till not added
         }
         this.type = null;
@@ -808,8 +807,7 @@ export class LGraphNode {
             return;
         }
 
-        if(slot == null)
-        {
+        if(slot == null) {
             console.error("slot must be a number");
             return;
         }
@@ -853,30 +851,25 @@ export class LGraphNode {
             // used to mark events in graph
             var target_connection = node.inputs[link_info.target_slot];
 
-            if (node.mode === LiteGraph.ON_TRIGGER)
-            {
+            if (node.mode === LiteGraph.ON_TRIGGER) {
                 // generate unique trigger ID if not present
                 if (!options.action_call) options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
                 if (node.onExecute) {
                     // -- wrapping node.onExecute(param); --
                     node.doExecute(param, options); // @BUG: Possible misname here
                 }
-            }
-            else if (node.onAction) {
+            } else if (node.onAction) {
                 // generate unique action ID if not present
                 if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 // pass the action name
                 var target_connection = node.inputs[link_info.target_slot];
 
                 // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
-                if(LiteGraph.use_deferred_actions && node.onExecute)
-                {
+                if(LiteGraph.use_deferred_actions && node.onExecute) {
                     if(!node._waiting_actions)
                         node._waiting_actions = [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
-                }
-                else
-                {
+                } else {
                     // wrap node.onAction(target_connection.name, param);
                     node.actionDo( target_connection.name, param, options, link_info.target_slot );
                 }
@@ -1239,8 +1232,7 @@ export class LGraphNode {
     addWidget(type, name, value, callback, options) {
         this.widgets ??= [];
 
-        if(!options && callback && callback.constructor === Object)
-        {
+        if(!options && callback && callback.constructor === Object) {
             options = callback;
             callback = null;
         }
@@ -1255,8 +1247,7 @@ export class LGraphNode {
             callback = null;
         }
 
-        if(callback && callback.constructor !== Function)
-        {
+        if(callback && callback.constructor !== Function) {
             console.warn("addWidget: callback must be a function");
             callback = null;
         }
@@ -1794,8 +1785,7 @@ export class LGraphNode {
         }
 
         // check target_slot and check connection types
-        if (target_slot===false || target_slot===null || !LiteGraph.isValidConnection(output.type, input.type))
-        {
+        if (target_slot===false || target_slot===null || !LiteGraph.isValidConnection(output.type, input.type)) {
             this.setDirtyCanvas(false, true);
             if(changed)
                 this.graph.connectionChange(this, link_info);
@@ -2093,8 +2083,7 @@ export class LGraphNode {
         }
 
         var link_id = this.inputs[slot].link;
-        if(link_id != null)
-        {
+        if(link_id != null) {
             this.inputs[slot].link = null;
 
             // remove other side

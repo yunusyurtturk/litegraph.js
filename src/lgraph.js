@@ -624,8 +624,7 @@ export class LGraph {
             );
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
-            }
-            else {
+            } else {
                 node.id = ++this.last_node_id;
             }
         }
@@ -638,8 +637,7 @@ export class LGraph {
         if (LiteGraph.use_uuids) {
             if (node.id == null || node.id == -1)
                 node.id = LiteGraph.uuidv4();
-        }
-        else {
+        } else {
             if (node.id == null || node.id == -1) {
                 node.id = ++this.last_node_id;
             } else if (this.last_node_id < node.id) {
@@ -1388,8 +1386,7 @@ export class LGraph {
         var that = this;
 
         // from file
-        if(url.constructor === File || url.constructor === Blob)
-        {
+        if(url.constructor === File || url.constructor === Blob) {
             var reader = new FileReader();
             reader.addEventListener('load', (event) => {
                 var data = JSON.parse(event.target.result);

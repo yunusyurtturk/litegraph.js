@@ -14,8 +14,7 @@ export class CurveEditor {
     static sampleCurve(f, points) {
         if(!points)
             return;
-        for(var i = 0; i < points.length - 1; ++i)
-        {
+        for(var i = 0; i < points.length - 1; ++i) {
             var p = points[i];
             var pn = points[i+1];
             if(pn[0] < f)
@@ -42,8 +41,7 @@ export class CurveEditor {
         ctx.save();
         ctx.translate(this.margin,this.margin);
 
-        if(background_color)
-        {
+        if(background_color) {
             ctx.fillStyle = "#111";
             ctx.fillRect(0,0,w,h);
             ctx.fillStyle = "#222";
@@ -55,16 +53,14 @@ export class CurveEditor {
         if(inactive)
             ctx.globalAlpha = 0.5;
         ctx.beginPath();
-        for(let i = 0; i < points.length; ++i)
-        {
+        for(let i = 0; i < points.length; ++i) {
             let p = points[i];
             ctx.lineTo( p[0] * w, (1.0 - p[1]) * h );
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
         if(!inactive)
-            for(let i = 0; i < points.length; ++i)
-            {
+            for(let i = 0; i < points.length; ++i) {
                 let p = points[i];
                 ctx.fillStyle = this.selected == i ? "#FFF" : (this.nearest == i ? "#DDD" : "#AAA");
                 ctx.beginPath();
@@ -92,8 +88,7 @@ export class CurveEditor {
         // search closer one
         this.selected = this.getCloserPoint(pos, max_dist);
         // create one
-        if(this.selected == -1)
-        {
+        if(this.selected == -1) {
             var point = [x / w, 1 - y / h];
             points.push(point);
             points.sort((a, b) => a[0] - b[0]);
@@ -117,11 +112,9 @@ export class CurveEditor {
         var max_dist = 30 / graphcanvas.ds.scale;
         this._nearest = this.getCloserPoint(curvepos, max_dist);
         var point = points[s];
-        if(point)
-        {
+        if(point) {
             var is_edge_point = s == 0 || s == points.length - 1;
-            if( !is_edge_point && (localpos[0] < -10 || localpos[0] > this.size[0] + 10 || localpos[1] < -10 || localpos[1] > this.size[1] + 10) )
-            {
+            if( !is_edge_point && (localpos[0] < -10 || localpos[0] > this.size[0] + 10 || localpos[1] < -10 || localpos[1] > this.size[1] + 10) ) {
                 points.splice(s,1);
                 this.selected = -1;
                 return;
@@ -153,8 +146,7 @@ export class CurveEditor {
         var p2 = [0,0];
         var min_dist = 1000000;
         var closest = -1;
-        for(var i = 0; i < num; ++i)
-        {
+        for(var i = 0; i < num; ++i) {
             var p = points[i];
             p2[0] = p[0] * w;
             p2[1] = (1.0 - p[1]) * h;

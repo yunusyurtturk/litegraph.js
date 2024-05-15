@@ -349,8 +349,7 @@ export var LiteGraph = new class {
     ) {
         var ctor_code = "";
         if(object.inputs)
-        for(let i=0; i < object.inputs.length; ++i)
-        {
+        for(let i=0; i < object.inputs.length; ++i) {
             let _name = object.inputs[i][0];
             let _type = object.inputs[i][1];
             if(_type && _type.constructor === String)
@@ -358,8 +357,7 @@ export var LiteGraph = new class {
             ctor_code += "this.addInput('"+_name+"',"+_type+");\n";
         }
         if(object.outputs)
-        for(let i=0; i < object.outputs.length; ++i)
-        {
+        for(let i=0; i < object.outputs.length; ++i) {
             let _name = object.outputs[i][0];
             let _type = object.outputs[i][1];
             if(_type && _type.constructor === String)
@@ -367,8 +365,7 @@ export var LiteGraph = new class {
             ctor_code += "this.addOutput('"+_name+"',"+_type+");\n";
         }
         if(object.properties)
-        for(let i in object.properties)
-        {
+        for(let i in object.properties) {
             let prop = object.properties[i];
             if(prop && prop.constructor === String)
                 prop = '"'+prop+'"';
@@ -409,8 +406,7 @@ export var LiteGraph = new class {
             var names = LiteGraph.getParameterNames(func);
             for (var i = 0; i < names.length; ++i) {
                 var type = 0;
-                if(param_types)
-                {
+                if(param_types) {
                     // type = param_types[i] != null ? "'" + param_types[i] + "'" : "0";
                     if( param_types[i] != null && param_types[i].constructor === String )
                         type = "'" + param_types[i] + "'" ;
@@ -600,8 +596,7 @@ export var LiteGraph = new class {
         var categories = { "": 1 };
         for (let i in this.registered_node_types) {
             var type = this.registered_node_types[i];
-            if ( type.category && !type.skip_list )
-            {
+            if ( type.category && !type.skip_list ) {
                 if(type.filter != filter)
                     continue;
                 categories[type.category] = 1;
@@ -757,8 +752,7 @@ export var LiteGraph = new class {
             return null;
 
         type = type || "text";
-        if( url.constructor === String )
-        {
+        if( url.constructor === String ) {
             if (url.substr(0, 4) == "http" && LiteGraph.proxy) {
                 url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
             }
@@ -784,9 +778,7 @@ export var LiteGraph = new class {
                 if(on_error)
                     on_error(error);
             });
-        }
-        else if( url.constructor === File || url.constructor === Blob)
-        {
+        } else if( url.constructor === File || url.constructor === Blob) {
             var reader = new FileReader();
             reader.onload = (e) => {
                 var v = e.target.result;
