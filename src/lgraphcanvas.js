@@ -5452,14 +5452,14 @@ export class LGraphCanvas {
 
     createDefaultNodeForSlot(optPass) { // addNodeMenu for connection
         var optPass = optPass || {};
-        var opts = Object.assign({ nodeFrom: null // input
-            ,slotFrom: null // input
-            ,nodeTo: null // output
-            ,slotTo: null // output
-            ,position: []	// pass the event coords
-            ,nodeType: null	// choose a nodetype to add, AUTO to set at first good
-            ,posAdd: [0,0]	// adjust x,y
-            ,posSizeFix: [0,0] // alpha, adjust the position x,y based on the new node size w,h
+        var opts = Object.assign({ nodeFrom: null, // input
+            slotFrom: null, // input
+            nodeTo: null, // output
+            slotTo: null, // output
+            position: [],	// pass the event coords
+            nodeType: null,	// choose a nodetype to add, AUTO to set at first good
+            posAdd: [0,0],	// adjust x,y
+            posSizeFix: [0,0] // alpha, adjust the position x,y based on the new node size w,h
         }
         ,optPass
         );
@@ -5568,8 +5568,10 @@ export class LGraphCanvas {
 
                     // add the node
                     that.graph.add(newNode);
-                    newNode.pos = [	opts.position[0]+opts.posAdd[0]+(opts.posSizeFix[0]?opts.posSizeFix[0]*newNode.size[0]:0)
-                        ,opts.position[1]+opts.posAdd[1]+(opts.posSizeFix[1]?opts.posSizeFix[1]*newNode.size[1]:0)]; // that.last_click_position; //[e.canvasX+30, e.canvasX+5];*/
+                    newNode.pos = [
+                        opts.position[0]+opts.posAdd[0]+(opts.posSizeFix[0]?opts.posSizeFix[0]*newNode.size[0]:0),
+                        opts.position[1]+opts.posAdd[1]+(opts.posSizeFix[1]?opts.posSizeFix[1]*newNode.size[1]:0)
+                    ]; // that.last_click_position; //[e.canvasX+30, e.canvasX+5];*/
 
                     // that.graph.afterChange();
 
@@ -5905,17 +5907,17 @@ export class LGraphCanvas {
 
     showSearchBox(event, options) {
         // proposed defaults
-        var def_options = { slot_from: null
-            ,node_from: null
-            ,node_to: null
-            ,do_type_filter: LiteGraph.search_filter_enabled // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
-            ,type_filter_in: false // these are default: pass to set initially set values
-            ,type_filter_out: false
-            ,show_general_if_none_on_typefilter: true
-            ,show_general_after_typefiltered: true
-            ,hide_on_mouse_leave: LiteGraph.search_hide_on_mouse_leave
-            ,show_all_if_empty: true
-            ,show_all_on_open: LiteGraph.search_show_all_on_open
+        var def_options = { slot_from: null,
+            node_from: null,
+            node_to: null,
+            do_type_filter: LiteGraph.search_filter_enabled, // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
+            type_filter_in: false, // these are default: pass to set initially set values
+            type_filter_out: false,
+            show_general_if_none_on_typefilter: true,
+            show_general_after_typefiltered: true,
+            hide_on_mouse_leave: LiteGraph.search_hide_on_mouse_leave,
+            show_all_if_empty: true,
+            show_all_on_open: LiteGraph.search_show_all_on_open
         };
         options = Object.assign(def_options, options || {});
 
@@ -6389,9 +6391,9 @@ export class LGraphCanvas {
 
                 function inner_test_filter( type, optsIn ) {
                     var optsIn = optsIn || {};
-                    var optsDef = { skipFilter: false
-                        ,inTypeOverride: false
-                        ,outTypeOverride: false
+                    var optsDef = { skipFilter: false,
+                        inTypeOverride: false,
+                        outTypeOverride: false
                     };
                     var opts = Object.assign(optsDef,optsIn);
                     var ctor = LiteGraph.registered_node_types[type];
@@ -6931,12 +6933,12 @@ export class LGraphCanvas {
         graphcanvas.closePanels();
         var ref_window = graphcanvas.getCanvasWindow();
         panel = graphcanvas.createPanel("Options",{
-            closable: true
-            ,window: ref_window
-            ,onOpen: function() {
+            closable: true,
+            window: ref_window,
+            onOpen: function() {
                 graphcanvas.OPTIONPANEL_IS_OPEN = true;
-            }
-            ,onClose: function() {
+            },
+            onClose: function() {
                 graphcanvas.OPTIONPANEL_IS_OPEN = false;
                 graphcanvas.options_panel = null;
             }
@@ -7007,12 +7009,12 @@ export class LGraphCanvas {
 
         var graphcanvas = this;
         var panel = this.createPanel(node.title || "",{
-            closable: true
-            ,window: ref_window
-            ,onOpen: function() {
+            closable: true,
+            window: ref_window,
+            onOpen: function() {
                 graphcanvas.NODEPANEL_IS_OPEN = true;
-            }
-            ,onClose: function() {
+            },
+            onClose: function() {
                 graphcanvas.NODEPANEL_IS_OPEN = false;
                 graphcanvas.node_panel = null;
             }

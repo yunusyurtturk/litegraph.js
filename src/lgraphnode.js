@@ -1461,8 +1461,9 @@ export class LGraphNode {
      */
     findInputSlotFree(optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = {returnObj: false
-            ,typesNotAccepted: []
+        var optsDef = {
+            returnObj: false,
+            typesNotAccepted: []
         };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.inputs) {
@@ -1488,8 +1489,9 @@ export class LGraphNode {
      */
     findOutputSlotFree(optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { returnObj: false
-            ,typesNotAccepted: []
+        var optsDef = { 
+            returnObj: false,
+            typesNotAccepted: []
         };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.outputs) {
@@ -1590,9 +1592,10 @@ export class LGraphNode {
      */
     connectByType(slot, target_node, target_slotType, optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { createEventInCase: true
-            ,firstFreeIfOutputGeneralInCase: true
-            ,generalTypeInCase: true
+        var optsDef = { 
+            createEventInCase: true,
+            firstFreeIfOutputGeneralInCase: true,
+            generalTypeInCase: true
         };
         var opts = Object.assign(optsDef,optsIn);
         if (target_node && target_node.constructor === Number) {
@@ -1643,9 +1646,10 @@ export class LGraphNode {
      */
     connectByTypeOutput(slot, source_node, source_slotType, optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { createEventInCase: true
-            ,firstFreeIfInputGeneralInCase: true
-            ,generalTypeInCase: true
+        var optsDef = { 
+            createEventInCase: true,
+            firstFreeIfInputGeneralInCase: true,
+            generalTypeInCase: true
         };
         var opts = Object.assign(optsDef,optsIn);
         if (source_node && source_node.constructor === Number) {
