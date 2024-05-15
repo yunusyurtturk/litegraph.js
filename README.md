@@ -74,6 +74,12 @@ cd litegraph.js
 npm i
 ```
 
+or
+
+```
+npm i @mr_pebble/litegraph
+```
+
 Or downloading the ```build/litegraph.js``` and ```css/litegraph.css``` version from this repository.
 
 ## First project ##
