@@ -55,17 +55,17 @@ export class CurveEditor {
         if(inactive)
             ctx.globalAlpha = 0.5;
         ctx.beginPath();
-        for(var i = 0; i < points.length; ++i)
+        for(let i = 0; i < points.length; ++i)
         {
-            var p = points[i];
+            let p = points[i];
             ctx.lineTo( p[0] * w, (1.0 - p[1]) * h );
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
         if(!inactive)
-            for(var i = 0; i < points.length; ++i)
+            for(let i = 0; i < points.length; ++i)
             {
-                var p = points[i];
+                let p = points[i];
                 ctx.fillStyle = this.selected == i ? "#FFF" : (this.nearest == i ? "#DDD" : "#AAA");
                 ctx.beginPath();
                 ctx.arc( p[0] * w, (1.0 - p[1]) * h, 2, 0, Math.PI * 2 );
@@ -137,7 +137,7 @@ export class CurveEditor {
         }
     }
 
-    onMouseUp(localpos, graphcanvas) {
+    onMouseUp() { // not event handler, callback
         this.selected = -1;
         return false;
     }
@@ -153,7 +153,6 @@ export class CurveEditor {
         var p2 = [0,0];
         var min_dist = 1000000;
         var closest = -1;
-        var last_valid = -1;
         for(var i = 0; i < num; ++i)
         {
             var p = points[i];
