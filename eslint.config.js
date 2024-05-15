@@ -17,7 +17,6 @@ export default [{
         "@stylistic/eol-last": [0, "always"],
         "@stylistic/function-call-spacing": [0, "never"],
         "@stylistic/function-paren-newline": [0, "multiline"],
-        "@stylistic/generator-star-spacing": [0, {"before": true, "after": false}],
         "@stylistic/implicit-arrow-linebreak": [0, "beside"],
         "@stylistic/indent": [0, 4],
         "@stylistic/indent-binary-ops":[0, 4],
@@ -60,6 +59,25 @@ export default [{
         ],
         "@stylistic/no-extra-semi":[0],
         "@stylistic/no-floating-decimal":[0],
-        
+        "@stylistic/no-multi-spaces":[0],
+        "@stylistic/no-tabs":[0],
+        "@stylistic/no-trailing-spaces":[0],
+        "@stylistic/object-curly-newline":[0, "multiline"],
+        "@stylistic/quotes":[0,
+            "double",
+            {"allowTemplateLiterals": true}
+        ],
+        "@stylistic/semi-style":[0,
+            "last"
+        ],
+        "@stylistic/space-before-blocks":[0,
+            "always"
+        ],
+        "@stylistic/no-extra-semi":[0,
+            "never"
+        ],
+        "@stylistic/spaced-comment":[0,
+            "always"
+        ],
     }
 }]
