@@ -1,5 +1,3 @@
-
-import { LiteGraph } from "./litegraph.js";
 import { LGraphCanvas } from "./lgraphcanvas.js";
 import { LGraph } from "./lgraph.js";
 
@@ -164,8 +162,6 @@ export class Editor {
 
     onPlayButton() {
         var graph = this.graph;
-        var button = this.root.querySelector("#playnode_button");
-
         if (graph.status == LGraph.STATUS_STOPPED) {
             graph.start();
         } else {
@@ -183,9 +179,6 @@ export class Editor {
         var is_live_mode = !this.graphcanvas.live_mode;
         this.graphcanvas.switchLiveMode(true);
         this.graphcanvas.draw();
-        var url = this.graphcanvas.live_mode
-            ? "imgs/gauss_bg_medium.jpg"
-            : "imgs/gauss_bg.jpg";
         var button = this.root.querySelector("#livemode_button");
         button.innerHTML = !is_live_mode
             ? `<img src="imgs/icon-record.png"/> Live`
@@ -282,7 +275,7 @@ export class Editor {
         var close_button = document.createElement("div");
         close_button.className = "corner-button";
         close_button.innerHTML = "&#10060;";
-        close_button.addEventListener("click", e => {
+        close_button.addEventListener("click", (_event) => {
             graphcanvas.setGraph(null);
             miniwindow.parentNode.removeChild(miniwindow);
         });
@@ -293,6 +286,7 @@ export class Editor {
 
     addMultiview() {
         var canvas = this.canvas;
+        let graphcanvas;
 
         if (this.graphcanvas2) {
             this.graphcanvas2.setGraph(null, true);
@@ -301,7 +295,7 @@ export class Editor {
             this.graphcanvas.viewport = null;
             this.graphcanvas.setGraph(null, true);
             this.graphcanvas = null;
-            var graphcanvas = new LGraphCanvas( canvas, this.graph );
+            graphcanvas = new LGraphCanvas( canvas, this.graph );
             graphcanvas.background_image = "imgs/grid.png";
             this.graphcanvas = graphcanvas;
             window.graphcanvas = this.graphcanvas;		
@@ -312,7 +306,7 @@ export class Editor {
         this.graphcanvas.ctx.fillRect(0,0,canvas.width,canvas.height);
         this.graphcanvas.viewport = [0,0,canvas.width*0.5-2,canvas.height];
 
-        var graphcanvas = new LGraphCanvas( canvas, this.graph );
+        graphcanvas = new LGraphCanvas( canvas, this.graph );
         graphcanvas.background_image = "imgs/grid.png";
         this.graphcanvas2 = graphcanvas;
         this.graphcanvas2.viewport = [canvas.width*0.5,0,canvas.width*0.5,canvas.height];
