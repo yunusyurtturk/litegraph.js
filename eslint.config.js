@@ -19,7 +19,47 @@ export default [{
         "@stylistic/function-paren-newline": [0, "multiline"],
         "@stylistic/generator-star-spacing": [0, {"before": true, "after": false}],
         "@stylistic/implicit-arrow-linebreak": [0, "beside"],
-        "@stylistic/indent": [0, 4]
+        "@stylistic/indent": [0, 4],
+        "@stylistic/indent-binary-ops":[0, 4],
+        "@stylistic/key-spacing":[0, {
+            "beforeColon":false,
+            "afterColon":true,
+            "mode":"strict"
+        }],
+        "@stylistic/keyword-spacing":[0, {
+            "before": true, 
+            "after": true, 
+            "overrides": {
+                "if": { "after": false }, 
+                "for": { "after": false }, 
+                "while": { "after": false }, 
+                "static": { "after": false }, 
+                "as": { "after": false } 
+            }
+        }],
+        "@stylistic/lines-around-comment":[0,{
+            "beforeBlockComment": true
+        }],
+        "@stylistic/lines-between-class-members":[0,{
+            "enforce": "always",
+            "exceptAfterSingleLine": false,
+        }],
+        "@stylistic/max-len":[0,{
+            "code": 120,
+            "tabWidth": 4,
+            "ignoreUrls": true,
+            "ignoreStrings": true,
+            "ignoreTemplateLiterals": true,
+            "ignoreRegExpLiterals": true
+        }],
+        "@stylistic/max-statements-per-line":[0,{
+            "max":1,
+        }],
+        "@stylistic/new-parens":[0,
+            "always"
+        ],
+        "@stylistic/no-extra-semi":[0],
+        "@stylistic/no-floating-decimal":[0],
         
     }
 }]
