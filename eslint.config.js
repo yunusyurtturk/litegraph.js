@@ -23,7 +23,7 @@ export default [
         ],
     */
         "@stylistic/arrow-parens": [1, "always"],
-        "@stylistic/arrow-spacing": [0, { "before": true, "after": true }],
+        "@stylistic/arrow-spacing": [1, { "before": true, "after": true }],
         "@stylistic/brace-style":[0, "1tbs"],
         "@stylistic/allowSingleLine": [0, false],
         "@stylistic/comma-dangle": [0, "always-multiline"],
