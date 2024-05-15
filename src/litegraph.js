@@ -183,7 +183,7 @@ export var LiteGraph = new class {
         const propertyDescriptors = Object.getOwnPropertyDescriptors(LGraphNode.prototype);
 
         // Iterate over each property descriptor
-        Object.keys(propertyDescriptors).forEach(propertyName => {
+        Object.keys(propertyDescriptors).forEach((propertyName) => {
             // Check if the property already exists on the target prototype
             if (!base_class.prototype.hasOwnProperty(propertyName)) {
                 // If the property doesn't exist, copy it from the source to the target
@@ -679,7 +679,7 @@ export var LiteGraph = new class {
         * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
         */
     uuidv4() {
-        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,a=>(a^Math.random()*16>>a/4).toString(16));
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,(a)=>(a^Math.random()*16>>a/4).toString(16));
     }
 
     /**
@@ -763,7 +763,7 @@ export var LiteGraph = new class {
                 url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
             }
             return fetch(url)
-            .then(response => {
+            .then((response) => {
                 if(!response.ok)
                         throw new Error("File not found"); // it will be catch below
                 if(type == "arraybuffer")
@@ -775,11 +775,11 @@ export var LiteGraph = new class {
                 else if(type == "blob")
                     return response.blob();
             })
-            .then(data => {
+            .then((data) => {
                 if(on_complete)
                     on_complete(data);
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error("error fetching file:",url);
                 if(on_error)
                     on_error(error);
@@ -788,7 +788,7 @@ export var LiteGraph = new class {
         else if( url.constructor === File || url.constructor === Blob)
         {
             var reader = new FileReader();
-            reader.onload = e => {
+            reader.onload = (e) => {
                 var v = e.target.result;
                 if( type == "json" )
                     v = JSON.parse(v);
@@ -968,7 +968,7 @@ export var LiteGraph = new class {
     }
 
     // used to create nodes from wrapping functions
-    getParameterNames = func => { // split & filter [""]
+    getParameterNames = (func) => { // split & filter [""]
         return (func + "")
             .replace(/[/][/].*$/gm, "") // strip single-line comments
             .replace(/\s+/g, "") // strip white space
@@ -1005,7 +1005,7 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame ||
-        (callback => {
+        ((callback) => {
             window.setTimeout(callback, 1000 / 60);
         });
 }

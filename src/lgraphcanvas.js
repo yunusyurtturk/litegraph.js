@@ -2086,7 +2086,7 @@ export class LGraphCanvas {
 
         nodes = nodes || this.graph._nodes;
         if (typeof nodes == "string") nodes = [nodes];
-        Object.values(nodes).forEach(node => {
+        Object.values(nodes).forEach((node) => {
             if (node.is_selected) {
                 this.deselectNode(node);
                 return;
@@ -2097,12 +2097,12 @@ export class LGraphCanvas {
 
             node.onSelected?.();
 
-            node.inputs?.forEach(input => {
+            node.inputs?.forEach((input) => {
                 this.highlighted_links[input.link] = true;
             });
 
-            node.outputs?.forEach(out => {
-                out.links?.forEach(link => {
+            node.outputs?.forEach((out) => {
+                out.links?.forEach((link) => {
                     this.highlighted_links[link] = true;
                 });
             });
@@ -2123,11 +2123,11 @@ export class LGraphCanvas {
         this.onNodeDeselected?.(node);
 
         // Remove highlighted
-        node.inputs?.forEach(input =>
+        node.inputs?.forEach((input) =>
             delete this.highlighted_links?.[input.link]
         );
-        node.outputs?.forEach(out =>
-            out.links?.forEach(link => delete this.highlighted_links?.[link])
+        node.outputs?.forEach((out) =>
+            out.links?.forEach((link) => delete this.highlighted_links?.[link])
         );
     }
 
@@ -2141,7 +2141,7 @@ export class LGraphCanvas {
             return;
         }
 
-        this.graph._nodes?.forEach(node => {
+        this.graph._nodes?.forEach((node) => {
             if (!node.is_selected) return;
 
             node.onDeselected?.();
@@ -5583,13 +5583,13 @@ export class LGraphCanvas {
                         }
                         if (nodeNewOpts.inputs) {
                             newNode.inputs = [];
-                            Object.values(nodeNewOpts.inputs).forEach(value => {
+                            Object.values(nodeNewOpts.inputs).forEach((value) => {
                                 newNode.addOutput(value[0], value[1]);
                             });
                         }
                         if (nodeNewOpts.outputs) {
                             newNode.outputs = [];
-                            Object.values(nodeNewOpts.outputs).forEach(value => {
+                            Object.values(nodeNewOpts.outputs).forEach((value) => {
                                 newNode.addOutput(value[0], value[1]);
                             });
                         }
@@ -5690,7 +5690,7 @@ export class LGraphCanvas {
             const slotType = slotTypesDefault[fromSlotType];
 
             if (Array.isArray(slotType) || typeof slotType === "object") {
-                Object.values(slotType).forEach(typeX => {
+                Object.values(slotType).forEach((typeX) => {
                     options.push(typeX);
                 });
             } else {
@@ -5705,7 +5705,7 @@ export class LGraphCanvas {
             callback: (v, options, e) => {
                 const cases = {
                     "Add Node": () => {
-                        LGraphCanvas.onMenuAdd(null, null, e, menu, node => {
+                        LGraphCanvas.onMenuAdd(null, null, e, menu, (node) => {
                             isFrom ? opts.nodeFrom.connectByType(iSlotConn, node, fromSlotType) : opts.nodeTo.connectByTypeOutput(iSlotConn, node, fromSlotType);
                         });
                     },
@@ -5790,13 +5790,13 @@ export class LGraphCanvas {
 
         let dialogCloseTimer = null;
 
-        dialog.addEventListener("mouseleave", e => {
+        dialog.addEventListener("mouseleave", (e) => {
             if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified) {
                 dialogCloseTimer = setTimeout(dialog.close, LiteGraph.dialog_close_on_mouse_leave_delay);
             }
         });
 
-        dialog.addEventListener("mouseenter", e => {
+        dialog.addEventListener("mouseenter", (e) => {
             if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer) {
                 clearTimeout(dialogCloseTimer);
             }
@@ -5808,7 +5808,7 @@ export class LGraphCanvas {
             }
         };
 
-        const setValue = value => {
+        const setValue = (value) => {
             switch (item.type) {
                 case "Number":
                     value = Number(value);
@@ -5848,14 +5848,14 @@ export class LGraphCanvas {
 
         var dialogCloseTimer = null;
         var prevent_timeout = false;
-        dialog.addEventListener("mouseleave", e => {
+        dialog.addEventListener("mouseleave", (e) => {
             if (prevent_timeout) return;
             if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
                 dialogCloseTimer = setTimeout(dialog.close, LiteGraph.dialog_close_on_mouse_leave_delay);
             }
         });
 
-        dialog.addEventListener("mouseenter", e => {
+        dialog.addEventListener("mouseenter", (e) => {
             if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer) {
                 clearTimeout(dialogCloseTimer);
             }
@@ -5864,14 +5864,14 @@ export class LGraphCanvas {
         const selInDia = dialog.querySelectorAll("select");
         if (selInDia) {
             let prevent_timeout = 0;
-            selInDia.forEach(selIn => {
-                selIn.addEventListener("click", e => {
+            selInDia.forEach((selIn) => {
+                selIn.addEventListener("click", (e) => {
                     prevent_timeout++;
                 });
-                selIn.addEventListener("blur", e => {
+                selIn.addEventListener("blur", (e) => {
                     prevent_timeout = 0;
                 });
-                selIn.addEventListener("change", e => {
+                selIn.addEventListener("change", (e) => {
                     prevent_timeout = -1;
                 });
             });

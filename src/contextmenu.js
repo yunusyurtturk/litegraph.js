@@ -47,12 +47,12 @@ export class ContextMenu {
         }, 100); // delay so the mouse up event is not caught by this element
 
         // this prevents the default context browser menu to open in case this menu was created when pressing right button
-        root.addEventListener("mouseup", e => {
+        root.addEventListener("mouseup", (e) => {
             // console.log("pointerevents: ContextMenu up root prevent");
             e.preventDefault();
             return true;
         });
-        root.addEventListener("contextmenu", e => {
+        root.addEventListener("contextmenu", (e) => {
             if (e.button != 2) {
                 // right button
                 return false;
@@ -60,7 +60,7 @@ export class ContextMenu {
             e.preventDefault();
             return false;
         });
-        root.addEventListener("mousedown", e => {
+        root.addEventListener("mousedown", (e) => {
             // console.log("pointerevents: ContextMenu down");
             if (e.button == 2) {
                 this.close();
@@ -68,7 +68,7 @@ export class ContextMenu {
                 return true;
             }
         });
-        root.addEventListener("wheel", e => {
+        root.addEventListener("wheel", (e) => {
             var pos = parseInt(root.style.top);
             root.style.top =
                 (pos + e.deltaY * this.options.scroll_speed).toFixed() + "px";
@@ -343,7 +343,7 @@ export class ContextMenu {
         if (!elements.length)
             return;
 
-        elements.forEach(element => {
+        elements.forEach((element) => {
             if (element.close) {
                 element.close();
             } else {

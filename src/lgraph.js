@@ -56,7 +56,7 @@ export class LGraph {
         this._version = -1; // used to detect changes
 
         // safe clear
-        this._nodes?.forEach(node => {
+        this._nodes?.forEach((node) => {
             node.onRemoved?.();
         });
 
@@ -223,7 +223,7 @@ export class LGraph {
 
         if (do_not_catch_errors) {
             for (let i = 0; i < num; i++) {
-                nodes.forEach(node => {
+                nodes.forEach((node) => {
                     if (LiteGraph.use_deferred_actions && node._waiting_actions?.length) {
                         node.executePendingActions();
                     }
@@ -240,7 +240,7 @@ export class LGraph {
         } else { // catch errors
             try {
                 for (let i = 0; i < num; i++) {
-                    nodes.forEach(node => {
+                    nodes.forEach((node) => {
                         if (LiteGraph.use_deferred_actions && node._waiting_actions?.length) {
                             node.executePendingActions();
                         }
@@ -777,7 +777,7 @@ export class LGraph {
      * @return {Array} a list with all the nodes of this type
      */
     findNodesByClass(classObject, result = []) {
-        result = this._nodes.filter(node => node.constructor === classObject);
+        result = this._nodes.filter((node) => node.constructor === classObject);
         return result;
     }
 
@@ -789,7 +789,7 @@ export class LGraph {
      */
     findNodesByType(type, result = []) {
         const lowerCaseType = type.toLowerCase();
-        result = this._nodes.filter(node => node.type.toLowerCase() === lowerCaseType);
+        result = this._nodes.filter((node) => node.type.toLowerCase() === lowerCaseType);
         return result;
     }
 
@@ -800,7 +800,7 @@ export class LGraph {
      * @return {Node} the node or null
      */
     findNodeByTitle(title) {
-        return this._nodes.find(node => node.title === title) ?? null;
+        return this._nodes.find((node) => node.title === title) ?? null;
     }
 
     /**
@@ -810,7 +810,7 @@ export class LGraph {
      * @return {Array} a list with all the nodes with this name
      */
     findNodesByTitle(title) {
-        return this._nodes.filter(node => node.title === title);
+        return this._nodes.filter((node) => node.title === title);
     }
 
     /**
@@ -822,7 +822,7 @@ export class LGraph {
      * @return {LGraphNode} the node at this position or null
      */
     getNodeOnPos(x, y, nodes_list = this._nodes, margin = 0) {
-        return nodes_list.reverse().find(node => node.isPointInside(x, y, margin)) ?? null;
+        return nodes_list.reverse().find((node) => node.isPointInside(x, y, margin)) ?? null;
     }
 
     /**
@@ -833,7 +833,7 @@ export class LGraph {
      * @return {LGraphGroup} the group or null
      */
     getGroupOnPos(x, y) {
-        return this._groups.find(group => group.isPointInside(x, y, 2, true)) ?? null;
+        return this._groups.find((group) => group.isPointInside(x, y, 2, true)) ?? null;
     }
 
     /**
@@ -1245,7 +1245,7 @@ export class LGraph {
      * @return {Object} value of the node
      */
     serialize() {
-        const nodesInfo = this._nodes.map(node => node.serialize());
+        const nodesInfo = this._nodes.map((node) => node.serialize());
 
         // pack link info into a non-verbose format
         var links = [];
@@ -1268,7 +1268,7 @@ export class LGraph {
             links.push(link.serialize());
         }
 
-        const groupsInfo = this._groups.map(group => group.serialize());
+        const groupsInfo = this._groups.map((group) => group.serialize());
 
         var data = {
             last_node_id: this.last_node_id,
@@ -1352,7 +1352,7 @@ export class LGraph {
             }
 
             // configure nodes afterwards so they can reach each other
-            nodes.forEach(n_info => {
+            nodes.forEach((n_info) => {
                 const node = this.getNodeById(n_info.id);
                 node?.configure(n_info);
             });
@@ -1361,7 +1361,7 @@ export class LGraph {
         // groups
         this._groups.length = 0;
         if (data.groups) {
-            data.groups.forEach(groupData => {
+            data.groups.forEach((groupData) => {
                 const group = new LGraphGroup();
                 group.configure(groupData);
                 this.add(group);
@@ -1391,7 +1391,7 @@ export class LGraph {
         if(url.constructor === File || url.constructor === Blob)
         {
             var reader = new FileReader();
-            reader.addEventListener('load', event => {
+            reader.addEventListener('load', (event) => {
                 var data = JSON.parse(event.target.result);
                 that.configure(data);
                 callback?.();
@@ -1413,7 +1413,7 @@ export class LGraph {
             that.configure(data);
             callback?.();
         };
-        req.onerror = err => {
+        req.onerror = (err) => {
             console.error("Error loading graph:", err);
         };
     }

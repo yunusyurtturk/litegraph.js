@@ -214,7 +214,7 @@ export class LGraphNode {
         }
 
         if (this.widgets && this.serialize_widgets) {
-            o.widgets_values = this.widgets.map(widget => widget?.value ?? null);
+            o.widgets_values = this.widgets.map((widget) => widget?.value ?? null);
         }
 
         o.type ??= this.constructor.type;
@@ -251,11 +251,11 @@ export class LGraphNode {
         var data = LiteGraph.cloneObject(this.serialize());
 
         // remove links
-        data.inputs?.forEach(input => {
+        data.inputs?.forEach((input) => {
             input.link = null;
         });
 
-        data.outputs?.forEach(output => {
+        data.outputs?.forEach((output) => {
             if(output.links)
                 output.links.length = 0;
         });
@@ -314,7 +314,7 @@ export class LGraphNode {
         }
 
         // Update the widget value associated with the property name
-        const widgetToUpdate = this.widgets.find(widget => widget && widget.options?.property === name);
+        const widgetToUpdate = this.widgets.find((widget) => widget && widget.options?.property === name);
 
         if (widgetToUpdate) {
             widgetToUpdate.value = value;
@@ -352,7 +352,7 @@ export class LGraphNode {
         output_info._data = data;
 
         // if there are connections, pass the data to the connections
-        this.outputs[slot].links?.forEach(link_id => {
+        this.outputs[slot].links?.forEach((link_id) => {
             const link = this.graph.links[link_id];
             if (link) {
                 link.data = data;
@@ -381,7 +381,7 @@ export class LGraphNode {
         output_info.type = type;
 
         // if there are connections, pass the data to the connections
-        this.outputs[slot]?.links?.forEach(link_id => {
+        this.outputs[slot]?.links?.forEach((link_id) => {
             if (this.graph.links[link_id]) {
                 this.graph.links[link_id].type = type;
             }
@@ -554,7 +554,7 @@ export class LGraphNode {
      */
     getInputOrProperty(name) {
         if (this.inputs) {
-            const input = this.inputs.find(input_info => input_info.name === name && input_info.link !== null);
+            const input = this.inputs.find((input_info) => input_info.name === name && input_info.link !== null);
             if (input) {
                 const link = this.graph.links[input.link];
                 if (link) {
@@ -622,7 +622,7 @@ export class LGraphNode {
      * @return {boolean}
      */
     isAnyOutputConnected() {
-        return this.outputs ? this.outputs.some(output => output.links && output.links.length) : false;
+        return this.outputs ? this.outputs.some((output) => output.links && output.links.length) : false;
     }
 
     /**
@@ -642,10 +642,10 @@ export class LGraphNode {
         }
 
         return output.links
-            .map(link_id => this.graph.links[link_id])
-            .filter(link => link)
-            .map(link => this.graph.getNodeById(link.target_id))
-            .filter(target_node => target_node);
+            .map((link_id) => this.graph.links[link_id])
+            .filter((link) => link)
+            .map((link) => this.graph.getNodeById(link.target_id))
+            .filter((target_node) => target_node);
     }
 
     addOnTriggerInput() {
@@ -713,7 +713,7 @@ export class LGraphNode {
     executePendingActions() {
         if(!this._waiting_actions || !this._waiting_actions.length)
             return;
-        this._waiting_actions.forEach(p => {
+        this._waiting_actions.forEach((p) => {
             this.onAction(p[0], p[1], p[2], p[3], p[4]);
         });
         this._waiting_actions.length = 0;
@@ -895,7 +895,7 @@ export class LGraphNode {
             return;
         }
 
-        this.outputs[slot].links.forEach(id => {
+        this.outputs[slot].links.forEach((id) => {
             if (link_id !== null && link_id !== id) {
                 // Skip links
                 return;
@@ -998,7 +998,7 @@ export class LGraphNode {
         if(typeof array === 'string')
             array = [array];
 
-        array.forEach(info => {
+        array.forEach((info) => {
             const slot = isInput ? {
                 name: info[0],
                 type: info[1],
@@ -1041,7 +1041,7 @@ export class LGraphNode {
         this.disconnectInput(slot);
         const removedInput = this.inputs.splice(slot, 1)[0];
 
-        this.inputs.slice(slot).filter(input => !!input).forEach(input => {
+        this.inputs.slice(slot).filter((input) => !!input).forEach((input) => {
             const link = this.graph.links[input.link];
             link?.target_slot && link.target_slot--;
         });
@@ -1060,12 +1060,12 @@ export class LGraphNode {
         this.disconnectOutput(slot);
         this.outputs = this.outputs.filter((_, index) => index !== slot);
 
-        this.outputs.slice(slot).forEach(output => {
+        this.outputs.slice(slot).forEach((output) => {
             if (!output || !output.links) {
                 return;
             }
 
-            output.links.forEach(linkId => {
+            output.links.forEach((linkId) => {
                 const link = this.graph.links[linkId];
                 if (link) {
                     link.origin_slot -= 1;

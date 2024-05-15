@@ -22,7 +22,7 @@ export default [
             }
         ],
     */
-        "@stylistic/arrow-parens": [0, "always"],
+        "@stylistic/arrow-parens": [1, "always"],
         "@stylistic/arrow-spacing": [0, { "before": true, "after": true }],
         "@stylistic/brace-style":[0, "1tbs"],
         "@stylistic/allowSingleLine": [0, false],
@@ -74,8 +74,8 @@ export default [
         "@stylistic/new-parens":[0,
             "always"
         ],
-        "@stylistic/no-extra-semi":[0],
-        "@stylistic/no-floating-decimal":[0],
+        "@stylistic/no-extra-semi":[2],
+        "@stylistic/no-floating-decimal":[2],
         "@stylistic/no-multi-spaces":[1],
         "@stylistic/no-tabs":[0],
         "@stylistic/no-trailing-spaces":[1],
@@ -90,7 +90,6 @@ export default [
         "@stylistic/space-before-blocks":[1,
             "always"
         ],
-        "@stylistic/no-extra-semi":[2],
         "@stylistic/spaced-comment":[1,
             "always"
         ],

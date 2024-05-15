@@ -194,7 +194,7 @@ export class Editor {
             var reader = new FileReader();
             if(ext == "json")
             {
-                reader.onload = event => {
+                reader.onload = (event) => {
                     var data = JSON.parse( event.target.result );
                     that.graph.configure(data);
                 };
