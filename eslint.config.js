@@ -39,7 +39,7 @@ export default [
         "@stylistic/implicit-arrow-linebreak": [0, "beside"],
         "@stylistic/indent": [1, 4],
         "@stylistic/indent-binary-ops":[0, 4],
-        "@stylistic/key-spacing":[0, {
+        "@stylistic/key-spacing":[1, {
             "beforeColon":false,
             "afterColon":true,
             "mode":"strict"

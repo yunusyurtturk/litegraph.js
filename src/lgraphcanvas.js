@@ -951,8 +951,8 @@ export class LGraphCanvas {
                                 slotTo: !mClikSlot_isOut?mClikSlot_index:null,
                                 position: posRef, // ,e: e
                                 nodeType: "AUTO", // nodeNewType
-                                posAdd:[!mClikSlot_isOut?-30:30, -alphaPosY*130], // -alphaPosY*30]
-                                posSizeFix:[!mClikSlot_isOut?-1:0, 0], // -alphaPosY*2*/
+                                posAdd: [!mClikSlot_isOut?-30:30, -alphaPosY*130], // -alphaPosY*30]
+                                posSizeFix: [!mClikSlot_isOut?-1:0, 0], // -alphaPosY*2*/
                             });
 
                         }
@@ -1894,7 +1894,7 @@ export class LGraphCanvas {
                 node.pos[0] += this.graph_mouse[0] - posMin[0]; // += 5;
                 node.pos[1] += this.graph_mouse[1] - posMin[1]; // += 5;
 
-                this.graph.add(node,{doProcessChange:false});
+                this.graph.add(node,{doProcessChange: false});
 
                 nodes.push(node);
             }
@@ -5058,7 +5058,7 @@ export class LGraphCanvas {
                     return entry.value === category_path
                 });
                 if (index === -1) {
-                    entries.push({ value: category_path, content: name, has_submenu: true, callback : function(value, event, mouseEvent, contextMenu) {
+                    entries.push({ value: category_path, content: name, has_submenu: true, callback: function(value, event, mouseEvent, contextMenu) {
                         inner_onMenuAdded(value.value, contextMenu)
                     }});
                 }
@@ -5071,7 +5071,7 @@ export class LGraphCanvas {
                 if (node.skip_list)
                     return;
 
-                var entry = { value: node.type, content: node.title, has_submenu: false , callback : function(value, event, mouseEvent, contextMenu) {
+                var entry = { value: node.type, content: node.title, has_submenu: false , callback: function(value, event, mouseEvent, contextMenu) {
 
                     var first_event = contextMenu.getFirstEvent();
                     canvas.graph.beforeChange();
@@ -5458,8 +5458,8 @@ export class LGraphCanvas {
             ,slotTo: null // output
             ,position: []	// pass the event coords
             ,nodeType: null	// choose a nodetype to add, AUTO to set at first good
-            ,posAdd:[0,0]	// adjust x,y
-            ,posSizeFix:[0,0] // alpha, adjust the position x,y based on the new node size w,h
+            ,posAdd: [0,0]	// adjust x,y
+            ,posSizeFix: [0,0] // alpha, adjust the position x,y based on the new node size w,h
         }
         ,optPass
         );
@@ -7157,7 +7157,7 @@ export class LGraphCanvas {
         if(old_panel)
             old_panel.close();
 
-        var panel = this.createPanel("Subgraph Inputs",{closable:true, width: 500});
+        var panel = this.createPanel("Subgraph Inputs",{closable: true, width: 500});
         panel.node = node;
         panel.classList.add("subgraph_dialog");
 

@@ -151,7 +151,7 @@ export class Editor {
     }
 
     onLoadButton() {
-        var panel = this.graphcanvas.createPanel("Load session",{closable:true});
+        var panel = this.graphcanvas.createPanel("Load session",{closable: true});
 
         // @TODO
 
