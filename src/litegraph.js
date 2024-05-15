@@ -717,7 +717,7 @@ export var LiteGraph = new class {
         var supported_types_b = type_b.split(",");
         for (var i = 0; i < supported_types_a.length; ++i) {
             for (var j = 0; j < supported_types_b.length; ++j) {
-                if(this.isValidConnection(supported_types_a[i],supported_types_b[j])){
+                if(this.isValidConnection(supported_types_a[i],supported_types_b[j])) {
                 // if (supported_types_a[i] == supported_types_b[j]) {
                     return true;
                 }

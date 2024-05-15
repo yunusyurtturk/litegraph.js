@@ -221,7 +221,7 @@ export class Editor {
     }
 
     onFullscreenButton() {
-        if(this.isFullscreen()){
+        if(this.isFullscreen()) {
             this.exitFullscreen();
         } else {
             this.goFullscreen();
@@ -322,7 +322,7 @@ export class Editor {
     }
 
     exitFullscreen() {
-        if(document.exitFullscreen){
+        if(document.exitFullscreen) {
             document.exitFullscreen();
         } else if (document.mozCancelFullscreen) {
             document.mozCancelFullscreen();

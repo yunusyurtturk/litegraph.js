@@ -84,10 +84,10 @@ export default [
             "double",
             {"allowTemplateLiterals": true}
         ],
-        "@stylistic/semi-style":[0,
+        "@stylistic/semi-style":[1,
             "last"
         ],
-        "@stylistic/space-before-blocks":[0,
+        "@stylistic/space-before-blocks":[1,
             "always"
         ],
         "@stylistic/no-extra-semi":[2],
