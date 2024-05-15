@@ -45,18 +45,18 @@ export class DragAndScale {
         element.addEventListener("wheel", this.onWheel);
     }
 
-    onMouseDown = (e) => {
+    onMouseDown = (event) => {
         if (!this.enabled) {
             return;
         }
 
         const canvas = this.element;
         const rect = canvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        e.canvasx = x;
-        e.canvasy = y;
-        e.dragging = this.dragging;
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        event.canvasx = x;
+        event.canvasy = y;
+        event.dragging = this.dragging;
         
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
 
@@ -72,22 +72,19 @@ export class DragAndScale {
 
     }
 
-    onMouseMove = (e) => {
+    onMouseMove = (event) => {
         if (!this.enabled) {
             return;
         }
 
         const canvas = this.element;
         const rect = canvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        e.canvasx = x;
-        e.canvasy = y;
-        e.dragging = this.dragging;
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        event.canvasx = x;
+        event.canvasy = y;
+        event.dragging = this.dragging;
         
-        var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
-
-
         var deltax = x - this.last_mouse[0];
         var deltay = y - this.last_mouse[1];
         if (this.dragging) {
@@ -99,7 +96,7 @@ export class DragAndScale {
 
     }
 
-    onMouseUp = (event) => {
+    onMouseUp = (_event) => {
         this.dragging = false;
         this.abortController?.abort();
     }
