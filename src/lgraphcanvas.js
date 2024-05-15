@@ -1162,7 +1162,7 @@ export class LGraphCanvas {
                                 }
                             } else {
                                 this._highlight_input = null;
-                                this._highlight_input_slot = null;  // @TODO CHECK THIS
+                                this._highlight_input_slot = null; // @TODO CHECK THIS
                             }
                         }
 
@@ -3335,7 +3335,7 @@ export class LGraphCanvas {
                         ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5);
                         ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5);
                         ctx.closePath();
-                    }  else if (slot_shape === LiteGraph.GRID_SHAPE) {
+                    } else if (slot_shape === LiteGraph.GRID_SHAPE) {
                         ctx.rect(pos[0] - 4, pos[1] - 4, 2, 2);
                         ctx.rect(pos[0] - 1, pos[1] - 4, 2, 2);
                         ctx.rect(pos[0] + 2, pos[1] - 4, 2, 2);
@@ -3635,7 +3635,7 @@ export class LGraphCanvas {
                 ctx.beginPath();
                 if (shape == LiteGraph.BOX_SHAPE || low_quality) {
                     ctx.rect(0, -title_height, size[0] + 1, title_height);
-                } else if (  shape == LiteGraph.ROUND_SHAPE || shape == LiteGraph.CARD_SHAPE ) {
+                } else if ( shape == LiteGraph.ROUND_SHAPE || shape == LiteGraph.CARD_SHAPE ) {
                     ctx.roundRect(
                         0,
                         -title_height,
@@ -3680,7 +3680,7 @@ export class LGraphCanvas {
 
                 ctx.fillStyle = node.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR;
                 if(low_quality)
-                    ctx.fillRect( title_height * 0.5 - box_size *0.5, title_height * -0.5 - box_size *0.5, box_size , box_size  );
+                    ctx.fillRect( title_height * 0.5 - box_size *0.5, title_height * -0.5 - box_size *0.5, box_size , box_size );
                 else
                 {
                     ctx.beginPath();
@@ -5076,7 +5076,7 @@ export class LGraphCanvas {
 
         function inner_onMenuAdded(base_category ,prev_menu) {
 
-            var categories  = LiteGraph.getNodeTypesCategories(canvas.filter || graph.filter).filter(function(category) {return category.startsWith(base_category)});
+            var categories = LiteGraph.getNodeTypesCategories(canvas.filter || graph.filter).filter(function(category) {return category.startsWith(base_category)});
             var entries = [];
 
             categories.map(function(category) {
@@ -5086,7 +5086,7 @@ export class LGraphCanvas {
 
                 var base_category_regex = new RegExp('^(' + base_category + ')');
                 var category_name = category.replace(base_category_regex,"").split('/')[0];
-                var category_path = base_category  === '' ? category_name + '/' : base_category + category_name + '/';
+                var category_path = base_category === '' ? category_name + '/' : base_category + category_name + '/';
 
                 var name = category_name;
                 if(name.indexOf("::") != -1) // in case it has a namespace like "shader::math/rand" it hides the namespace
@@ -5488,10 +5488,10 @@ export class LGraphCanvas {
 
     createDefaultNodeForSlot(optPass) { // addNodeMenu for connection
         var optPass = optPass || {};
-        var opts = Object.assign({   nodeFrom: null // input
+        var opts = Object.assign({ nodeFrom: null // input
                                     ,slotFrom: null // input
-                                    ,nodeTo: null   // output
-                                    ,slotTo: null   // output
+                                    ,nodeTo: null // output
+                                    ,slotTo: null // output
                                     ,position: []	// pass the event coords
                                     ,nodeType: null	// choose a nodetype to add, AUTO to set at first good
                                     ,posAdd:[0,0]	// adjust x,y
@@ -5635,10 +5635,10 @@ export class LGraphCanvas {
     showConnectionMenu(optPass = {}) { // addNodeMenu for connection
 
         var opts = Object.assign({
-            nodeFrom: null,  // input
+            nodeFrom: null, // input
             slotFrom: null, // input
-            nodeTo: null,   // output
-            slotTo: null,   // output
+            nodeTo: null, // output
+            slotTo: null, // output
             e: null,
         },optPass);
 
@@ -5945,7 +5945,7 @@ export class LGraphCanvas {
                         ,node_from: null
                         ,node_to: null
                         ,do_type_filter: LiteGraph.search_filter_enabled // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
-                        ,type_filter_in: false                          // these are default: pass to set initially set values
+                        ,type_filter_in: false // these are default: pass to set initially set values
                         ,type_filter_out: false
                         ,show_general_if_none_on_typefilter: true
                         ,show_general_after_typefiltered: true

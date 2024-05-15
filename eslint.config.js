@@ -76,7 +76,7 @@ export default [
         ],
         "@stylistic/no-extra-semi":[0],
         "@stylistic/no-floating-decimal":[0],
-        "@stylistic/no-multi-spaces":[0],
+        "@stylistic/no-multi-spaces":[1],
         "@stylistic/no-tabs":[0],
         "@stylistic/no-trailing-spaces":[1],
         "@stylistic/object-curly-newline":[0, "multiline"],

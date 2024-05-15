@@ -1304,7 +1304,7 @@ export class LGraphNode {
 
         let left_offset = 0;
         // 1 offset due to how nodes are rendered
-        let right_offset =  1 ;
+        let right_offset = 1 ;
         let top_offset = 0;
         let bottom_offset = 0;
 
