@@ -191,7 +191,7 @@ export class LGraphTexture {
         }
     }
 
-    getExtraMenuOptions(graphcanvas) {
+    getExtraMenuOptions() {
         var that = this;
         if (!this._drop_texture) {
             return;
@@ -365,7 +365,7 @@ export class LGraphTexture {
     //used to replace shader code
     static replaceCode(code, context) {
         return code.replace(/\{\{[a-zA-Z0-9_]*\}\}/g, function (v) {
-            v = v.replace(/[\{\}]/g, "");
+            v = v.replace(/[\{\}]/g, ""); //@BUG: These escapes are being flagged as useless
             return context[v] || "";
         });
     }
@@ -498,9 +498,7 @@ LGraphTextureOperation.desc = "Texture shader operation";
 
 LGraphTextureOperation.presets = {};
 
-LGraphTextureOperation.prototype.getExtraMenuOptions = function (
-    graphcanvas,
-) {
+LGraphTextureOperation.prototype.getExtraMenuOptions = function () {
     var that = this;
     var txt = !that.properties.show ? "Show Texture" : "Hide Texture";
     return [
@@ -802,7 +800,7 @@ LGraphTextureShader.widgets_info = {
     precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
 };
 
-LGraphTextureShader.prototype.onPropertyChanged = function (name, value) {
+LGraphTextureShader.prototype.onPropertyChanged = function (name, _value) {
     if (name != "code") {
         return;
     }
@@ -818,8 +816,8 @@ LGraphTextureShader.prototype.onPropertyChanged = function (name, value) {
     //remove deprecated slots
     if (this.inputs) {
         var already = {};
-        for (var i = 0; i < this.inputs.length; ++i) {
-            var info = this.getInputInfo(i);
+        for (let i = 0; i < this.inputs.length; ++i) {
+            let info = this.getInputInfo(i);
             if (!info) {
                 continue;
             }
@@ -834,8 +832,8 @@ LGraphTextureShader.prototype.onPropertyChanged = function (name, value) {
     }
 
     //update existing ones
-    for (var i in uniforms) {
-        var info = shader.uniformInfo[i];
+    for (let i in uniforms) {
+        let info = shader.uniformInfo[i];
         if (info.loc === null) {
             continue;
         } //is an attribute, not a uniform
@@ -1169,15 +1167,15 @@ LGraphTextureWarp.prototype.onExecute = function () {
 
     var width = 512;
     var height = 512;
-    var type = gl.UNSIGNED_BYTE;
+    // var type = gl.UNSIGNED_BYTE;
     if (tex) {
         width = tex.width;
         height = tex.height;
-        type = tex.type;
+    //  type = tex.type;
     } else if (texB) {
         width = texB.width;
         height = texB.height;
-        type = texB.type;
+    //  type = texB.type;
     }
 
     if (!tex && !this._tex) {
@@ -1328,7 +1326,6 @@ LGraphTextureToViewport.prototype.onExecute = function () {
         old_viewport[2] * new_view[2],
         old_viewport[3] * new_view[3],
     );
-    var viewport = gl.getViewport(); //gl.getParameter(gl.VIEWPORT);
 
     if (this.properties.antialiasing) {
         if (!LGraphTextureToViewport._shader) {
@@ -1612,7 +1609,7 @@ LGraphTextureDownsample.prototype.onExecute = function () {
         GL.Texture.releaseTemporary(this._texture);
     }
 
-    for (var i = 0; i < iterations; ++i) {
+    for (let i = 0; i < iterations; ++i) {
         offset[0] = 1 / width;
         offset[1] = 1 / height;
         width = width >> 1 || 0;
@@ -1631,7 +1628,7 @@ LGraphTextureDownsample.prototype.onExecute = function () {
     this._texture = temp.pop();
 
     //free the rest
-    for (var i = 0; i < temp.length; ++i) {
+    for (let i = 0; i < temp.length; ++i) {
         GL.Texture.releaseTemporary(temp[i]);
     }
 
@@ -2581,7 +2578,7 @@ LGraphTextureChannels.prototype.onExecute = function () {
     //var format = this.properties.use_single_channel ? gl.LUMINANCE : gl.RGBA; //not supported by WebGL1
     var format = gl.RGB;
     var connections = 0;
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
         if (this.isOutputConnected(i)) {
             if (
                 !this._channels[i] ||
@@ -2622,7 +2619,7 @@ LGraphTextureChannels.prototype.onExecute = function () {
         [0, 0, 0, 1],
     ];
 
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
         if (!this._channels[i]) {
             continue;
         }
@@ -3655,7 +3652,7 @@ FXGlow.prototype.applyFX = function (
     uniforms.u_delta = this.scale; //1
 
     //downscale/upscale shader
-    var shader = FXGlow._shader;
+    shader = FXGlow._shader;
     if (!shader) {
         shader = FXGlow._shader = new GL.Shader(
             GL.Shader.SCREEN_VERTEX_SHADER,
@@ -3880,9 +3877,6 @@ LGraphTextureGlow.prototype.onExecute = function () {
         this.setOutputData(0, tex);
         return;
     }
-
-    var width = tex.width;
-    var height = tex.height;
 
     var fx = this.fx;
     fx.threshold = this.getInputOrProperty("threshold");
@@ -4764,8 +4758,9 @@ LGraphTextureCurve.prototype.onExecute = function () {
 };
 
 LGraphTextureCurve.prototype.sampleCurve = function (f, points) {
-    var points = points || this._points.RGB;
-    if (!points) return;
+    points ||= this._points.RGB;
+    if (!points) 
+        return;
     for (var i = 0; i < points.length - 1; ++i) {
         var p = points[i];
         var pn = points[i + 1];
