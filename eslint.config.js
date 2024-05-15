@@ -4,6 +4,11 @@ import js from "@eslint/js";
 export default [
     js.configs.recommended,
     {
+    "name": "LiteGraph/standard",
+    "languageOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
     "plugins": {
         "@stylistic":stylistic
     },
