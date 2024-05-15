@@ -1,6 +1,9 @@
 import stylistic from '@stylistic/eslint-plugin'
+import js from "@eslint/js";
 
-export default [{
+export default [
+    js.configs.recommended,
+    {
     "plugins": {
         "@stylistic":stylistic
     },
