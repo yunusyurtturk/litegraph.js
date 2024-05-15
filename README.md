@@ -8,6 +8,7 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 
 * Replacing/revising alot of old event handler code
 * Cleaned up alot of loops and condition logic
+* Fixed over 400 linting errors
 
 ### Breaking
 
@@ -27,12 +28,14 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * HttpRequestNode input is acknowledged
 * Fix links sometimes not being correct when copy pasting nodes
 * Added favicon
+* Fixed SubgraphOutput location glitch
+* Fixed over 800 linting errors (total so far)
 
 ### Breaking
 
-* Removed LiteGraph.closeAllContextMenus
-* Removed LiteGraph.pointerAddListener
-* Removed LiteGraph.pointerRemoveListener
+* Removed LiteGraph.closeAllContextMenus in favor of ContextMenu.closeAll()
+* Removed LiteGraph.pointerAddListener in favor of addEventListener()
+* Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
 
 # litegraph.js
 
