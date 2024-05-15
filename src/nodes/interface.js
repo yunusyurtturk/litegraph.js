@@ -75,7 +75,7 @@ class WidgetButton {
         this.setOutputData(1, this.clicked);
     }
 
-    onMouseUp(e) {
+    onMouseUp(_e) {
         this.clicked = false;
     }
 
@@ -127,7 +127,7 @@ class WidgetToggle {
         ctx.textAlign = "left";
     }
 
-    onAction(action) {
+    onAction(_action) {
         this.properties.value = !this.properties.value;
         this.trigger("e", this.properties.value);
     }
@@ -202,7 +202,7 @@ class WidgetNumber {
         this.setOutputData(0, this.properties.value);
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(_name, _value) {
         var t = (this.properties.step + "").split(".");
         this._precision = t.length > 1 ? t[1].length : 0;
     }
@@ -347,7 +347,7 @@ class WidgetKnob {
         var center_x = this.size[0] * 0.5;
         var center_y = this.size[1] * 0.5;
         var radius = Math.min(this.size[0], this.size[1]) * 0.5 - 5;
-        var w = Math.floor(radius * 0.05);
+        // var w = Math.floor(radius * 0.05); //@BUG: unused variable, test without
 
         ctx.globalAlpha = 1;
         ctx.save();
@@ -454,7 +454,7 @@ class WidgetKnob {
         this.setDirtyCanvas(true);
     }
 
-    onMouseUp(e) {
+    onMouseUp(_e) {
         if (this.oldmouse) {
             this.oldmouse = null;
             this.captureInput(false);
@@ -587,13 +587,9 @@ class WidgetHSlider {
         this.setDirtyCanvas(true);
     }
 
-    onMouseUp(e) {
+    onMouseUp(_e) {
         this.oldmouse = null;
         this.captureInput(false);
-    }
-
-    onMouseLeave(e) {
-        //this.oldmouse = null;
     }
 }
 LiteGraph.registerNodeType("widget/hslider", WidgetHSlider);
