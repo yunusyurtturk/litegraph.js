@@ -10,7 +10,7 @@
         "build": "python3 build.py",
         "docs": "jsdoc -c ./docs/.jsdoc.config -d ./docs -r --verbose --debug",
         "server": "nodemon server.js",
-        "test": "jest",
+        "test": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js",
         "prettier": "npx prettier --write src/**/*.* css/**/*.*",
         "lint": "npx eslint src",
         "lint:fix": "npx eslint --fix src"

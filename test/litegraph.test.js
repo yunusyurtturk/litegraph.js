@@ -1,26 +1,12 @@
-
-import { strict as assert } from 'assert';
-
-
+import { jest } from "@jest/globals";
 import { LiteGraph } from "../src/litegraph.js";
 import { LGraphNode } from "../src/lgraphnode.js";
 
-/*
-    @TODO:
-
-    Resolve any commented out code.  The original test should pass
-    before we change any code so that we know it's the test that's broken
-    vs the code that's broken.
-*/
-
-describe("Registering node types", () => {
-    
+describe("register node types", () => {
     let Sum;
-    let node;
-    let flagonNodeTypeRegistered = false;
-    let flagonNodeTypeReplaced = false;
 
-    before(() => {
+    beforeEach(() => {
+        jest.resetModules();
         Sum = function Sum() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -29,77 +15,107 @@ describe("Registering node types", () => {
         Sum.prototype.onExecute = function (a, b) {
             this.setOutputData(0, a + b);
         };
+    });
 
-        LiteGraph.onNodeTypeRegistered = () => {
-            flagonNodeTypeRegistered = true;
-        };
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
 
-        LiteGraph.onNodeTypeReplaced = () => {
-            flagonNodeTypeReplaced = true;
-        };
-
+    test("normal case", () => {
         LiteGraph.registerNodeType("math/sum", Sum);
-        node = LiteGraph.registered_node_types["math/sum"];
+
+        let node = LiteGraph.registered_node_types["math/sum"];
+        expect(node).toBeTruthy();
+        expect(node.type).toBe("math/sum");
+        expect(node.title).toBe("Sum");
+        expect(node.category).toBe("math");
+        expect(node.prototype.configure).toBe(
+            LGraphNode.prototype.configure
+        );
     });
 
-    it("should correctly construct nodes", () => {
-        assert(node);
-        assert.equal(flagonNodeTypeRegistered, true);
-        assert.strictEqual(node.type, "math/sum");
-        assert.strictEqual(node.title, "Sum");
-        assert.strictEqual(node.category, "math");
-        assert.strictEqual(node.prototype.configure, LGraphNode.prototype.configure);
+    test("callback triggers", () => {
+        const consoleSpy = jest
+            .spyOn(console, "log")
+            .mockImplementation(() => {});
+
+        LiteGraph.onNodeTypeRegistered = jest.fn();
+        LiteGraph.onNodeTypeReplaced = jest.fn();
+        LiteGraph.registerNodeType("math/sum", Sum);
+        expect(LiteGraph.onNodeTypeRegistered).toHaveBeenCalled();
+        expect(LiteGraph.onNodeTypeReplaced).not.toHaveBeenCalled();
+        LiteGraph.registerNodeType("math/sum", Sum);
+        expect(LiteGraph.onNodeTypeReplaced).toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringMatching("replacing node type")
+        );
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringMatching("math/sum")
+        );
     });
 
-    it("should handle errors for passing invalid arguments", () => {
-        assert.throws(() => {
-            LiteGraph.registerNodeType("math/sub", { simple: "type" });
-        }, "Cannot register a simple object");
-    });
-
-    it("should correctly construct the title", () => {
+    test("node with title", () => {
         Sum.title = "The sum title";
-        assert.strictEqual(node.title, "The sum title");
-        assert.notStrictEqual(node.title, node.name);
+        LiteGraph.registerNodeType("math/sum", Sum);
+        let node = LiteGraph.registered_node_types["math/sum"];
+        expect(node.title).toBe("The sum title");
+        expect(node.title).not.toBe(node.name);
     });
 
-    it("should correctly map shapes", () => {
-
-        assert.strictEqual(new node().shape, undefined);
-        node.prototype.shape = "default";
-        assert.strictEqual(new node().shape, undefined);
-        node.prototype.shape = "box";
-        assert.strictEqual(new node().shape, LiteGraph.BOX_SHAPE);
-        node.prototype.shape = "round";
-        assert.strictEqual(new node().shape, LiteGraph.ROUND_SHAPE);
-        node.prototype.shape = "circle";
-        assert.strictEqual(new node().shape, LiteGraph.CIRCLE_SHAPE);
-        node.prototype.shape = "card";
-        assert.strictEqual(new node().shape, LiteGraph.CARD_SHAPE);
-        node.prototype.shape = "custom_shape";
-        assert.strictEqual(new node().shape, "custom_shape");
+    test("handle error simple object", () => {
+        expect(() =>
+            LiteGraph.registerNodeType("math/sum", { simple: "type" })
+        ).toThrow("Cannot register a simple object");
     });
 
-    it("should correctly replace node types with callbacks", () => {
-        
+    test("check shape mapping", () => {
+        LiteGraph.registerNodeType("math/sum", Sum);
+
+        const node_type = LiteGraph.registered_node_types["math/sum"];
+        expect(new node_type().shape).toBe(undefined);
+        node_type.prototype.shape = "default";
+        expect(new node_type().shape).toBe(undefined);
+        node_type.prototype.shape = "box";
+        expect(new node_type().shape).toBe(LiteGraph.BOX_SHAPE);
+        node_type.prototype.shape = "round";
+        expect(new node_type().shape).toBe(LiteGraph.ROUND_SHAPE);
+        node_type.prototype.shape = "circle";
+        expect(new node_type().shape).toBe(LiteGraph.CIRCLE_SHAPE);
+        node_type.prototype.shape = "card";
+        expect(new node_type().shape).toBe(LiteGraph.CARD_SHAPE);
+        node_type.prototype.shape = "custom_shape";
+        expect(new node_type().shape).toBe("custom_shape");
+
+        // Check that also works for replaced node types
+        jest.spyOn(console, "log").mockImplementation(() => {});
         function NewCalcSum(a, b) {
             return a + b;
         }
-        
-        assert.equal(flagonNodeTypeReplaced, false);       
         LiteGraph.registerNodeType("math/sum", NewCalcSum);
-        assert.equal(flagonNodeTypeReplaced, true);
-
         const new_node_type = LiteGraph.registered_node_types["math/sum"];
-        // this should generate a console.log() saying "replacing node type: math/sum"
-
         new_node_type.prototype.shape = "box";
-        assert.strictEqual(new new_node_type().shape, LiteGraph.BOX_SHAPE);
+        expect(new new_node_type().shape).toBe(LiteGraph.BOX_SHAPE);
     });
 
-    it("should correctly register supported file extensions", () => {
-        assert.deepEqual(LiteGraph.node_types_by_file_extension, {});
-        
+    test("onPropertyChanged warning", () => {
+        const consoleSpy = jest
+            .spyOn(console, "warn")
+            .mockImplementation(() => {});
+
+        Sum.prototype.onPropertyChange = true;
+        LiteGraph.registerNodeType("math/sum", Sum);
+        expect(consoleSpy).toBeCalledTimes(1);
+        expect(consoleSpy).toBeCalledWith(
+            expect.stringContaining("has onPropertyChange method")
+        );
+        expect(consoleSpy).toBeCalledWith(expect.stringContaining("math/sum"));
+    });
+
+    test("registering supported file extensions", () => {
+        expect(LiteGraph.node_types_by_file_extension).toEqual({});
+
+        // Create two node types with calc_times overriding .pdf
+        Sum.supported_extensions = ["PDF", "exe", null];
         function Times() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -109,45 +125,34 @@ describe("Registering node types", () => {
             this.setOutputData(0, a * b);
         };
         Times.supported_extensions = ["pdf", "jpg"];
-
-        LiteGraph.registerNodeType("math/times", Times);
-        
-        Sum = function Sum() {
-            this.addInput("a", "number");
-            this.addInput("b", "number");
-            this.addOutput("sum", "number");
-        };
-        Sum.prototype.onExecute = function (a, b) {
-            this.setOutputData(0, a + b);
-        };
-        // Create two node types with calc_times overriding .pdf
-        Sum.supported_extensions = ["PDF", "exe", null];
-
         LiteGraph.registerNodeType("math/sum", Sum);
-        // this should generate a console.log() saying "replacing node type: math/sum"
+        LiteGraph.registerNodeType("math/times", Times);
 
+        expect(
+            Object.keys(LiteGraph.node_types_by_file_extension).length
+        ).toBe(3);
+        expect(LiteGraph.node_types_by_file_extension).toHaveProperty("pdf");
+        expect(LiteGraph.node_types_by_file_extension).toHaveProperty("exe");
+        expect(LiteGraph.node_types_by_file_extension).toHaveProperty("jpg");
 
-        assert.strictEqual(Object.keys(LiteGraph.node_types_by_file_extension).length, 3);
-        assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("pdf"));
-        assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("exe"));
-        assert(LiteGraph.node_types_by_file_extension.hasOwnProperty("jpg"));
-    //    assert.strictEqual(LiteGraph.node_types_by_file_extension.exe, Times);
-    //    assert.strictEqual(LiteGraph.node_types_by_file_extension.pdf, Times);
-    //    assert.strictEqual(LiteGraph.node_types_by_file_extension.jpg, Times);
+        expect(LiteGraph.node_types_by_file_extension.exe).toBe(Sum);
+        expect(LiteGraph.node_types_by_file_extension.pdf).toBe(Times);
+        expect(LiteGraph.node_types_by_file_extension.jpg).toBe(Times);
     });
 
-    it("should correctly register in/out slot types", () => {
-    //    assert.deepEqual(LiteGraph.registered_slot_in_types, {});
-    //    assert.deepEqual(LiteGraph.registered_slot_out_types, {});
+    test("register in/out slot types", () => {
+        expect(LiteGraph.registered_slot_in_types).toEqual({});
+        expect(LiteGraph.registered_slot_out_types).toEqual({});
 
         // Test slot type registration with first type
         LiteGraph.auto_load_slot_types = true;
-    //    expect(LiteGraph.registered_slot_in_types).toEqual({
-    //        number: { nodes: ["math/sum"] },
-    //    });
-    //   expect(LiteGraph.registered_slot_out_types).toEqual({
-    //        number: { nodes: ["math/sum"] },
-    //    });
+        LiteGraph.registerNodeType("math/sum", Sum);
+        expect(LiteGraph.registered_slot_in_types).toEqual({
+            number: { nodes: ["math/sum"] },
+        });
+        expect(LiteGraph.registered_slot_out_types).toEqual({
+            number: { nodes: ["math/sum"] },
+        });
 
         // Test slot type registration with second type
         function ToInt() {
@@ -158,21 +163,21 @@ describe("Registering node types", () => {
             this.setOutputData(0, Number(str));
         };
         LiteGraph.registerNodeType("basic/to_int", ToInt);
-    //    expect(LiteGraph.registered_slot_in_types).toEqual({
-    //        number: { nodes: ["math/sum"] },
-    //        string: { nodes: ["basic/to_int"] },
-    //    });
-    //    expect(LiteGraph.registered_slot_out_types).toEqual({
-    //        number: { nodes: ["math/sum", "basic/to_int"] },
-    //    });
+        expect(LiteGraph.registered_slot_in_types).toEqual({
+            number: { nodes: ["math/sum"] },
+            string: { nodes: ["basic/to_int"] },
+        });
+        expect(LiteGraph.registered_slot_out_types).toEqual({
+            number: { nodes: ["math/sum", "basic/to_int"] },
+        });
     });
 });
 
-describe("Unregistering node types", () => {
+describe("unregister node types", () => {
     let Sum;
-    let node;
 
-    before(() => {
+    beforeEach(async () => {
+        jest.resetModules();
         Sum = function Sum() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -183,34 +188,39 @@ describe("Unregistering node types", () => {
         };
     });
 
-    it("should remove by name", () => {
-    //    expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    test("remove by name", () => {
+        LiteGraph.registerNodeType("math/sum", Sum);
+        expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
 
         LiteGraph.unregisterNodeType("math/sum");
-    //    expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
+        expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
     });
 
-    it("should remove by object", () => {
+    test("remove by object", () => {
         LiteGraph.registerNodeType("math/sum", Sum);
-    //    expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
+        expect(LiteGraph.registered_node_types["math/sum"]).toBeTruthy();
 
         LiteGraph.unregisterNodeType(Sum);
-    //    expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
+        expect(LiteGraph.registered_node_types["math/sum"]).toBeFalsy();
     });
 
-    it("should handle attempting to remove with wrong name", () => {
-    //    expect(() => LiteGraph.unregisterNodeType("missing/type")).toThrow(
-    //        "node type not found: missing/type"
-    //    );
+    test("try removing with wrong name", () => {
+        expect(() => LiteGraph.unregisterNodeType("missing/type")).toThrow(
+            "node type not found: missing/type"
+        );
     });
 
-    it("should handle not having constructor name", () => {
+    test("no constructor name", () => {
         function BlankNode() {}
         BlankNode.constructor = {}
         LiteGraph.registerNodeType("blank/node", BlankNode);
-    //    expect(LiteGraph.registered_node_types["blank/node"]).toBeTruthy()
+        expect(LiteGraph.registered_node_types["blank/node"]).toBeTruthy()
 
         LiteGraph.unregisterNodeType("blank/node");
-    //    expect(LiteGraph.registered_node_types["blank/node"]).toBeFalsy();
+        expect(LiteGraph.registered_node_types["blank/node"]).toBeFalsy();
     })
 });
