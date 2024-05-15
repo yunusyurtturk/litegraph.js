@@ -109,9 +109,9 @@ class Subgraph {
 
         //send inputs to subgraph global inputs
         if (this.inputs) {
-            for (var i = 0; i < this.inputs.length; i++) {
-                var input = this.inputs[i];
-                var value = this.getInputData(i);
+            for (let i = 0; i < this.inputs.length; i++) {
+                let input = this.inputs[i];
+                let value = this.getInputData(i);
                 this.subgraph.setInputData(input.name, value);
             }
         }
@@ -121,9 +121,9 @@ class Subgraph {
 
         //send subgraph global outputs to outputs
         if (this.outputs) {
-            for (var i = 0; i < this.outputs.length; i++) {
-                var output = this.outputs[i];
-                var value = this.subgraph.getOutputData(output.name);
+            for (let i = 0; i < this.outputs.length; i++) {
+                let output = this.outputs[i];
+                let value = this.subgraph.getOutputData(output.name);
                 this.setOutputData(i, value);
             }
         }
@@ -233,7 +233,7 @@ class Subgraph {
     }
 
     //**** INPUTS ***********************************
-    onSubgraphTrigger(event, param) {
+    onSubgraphTrigger(event) {
         var slot = this.findOutputSlot(event);
         if (slot != -1) {
             this.triggerSlot(slot);
@@ -436,23 +436,23 @@ class Subgraph {
 
         //mark inner nodes
         var ids = {};
-        var min_x = 0;
-        var max_x = 0;
-        for (var i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
-            ids[node.id] = node;
-            min_x = Math.min(node.pos[0], min_x);
-            max_x = Math.max(node.pos[0], min_x);
+    //@BUG: these aren't currently used.  Examine and decide whether to excise.
+    //    var min_x = 0;
+    //    var max_x = 0;
+        for (let i = 0; i < nodes.length; ++i) {
+            ids[node.id] = nodes[i];
+    //      min_x = Math.min(node.pos[0], min_x);
+    //      max_x = Math.max(node.pos[0], min_x);
         }
 
-        for (var i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
+        for (let i = 0; i < nodes.length; ++i) {
+            let node = nodes[i];
             //check inputs
             if (node.inputs)
-                for (var j = 0; j < node.inputs.length; ++j) {
-                    var input = node.inputs[j];
+                for (let j = 0; j < node.inputs.length; ++j) {
+                    let input = node.inputs[j];
                     if (!input || !input.link) continue;
-                    var link = node.graph.links[input.link];
+                    let link = node.graph.links[input.link];
                     if (!link) continue;
                     if (ids[link.origin_id]) continue;
                     //this.addInput(input.name,link.type);
@@ -467,12 +467,12 @@ class Subgraph {
 
             //check outputs
             if (node.outputs)
-                for (var j = 0; j < node.outputs.length; ++j) {
-                    var output = node.outputs[j];
+                for (let j = 0; j < node.outputs.length; ++j) {
+                    let output = node.outputs[j];
                     if (!output || !output.links || !output.links.length) continue;
                     //    var is_external = false;
-                    for (var k = 0; k < output.links.length; ++k) {
-                        var link = node.graph.links[output.links[k]];
+                    for (let k = 0; k < output.links.length; ++k) {
+                        let link = node.graph.links[output.links[k]];
                         if (!link) continue;
                         if (ids[link.target_id]) continue;
                         //        is_external = true;
@@ -820,7 +820,7 @@ class ConstantNumber {
         this.setProperty("value", v);
     }
 
-    onDrawBackground(ctx) {
+    onDrawBackground() {
         //show the current value
         this.outputs[0].label = this.properties["value"].toFixed(3);
     }
@@ -849,7 +849,7 @@ class ConstantBoolean {
         return [["toggle", LiteGraph.ACTION]];
     }
 
-    onAction(action) {
+    onAction() {
         this.setValue(!this.properties.value);
     }
 }
@@ -964,7 +964,7 @@ class ConstantFile {
                 that._data = data;
                 that.boxcolor = "#AEA";
             })
-            .catch(function (error) {
+            .catch((_error) => {
                 that._data = null;
                 that.boxcolor = "red";
                 console.error("error fetching file:", url);
@@ -1205,7 +1205,7 @@ class TableElement {
         if (row == null) row = this.properties.row;
         if (col == null) col = this.properties.column;
         if (table == null || row == null || col == null) return;
-        var row = table[Math.floor(Number(row))];
+        row = table[Math.floor(Number(row))];
         if (row) this.setOutputData(0, row[Math.floor(Number(col))]);
         else this.setOutputData(0, null);
     }
@@ -1324,8 +1324,12 @@ class MergeObjects {
         var A = this.getInputData(0);
         var B = this.getInputData(1);
         var C = this._result;
-        if (A) for (var i in A) C[i] = A[i];
-        if (B) for (var i in B) C[i] = B[i];
+        if (A) 
+            for (let i in A) 
+                C[i] = A[i];
+        if (B) 
+            for (let i in B) 
+                C[i] = B[i];
         this.setOutputData(0, C);
     }
 }
@@ -1421,7 +1425,7 @@ class DownloadData {
         this.properties = { filename: "data.json" };
         this.value = null;
         var that = this;
-        this.addWidget("button", "Download", "", function (v) {
+        this.addWidget("button", "Download", "", () => {
             if (!that.value) return;
             that.downloadAsFile();
         });
@@ -1448,7 +1452,7 @@ class DownloadData {
         }, 1000 * 60); //wait one minute to revoke url
     }
 
-    onAction(action, param) {
+    onAction() {
         var that = this;
         setTimeout(function () {
             that.downloadAsFile();
@@ -1513,7 +1517,7 @@ class Watch {
         }
     }
 
-    onDrawBackground(ctx) {
+    onDrawBackground() {
         //show the current value
         this.inputs[0].label = Watch.toString(this.value);
     }
@@ -1610,7 +1614,7 @@ class Alert {
         this.widget.value = o.properties.msg;
     }
 
-    onAction(action, param) {
+    onAction() {
         var msg = this.properties.msg;
         setTimeout(function () {
             alert(msg);
