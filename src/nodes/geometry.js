@@ -54,7 +54,7 @@ class LGraphPoints3D {
         this._last_radius = null;
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(_name, _value) {
         this.must_update = true;
     }
 
@@ -127,23 +127,24 @@ class LGraphPoints3D {
 
         if (regular) {
             if (mode == LGraphPoints3D.RECTANGLE) {
-                var side = Math.floor(Math.sqrt(num_points));
-                for (var i = 0; i < side; ++i)
-                    for (var j = 0; j < side; ++j) {
-                        var pos = i * 3 + j * 3 * side;
+                let side = Math.floor(Math.sqrt(num_points));
+                for (let i = 0; i < side; ++i)
+                    for (let j = 0; j < side; ++j) {
+                        let pos = i * 3 + j * 3 * side;
                         points[pos] = (i / side - 0.5) * radius * 2;
                         points[pos + 1] = 0;
                         points[pos + 2] = (j / side - 0.5) * radius * 2;
                     }
                 points = new Float32Array(points.subarray(0, side * side * 3));
                 if (normals) {
-                    for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
+                    for (let i = 0; i < normals.length; i += 3) 
+                        normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.SPHERE) {
-                var side = Math.floor(Math.sqrt(num_points));
-                for (var i = 0; i < side; ++i)
-                    for (var j = 0; j < side; ++j) {
-                        var pos = i * 3 + j * 3 * side;
+                let side = Math.floor(Math.sqrt(num_points));
+                for (let i = 0; i < side; ++i)
+                    for (let j = 0; j < side; ++j) {
+                        let pos = i * 3 + j * 3 * side;
                         polarToCartesian(
                             temp,
                             (i / side) * 2 * Math.PI,
@@ -158,35 +159,38 @@ class LGraphPoints3D {
                 if (normals)
                     LGraphPoints3D.generateSphericalNormals(points, normals);
             } else if (mode == LGraphPoints3D.CIRCLE) {
-                for (var i = 0; i < size; i += 3) {
-                    var angle = 2 * Math.PI * (i / size);
+                for (let i = 0; i < size; i += 3) {
+                    let angle = 2 * Math.PI * (i / size);
                     points[i] = Math.cos(angle) * radius;
                     points[i + 1] = 0;
                     points[i + 2] = Math.sin(angle) * radius;
                 }
                 if (normals) {
-                    for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
+                    for (let i = 0; i < normals.length; i += 3) 
+                        normals.set(UP, i);
                 }
             }
         } //non regular
         else {
             if (mode == LGraphPoints3D.RECTANGLE) {
-                for (var i = 0; i < size; i += 3) {
+                for (let i = 0; i < size; i += 3) {
                     points[i] = (Math.random() - 0.5) * radius * 2;
                     points[i + 1] = 0;
                     points[i + 2] = (Math.random() - 0.5) * radius * 2;
                 }
                 if (normals) {
-                    for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
+                    for (let i = 0; i < normals.length; i += 3) 
+                        normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.CUBE) {
-                for (var i = 0; i < size; i += 3) {
+                for (let i = 0; i < size; i += 3) {
                     points[i] = (Math.random() - 0.5) * radius * 2;
                     points[i + 1] = (Math.random() - 0.5) * radius * 2;
                     points[i + 2] = (Math.random() - 0.5) * radius * 2;
                 }
                 if (normals) {
-                    for (var i = 0; i < normals.length; i += 3) normals.set(UP, i);
+                    for (let i = 0; i < normals.length; i += 3) 
+                        normals.set(UP, i);
                 }
             } else if (mode == LGraphPoints3D.SPHERE) {
                 LGraphPoints3D.generateSphere(points, size, radius);
@@ -318,7 +322,7 @@ class LGraphPoints3D {
 
         if (evenly) {
             areas = new Float32Array(num_triangles); //accum
-            for (var i = 0; i < num_triangles; ++i) {
+            for (let i = 0; i < num_triangles; ++i) {
                 if (indices) {
                     a = indices[i * 3] * 3;
                     b = indices[i * 3 + 1] * 3;
@@ -338,15 +342,11 @@ class LGraphPoints3D {
                 total_area += Math.sqrt(s * (s - aL) * (s - bL) * (s - cL));
                 areas[i] = total_area;
             }
-            for (
-                var i = 0;
-                i < num_triangles;
-                ++i //normalize
-            )
+            for (let i = 0; i < num_triangles; ++i) //normalize
                 areas[i] /= total_area;
         }
 
-        for (var i = 0; i < size; i += 3) {
+        for (let i = 0; i < size; i += 3) {
             var r = Math.random();
             var index = evenly
                 ? findRandomTriangle(areas, r)
@@ -395,10 +395,12 @@ class LGraphPoints3D {
     }
 
     static generateFromInsideObject(points, size, mesh) {
-        if (!mesh || mesh.constructor !== GL.Mesh) return;
+        if (!mesh || mesh.constructor !== GL.Mesh) 
+            return;
 
         var aabb = mesh.getBoundingBox();
-        if (!mesh.octree) mesh.octree = new GL.Octree(mesh);
+        if (!mesh.octree) 
+            mesh.octree = new GL.Octree(mesh);
         var octree = mesh.octree;
         var origin = vec3.create();
         var direction = vec3.fromValues(1, 0, 0);
@@ -707,7 +709,7 @@ class LGraphGeometryTransform {
             );
         var temp = vec3.create();
 
-        for (var i = 0, l = vertices.length; i < l; i += 3) {
+        for (let i = 0, l = vertices.length; i < l; i += 3) {
             temp[0] = old_vertices[i];
             temp[1] = old_vertices[i + 1];
             temp[2] = old_vertices[i + 2];
@@ -727,7 +729,7 @@ class LGraphGeometryTransform {
             var normal_model = mat4.invert(mat4.create(), model);
             if (normal_model) mat4.transpose(normal_model, normal_model);
             var old_normals = geometry.normals;
-            for (var i = 0, l = normals.length; i < l; i += 3) {
+            for (let i = 0, l = normals.length; i < l; i += 3) {
                 temp[0] = old_normals[i];
                 temp[1] = old_normals[i + 1];
                 temp[2] = old_normals[i + 2];
@@ -826,7 +828,7 @@ class LGraphGeometryExtrude {
         this._must_update = true;
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(_name, _value) {
         this._must_update = true;
     }
 
@@ -925,7 +927,7 @@ class LGraphGeometryEval {
         this.func = null;
     }
 
-    onConfigure(o) {
+    onConfigure() {
         this.compileCode();
     }
 
@@ -972,7 +974,7 @@ class LGraphGeometryEval {
 
             //clone
             if (!this.geometry) this.geometry = {};
-            for (var i in geometry) {
+            for (let i in geometry) {
                 if (geometry[i] == null) continue;
                 if (geometry[i].constructor == Float32Array)
                     this.geometry[i] = new Float32Array(geometry[i]);
@@ -988,7 +990,7 @@ class LGraphGeometryEval {
             if (!vertices || this.vertices.length != geometry.vertices.length)
                 vertices = this.vertices = new Float32Array(geometry.vertices);
             else vertices.set(geometry.vertices);
-            for (var i = 0; i < vertices.length; i += 3) {
+            for (let i = 0; i < vertices.length; i += 3) {
                 V[0] = vertices[i];
                 V[1] = vertices[i + 1];
                 V[2] = vertices[i + 2];
@@ -1099,7 +1101,7 @@ class LGraphConnectPoints {
         this.must_update = true;
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(_name, _value) {
         this.must_update = true;
     }
 
@@ -1118,7 +1120,8 @@ class LGraphConnectPoints {
 
             //copy
             this.geometry = {};
-            for (var i in geometry) this.geometry[i] = geometry[i];
+            for (let i in geometry) 
+                this.geometry[i] = geometry[i];
             this.geometry._id = generateGeometryId();
             this.geometry._version = this.my_version++;
 
@@ -1130,12 +1133,12 @@ class LGraphConnectPoints {
             var max_connections = this.properties.max_connections;
             var indices = [];
 
-            for (var i = 0; i < l; i += 3) {
+            for (let i = 0; i < l; i += 3) {
                 var x = vertices[i];
                 var y = vertices[i + 1];
                 var z = vertices[i + 2];
                 var connections = 0;
-                for (var j = i + 3; j < l; j += 3) {
+                for (let j = i + 3; j < l; j += 3) {
                     var x2 = vertices[j];
                     var y2 = vertices[j + 1];
                     var z2 = vertices[j + 2];
@@ -1222,7 +1225,7 @@ if (typeof GL != "undefined") {
         updateMesh(geometry) {
             if (!this.mesh) this.mesh = new GL.Mesh();
 
-            for (var i in geometry) {
+            for (let i in geometry) {
                 if (i[0] == "_") continue;
 
                 var buffer_data = geometry[i];
@@ -1258,7 +1261,7 @@ if (typeof GL != "undefined") {
                 var normals = new Float32Array(
                     this.mesh.vertexBuffers.vertices.data.length,
                 );
-                for (var i = 0; i < normals.length; i += 3) normals.set(n, i);
+                for (let i = 0; i < normals.length; i += 3) normals.set(n, i);
                 mesh_buffer = new GL.Buffer(GL.ARRAY_BUFFER, normals, 3);
                 this.mesh.addBuffer("normals", mesh_buffer);
             }
