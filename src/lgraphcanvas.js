@@ -2150,8 +2150,8 @@ export class LGraphCanvas {
 
             // autoconnect when possible (very basic, only takes into account first input-output)
             if(node.inputs && node.inputs.length && node.outputs && node.outputs.length && LiteGraph.isValidConnection( node.inputs[0].type, node.outputs[0].type ) && node.inputs[0].link && node.outputs[0].links && node.outputs[0].links.length ) {
-                var input_link = node.graph.links[ node.inputs[0].link ];
-                var output_link = node.graph.links[ node.outputs[0].links[0] ];
+                var input_link = node.graph.links[node.inputs[0].link];
+                var output_link = node.graph.links[node.outputs[0].links[0]];
                 var input_node = node.getInputNode(0);
                 var output_node = node.getOutputNodes(0)[0];
                 if(input_node && output_node)
@@ -3588,7 +3588,7 @@ export class LGraphCanvas {
                 if (this.use_gradients) {
                     var grad = LGraphCanvas.gradients[title_color];
                     if (!grad) {
-                        grad = LGraphCanvas.gradients[ title_color ] = ctx.createLinearGradient(0, 0, 400, 0);
+                        grad = LGraphCanvas.gradients[title_color] = ctx.createLinearGradient(0, 0, 400, 0);
                         grad.addColorStop(0, title_color); // TODO refactor: validate color !! prevent DOMException
                         grad.addColorStop(1, "#000");
                     }
@@ -4468,7 +4468,7 @@ export class LGraphCanvas {
                                 if( values.constructor === Function )
                                     values = values();
                                 if(values && values.constructor !== Array)
-                                    v = values[ w.value ];
+                                    v = values[w.value];
                             }
                             ctx.fillText(
                                 v,
@@ -6323,7 +6323,7 @@ export class LGraphCanvas {
                     if ((!options.show_all_if_empty || str) && extra.desc.toLowerCase().indexOf(str) === -1) {
                         continue;
                     }
-                    var ctor = LiteGraph.registered_node_types[ extra.type ];
+                    var ctor = LiteGraph.registered_node_types[extra.type];
                     if( ctor && ctor.filter != filter )
                         continue;
                     if( ! inner_test_filter(extra.type) )
@@ -6394,7 +6394,7 @@ export class LGraphCanvas {
                         ,outTypeOverride: false
                     };
                     var opts = Object.assign(optsDef,optsIn);
-                    var ctor = LiteGraph.registered_node_types[ type ];
+                    var ctor = LiteGraph.registered_node_types[type];
                     if(filter && ctor.filter != filter )
                         return false;
                     if ((!options.show_all_if_empty || str) && type.toLowerCase().indexOf(str) === -1)

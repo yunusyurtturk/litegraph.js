@@ -516,7 +516,7 @@ export class LGraphNode {
         }
         if (slot < this.inputs.length) {
             var slot_info = this.inputs[slot];
-            return this.graph.links[ slot_info.link ];
+            return this.graph.links[slot_info.link];
         }
         return null;
     }

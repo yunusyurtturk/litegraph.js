@@ -231,7 +231,7 @@ export var LiteGraph = new class {
                 for (let i in base_class.supported_extensions) {
                     const ext = base_class.supported_extensions[i];
                     if(ext && ext.constructor === String) {
-                        this.node_types_by_file_extension[ ext.toLowerCase() ] = base_class;
+                        this.node_types_by_file_extension[ext.toLowerCase()] = base_class;
                     }
                 }
             }

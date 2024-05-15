@@ -31,7 +31,7 @@ export default [
         "@stylistic/comma-dangle": [0, "always-multiline"],
         "@stylistic/comma-spacing": [0, { "before": false, "after": true }],
         "@stylistic/comma-style": [0, "last"],
-        "@stylistic/computed-property-spacing": [0, "never"],
+        "@stylistic/computed-property-spacing": [1, "never"],
         "@stylistic/dot-location": [0, "object"],
         "@stylistic/eol-last": [1, "always"],
         "@stylistic/function-call-spacing": [0, "never"],
