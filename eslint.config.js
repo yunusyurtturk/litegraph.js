@@ -36,7 +36,7 @@ export default [
         "@stylistic/eol-last": [1, "always"],
         "@stylistic/function-call-spacing": [0, "never"],
         "@stylistic/function-paren-newline": [0, "multiline"],
-        "@stylistic/implicit-arrow-linebreak": [0, "beside"],
+        "@stylistic/implicit-arrow-linebreak": [1, "beside"],
         "@stylistic/indent": [1, 4],
         "@stylistic/indent-binary-ops":[0, 4],
         "@stylistic/key-spacing":[1, {

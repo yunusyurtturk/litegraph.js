@@ -2099,12 +2099,12 @@ export class LGraphCanvas {
         this.onNodeDeselected?.(node);
 
         // Remove highlighted
-        node.inputs?.forEach((input) =>
+        node.inputs?.forEach((input) => {
             delete this.highlighted_links?.[input.link]
-        );
-        node.outputs?.forEach((out) =>
+        });
+        node.outputs?.forEach((out) => {
             out.links?.forEach((link) => delete this.highlighted_links?.[link])
-        );
+        });
     }
 
 
