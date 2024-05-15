@@ -1,5 +1,5 @@
 {
-    "name": "litegraph",
+    "name": "@mr_pebble/litegraph",
     "version": "0.9.x",
     "description": "A flow graph node editor on the web.",
     "main": "build/litegraph.js",
