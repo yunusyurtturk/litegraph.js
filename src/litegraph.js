@@ -17,7 +17,7 @@ import { LGraphNode } from "./lgraphnode.js";
 
 export var LiteGraph = new class {
     constructor() {
-        //@TODO: This is awful, and these settings need to be put where they belong.
+        // @TODO: This is awful, and these settings need to be put where they belong.
 
         this.VERSION = "0.9.5";
 
@@ -53,11 +53,11 @@ export var LiteGraph = new class {
         this.EVENT_LINK_COLOR = "#A86"; 
         this.CONNECTING_LINK_COLOR = "#AFA"; 
 
-        this.MAX_NUMBER_OF_NODES = 1000; //avoid infinite loops
-        this.DEFAULT_POSITION = [100, 100]; //default node position
-        this.VALID_SHAPES = ["default", "box", "round", "card"]; //,"circle"
+        this.MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
+        this.DEFAULT_POSITION = [100, 100]; // default node position
+        this.VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
 
-        //shapes are used for nodes but also for slots
+        // shapes are used for nodes but also for slots
         this.BOX_SHAPE = 1; 
         this.ROUND_SHAPE = 2; 
         this.CIRCLE_SHAPE = 3; 
@@ -65,12 +65,12 @@ export var LiteGraph = new class {
         this.ARROW_SHAPE = 5; 
         this.GRID_SHAPE = 6; // intended for slot arrays
 
-        //enums
+        // enums
         this.INPUT = 1; 
         this.OUTPUT = 2; 
 
-        this.EVENT = -1; //for outputs
-        this.ACTION = -1; //for inputs
+        this.EVENT = -1; // for outputs
+        this.ACTION = -1; // for inputs
 
         this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger"]; // helper, will add "On Request" and more in the future
         this.NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
@@ -96,20 +96,20 @@ export var LiteGraph = new class {
         this.AUTOHIDE_TITLE = 3; 
         this.VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
 
-        this.proxy = null; //used to redirect calls
+        this.proxy = null; // used to redirect calls
         this.node_images_path = ""; 
 
         this.debug = false; 
         this.catch_exceptions = true; 
         this.throw_errors = true; 
-        this.allow_scripts = false; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
-        this.use_deferred_actions = true; //executes actions during the graph execution flow
-        this.registered_node_types = {}; //nodetypes by string
-        this.node_types_by_file_extension = {}; //used for dropping files in the canvas
-        this.Nodes = {}; //node types by classname
-        this.Globals = {}; //used to store vars between graphs
+        this.allow_scripts = false; // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
+        this.use_deferred_actions = true; // executes actions during the graph execution flow
+        this.registered_node_types = {}; // nodetypes by string
+        this.node_types_by_file_extension = {}; // used for dropping files in the canvas
+        this.Nodes = {}; // node types by classname
+        this.Globals = {}; // used to store vars between graphs
 
-        this.searchbox_extras = {}; //used to add extra features to the search box
+        this.searchbox_extras = {}; // used to add extra features to the search box
         this.auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
         
         this.node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
@@ -141,14 +141,14 @@ export var LiteGraph = new class {
         
         this.allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
 
-        this.middle_click_slot_add_default_node = false; //[true!] allows to create and connect a ndoe clicking with the third button (wheel)
+        this.middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
         
-        this.release_link_on_empty_shows_menu = false; //[true!] dragging a link to empty space will open a menu, add from list, search or defaults
+        this.release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
         
         this.pointerevents_method = "mouse"; // "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now)
         // TODO implement pointercancel, gotpointercapture, lostpointercapture, (pointerover, pointerout if necessary)
 
-        this.ctrl_shift_v_paste_connect_unselected_outputs = false; //[true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+        this.ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
         // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
@@ -226,7 +226,7 @@ export var LiteGraph = new class {
             });
             
 
-            //used to know which nodes to create when dragging files to the canvas
+            // used to know which nodes to create when dragging files to the canvas
             if (base_class.supported_extensions) {
                 for (let i in base_class.supported_extensions) {
                     const ext = base_class.supported_extensions[i];
@@ -248,7 +248,7 @@ export var LiteGraph = new class {
             LiteGraph.onNodeTypeReplaced(type, base_class, prev);
         }
 
-        //warnings
+        // warnings
         if (base_class.prototype.onPropertyChange) {
             console.warn(
                 "LiteGraph node class " +
@@ -404,14 +404,14 @@ export var LiteGraph = new class {
     ) {
         var params = Array(func.length);
         var code = "";
-        if(param_types !== null) //null means no inputs
+        if(param_types !== null) // null means no inputs
         {
             var names = LiteGraph.getParameterNames(func);
             for (var i = 0; i < names.length; ++i) {
                 var type = 0;
                 if(param_types)
                 {
-                    //type = param_types[i] != null ? "'" + param_types[i] + "'" : "0";
+                    // type = param_types[i] != null ? "'" + param_types[i] + "'" : "0";
                     if( param_types[i] != null && param_types[i].constructor === String )
                         type = "'" + param_types[i] + "'" ;
                     else if( param_types[i] != null )
@@ -425,7 +425,7 @@ export var LiteGraph = new class {
                     ");\n";
             }
         }
-        if(return_type !== null) //null means no output
+        if(return_type !== null) // null means no output
         code +=
             "this.addOutput('out'," +
             (return_type != null ? (return_type.constructor === String ? "'" + return_type + "'" : return_type) : 0) +
@@ -470,7 +470,7 @@ export var LiteGraph = new class {
             var type = this.registered_node_types[i];
             if (type.prototype[name]) {
                 type.prototype["_" + name] = type.prototype[name];
-            } //keep old in case of replacing
+            } // keep old in case of replacing
             type.prototype[name] = func;
         }
     }
@@ -525,7 +525,7 @@ export var LiteGraph = new class {
         }
         if (!node.size) {
             node.size = node.computeSize();
-            //call onresize?
+            // call onresize?
         }
         if (!node.pos) {
             node.pos = LiteGraph.DEFAULT_POSITION.concat();
@@ -534,7 +534,7 @@ export var LiteGraph = new class {
             node.mode = LiteGraph.ALWAYS;
         }
 
-        //extra options
+        // extra options
         if (options) {
             for (var i in options) {
                 node[i] = options[i];
@@ -614,10 +614,10 @@ export var LiteGraph = new class {
         return this.auto_sort_node_types ? result.sort() : result;
     }
 
-    //debug purposes: reloads all the js scripts that matches a wildcard
+    // debug purposes: reloads all the js scripts that matches a wildcard
     reloadNodes(folder_wildcard) {
         var tmp = document.getElementsByTagName("script");
-        //weird, this array changes by its own, so we use a copy
+        // weird, this array changes by its own, so we use a copy
         var script_files = [];
         for (let i=0; i < tmp.length; i++) {
             script_files.push(tmp[i]);
@@ -659,7 +659,7 @@ export var LiteGraph = new class {
         }
     }
 
-    //separated just to improve if it doesn't work
+    // separated just to improve if it doesn't work
     cloneObject(obj, target) {
         if (obj == null) {
             return null;
@@ -693,9 +693,9 @@ export var LiteGraph = new class {
         if (type_a=="" || type_a==="*") type_a = 0;
         if (type_b=="" || type_b==="*") type_b = 0;
         if (
-            !type_a //generic output
+            !type_a // generic output
             || !type_b // generic input
-            || type_a == type_b //same type (is valid for triggers)
+            || type_a == type_b // same type (is valid for triggers)
             || (type_a == LiteGraph.EVENT && type_b == LiteGraph.ACTION)
         ) {
             return true;
@@ -718,7 +718,7 @@ export var LiteGraph = new class {
         for (var i = 0; i < supported_types_a.length; ++i) {
             for (var j = 0; j < supported_types_b.length; ++j) {
                 if(this.isValidConnection(supported_types_a[i],supported_types_b[j])){
-                //if (supported_types_a[i] == supported_types_b[j]) {
+                // if (supported_types_a[i] == supported_types_b[j]) {
                     return true;
                 }
             }
@@ -765,7 +765,7 @@ export var LiteGraph = new class {
             return fetch(url)
             .then(response => {
                 if(!response.ok)
-                        throw new Error("File not found"); //it will be catch below
+                        throw new Error("File not found"); // it will be catch below
                 if(type == "arraybuffer")
                     return response.arrayBuffer();
                 else if(type == "text" || type == "string")
@@ -805,7 +805,7 @@ export var LiteGraph = new class {
         return null;
     }
 
-    //@TODO These weren't even directly bound, so could be used as free functions
+    // @TODO These weren't even directly bound, so could be used as free functions
     compareObjects(a, b) {
         for (var i in a) {
             if (a[i] != b[i]) {
@@ -842,7 +842,7 @@ export var LiteGraph = new class {
         return false;
     }
 
-    //[minx,miny,maxx,maxy]
+    // [minx,miny,maxx,maxy]
     growBounding(bounding, x, y) {
         if (x < bounding[0]) {
             bounding[0] = x;
@@ -857,7 +857,7 @@ export var LiteGraph = new class {
         }
     }
 
-    //point inside bounding box
+    // point inside bounding box
     isInsideBounding(p, bb) {
         if (
             p[0] < bb[0][0] ||
@@ -870,7 +870,7 @@ export var LiteGraph = new class {
         return true;
     }
 
-    //bounding overlap, format: [ startx, starty, width, height ]
+    // bounding overlap, format: [ startx, starty, width, height ]
     overlapBounding(a, b) {
         var A_end_x = a[0] + a[2];
         var A_end_y = a[1] + a[3];
@@ -888,13 +888,13 @@ export var LiteGraph = new class {
         return true;
     }
 
-    //Convert a hex value to its decimal value - the inputted hex must be in the
+    // Convert a hex value to its decimal value - the inputted hex must be in the
     //	format of a hex triplet - the kind we use for HTML colours. The function
     //	will return an array with three values.
     hex2num(hex) {
         if (hex.charAt(0) == "#") {
             hex = hex.slice(1);
-        } //Remove the '#' char - if there is one.
+        } // Remove the '#' char - if there is one.
         hex = hex.toUpperCase();
         var hex_alphabets = "0123456789ABCDEF";
         var value = new Array(3);
@@ -909,7 +909,7 @@ export var LiteGraph = new class {
         return value;
     }
 
-    //Give a array with three values as the argument and the function will return
+    // Give a array with three values as the argument and the function will return
     //	the corresponding hex triplet.
     num2hex(triplet) {
         var hex_alphabets = "0123456789ABCDEF";
@@ -926,7 +926,7 @@ export var LiteGraph = new class {
 
     extendClass = (target, origin) => {
         for (let i in origin) {
-            //copy class properties
+            // copy class properties
             if (target.hasOwnProperty(i)) {
                 continue;
             }
@@ -934,19 +934,19 @@ export var LiteGraph = new class {
         }
     
         if (origin.prototype) {
-            //copy prototype properties
+            // copy prototype properties
             for (let i in origin.prototype) {
-                //only enumerable
+                // only enumerable
                 if (!origin.prototype.hasOwnProperty(i)) {
                     continue;
                 }
     
                 if (target.prototype.hasOwnProperty(i)) {
-                    //avoid overwriting existing ones
+                    // avoid overwriting existing ones
                     continue;
                 }
     
-                //copy getters
+                // copy getters
                 if (origin.prototype.__lookupGetter__(i)) {
                     target.prototype.__defineGetter__(
                         i,
@@ -956,7 +956,7 @@ export var LiteGraph = new class {
                     target.prototype[i] = origin.prototype[i];
                 }
     
-                //and setters
+                // and setters
                 if (origin.prototype.__lookupSetter__(i)) {
                     target.prototype.__defineSetter__(
                         i,
@@ -967,7 +967,7 @@ export var LiteGraph = new class {
         }
     }
 
-    //used to create nodes from wrapping functions
+    // used to create nodes from wrapping functions
     getParameterNames = func => { // split & filter [""]
         return (func + "")
             .replace(/[/][/].*$/gm, "") // strip single-line comments
@@ -985,7 +985,7 @@ export var LiteGraph = new class {
     }
 }
 
-//timer that works everywhere
+// timer that works everywhere
 if (typeof performance != "undefined") {
     LiteGraph.getTime = performance.now.bind(performance);
 } else if (typeof Date != "undefined" && Date.now) {

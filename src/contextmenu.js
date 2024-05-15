@@ -44,24 +44,24 @@ export class ContextMenu {
         root.style.pointerEvents = "none";
         setTimeout(() => {
             root.style.pointerEvents = "auto";
-        }, 100); //delay so the mouse up event is not caught by this element
+        }, 100); // delay so the mouse up event is not caught by this element
 
-        //this prevents the default context browser menu to open in case this menu was created when pressing right button
+        // this prevents the default context browser menu to open in case this menu was created when pressing right button
         root.addEventListener("mouseup", e => {
-            //console.log("pointerevents: ContextMenu up root prevent");
+            // console.log("pointerevents: ContextMenu up root prevent");
             e.preventDefault();
             return true;
         });
         root.addEventListener("contextmenu", e => {
             if (e.button != 2) {
-                //right button
+                // right button
                 return false;
             }
             e.preventDefault();
             return false;
         });
         root.addEventListener("mousedown", e => {
-            //console.log("pointerevents: ContextMenu down");
+            // console.log("pointerevents: ContextMenu down");
             if (e.button == 2) {
                 this.close();
                 e.preventDefault();
@@ -76,7 +76,7 @@ export class ContextMenu {
             return true;
         });
         root.addEventListener("mouseenter", (_event) => {
-            //console.log("pointerevents: ContextMenu enter");
+            // console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
             }
@@ -101,7 +101,7 @@ export class ContextMenu {
         if(!this.options.event)
             return;
 
-        //use strings because comparing classes between windows doesnt work
+        // use strings because comparing classes between windows doesnt work
         const eventClass = this.options.event.constructor.name;
         if ( eventClass !== "MouseEvent" &&
             eventClass !== "CustomEvent" &&
@@ -246,7 +246,7 @@ export class ContextMenu {
                 if (!value || !value.has_submenu) {
                     return;
                 }
-                //if it is a submenu, autoopen like the item was clicked
+                // if it is a submenu, autoopen like the item was clicked
                 handleMenuItemClick.call(this, event);
             });
         }
@@ -371,7 +371,7 @@ export class ContextMenu {
         return event;
     }
 
-    //returns the top most menu
+    // returns the top most menu
     getTopMenu() {
         return this.options.parentMenu?.getTopMenu() ?? this;
     }

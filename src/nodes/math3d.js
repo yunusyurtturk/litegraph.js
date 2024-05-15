@@ -61,7 +61,7 @@ class Math3DMat4 {
 LiteGraph.registerNodeType("math3d/mat4", Math3DMat4);
 
 
-//Math 3D operation
+// Math 3D operation
 class Math3DOperation {
 
     static title = "Operation";
@@ -331,7 +331,7 @@ class Math3DVec3Dot {
 LiteGraph.registerNodeType("math3d/vec3-dot", Math3DVec3Dot);
 
 
-//if glMatrix is installed...
+// if glMatrix is installed...
 if (glMatrix) {
     class Math3DQuaternion {
 
@@ -442,8 +442,8 @@ if (glMatrix) {
         onExecute() {
             var q = this.getInputData(0);
             if (!q) return;
-            //@BUG: R is unused, but I don't know where it *should* be used because I don't know this math off the top
-            //It *probably* goes in one of the next two lines
+            // @BUG: R is unused, but I don't know where it *should* be used because I don't know this math off the top
+            // It *probably* goes in one of the next two lines
             var R = quat.toEuler(this._value, q);
             vec3.scale(this._value, this._value, DEG2RAD);
             this.setOutputData(0, this._value);
@@ -452,7 +452,7 @@ if (glMatrix) {
     LiteGraph.registerNodeType("math3d/quat_to_euler", MathQuatToEuler);
 
 
-    //Math3D rotate vec3
+    // Math3D rotate vec3
     class Math3DRotateVec3 {
 
         static title = "Rot. Vec3";
@@ -581,7 +581,7 @@ if (glMatrix) {
             var target_min = this.properties.target_min;
             var target_max = this.properties.target_max;
 
-            //swap to avoid errors
+            // swap to avoid errors
             /*
             if(range_min > range_max)
             {
@@ -619,6 +619,6 @@ if (glMatrix) {
         }
     }
     LiteGraph.registerNodeType("math3d/remap_range", Math3DRemapRange);
-} //glMatrix
+} // glMatrix
 else if (LiteGraph.debug)
     console.warn("No glmatrix found, some Math3D nodes may not work");

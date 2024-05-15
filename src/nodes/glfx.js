@@ -1,6 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
-//Works with Litegl.js to create WebGL nodes
+// Works with Litegl.js to create WebGL nodes
 if (typeof GL != "undefined") {
     // Texture Lens *****************************************
     function LGraphFXLens() {
@@ -76,7 +76,7 @@ if (typeof GL != "undefined") {
         gl.disable(gl.DEPTH_TEST);
         var mesh = Mesh.getScreenQuad();
         var shader = LGraphFXLens._shader;
-        //var camera = LS.Renderer._current_camera;
+        // var camera = LS.Renderer._current_camera;
 
         this._tex.drawTo(function () {
             tex.bind(0);
@@ -240,7 +240,7 @@ LGraphDepthOfField._pixel_shader = "\n\
 LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
 */
 
-    //*******************************************************
+    //* ******************************************************
 
     function LGraphFXBokeh() {
         this.addInput("Texture", "Texture");
@@ -303,7 +303,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
             });
         }
 
-        //iterations
+        // iterations
         var size = this.properties.size;
 
         var first_shader = LGraphFXBokeh._first_shader;
@@ -356,9 +356,9 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         });
 
         this._temp_texture.drawTo(function () {
-            //clear because we use blending
-            //gl.clearColor(0.0,0.0,0.0,1.0);
-            //gl.clear( gl.COLOR_BUFFER_BIT );
+            // clear because we use blending
+            // gl.clearColor(0.0,0.0,0.0,1.0);
+            // gl.clear( gl.COLOR_BUFFER_BIT );
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.ONE, gl.ONE);
 
@@ -485,7 +485,7 @@ LGraphTextureBokeh._pixel_shader = "precision highp float;\n\
 
     LiteGraph.registerNodeType("fx/bokeh", LGraphFXBokeh);
 
-    //************************************************
+    //* ***********************************************
 
     function LGraphFXGeneric() {
         this.addInput("Texture", "Texture");
@@ -515,7 +515,7 @@ LGraphTextureBokeh._pixel_shader = "precision highp float;\n\
     LGraphFXGeneric.prototype.onExecute = function () {
         if (!this.isOutputConnected(0)) {
             return;
-        } //saves work
+        } // saves work
 
         var tex = this.getInputData(0);
         if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
@@ -533,7 +533,7 @@ LGraphTextureBokeh._pixel_shader = "precision highp float;\n\
             this.properties.precision,
         );
 
-        //iterations
+        // iterations
         var value1 = this.properties.value1;
         if (this.isInputConnected(1)) {
             value1 = this.getInputData(1);

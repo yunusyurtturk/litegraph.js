@@ -1,12 +1,12 @@
 import { LiteGraph } from "./litegraph.js";
 
-//used by some widgets to render a curve editor
+// used by some widgets to render a curve editor
 export class CurveEditor {
     constructor(points) {
         this.points = points;
         this.selected = -1;
         this.nearest = -1;
-        this.size = null; //stores last size used
+        this.size = null; // stores last size used
         this.must_update = true;
         this.margin = 5;
     }
@@ -74,7 +74,7 @@ export class CurveEditor {
         ctx.restore();
     }
 
-    //localpos is mouse in curve editor space
+    // localpos is mouse in curve editor space
     onMouseDown(localpos, graphcanvas) {
         var points = this.points;
         if(!points)
@@ -82,16 +82,16 @@ export class CurveEditor {
         if( localpos[1] < 0 )
             return;
 
-        //this.captureInput(true);
+        // this.captureInput(true);
         var w = this.size[0] - this.margin * 2;
         var h = this.size[1] - this.margin * 2;
         var x = localpos[0] - this.margin;
         var y = localpos[1] - this.margin;
         var pos = [x,y];
         var max_dist = 30 / graphcanvas.ds.scale;
-        //search closer one
+        // search closer one
         this.selected = this.getCloserPoint(pos, max_dist);
-        //create one
+        // create one
         if(this.selected == -1)
         {
             var point = [x / w, 1 - y / h];
@@ -126,7 +126,7 @@ export class CurveEditor {
                 this.selected = -1;
                 return;
             }
-            if( !is_edge_point ) //not edges
+            if( !is_edge_point ) // not edges
                 point[0] = LiteGraph.clamp(x, 0, 1);
             else
                 point[0] = s == 0 ? 0 : 1;

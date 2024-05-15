@@ -3,7 +3,7 @@ import { LiteGraph } from "../litegraph.js";
 /* in types :: run in console :: var s=""; LiteGraph.slot_types_in.forEach(function(el){s+=el+"\n";}); console.log(s); */
 
 if (typeof LiteGraph.slot_types_default_in == "undefined")
-    LiteGraph.slot_types_default_in = {}; //[];
+    LiteGraph.slot_types_default_in = {}; // [];
 LiteGraph.slot_types_default_in["_event_"] = "widget/button";
 LiteGraph.slot_types_default_in["array"] = "basic/array";
 LiteGraph.slot_types_default_in["boolean"] = "basic/boolean";

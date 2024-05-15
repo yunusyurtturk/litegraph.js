@@ -12,7 +12,7 @@ var global_uniforms = {
 };
 
 const LGraphRender = {
-    onRequestCameraMatrices: null, //overwrite with your 3D engine specifics, it will receive (view_matrix, projection_matrix,viewprojection_matrix) and must be filled
+    onRequestCameraMatrices: null, // overwrite with your 3D engine specifics, it will receive (view_matrix, projection_matrix,viewprojection_matrix) and must be filled
 };
 
 function generateGeometryId() {
@@ -118,7 +118,7 @@ class LGraphPoints3D {
         this.version++;
     }
 
-    //global
+    // global
     static generatePoints(radius, num_points, mode, points, normals, regular, obj) {
         var size = num_points * 3;
         if (!points || points.length != size) points = new Float32Array(size);
@@ -170,7 +170,7 @@ class LGraphPoints3D {
                         normals.set(UP, i);
                 }
             }
-        } //non regular
+        } // non regular
         else {
             if (mode == LGraphPoints3D.RECTANGLE) {
                 for (let i = 0; i < size; i += 3) {
@@ -220,7 +220,7 @@ class LGraphPoints3D {
                 LGraphPoints3D.generateFromObject(points, normals, size, obj, true);
             } else if (mode == LGraphPoints3D.OBJECT_INSIDE) {
                 LGraphPoints3D.generateFromInsideObject(points, size, obj);
-                //if(normals)
+                // if(normals)
                 //	LGraphPoints3D.generateSphericalNormals( points, normals );
             } else console.warn("wrong mode in LGraphPoints3D");
         }
@@ -318,10 +318,10 @@ class LGraphPoints3D {
         var num_triangles = indices
             ? indices.length / 3
             : vertices.length / (3 * 3);
-        var total_area = 0; //sum of areas of all triangles
+        var total_area = 0; // sum of areas of all triangles
 
         if (evenly) {
-            areas = new Float32Array(num_triangles); //accum
+            areas = new Float32Array(num_triangles); // accum
             for (let i = 0; i < num_triangles; ++i) {
                 if (indices) {
                     a = indices[i * 3] * 3;
@@ -342,7 +342,7 @@ class LGraphPoints3D {
                 total_area += Math.sqrt(s * (s - aL) * (s - bL) * (s - cL));
                 areas[i] = total_area;
             }
-            for (let i = 0; i < num_triangles; ++i) //normalize
+            for (let i = 0; i < num_triangles; ++i) // normalize
                 areas[i] /= total_area;
         }
 
@@ -351,7 +351,7 @@ class LGraphPoints3D {
             var index = evenly
                 ? findRandomTriangle(areas, r)
                 : Math.floor(r * num_triangles);
-            //get random triangle
+            // get random triangle
             var a = 0;
             var b = 0;
             var c = 0;
@@ -408,9 +408,9 @@ class LGraphPoints3D {
         var i = 0;
         var tries = 0;
         while (i < size && tries < points.length * 10) {
-            //limit to avoid problems
+            // limit to avoid problems
             tries += 1;
-            var r = vec3.random(temp); //random point inside the aabb
+            var r = vec3.random(temp); // random point inside the aabb
             r[0] = (r[0] * 2 - 1) * aabb[3] + aabb[0];
             r[1] = (r[1] * 2 - 1) * aabb[4] + aabb[1];
             r[2] = (r[2] * 2 - 1) * aabb[5] + aabb[2];
@@ -424,7 +424,7 @@ class LGraphPoints3D {
                 GL.Octree.ALL,
             );
             if (!hit || hit.length % 2 == 0)
-                //not inside
+                // not inside
                 continue;
             points.set(r, i);
             i += 3;
@@ -471,7 +471,7 @@ function findRandomTriangle(areas, f) {
 
     if (l == 0) return -1;
     if (l == 1) return 0;
-    //dichotomic search
+    // dichotomic search
     while (imax >= imin) {
         imid = ((imax + imin) * 0.5) | 0;
         var t = areas[imid];
@@ -649,7 +649,7 @@ class LGraphGeometryTransform {
 
         if (!input) return;
 
-        //array of matrices
+        // array of matrices
         if (input.constructor === Array) {
             if (input.length == 0) return;
             this.outputs[0].type = "[mat4]";
@@ -672,7 +672,7 @@ class LGraphGeometryTransform {
             return;
         }
 
-        //geometry
+        // geometry
         if (!input.vertices || !input.vertices.length) return;
         var geo = input;
         this.outputs[0].type = "geometry";
@@ -775,7 +775,7 @@ class LGraphGeometryPolygon {
         var radius = this.getInputOrProperty("radius");
         sides = Math.max(3, sides) | 0;
 
-        //update
+        // update
         if (this.last_info.sides != sides || this.last_info.radius != radius)
             this.updateGeometry(sides, radius);
 
@@ -846,7 +846,7 @@ class LGraphGeometryExtrude {
     }
 
     extrudeGeometry(geo) {
-        //for every pair of vertices
+        // for every pair of vertices
         var vertices = geo.vertices;
         var num_points = vertices.length / 3;
 
@@ -857,7 +857,7 @@ class LGraphGeometryExtrude {
         var offset = new Float32Array(this.properties.offset);
 
         if (geo.type == "line_loop") {
-            var new_vertices = new Float32Array(num_points * 6 * 3); //every points become 6 ( caps not included )
+            var new_vertices = new Float32Array(num_points * 6 * 3); // every points become 6 ( caps not included )
             var npos = 0;
             for (var i = 0, l = vertices.length; i < l; i += 3) {
                 tempA[0] = vertices[i];
@@ -865,7 +865,7 @@ class LGraphGeometryExtrude {
                 tempA[2] = vertices[i + 2];
 
                 if (i + 3 < l) {
-                    //loop
+                    // loop
                     tempB[0] = vertices[i + 3];
                     tempB[1] = vertices[i + 4];
                     tempB[2] = vertices[i + 5];
@@ -972,7 +972,7 @@ class LGraphGeometryEval {
             var func = this.func;
             var T = getTime();
 
-            //clone
+            // clone
             if (!this.geometry) this.geometry = {};
             for (let i in geometry) {
                 if (geometry[i] == null) continue;
@@ -1118,7 +1118,7 @@ class LGraphConnectPoints {
             this.geometry_id = geometry._id;
             this.version = geometry._version;
 
-            //copy
+            // copy
             this.geometry = {};
             for (let i in geometry) 
                 this.geometry[i] = geometry[i];
@@ -1173,9 +1173,9 @@ LGraphConnectPoints.desc = "adds indices between near points";
 
 LiteGraph.registerNodeType("geometry/connectPoints", LGraphConnectPoints);
 
-//Works with Litegl.js to create WebGL nodes
+// Works with Litegl.js to create WebGL nodes
 if (typeof GL != "undefined") {
-    //LiteGL RELATED **********************************************
+    // LiteGL RELATED **********************************************
 
     class LGraphToGeometry {
         constructor() {
@@ -1232,7 +1232,7 @@ if (typeof GL != "undefined") {
 
                 var info = GL.Mesh.common_buffers[i];
                 if (!info && i != "indices")
-                    //unknown buffer
+                    // unknown buffer
                     continue;
                 var spacing = info ? info.spacing : 3;
                 var mesh_buffer = this.mesh.vertexBuffers[i];
@@ -1400,7 +1400,7 @@ if (typeof GL != "undefined") {
 
     LiteGraph.registerNodeType("geometry/render_mesh", LGraphRenderMesh);
 
-    //**************************
+    //* *************************
 
     class LGraphGeometryPrimitive {
         constructor() {
@@ -1417,7 +1417,7 @@ if (typeof GL != "undefined") {
 
             var size = this.getInputOrProperty("size");
 
-            //update
+            // update
             if (
                 this.last_info.type != this.properties.type ||
                 this.last_info.size != size ||
@@ -1436,14 +1436,14 @@ if (typeof GL != "undefined") {
             subdivisions = Math.max(0, subdivisions) | 0;
 
             switch (type) {
-                case 1: //CUBE:
+                case 1: // CUBE:
                     this._mesh = GL.Mesh.cube({
                         size: size,
                         normals: true,
                         coords: true,
                     });
                     break;
-                case 2: //PLANE:
+                case 2: // PLANE:
                     this._mesh = GL.Mesh.plane({
                         size: size,
                         xz: true,
@@ -1452,7 +1452,7 @@ if (typeof GL != "undefined") {
                         coords: true,
                     });
                     break;
-                case 3: //CYLINDER:
+                case 3: // CYLINDER:
                     this._mesh = GL.Mesh.cylinder({
                         size: size,
                         subdivisions: subdivisions,
@@ -1460,7 +1460,7 @@ if (typeof GL != "undefined") {
                         coords: true,
                     });
                     break;
-                case 4: //SPHERE:
+                case 4: // SPHERE:
                     this._mesh = GL.Mesh.sphere({
                         size: size,
                         long: subdivisions,
@@ -1469,7 +1469,7 @@ if (typeof GL != "undefined") {
                         coords: true,
                     });
                     break;
-                case 5: //CIRCLE:
+                case 5: // CIRCLE:
                     this._mesh = GL.Mesh.circle({
                         size: size,
                         slices: subdivisions,
@@ -1477,7 +1477,7 @@ if (typeof GL != "undefined") {
                         coords: true,
                     });
                     break;
-                case 6: //HEMISPHERE:
+                case 6: // HEMISPHERE:
                     this._mesh = GL.Mesh.sphere({
                         size: size,
                         long: subdivisions,
@@ -1487,20 +1487,20 @@ if (typeof GL != "undefined") {
                         hemi: true,
                     });
                     break;
-                case 7: //ICOSAHEDRON:
+                case 7: // ICOSAHEDRON:
                     this._mesh = GL.Mesh.icosahedron({
                         size: size,
                         subdivisions: subdivisions,
                     });
                     break;
-                case 8: //CONE:
+                case 8: // CONE:
                     this._mesh = GL.Mesh.cone({
                         radius: size,
                         height: size,
                         subdivisions: subdivisions,
                     });
                     break;
-                case 9: //QUAD:
+                case 9: // QUAD:
                     this._mesh = GL.Mesh.plane({
                         size: size,
                         xz: false,
@@ -1757,7 +1757,7 @@ if (typeof GL != "undefined") {
 		}\
 	";
 
-    //based on https://inconvergent.net/2019/depth-of-field/
+    // based on https://inconvergent.net/2019/depth-of-field/
     /*
 	function LGraphRenderGeometryDOF() {
 		this.addInput("in", "geometry");

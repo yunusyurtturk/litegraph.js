@@ -104,7 +104,7 @@ export class DragAndScale {
     onWheel = (event) => {
         event.wheel = -event.deltaY;
             
-        //from stack overflow
+        // from stack overflow
         event.delta = event.wheelDelta
             ? event.wheelDelta / 40
             : event.deltaY

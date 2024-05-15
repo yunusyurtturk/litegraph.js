@@ -1,6 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
-//Converter
+// Converter
 class Converter {
 
     static title = "Converter";
@@ -78,7 +78,7 @@ class Converter {
 LiteGraph.registerNodeType("math/converter", Converter);
 
 
-//Bypass
+// Bypass
 class Bypass {
 
     static title = "Bypass";
@@ -184,7 +184,7 @@ class MathRange {
     }
 
     onDrawBackground(_ctx) {
-        //show the current value
+        // show the current value
         if (this._last_v) {
             this.outputs[0].label = this._last_v.toFixed(3);
         } else {
@@ -235,7 +235,7 @@ class MathRand {
     }
 
     onDrawBackground(_ctx) {
-        //show the current value
+        // show the current value
         this.outputs[0].label = (this._last_v || 0).toFixed(3);
     }
 
@@ -249,7 +249,7 @@ class MathRand {
 LiteGraph.registerNodeType("math/rand", MathRand);
 
 
-//basic continuous noise
+// basic continuous noise
 class MathNoise {
 
     static title = "Noise";
@@ -314,7 +314,7 @@ class MathNoise {
     }
 
     onDrawBackground(_ctx) {
-        //show the current value
+        // show the current value
         this.outputs[0].label = (this._last_v || 0).toFixed(3);
     }
 
@@ -323,7 +323,7 @@ class MathNoise {
 LiteGraph.registerNodeType("math/noise", MathNoise);
 
 
-//generates spikes every random time
+// generates spikes every random time
 class MathSpikes {
     constructor() {
         this.addOutput("out", "number");
@@ -336,7 +336,7 @@ class MathSpikes {
     }
 
     onExecute() {
-        var dt = this.graph.elapsed_time; //in secs
+        var dt = this.graph.elapsed_time; // in secs
 
         this._remaining_time -= dt;
         this._blink_time -= dt;
@@ -363,7 +363,7 @@ class MathSpikes {
 LiteGraph.registerNodeType("math/spikes", MathSpikes);
 
 
-//Math clamp
+// Math clamp
 class MathClamp {
 
     static title = "Clamp";
@@ -377,7 +377,7 @@ class MathClamp {
         this.addProperty("max", 1);
     }
 
-    //MathClamp.filter = "shader";
+    // MathClamp.filter = "shader";
 
     onExecute() {
         var v = this.getInputData(0);
@@ -489,7 +489,7 @@ class MathFloor {
 LiteGraph.registerNodeType("math/floor", MathFloor);
 
 
-//Math frac
+// Math frac
 class MathFrac {
 
     static title = "Frac";
@@ -689,7 +689,7 @@ class MathOperation {
         this.addProperty("B", 1);
         this.addProperty("OP", "+", "enum", { values: MathOperation.values });
         this._func = MathOperation.funcs[this.properties.OP];
-        this._result = []; //only used for arrays
+        this._result = []; // only used for arrays
     }
 
     getTitle() {
@@ -1070,7 +1070,7 @@ class MathTrigonometry {
         this.bgImageUrl = "nodes/imgs/icon-sin.png";
     }
 
-    //MathTrigonometry.filter = "shader";
+    // MathTrigonometry.filter = "shader";
 
     onExecute() {
         var v = this.getInputData(0);
@@ -1149,7 +1149,7 @@ LiteGraph.registerSearchboxExtra("math/trigonometry", "TAN()", {
 });
 
 
-//math library for safe math operations without eval
+// math library for safe math operations without eval
 class MathFormula {
 
     static title = "Formula";

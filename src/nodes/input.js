@@ -19,7 +19,7 @@ class GamepadInput {
     }
 
     onExecute() {
-        //get gamepad
+        // get gamepad
         var gamepad = this.getGamepad();
         var threshold = this.properties.threshold || 0.0;
 
@@ -143,7 +143,7 @@ class GamepadInput {
                             break;
                     }
                 } else {
-                    //if no gamepad is connected, output 0
+                    // if no gamepad is connected, output 0
                     switch (output.name) {
                         case "button_pressed":
                             break;
@@ -173,14 +173,14 @@ class GamepadInput {
 
         this._previous_buttons.set(this._current_buttons);
 
-        //pick the first connected
+        // pick the first connected
         for (var i = this.properties.gamepad_index; i < 4; i++) {
             if (!gamepads[i]) {
                 continue;
             }
             gamepad = gamepads[i];
 
-            //xbox controller mapping
+            // xbox controller mapping
             var xbox = this.xbox_mapping;
             if (!xbox) {
                 xbox = this.xbox_mapping = {
@@ -210,10 +210,10 @@ class GamepadInput {
                         this.trigger(
                             GamepadInput.mapping_array[j] + "_button_event",
                         );
-                } //mapping of XBOX
+                } // mapping of XBOX
                 else
                     switch (
-                        j //I use a switch to ensure that a player with another gamepad could play
+                        j // I use a switch to ensure that a player with another gamepad could play
                     ) {
                         case 12:
                             if (gamepad.buttons[j].pressed) {
@@ -255,7 +255,7 @@ class GamepadInput {
             return;
         }
 
-        //render gamepad state?
+        // render gamepad state?
         var la = this._left_axis;
         var ra = this._right_axis;
         ctx.strokeStyle = "#88A";
@@ -368,7 +368,7 @@ class GamepadInput {
     ];
 }
 
-//@TODO: Enums
+// @TODO: Enums
 GamepadInput.CENTER = 0;
 GamepadInput.LEFT = 1;
 GamepadInput.RIGHT = 2;

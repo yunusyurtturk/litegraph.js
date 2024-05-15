@@ -300,7 +300,7 @@ class ImageFrame {
     }
 
     show() {
-        //var str = this.canvas.toDataURL("image/png");
+        // var str = this.canvas.toDataURL("image/png");
         if (showElement && this.frame) {
             showElement(this.frame);
         }
@@ -652,7 +652,7 @@ class ImageVideo {
 
         var that = this;
         this._video.addEventListener("loadedmetadata", (_event) => {
-            //onload
+            // onload
             console.log("Duration: " + this.duration + " seconds");
             console.log("Size: " + this.videoWidth + "," + this.videoHeight);
             that.setDirtyCanvas(true);
@@ -660,7 +660,7 @@ class ImageVideo {
             this.height = this.videoHeight;
         });
         this._video.addEventListener("progress", (_event) => {
-            //onload
+            // onload
             console.log("video loading...");
         });
         this._video.addEventListener("error", (_event) => {
@@ -685,9 +685,9 @@ class ImageVideo {
 
         this._video.addEventListener("ended", (_event) => {
             console.log("Video Ended.");
-            this.play(); //loop
+            this.play(); // loop
         });
-        //document.body.appendChild(this.video);
+        // document.body.appendChild(this.video);
     }
 
     onPropertyChanged(name, value) {
@@ -701,7 +701,7 @@ class ImageVideo {
 
     play() {
         if (this._video && this._video.videoWidth) {
-            //is loaded
+            // is loaded
             this._video.play();
         }
     }
@@ -733,7 +733,7 @@ class ImageVideo {
         this._video.pause();
     }
 
-    onWidget(_e, _widget) { //@BUG: Consider excising this, it's dead code
+    onWidget(_e, _widget) { // @BUG: Consider excising this, it's dead code
         /*
     if(widget.name == "demo")
     {
@@ -840,7 +840,7 @@ class ImageWebcam {
 
     streamReady(localMediaStream) {
         this._webcam_stream = localMediaStream;
-        //this._waiting_confirmation = false;
+        // this._waiting_confirmation = false;
         this.boxcolor = "green";
 
         var video = this._video;
@@ -849,8 +849,8 @@ class ImageWebcam {
             video.autoplay = true;
             video.srcObject = localMediaStream;
             this._video = video;
-            //document.body.appendChild( video ); //debug
-            //when video info is loaded (size and so)
+            // document.body.appendChild( video ); //debug
+            // when video info is loaded (size and so)
             video.onloadedmetadata = function (e) {
                 // Ready to go. Do some stuff.
                 console.log(e);
@@ -911,7 +911,7 @@ class ImageWebcam {
             return;
         }
 
-        //render to graph canvas
+        // render to graph canvas
         ctx.save();
         ctx.drawImage(this._video, 0, 0, this.size[0], this.size[1]);
         ctx.restore();

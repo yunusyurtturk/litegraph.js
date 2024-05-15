@@ -1,7 +1,7 @@
 import { LiteGraph } from "../litegraph.js";
 
 
-//Show value inside the debug console
+// Show value inside the debug console
 class LogEvent {
 
     static title = "Log Event";
@@ -19,7 +19,7 @@ class LogEvent {
 LiteGraph.registerNodeType("events/log", LogEvent);
 
 
-//convert to Event if the value is true
+// convert to Event if the value is true
 class TriggerEvent {
     
     static title = "TriggerEvent";
@@ -52,12 +52,12 @@ class TriggerEvent {
 
 LiteGraph.registerNodeType("events/trigger", TriggerEvent);
 
-//Sequence of events
+// Sequence of events
 class Sequence {
 
     static title = "Sequence";
     static desc = "Triggers a sequence of events when an event arrives";
-    //@ BUG: fails to construct Node
+    // @ BUG: fails to construct Node
 
     constructor() {
         var that = this;
@@ -83,7 +83,7 @@ class Sequence {
         if (this.outputs) {
             options = options || {};
             for (var i = 0; i < this.outputs.length; ++i) {
-                //needs more info about this...
+                // needs more info about this...
                 if (options.action_call)
                     // CREATE A NEW ID FOR THE ACTION
                     options.action_call = options.action_call + "_seq_" + i;
@@ -104,7 +104,7 @@ class Sequence {
 LiteGraph.registerNodeType("events/sequence", Sequence);
 
 
-//Sequence of events
+// Sequence of events
 class WaitAll {
 
     static title = "WaitAll";
@@ -141,11 +141,11 @@ class WaitAll {
     onAction(action, param, options, slot_index) {
         if (slot_index == null) return;
 
-        //check all
+        // check all
         this.ready.length = this.outputs.length;
         this.ready[slot_index] = true;
         for (var i = 0; i < this.ready.length; ++i) if (!this.ready[i]) return;
-        //pass
+        // pass
         this.reset();
         this.triggerSlot(0);
     }
@@ -157,7 +157,7 @@ class WaitAll {
 LiteGraph.registerNodeType("events/waitAll", WaitAll);
 
 
-//Sequencer for events
+// Sequencer for events
 class Stepper {
 
     static title = "Stepper";
@@ -224,7 +224,7 @@ class Stepper {
 }
 LiteGraph.registerNodeType("events/stepper", Stepper);
 
-//Filter events
+// Filter events
 class FilterEvent {
 
     static title = "Filter Event";
@@ -295,7 +295,7 @@ class EventBranch {
 LiteGraph.registerNodeType("events/branch", EventBranch);
 
 
-//Show value inside the debug console
+// Show value inside the debug console
 class EventCounter {
 
     static title = "Counter";
@@ -360,7 +360,7 @@ class EventCounter {
 LiteGraph.registerNodeType("events/counter", EventCounter);
 
 
-//Show value inside the debug console
+// Show value inside the debug console
 class DelayEvent {
 
     static title = "Delay";
@@ -384,7 +384,7 @@ class DelayEvent {
     }
 
     onExecute(param, options) {
-        var dt = this.graph.elapsed_time * 1000; //in ms
+        var dt = this.graph.elapsed_time * 1000; // in ms
 
         if (this.isInputConnected(1)) {
             this.properties.time_in_ms = this.getInputData(1);
@@ -397,11 +397,11 @@ class DelayEvent {
                 continue;
             }
 
-            //remove
+            // remove
             this._pending.splice(i, 1);
             --i;
 
-            //trigger
+            // trigger
             this.trigger(null, actionPass[1], options);
         }
     }
@@ -416,7 +416,7 @@ class DelayEvent {
 LiteGraph.registerNodeType("events/delay", DelayEvent);
 
 
-//Show value inside the debug console
+// Show value inside the debug console
 class TimerEvent {
 
     static title = "Timer";
@@ -445,7 +445,7 @@ class TimerEvent {
     }
 
     onExecute() {
-        var dt = this.graph.elapsed_time * 1000; //in ms
+        var dt = this.graph.elapsed_time * 1000; // in ms
 
         var trigger = this.time == 0;
 

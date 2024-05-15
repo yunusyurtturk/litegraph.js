@@ -2,7 +2,7 @@ import stylistic from '@stylistic/eslint-plugin'
 import js from "@eslint/js";
 
 export default [
-    js.configs.recommended,
+    /* js.configs.recommended, */
     {
     "name": "LiteGraph/standard",
     "languageOptions": {
@@ -14,13 +14,14 @@ export default [
     },
     "rules": {
         "no-undef":0, /* had to disable because it doesn't recognize DOM objects */
-        "no-unused-vars":[1, // or "error"
+    /*    "no-unused-vars":[1, // or "error"
             {
               "argsIgnorePattern": "^_",
               "varsIgnorePattern": "^_",
               "caughtErrorsIgnorePattern": "^_"
             }
         ],
+    */
         "@stylistic/arrow-parens": [0, "always"],
         "@stylistic/arrow-spacing": [0, { "before": true, "after": true }],
         "@stylistic/brace-style":[0, "1tbs"],
@@ -89,10 +90,8 @@ export default [
         "@stylistic/space-before-blocks":[0,
             "always"
         ],
-        "@stylistic/no-extra-semi":[0,
-            "never"
-        ],
-        "@stylistic/spaced-comment":[0,
+        "@stylistic/no-extra-semi":[2],
+        "@stylistic/spaced-comment":[1,
             "always"
         ],
     }

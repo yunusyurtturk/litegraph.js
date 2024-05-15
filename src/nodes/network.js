@@ -14,7 +14,7 @@ class LGWebSocket {
         this.addOutput("out", 0);
         this.properties = {
             url: "",
-            room: "lgraph", //allows to filter messages,
+            room: "lgraph", // allows to filter messages,
             only_send_changes: true,
         };
         this._ws = null;
@@ -146,7 +146,7 @@ class LGWebSocket {
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
 
-//HTTP Request
+// HTTP Request
 class HTTPRequestNode {
 
     static title = "HTTP Request";

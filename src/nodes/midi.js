@@ -81,7 +81,7 @@ class MIDIEvent {
         throw "octave cannot be assigned this way, must modify the data[1]";
     }
 
-    //returns HZs
+    // returns HZs
     getPitch() {
         return Math.pow(2, (this.data[1] - 69) / 12) * 440;
     }
@@ -98,7 +98,7 @@ class MIDIEvent {
         return this.data[2];
     }
 
-    //not tested, there is a formula missing here
+    // not tested, there is a formula missing here
     getPitchBend() {
         return this.data[1] + (this.data[2] << 7) - 8192;
     }
@@ -149,13 +149,13 @@ class MIDIEvent {
             case "TIMETICK":
                 return MIDIEvent.TIMETICK;
             default:
-                return Number(str); //assume its a hex code
+                return Number(str); // assume its a hex code
         }
     }
 
-    //transform from a pitch number to string like "C4"
+    // transform from a pitch number to string like "C4"
     static toNoteString(d, skip_octave) {
-        d = Math.round(d); //in case it has decimals
+        d = Math.round(d); // in case it has decimals
         var note = d - 21;
         var octave = Math.floor((d - 24) / 12 + 1);
         note = note % 12;
@@ -299,7 +299,7 @@ class MIDIEvent {
 
     static commands_reversed = {};
 }
-//@TODO: Enum
+// @TODO: Enum
 MIDIEvent.NOTEOFF = 0x80;
 MIDIEvent.NOTEON = 0x90;
 MIDIEvent.KEYPRESSURE = 0xa0;
@@ -314,7 +314,7 @@ for (var i in MIDIEvent.commands) {
     MIDIEvent.commands_reversed[MIDIEvent.commands[i]] = i;
 }
 
-//MIDI wrapper, instantiate by MIDIIn and MIDIOut
+// MIDI wrapper, instantiate by MIDIIn and MIDIOut
 class MIDIInterface {
     constructor(on_ready, on_error) {
         if (!navigator.requestMIDIAccess) {
@@ -494,7 +494,7 @@ class MIDIInterface {
             return;
         }
 
-        var output_port = this.output_ports_info[port]; //this.output_ports.get("output-" + port);
+        var output_port = this.output_ports_info[port]; // this.output_ports.get("output-" + port);
         if (!output_port) {
             return;
         }
@@ -529,7 +529,7 @@ class LGMIDIIn {
 
         var that = this;
         new MIDIInterface(function (midi) {
-            //open
+            // open
             that._midi = midi;
             if (that._waiting) {
                 that.onStart();
@@ -597,7 +597,7 @@ class LGMIDIIn {
                     2,
                     this.size[1] * 0.5 + 3,
                 );
-                //ctx.fillRect(0,0,this.size[0],this.size[1]);
+                // ctx.fillRect(0,0,this.size[0],this.size[1]);
                 ctx.globalAlpha = t;
             }
         }
@@ -688,7 +688,7 @@ class LGMIDIOut {
     }
 
     onAction(event, midi_event) {
-        //console.log(midi_event);
+        // console.log(midi_event);
         if (!this._midi) {
             return;
         }
@@ -877,7 +877,7 @@ class LGMIDIEvent {
     constructor() {
         this.properties = {
             channel: 0,
-            cmd: 144, //0x90
+            cmd: 144, // 0x90
             value1: 1,
             value2: 1,
         };
@@ -904,7 +904,7 @@ class LGMIDIEvent {
             return;
         }
 
-        //send
+        // send
         midi_event = this.midi_event;
         midi_event.channel = this.properties.channel;
         if (this.properties.cmd && this.properties.cmd.constructor === String) {
@@ -1132,8 +1132,8 @@ class LGMIDIGenerator {
     }
 
     onAction(event, midi_event) {
-        //var range = this.properties.max - this.properties.min;
-        //var pitch = this.properties.min + ((Math.random() * range)|0);
+        // var range = this.properties.max - this.properties.min;
+        // var pitch = this.properties.min + ((Math.random() * range)|0);
         var pitch = 0;
         var range = this.notes_pitches.length;
         var index = 0;
@@ -1156,7 +1156,7 @@ class LGMIDIGenerator {
         var duration = this.properties.duration || 1;
         this.trigger("note", midi_event);
 
-        //noteoff
+        // noteoff
         setTimeout(
             function () {
                 var midi_event = new MIDIEvent();
@@ -1433,7 +1433,7 @@ class LGMIDIPlay {
         }
 
         if (this.instrument && midi_event.data[0] == MIDIEvent.NOTEON) {
-            var note = midi_event.note; //C#
+            var note = midi_event.note; // C#
             if (!note || note == "undefined" || note.constructor !== String) {
                 return;
             }
@@ -1496,7 +1496,7 @@ class LGMIDIKeys {
         for (
             var k = 0;
             k < 2;
-            k++ //draw first whites (0) then blacks (1)
+            k++ // draw first whites (0) then blacks (1)
         ) {
             for (var i = 0; i < num_keys; ++i) {
                 var key_info = LGMIDIKeys.keys[i % 12];
@@ -1527,7 +1527,7 @@ class LGMIDIKeys {
         for (
             var k = 1;
             k >= 0;
-            k-- //test blacks first (1) then whites (0)
+            k-- // test blacks first (1) then whites (0)
         ) {
             for (var i = 0; i < this.keys.length; ++i) {
                 var key_info = LGMIDIKeys.keys[i % 12];
@@ -1601,7 +1601,7 @@ class LGMIDIKeys {
         midi_event.setup([MIDIEvent.NOTEOFF, pitch, 100]);
         this.trigger("note", midi_event);
 
-        //@TODO: Is it right to duplicate MIDIEvents in a mousemove handler?
+        // @TODO: Is it right to duplicate MIDIEvents in a mousemove handler?
         this.keys[index] = true;
         pitch = (this.properties.start_octave - 1) * 12 + 29 + index;
         midi_event = new MIDIEvent();

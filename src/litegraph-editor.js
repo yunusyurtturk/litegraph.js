@@ -1,7 +1,7 @@
 import { LGraphCanvas } from "./lgraphcanvas.js";
 import { LGraph } from "./lgraph.js";
 
-//Creates an interface to access extra features from a graph (like play, stop, live, etc)
+// Creates an interface to access extra features from a graph (like play, stop, live, etc)
 export class Editor {
 
     constructor(container_id, options = {}) {
@@ -38,9 +38,9 @@ export class Editor {
 
         graphcanvas.onDropItem = this.onDropItem.bind(this);
 
-        //add stuff
-        //this.addToolsButton("loadsession_button","Load","imgs/icon-load.png", this.onLoadButton.bind(this), ".tools-left" );
-        //this.addToolsButton("savesession_button","Save","imgs/icon-save.png", this.onSaveButton.bind(this), ".tools-left" );
+        // add stuff
+        // this.addToolsButton("loadsession_button","Load","imgs/icon-load.png", this.onLoadButton.bind(this), ".tools-left" );
+        // this.addToolsButton("savesession_button","Save","imgs/icon-save.png", this.onSaveButton.bind(this), ".tools-left" );
         this.addLoadCounter();
         this.addToolsButton(
             "playnode_button",
@@ -79,7 +79,7 @@ export class Editor {
             this.addMiniWindow(300, 200);
         }
 
-        //append to DOM
+        // append to DOM
         const parent = document.getElementById(container_id);
         if (parent) {
             parent?.appendChild(root);
@@ -153,7 +153,7 @@ export class Editor {
     onLoadButton() {
         var panel = this.graphcanvas.createPanel("Load session",{closable:true});
         
-        //@TODO
+        // @TODO
 
         this.root.appendChild(panel);
     }
