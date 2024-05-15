@@ -1462,8 +1462,8 @@ export class LGraphNode {
     findInputSlotFree(optsIn) {
         var optsIn = optsIn || {};
         var optsDef = {returnObj: false
-                        ,typesNotAccepted: []
-                        };
+            ,typesNotAccepted: []
+        };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.inputs) {
             return -1;
@@ -1489,8 +1489,8 @@ export class LGraphNode {
     findOutputSlotFree(optsIn) {
         var optsIn = optsIn || {};
         var optsDef = { returnObj: false
-                        ,typesNotAccepted: []
-                        };
+            ,typesNotAccepted: []
+        };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.outputs) {
             return -1;
@@ -1591,9 +1591,9 @@ export class LGraphNode {
     connectByType(slot, target_node, target_slotType, optsIn) {
         var optsIn = optsIn || {};
         var optsDef = { createEventInCase: true
-                        ,firstFreeIfOutputGeneralInCase: true
-                        ,generalTypeInCase: true
-                        };
+            ,firstFreeIfOutputGeneralInCase: true
+            ,generalTypeInCase: true
+        };
         var opts = Object.assign(optsDef,optsIn);
         if (target_node && target_node.constructor === Number) {
             target_node = this.graph.getNodeById(target_node);
@@ -1644,9 +1644,9 @@ export class LGraphNode {
     connectByTypeOutput(slot, source_node, source_slotType, optsIn) {
         var optsIn = optsIn || {};
         var optsDef = { createEventInCase: true
-                        ,firstFreeIfInputGeneralInCase: true
-                        ,generalTypeInCase: true
-                        };
+            ,firstFreeIfInputGeneralInCase: true
+            ,generalTypeInCase: true
+        };
         var opts = Object.assign(optsDef,optsIn);
         if (source_node && source_node.constructor === Number) {
             source_node = this.graph.getNodeById(source_node);
@@ -1819,9 +1819,9 @@ export class LGraphNode {
                         this.disconnectOutput(slot, false, {doProcessChange: false}); // Input(target_slot, {doProcessChange: false});
                         changed = true;
                     }
-                break;
+                    break;
                 default:
-                break;
+                    break;
             }
         }
 

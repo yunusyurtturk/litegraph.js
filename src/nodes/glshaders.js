@@ -1057,11 +1057,11 @@ if (typeof GL != "undefined") {
                 this.properties.value =
                     old_value && old_value.length == 4
                         ? [
-                              old_value[0],
-                              old_value[1],
-                              old_value[2],
-                              old_value[3],
-                          ]
+                            old_value[0],
+                            old_value[1],
+                            old_value[2],
+                            old_value[3],
+                        ]
                         : [0, 0, 0, 0];
                 this.addWidget(
                     "number",
@@ -1994,7 +1994,7 @@ if (typeof GL != "undefined") {
             }\n\
             return brightness < limit ? 0.0 : 1.0;\n\
         }\n"),
-        registerShaderNode("math/dither", LGraphShaderDither);
+    registerShaderNode("math/dither", LGraphShaderDither);
 
     function LGraphShaderRemap() {
         this.addInput("", LGShaders.ALL_TYPES);

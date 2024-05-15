@@ -436,13 +436,13 @@ class Subgraph {
 
         // mark inner nodes
         var ids = {};
-    // @BUG: these aren't currently used.  Examine and decide whether to excise.
-    //    var min_x = 0;
-    //    var max_x = 0;
+        // @BUG: these aren't currently used.  Examine and decide whether to excise.
+        //    var min_x = 0;
+        //    var max_x = 0;
         for (let i = 0; i < nodes.length; ++i) {
             ids[node.id] = nodes[i];
-    //      min_x = Math.min(node.pos[0], min_x);
-    //      max_x = Math.max(node.pos[0], min_x);
+            //      min_x = Math.min(node.pos[0], min_x);
+            //      max_x = Math.max(node.pos[0], min_x);
         }
 
         for (let i = 0; i < nodes.length; ++i) {

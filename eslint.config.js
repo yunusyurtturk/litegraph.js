@@ -33,11 +33,11 @@ export default [
         "@stylistic/comma-style": [0, "last"],
         "@stylistic/computed-property-spacing": [0, "never"],
         "@stylistic/dot-location": [0, "object"],
-        "@stylistic/eol-last": [0, "always"],
+        "@stylistic/eol-last": [1, "always"],
         "@stylistic/function-call-spacing": [0, "never"],
         "@stylistic/function-paren-newline": [0, "multiline"],
         "@stylistic/implicit-arrow-linebreak": [0, "beside"],
-        "@stylistic/indent": [0, 4],
+        "@stylistic/indent": [1, 4],
         "@stylistic/indent-binary-ops":[0, 4],
         "@stylistic/key-spacing":[0, {
             "beforeColon":false,

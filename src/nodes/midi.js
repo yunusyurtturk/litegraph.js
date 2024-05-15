@@ -991,19 +991,17 @@ class LGMIDIEvent {
                         v = props.cmd == MIDIEvent.NOTEON ? props.value2 : null;
                         break;
                     case "pitch":
-                        v =
-                            props.cmd == MIDIEvent.NOTEON
-                                ? MIDIEvent.computePitch(props.value1)
-                                : null;
+                        v = props.cmd == MIDIEvent.NOTEON
+                            ? MIDIEvent.computePitch(props.value1)
+                            : null;
                         break;
                     case "pitchbend":
-                        v =
-                            props.cmd == MIDIEvent.PITCHBEND
-                                ? MIDIEvent.computePitchBend(
-                                      props.value1,
-                                      props.value2,
-                                  )
-                                : null;
+                        v = props.cmd == MIDIEvent.PITCHBEND
+                            ? MIDIEvent.computePitchBend(
+                                props.value1,
+                                props.value2,
+                            )
+                            : null;
                         break;
                     case "gate":
                         v = this.gate;

@@ -108,8 +108,8 @@ export class DragAndScale {
         event.delta = event.wheelDelta
             ? event.wheelDelta / 40
             : event.deltaY
-            ? -event.deltaY / 3
-            : 0;
+                ? -event.deltaY / 3
+                : 0;
         this.changeDeltaScale(1.0 + event.delta * 0.05);
     }
 

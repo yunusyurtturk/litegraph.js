@@ -343,34 +343,34 @@ export var LiteGraph = new class {
      * @param {String} name node name with namespace (p.e.: 'math/sum')
      * @param {Object} object methods expected onCreate, inputs, outputs, properties, onExecute
      */
-        buildNodeClassFromObject(
+    buildNodeClassFromObject(
         name,
         object
     ) {
         var ctor_code = "";
         if(object.inputs)
-        for(let i=0; i < object.inputs.length; ++i) {
-            let _name = object.inputs[i][0];
-            let _type = object.inputs[i][1];
-            if(_type && _type.constructor === String)
-                _type = '"'+_type+'"';
-            ctor_code += "this.addInput('"+_name+"',"+_type+");\n";
-        }
+            for(let i=0; i < object.inputs.length; ++i) {
+                let _name = object.inputs[i][0];
+                let _type = object.inputs[i][1];
+                if(_type && _type.constructor === String)
+                    _type = '"'+_type+'"';
+                ctor_code += "this.addInput('"+_name+"',"+_type+");\n";
+            }
         if(object.outputs)
-        for(let i=0; i < object.outputs.length; ++i) {
-            let _name = object.outputs[i][0];
-            let _type = object.outputs[i][1];
-            if(_type && _type.constructor === String)
-                _type = '"'+_type+'"';
-            ctor_code += "this.addOutput('"+_name+"',"+_type+");\n";
-        }
+            for(let i=0; i < object.outputs.length; ++i) {
+                let _name = object.outputs[i][0];
+                let _type = object.outputs[i][1];
+                if(_type && _type.constructor === String)
+                    _type = '"'+_type+'"';
+                ctor_code += "this.addOutput('"+_name+"',"+_type+");\n";
+            }
         if(object.properties)
-        for(let i in object.properties) {
-            let prop = object.properties[i];
-            if(prop && prop.constructor === String)
-                prop = '"'+prop+'"';
-            ctor_code += "this.addProperty('"+i+"',"+prop+");\n";
-        }
+            for(let i in object.properties) {
+                let prop = object.properties[i];
+                if(prop && prop.constructor === String)
+                    prop = '"'+prop+'"';
+                ctor_code += "this.addProperty('"+i+"',"+prop+");\n";
+            }
         ctor_code += "if(this.onCreate)this.onCreate()";
         var classobj = Function(ctor_code);
         for(let i in object)
@@ -421,7 +421,7 @@ export var LiteGraph = new class {
             }
         }
         if(return_type !== null) // null means no output
-        code +=
+            code +=
             "this.addOutput('out'," +
             (return_type != null ? (return_type.constructor === String ? "'" + return_type + "'" : return_type) : 0) +
             ");\n";
@@ -756,27 +756,27 @@ export var LiteGraph = new class {
                 url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
             }
             return fetch(url)
-            .then((response) => {
-                if(!response.ok)
+                .then((response) => {
+                    if(!response.ok)
                         throw new Error("File not found"); // it will be catch below
-                if(type == "arraybuffer")
-                    return response.arrayBuffer();
-                else if(type == "text" || type == "string")
-                    return response.text();
-                else if(type == "json")
-                    return response.json();
-                else if(type == "blob")
-                    return response.blob();
-            })
-            .then((data) => {
-                if(on_complete)
-                    on_complete(data);
-            })
-            .catch((error) => {
-                console.error("error fetching file:",url);
-                if(on_error)
-                    on_error(error);
-            });
+                    if(type == "arraybuffer")
+                        return response.arrayBuffer();
+                    else if(type == "text" || type == "string")
+                        return response.text();
+                    else if(type == "json")
+                        return response.json();
+                    else if(type == "blob")
+                        return response.blob();
+                })
+                .then((data) => {
+                    if(on_complete)
+                        on_complete(data);
+                })
+                .catch((error) => {
+                    console.error("error fetching file:",url);
+                    if(on_error)
+                        on_error(error);
+                });
         } else if( url.constructor === File || url.constructor === Blob) {
             var reader = new FileReader();
             reader.onload = (e) => {
