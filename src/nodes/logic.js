@@ -105,10 +105,10 @@ class logicAnd {
     }
 
     onExecute() {
-        var ret = true;
-        for (var inX in this.inputs) {
+        let ret = true;
+        for (let inX in this.inputs) {
             if (!this.getInputData(inX)) {
-                var ret = false;
+                ret = false;
                 break;
             }
         }
@@ -216,7 +216,7 @@ class logicBranch {
         this.mode = LiteGraph.ON_TRIGGER;
     }
 
-    onExecute(param, options) {
+    onExecute(_param, _options) {
         var condtition = this.getInputData(1);
         if (condtition) {
             this.triggerSlot(0);
