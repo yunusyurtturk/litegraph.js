@@ -22,7 +22,7 @@ class LGWebSocket {
         this._last_received_data = [];
     }
 
-    onPropertyChanged(name, value) {
+    onPropertyChanged(name, _value) {
         if (name == "url") {
             this.connectSocket();
         }
@@ -40,7 +40,7 @@ class LGWebSocket {
         var room = this.properties.room;
         var only_changes = this.properties.only_send_changes;
 
-        for (var i = 1; i < this.inputs.length; ++i) {
+        for (let i = 1; i < this.inputs.length; ++i) {
             var data = this.getInputData(i);
             if (data == null) {
                 continue;
@@ -64,7 +64,7 @@ class LGWebSocket {
             this._ws.send(json);
         }
 
-        for (var i = 1; i < this.outputs.length; ++i) {
+        for (let i = 1; i < this.outputs.length; ++i) {
             this.setOutputData(i, this._last_received_data[i]);
         }
 
@@ -106,11 +106,11 @@ class LGWebSocket {
                 that._last_received_data[data.channel || 0] = data.data;
             }
         };
-        this._ws.onerror = function (e) {
+        this._ws.onerror = function (_e) {
             console.log("couldnt connect to websocket");
             that.boxcolor = "#E88";
         };
-        this._ws.onclose = function (e) {
+        this._ws.onclose = function (_e) {
             console.log("connection closed");
             that.boxcolor = "#000";
         };

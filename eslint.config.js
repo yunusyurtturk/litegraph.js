@@ -14,7 +14,13 @@ export default [
     },
     "rules": {
         "no-undef":0, /* had to disable because it doesn't recognize DOM objects */
-
+        "no-unused-vars":[1, // or "error"
+            {
+              "argsIgnorePattern": "^_",
+              "varsIgnorePattern": "^_",
+              "caughtErrorsIgnorePattern": "^_"
+            }
+        ],
         "@stylistic/arrow-parens": [0, "always"],
         "@stylistic/arrow-spacing": [0, { "before": true, "after": true }],
         "@stylistic/brace-style":[0, "1tbs"],
