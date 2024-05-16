@@ -145,9 +145,7 @@ class GraphicsImage {
             if (callback) {
                 callback(this);
             }
-            console.log(
-                "Image loaded, size: " + that.img.width + "x" + that.img.height,
-            );
+            console.log(`Image loaded, size: ${that.img.width}x${that.img.height}`);
             this.dirty = true;
             that.boxcolor = "#9F9";
             that.setDirtyCanvas(true);
@@ -780,9 +778,7 @@ class ImageWebcam {
 
     openStream() {
         if (!navigator.mediaDevices.getUserMedia) {
-            console.log(
-                "getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags",
-            );
+            console.log("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
             return;
         }
 

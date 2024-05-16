@@ -334,9 +334,7 @@ export class LGraphCanvas {
         var ctx = this.ctx = canvas.getContext("2d");
         if (ctx == null) {
             if (!canvas.webgl_enabled) {
-                console.warn(
-                    "This canvas seems to be WebGL, enabling WebGL renderer",
-                );
+                console.warn("This canvas seems to be WebGL, enabling WebGL renderer");
             }
             this.enableWebGL();
         }
@@ -655,7 +653,8 @@ export class LGraphCanvas {
                     // Search for corner for resize
                     if ( !skip_action &&
                         node.resizable !== false &&
-                        LiteGraph.isInsideRectangle( e.canvasX,
+                        LiteGraph.isInsideRectangle(
+                            e.canvasX,
                             e.canvasY,
                             node.pos[0] + node.size[0] - 5,
                             node.pos[1] + node.size[1] - 5,
@@ -1328,12 +1327,8 @@ export class LGraphCanvas {
                     this.selected_group.pos[1] -
                     Math.round(this.selected_group.pos[1]);
                 this.selected_group.move(diffx, diffy, e.ctrlKey);
-                this.selected_group.pos[0] = Math.round(
-                    this.selected_group.pos[0],
-                );
-                this.selected_group.pos[1] = Math.round(
-                    this.selected_group.pos[1],
-                );
+                this.selected_group.pos[0] = Math.round(this.selected_group.pos[0]);
+                this.selected_group.pos[1] = Math.round(this.selected_group.pos[1]);
                 if (this.selected_group._nodes.length) {
                     this.dirty_canvas = true;
                 }
@@ -1829,9 +1824,7 @@ export class LGraphCanvas {
                     if (!link_info) {
                         continue;
                     }
-                    var target_node = this.graph.getNodeById(
-                        link_info.origin_id,
-                    );
+                    var target_node = this.graph.getNodeById(link_info.origin_id);
                     if (!target_node) {
                         continue;
                     }
@@ -2985,9 +2978,7 @@ export class LGraphCanvas {
             this.onDrawBackground?.(ctx, this.visible_area);
             if (this.onBackgroundRender) {
                 // LEGACY
-                console.error(
-                    "WARNING! onBackgroundRender deprecated, now is named onDrawBackground ",
-                );
+                console.error("WARNING! onBackgroundRender deprecated, now is named onDrawBackground ");
                 this.onBackgroundRender = null;
             }
 
@@ -4410,11 +4401,9 @@ export class LGraphCanvas {
                         ctx.textAlign = "center";
                         ctx.fillStyle = text_color;
                         ctx.fillText(
-                            w.label || w.name + "  " + Number(w.value).toFixed(
-                                w.options.precision != null
-                                    ? w.options.precision
-                                    : 3,
-                            ),
+                            w.label || w.name + "  " + Number(w.value).toFixed(w.options.precision != null
+                                ? w.options.precision
+                                : 3),
                             widget_width * 0.5,
                             y + H * 0.7,
                         );
@@ -4453,11 +4442,9 @@ export class LGraphCanvas {
                         ctx.textAlign = "right";
                         if (w.type == "number") {
                             ctx.fillText(
-                                Number(w.value).toFixed(
-                                    w.options.precision !== undefined
-                                        ? w.options.precision
-                                        : 3,
-                                ),
+                                Number(w.value).toFixed(w.options.precision !== undefined
+                                    ? w.options.precision
+                                    : 3),
                                 widget_width - margin * 2 - 20,
                                 y + H * 0.7,
                             );
@@ -4628,13 +4615,14 @@ export class LGraphCanvas {
                                 w.value = index;
                         } else { // combo clicked
                             var text_values = values != values_list ? Object.values(values) : values;
-                            new ContextMenu(text_values, {
-                                scale: Math.max(1, this.ds.scale),
-                                event: event,
-                                className: "dark",
-                                callback: inner_clicked.bind(w),
-                            },
-                            ref_window,
+                            new ContextMenu(
+                                text_values, {
+                                    scale: Math.max(1, this.ds.scale),
+                                    event: event,
+                                    className: "dark",
+                                    callback: inner_clicked.bind(w),
+                                },
+                                ref_window,
                             );
 
                             // @TODO: Excise this, bound to w above
@@ -4651,17 +4639,19 @@ export class LGraphCanvas {
                     } else if(event.type == "mouseup" && w.type == "number") {
                         var delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
                         if (event.click_time < 200 && delta == 0) {
-                            this.prompt("Value",w.value,function(v) {
+                            this.prompt(
+                                "Value",w.value,function(v) {
                                 // check if v is a valid equation or a number
-                                if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-                                    try {// solve the equation if possible
-                                        v = eval(v);
-                                    } catch (e) { }
-                                }
-                                this.value = Number(v);
-                                inner_value_change(this, this.value);
-                            }.bind(w),
-                            event);
+                                    if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                                        try {// solve the equation if possible
+                                            v = eval(v);
+                                        } catch (e) { }
+                                    }
+                                    this.value = Number(v);
+                                    inner_value_change(this, this.value);
+                                }.bind(w),
+                                event,
+                            );
                         }
                     }
 
@@ -4685,10 +4675,12 @@ export class LGraphCanvas {
                 case "string":
                 case "text":
                     if (event.type == "mousedown") {
-                        this.prompt("Value",w.value,function(v) {
-                            inner_value_change(this, v);
-                        }.bind(w),
-                        event,w.options ? w.options.multiline : false );
+                        this.prompt(
+                            "Value",w.value,function(v) {
+                                inner_value_change(this, v);
+                            }.bind(w),
+                            event,w.options ? w.options.multiline : false,
+                        );
                     }
                     break;
                 default:
@@ -5452,16 +5444,17 @@ export class LGraphCanvas {
 
     createDefaultNodeForSlot(optPass) { // addNodeMenu for connection
         var optPass = optPass || {};
-        var opts = Object.assign({ nodeFrom: null, // input
-            slotFrom: null, // input
-            nodeTo: null, // output
-            slotTo: null, // output
-            position: [],	// pass the event coords
-            nodeType: null,	// choose a nodetype to add, AUTO to set at first good
-            posAdd: [0,0],	// adjust x,y
-            posSizeFix: [0,0], // alpha, adjust the position x,y based on the new node size w,h
-        }
-        ,optPass,
+        var opts = Object.assign(
+            { nodeFrom: null, // input
+                slotFrom: null, // input
+                nodeTo: null, // output
+                slotTo: null, // output
+                position: [],	// pass the event coords
+                nodeType: null,	// choose a nodetype to add, AUTO to set at first good
+                posAdd: [0,0],	// adjust x,y
+                posSizeFix: [0,0], // alpha, adjust the position x,y based on the new node size w,h
+            }
+            ,optPass,
         );
         var that = this;
 
@@ -6160,9 +6153,7 @@ export class LGraphCanvas {
                     graphcanvas.graph.beforeChange();
                     var node = LiteGraph.createNode(name);
                     if (node) {
-                        node.pos = graphcanvas.convertEventToCanvasOffset(
-                            event,
-                        );
+                        node.pos = graphcanvas.convertEventToCanvasOffset(event);
                         graphcanvas.graph.add(node, false);
                     }
 
@@ -6852,12 +6843,14 @@ export class LGraphCanvas {
                     var values = options.values || [];
                     var propname = this.parentNode.dataset["property"];
                     var elem_that = this;
-                    new ContextMenu(values,{
-                        event: event,
-                        className: "dark",
-                        callback: inner_clicked,
-                    },
-                    ref_window);
+                    new ContextMenu(
+                        values,{
+                            event: event,
+                            className: "dark",
+                            callback: inner_clicked,
+                        },
+                        ref_window,
+                    );
                     function inner_clicked(v, option, event) {
                         // node.setProperty(propname,v);
                         // graphcanvas.dirty_canvas = true;
@@ -7750,11 +7743,9 @@ export class LGraphCanvas {
                 }
                 var _slot = slot.input || slot.output;
                 if (_slot.removable) {
-                    menu_info.push(
-                        _slot.locked
-                            ? "Cannot remove"
-                            : { content: "Remove Slot", slot: slot },
-                    );
+                    menu_info.push(_slot.locked
+                        ? "Cannot remove"
+                        : { content: "Remove Slot", slot: slot });
                 }
                 if (!_slot.nameLocked) {
                     menu_info.push({ content: "Rename Slot", slot: slot });

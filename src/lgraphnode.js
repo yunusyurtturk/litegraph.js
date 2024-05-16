@@ -232,9 +232,7 @@ export class LGraphNode {
         }
 
         if (this.onSerialize?.(o)) {
-            console.warn(
-                "node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter",
-            );
+            console.warn("node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter");
         }
         return o;
     }
@@ -1703,9 +1701,7 @@ export class LGraphNode {
     connect(slot, target_node, target_slot = 0) {
         if (!this.graph) {
             // could be connected before adding it to a graph
-            console.log(
-                "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them.",
-            ); // due to link ids being associated with graphs
+            console.log("Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."); // due to link ids being associated with graphs
             return null;
         }
 
@@ -1742,9 +1738,7 @@ export class LGraphNode {
             target_slot = target_node.findInputSlot(target_slot);
             if (target_slot == -1) {
                 if (LiteGraph.debug) {
-                    console.log(
-                        `Connect: Error, no slot of name ${target_slot}`,
-                    );
+                    console.log(`Connect: Error, no slot of name ${target_slot}`);
                 }
                 return null;
             }

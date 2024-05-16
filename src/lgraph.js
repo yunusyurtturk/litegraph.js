@@ -618,9 +618,7 @@ export class LGraph {
 
         // nodes
         if (node.id != -1 && this._nodes_by_id[node.id] != null) {
-            console.warn(
-                "LiteGraph: there is already a node with this ID, changing it",
-            );
+            console.warn("LiteGraph: there is already a node with this ID, changing it");
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
             } else {
@@ -1251,9 +1249,7 @@ export class LGraph {
             var link = this.links[i];
             if (!link.serialize) {
                 // weird bug I havent solved yet
-                console.warn(
-                    "weird LLink bug, link info is not a LLink but a regular object",
-                );
+                console.warn("weird LLink bug, link info is not a LLink but a regular object");
                 var link2 = new LLink();
                 for (var j in link) {
                     link2[j] = link[j];
@@ -1330,9 +1326,7 @@ export class LGraph {
                 var node = LiteGraph.createNode(n_info.type, n_info.title);
                 if (!node) {
                     if (LiteGraph.debug) {
-                        console.log(
-                            `Node not found or has errors: ${n_info.type}`,
-                        );
+                        console.log(`Node not found or has errors: ${n_info.type}`);
                     }
 
                     // in case of error we create a replacement node to avoid losing info

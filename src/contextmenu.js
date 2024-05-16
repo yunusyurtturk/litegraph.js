@@ -107,9 +107,7 @@ export class ContextMenu {
             eventClass !== "CustomEvent" &&
             eventClass !== "PointerEvent"
         ) {
-            console.error(
-                `Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`,
-            );
+            console.error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
             this.options.event = null;
         }
     }
@@ -381,8 +379,6 @@ export class ContextMenu {
     }
 
     static isCursorOverElement(event, element) {
-        return LiteGraph.isInsideRectangle(
-            event.clientX, event.clientY, element.left, element.top, element.width, element.height,
-        );
+        return LiteGraph.isInsideRectangle(event.clientX, event.clientY, element.left, element.top, element.width, element.height);
     }
 }

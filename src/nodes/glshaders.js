@@ -487,13 +487,14 @@ if (typeof GL != "undefined") {
                 if (err.indexOf("Fragment shader") != -1)
                     console.log(
                         finalcode.fs_code
-                            .split("\n")
-                            .map(function (v, i) {
-                                return i + ".- " + v;
-                            })
-                            .join("\n"),
+                        .split("\n")
+                        .map(function (v, i) {
+                            return i + ".- " + v;
+                        })
+                        .join("\n")
                     );
-                else console.log(finalcode.vs_code);
+                else 
+                    console.log(finalcode.vs_code);
             }
             this._shader_error = true;
             return null;
@@ -552,9 +553,7 @@ if (typeof GL != "undefined") {
                 typeof LGraphTexture != "undefined" ? LGraphTexture.DEFAULT : 2,
         };
 
-        var inputNode = this.subgraph.findNodesByType(
-            "shader::input/uniform",
-        )[0];
+        var inputNode = this.subgraph.findNodesByType("shader::input/uniform")[0];
         inputNode.pos = [200, 300];
 
         var sampler = LiteGraph.createNode("shader::texture/sampler2D");
@@ -790,9 +789,7 @@ if (typeof GL != "undefined") {
         }
     };
 
-    LGraphShaderGraph.prototype.onDrawSubgraphBackground = function (
-        graphcanvas,
-    ) {
+    LGraphShaderGraph.prototype.onDrawSubgraphBackground = function (graphcanvas) {
         // TODO
     };
 

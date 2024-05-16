@@ -250,11 +250,9 @@ export var LiteGraph = new class {
 
         // warnings
         if (base_class.prototype.onPropertyChange) {
-            console.warn(
-                "LiteGraph node class " +
+            console.warn("LiteGraph node class " +
                     type +
-                    " has onPropertyChange method, it must be called onPropertyChanged with d at the end",
-            );
+                    " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
 
         // TODO one would want to know input and ouput :: this would allow through registerNodeAndSlotType to get all the slots types
@@ -482,9 +480,7 @@ export var LiteGraph = new class {
         var base_class = this.registered_node_types[type];
         if (!base_class) {
             if (LiteGraph.debug) {
-                console.log(
-                    'GraphNode type "' + type + '" not registered.',
-                );
+                console.log('GraphNode type "' + type + '" not registered.');
             }
             return null;
         }
@@ -807,9 +803,7 @@ export var LiteGraph = new class {
     }
 
     distance(a, b) {
-        return Math.sqrt(
-            (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]),
-        );
+        return Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
     }
 
     colorToString(c) {

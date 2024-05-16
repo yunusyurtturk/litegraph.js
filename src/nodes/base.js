@@ -340,9 +340,7 @@ class Subgraph {
             node.id = newID;
 
             if (idMap.nodeIDs[oldID] || idMap.nodeIDs[newID]) {
-                throw new Error(
-                    `New/old node UUID wasn't unique in changed map! ${oldID} ${newID}`,
-                );
+                throw new Error(`New/old node UUID wasn't unique in changed map! ${oldID} ${newID}`);
             }
 
             idMap.nodeIDs[oldID] = newID;
@@ -355,9 +353,7 @@ class Subgraph {
             link[0] = newID;
 
             if (idMap.linkIDs[oldID] || idMap.linkIDs[newID]) {
-                throw new Error(
-                    `New/old link UUID wasn't unique in changed map! ${oldID} ${newID}`,
-                );
+                throw new Error(`New/old link UUID wasn't unique in changed map! ${oldID} ${newID}`);
             }
 
             idMap.linkIDs[oldID] = newID;

@@ -277,9 +277,7 @@ export class LGraphTexture {
             if (ctx.webgl) {
                 this._canvas = this._last_tex;
             } else {
-                var tex_canvas = LGraphTexture.generateLowResTexturePreview(
-                    this._last_tex,
-                );
+                var tex_canvas = LGraphTexture.generateLowResTexturePreview(this._last_tex);
                 if (!tex_canvas) {
                     return;
                 }
@@ -2258,10 +2256,7 @@ LGraphImageToTexture.prototype.onExecute = function () {
     try {
         this._temp_texture.uploadImage(img);
     } catch (err) {
-        console.error(
-            "image comes from an unsafe location, cannot be uploaded to webgl: " +
-                err,
-        );
+        console.error("image comes from an unsafe location, cannot be uploaded to webgl: "+err);
         return;
     }
 

@@ -702,9 +702,7 @@ class LGraphGeometryTransform {
         var old_vertices = geometry.vertices;
         var vertices = this.geometry.vertices;
         if (!vertices || vertices.length != old_vertices.length)
-            vertices = this.geometry.vertices = new Float32Array(
-                old_vertices.length,
-            );
+            vertices = this.geometry.vertices = new Float32Array(old_vertices.length);
         var temp = vec3.create();
 
         for (let i = 0, l = vertices.length; i < l; i += 3) {
@@ -1140,11 +1138,9 @@ class LGraphConnectPoints {
                     var x2 = vertices[j];
                     var y2 = vertices[j + 1];
                     var z2 = vertices[j + 2];
-                    var dist = Math.sqrt(
-                        (x - x2) * (x - x2) +
+                    var dist = Math.sqrt((x - x2) * (x - x2) +
                             (y - y2) * (y - y2) +
-                            (z - z2) * (z - z2),
-                    );
+                            (z - z2) * (z - z2));
                     if (
                         dist > max_dist ||
                         dist < min_dist ||
@@ -1256,9 +1252,7 @@ if (typeof GL != "undefined") {
                     this.mesh.vertexBuffers.vertices.data.length
             ) {
                 var n = new Float32Array([0, 1, 0]);
-                var normals = new Float32Array(
-                    this.mesh.vertexBuffers.vertices.data.length,
-                );
+                var normals = new Float32Array(this.mesh.vertexBuffers.vertices.data.length);
                 for (let i = 0; i < normals.length; i += 3) normals.set(n, i);
                 mesh_buffer = new GL.Buffer(GL.ARRAY_BUFFER, normals, 3);
                 this.mesh.addBuffer("normals", mesh_buffer);
@@ -1315,9 +1309,7 @@ if (typeof GL != "undefined") {
             if (!mesh) return;
 
             if (!LGraphRender.onRequestCameraMatrices) {
-                console.warn(
-                    "cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph",
-                );
+                console.warn("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
                 return;
             }
 
@@ -1602,9 +1594,7 @@ if (typeof GL != "undefined") {
                 this.updateMesh(geometry);
 
             if (!LGraphRender.onRequestCameraMatrices) {
-                console.warn(
-                    "cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph",
-                );
+                console.warn("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
                 return;
             }
 

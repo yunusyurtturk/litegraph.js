@@ -207,9 +207,7 @@ class GamepadInput {
                     xbox.buttons[GamepadInput.mapping_array[j]] =
                         gamepad.buttons[j].pressed;
                     if (gamepad.buttons[j].was_pressed)
-                        this.trigger(
-                            GamepadInput.mapping_array[j] + "_button_event",
-                        );
+                        this.trigger(GamepadInput.mapping_array[j] + "_button_event");
                 } else { // mapping of XBOX
                     switch (
                         j // I use a switch to ensure that a player with another gamepad could play

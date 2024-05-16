@@ -395,7 +395,7 @@ class MIDIInterface {
                 }' manufacturer:'${portInfo.manufacturer
                 }' name:'${portInfo.name
                 }' version:'${portInfo.version
-                }'`,
+                }'`
             );
             this.num_output_ports++;
         }
@@ -406,18 +406,17 @@ class MIDIInterface {
         while (it_value && it_value.done === false) {
             var port_info = it_value.value;
             this.input_ports_info.push(port_info);
-            console.log(
-                "Input port [type:'" +
-                    port_info.type +
-                    "'] id:'" +
-                    port_info.id +
-                    "' manufacturer:'" +
-                    port_info.manufacturer +
-                    "' name:'" +
-                    port_info.name +
-                    "' version:'" +
-                    port_info.version +
-                    "'",
+            console.log("Input port [type:'" +
+                port_info.type +
+                "'] id:'" +
+                port_info.id +
+                "' manufacturer:'" +
+                port_info.manufacturer +
+                "' name:'" +
+                port_info.name +
+                "' version:'" +
+                port_info.version +
+                "'"
             );
             num++;
             it_value = it.next();
@@ -432,16 +431,16 @@ class MIDIInterface {
             this.output_ports_info.push(port_info);
             console.log(
                 "Output port [type:'" +
-                    port_info.type +
-                    "'] id:'" +
-                    port_info.id +
-                    "' manufacturer:'" +
-                    port_info.manufacturer +
-                    "' name:'" +
-                    port_info.name +
-                    "' version:'" +
-                    port_info.version +
-                    "'",
+                port_info.type +
+                "'] id:'" +
+                port_info.id +
+                "' manufacturer:'" +
+                port_info.manufacturer +
+                "' name:'" +
+                port_info.name +
+                "' version:'" +
+                port_info.version +
+                "'"
             );
             num++;
             it_value = it.next();
@@ -1196,9 +1195,7 @@ class LGMIDITranspose {
         ) {
             this.midi_event = new MIDIEvent();
             this.midi_event.setup(midi_event.data);
-            this.midi_event.data[1] = Math.round(
-                this.midi_event.data[1] + this.properties.amount,
-            );
+            this.midi_event.data[1] = Math.round(this.midi_event.data[1] + this.properties.amount);
             this.trigger("out", this.midi_event);
         } else {
             this.trigger("out", midi_event);
@@ -1315,9 +1312,7 @@ class LGMIDIFromFile {
         this._playing = false;
 
         if (typeof MidiParser == "undefined") {
-            console.error(
-                "midi-parser.js not included, LGMidiPlay requires that library: https://raw.githubusercontent.com/colxi/midi-parser-js/master/src/main.js",
-            );
+            console.error("midi-parser.js not included, LGMidiPlay requires that library: https://raw.githubusercontent.com/colxi/midi-parser-js/master/src/main.js");
             this.boxcolor = "red";
         }
     }
@@ -1415,9 +1410,7 @@ class LGMIDIPlay {
         this.addOutput("note", LiteGraph.EVENT);
 
         if (typeof AudioSynth == "undefined") {
-            console.error(
-                "Audiosynth.js not included, LGMidiPlay requires that library",
-            );
+            console.error("Audiosynth.js not included, LGMidiPlay requires that library");
             this.boxcolor = "red";
         } else {
             var Synth = (this.synth = new AudioSynth());

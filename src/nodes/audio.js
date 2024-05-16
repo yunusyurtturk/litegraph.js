@@ -56,9 +56,7 @@ class LGAudio {
                 let origin_node = node.graph.getNodeById(link_info.origin_id);
                 let origin_audionode = null;
                 if (origin_node.getAudioNodeInOutputSlot) {
-                    origin_audionode = origin_node.getAudioNodeInOutputSlot(
-                        link_info.origin_slot,
-                    );
+                    origin_audionode = origin_node.getAudioNodeInOutputSlot(link_info.origin_slot);
                 } else {
                     origin_audionode = origin_node.audionode;
                 }
@@ -97,9 +95,7 @@ class LGAudio {
                     let target_node = node.graph.getNodeById(link_info.target_id);
                     let target_audionode = null;
                     if (target_node.getAudioNodeInInputSlot) {
-                        target_audionode = target_node.getAudioNodeInInputSlot(
-                            link_info.target_slot,
-                        );
+                        target_audionode = target_node.getAudioNodeInInputSlot(link_info.target_slot);
                     } else {
                         target_audionode = target_node.audionode;
                     }
@@ -142,9 +138,7 @@ class LGAudio {
         // get target audionode
         var target_audionode = null;
         if (target_node.getAudioNodeInInputSlot) {
-            target_audionode = target_node.getAudioNodeInInputSlot(
-                link_info.target_slot,
-            );
+            target_audionode = target_node.getAudioNodeInInputSlot(link_info.target_slot);
         } else {
             target_audionode = target_node.audionode;
         }
@@ -546,9 +540,7 @@ class LGAudioMediaSource {
 
     openStream() {
         if (!navigator.mediaDevices) {
-            console.log(
-                "getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags",
-            );
+            console.log("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
             return;
         }
 
