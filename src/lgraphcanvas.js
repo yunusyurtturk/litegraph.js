@@ -6843,7 +6843,7 @@ export class LGraphCanvas {
                     innerChange(propname, v);
                 });
             } else if (type == "enum" || type == "combo") {
-                var str_value = LGraphCanvas.getPropertyPrintableValue( value, options.values );
+                str_value = LGraphCanvas.getPropertyPrintableValue( value, options.values );
                 value_element.innerText = str_value;
 
                 value_element.addEventListener("click", function(event) {
@@ -6858,7 +6858,7 @@ export class LGraphCanvas {
                         },
                         ref_window,
                     );
-                    function inner_clicked(v, option, event) {
+                    function inner_clicked(v) {
                         // node.setProperty(propname,v);
                         // graphcanvas.dirty_canvas = true;
                         elem_that.innerText = v;
@@ -6911,24 +6911,25 @@ export class LGraphCanvas {
         var panel = document.querySelector("#node-panel");
         if(panel)
             panel.close();
-        var panel = document.querySelector("#option-panel");
+        panel = document.querySelector("#option-panel");
         if(panel)
             panel.close();
     }
 
-    showShowGraphOptionsPanel(refOpts, obEv, refMenu, refMenu2) {
+    showShowGraphOptionsPanel(refOpts, obEv) {
+        let graphcanvas;
         if(this.constructor && this.constructor.name == "HTMLDivElement") {
             // assume coming from the menu event click
-            if (!obEv || !obEv.event || !obEv.event.target || !obEv.event.target.lgraphcanvas) {
+            if (! obEv?.event?.target?.lgraphcanvas) {
                 console.warn("Canvas not found"); // need a ref to canvas obj
                 /* console.debug(event);
                 console.debug(event.target);*/
                 return;
             }
-            var graphcanvas = obEv.event.target.lgraphcanvas;
+            graphcanvas = obEv.event.target.lgraphcanvas;
         }else{
             // assume called internally
-            var graphcanvas = this;
+            graphcanvas = this;
         }
         graphcanvas.closePanels();
         var ref_window = graphcanvas.getCanvasWindow();
@@ -7178,7 +7179,7 @@ export class LGraphCanvas {
                     elem.dataset["slot"] = i;
                     elem.querySelector(".name").innerText = input.name;
                     elem.querySelector(".type").innerText = input.type;
-                    elem.querySelector("button").addEventListener("click",function(e) {
+                    elem.querySelector("button").addEventListener("click",function(_event) {
                         node.removeInput( Number( this.parentNode.dataset["slot"] ) );
                         inner_refresh();
                     });
@@ -7188,7 +7189,7 @@ export class LGraphCanvas {
         // add extra
         var html = " + <span class='label'>Name</span><input class='name'/><span class='label'>Type</span><input class='type'></input><button>+</button>";
         var elem = panel.addHTML(html,"subgraph_property extra", true);
-        elem.querySelector("button").addEventListener("click", function(e) {
+        elem.querySelector("button").addEventListener("click", function(_event) {
             var elem = this.parentNode;
             var name = elem.querySelector(".name").value;
             var type = elem.querySelector(".type").value;
@@ -7232,7 +7233,7 @@ export class LGraphCanvas {
                     elem.dataset["slot"] = i;
                     elem.querySelector(".name").innerText = input.name;
                     elem.querySelector(".type").innerText = input.type;
-                    elem.querySelector("button").addEventListener("click", function (e) {
+                    elem.querySelector("button").addEventListener("click", function (_event) {
                         node.removeOutput(Number(this.parentNode.dataset["slot"]));
                         inner_refresh();
                     });
@@ -7242,12 +7243,12 @@ export class LGraphCanvas {
         // add extra
         var html = " + <span class='label'>Name</span><input class='name'/><span class='label'>Type</span><input class='type'></input><button>+</button>";
         var elem = panel.addHTML(html, "subgraph_property extra", true);
-        elem.querySelector(".name").addEventListener("keydown", function (e) {
+        elem.querySelector(".name").addEventListener("keydown", function (_event) {
             if (e.keyCode == 13) {
                 addOutput.apply(this)
             }
         })
-        elem.querySelector("button").addEventListener("click", function (e) {
+        elem.querySelector("button").addEventListener("click", function (_event) {
             addOutput.apply(this)
         });
         function addOutput() {
@@ -7349,8 +7350,8 @@ export class LGraphCanvas {
         });
 
         for (let i in LGraphCanvas.node_colors) {
-            var color = LGraphCanvas.node_colors[i];
-            var value = {
+            let color = LGraphCanvas.node_colors[i];
+            value = {
                 value: i,
                 content:
                     "<span style='display: block; color: #999; padding-left: 4px; border-left: 8px solid " +
@@ -7375,7 +7376,7 @@ export class LGraphCanvas {
                 return;
             }
 
-            var color = v.value ? LGraphCanvas.node_colors[v.value] : null;
+            let color = v.value ? LGraphCanvas.node_colors[v.value] : null;
 
             const fApplyColor = (node) => {
                 if (color) {
@@ -7692,7 +7693,7 @@ export class LGraphCanvas {
         return options;
     }
 
-    getGroupMenuOptions(node) {
+    getGroupMenuOptions() {
         var o = [
             { content: "Title", callback: LGraphCanvas.onShowPropertyEditor },
             {
@@ -7798,15 +7799,16 @@ export class LGraphCanvas {
             return;
         }
 
-        var menu = new ContextMenu(menu_info, options, ref_window);
+        new ContextMenu(menu_info, options, ref_window);
 
-        function inner_option_clicked(v, options, e) {
+        function inner_option_clicked(v, options) {
             if (!v) {
                 return;
             }
+            let info;
 
             if (v.content == "Remove Slot") {
-                var info = v.slot;
+                info = v.slot;
                 node.graph.beforeChange();
                 if (info.input) {
                     node.removeInput(info.slot);
@@ -7816,7 +7818,7 @@ export class LGraphCanvas {
                 node.graph.afterChange();
                 return;
             } else if (v.content == "Disconnect Links") {
-                var info = v.slot;
+                info = v.slot;
                 node.graph.beforeChange();
                 if (info.output) {
                     node.disconnectOutput(info.slot);
@@ -7826,7 +7828,7 @@ export class LGraphCanvas {
                 node.graph.afterChange();
                 return;
             } else if (v.content == "Rename Slot") {
-                var info = v.slot;
+                info = v.slot;
                 var slot_info = info.input
                     ? node.getInputInfo(info.slot)
                     : node.getOutputInfo(info.slot);
