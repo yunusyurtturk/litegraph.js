@@ -57,9 +57,7 @@ class Sequence {
     static desc = "select one element from a sequence from a string";
 
     constructor() {
-        this.properties = {
-            sequence: "A,B,C",
-        };
+        this.properties = {sequence: "A,B,C"};
         this.addInput("index", "number");
         this.addInput("seq");
         this.addOutput("out");

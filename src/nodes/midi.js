@@ -376,7 +376,7 @@ class MIDIInterface {
                 }' manufacturer:'${portInfo.manufacturer
                 }' name:'${portInfo.name
                 }' version:'${portInfo.version
-                }'`,
+                }'`
             );
             this.num_input_ports++;
         }
@@ -1127,9 +1127,7 @@ class LGMIDITranspose {
     static desc = "Transpose a MIDI note";
 
     constructor() {
-        this.properties = {
-            amount: 0,
-        };
+        this.properties = {amount: 0};
         this.addInput("in", LiteGraph.ACTION);
         this.addInput("amount", "number");
         this.addOutput("out", LiteGraph.EVENT);
@@ -1172,9 +1170,7 @@ class LGMIDIQuantize {
     static desc = "Transpose a MIDI note tp fit an scale";
 
     constructor() {
-        this.properties = {
-            scale: "A,A#,B,C,C#,D,D#,E,F,F#,G,G#",
-        };
+        this.properties = {scale: "A,A#,B,C,C#,D,D#,E,F,F#,G,G#"};
         this.addInput("note", LiteGraph.ACTION);
         this.addInput("scale", "string");
         this.addOutput("out", LiteGraph.EVENT);

@@ -21,7 +21,6 @@ export default [
               "caughtErrorsIgnorePattern": "^_"
             }
         ],
-        /*
         "@stylistic/arrow-parens": [1, "always"],
         "@stylistic/arrow-spacing": [1, { "before": true, "after": true }],
         "@stylistic/brace-style":[1, 
@@ -97,6 +96,5 @@ export default [
         "@stylistic/spaced-comment":[1,
             "always"
         ],
-        */
     }
 }]

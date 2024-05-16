@@ -14,7 +14,10 @@ export class LGraphTexture {
     constructor() {
         this.addOutput("tex", "Texture");
         this.addOutput("name", "string");
-        this.properties = { name: "", filter: true };
+        this.properties = {
+            name: "",
+            filter: true,
+        };
         this.size = [
             LGraphTexture.image_preview_size,
             LGraphTexture.image_preview_size,
@@ -319,9 +322,7 @@ export class LGraphTexture {
         if (tex.width > size || tex.height > size) {
             temp_tex = this._preview_temp_tex;
             if (!this._preview_temp_tex) {
-                temp_tex = new GL.Texture(size, size, {
-                    minFilter: gl.NEAREST,
-                });
+                temp_tex = new GL.Texture(size, size, {minFilter: gl.NEAREST});
                 this._preview_temp_tex = temp_tex;
             }
 
@@ -695,7 +696,7 @@ class LGraphTextureOperation {
             gl_FragColor = vec4(result, alpha);
         }
     `;
-    
+
     static registerPreset(name, code) {
         LGraphTextureOperation.presets[name] = code;
     }
@@ -1024,7 +1025,10 @@ function LGraphTextureScaleOffset() {
 }
 
 LGraphTextureScaleOffset.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureScaleOffset.title = "Scale/Offset";
@@ -1150,7 +1154,10 @@ function LGraphTextureWarp() {
 }
 
 LGraphTextureWarp.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureWarp.title = "Warp";
@@ -1606,9 +1613,7 @@ LGraphTextureDownsample.prototype.onExecute = function () {
     };
 
     var offset = vec2.create();
-    var uniforms = {
-        u_offset: offset,
-    };
+    var uniforms = {u_offset: offset};
 
     if (this._texture) {
         GL.Texture.releaseTemporary(this._texture);
@@ -1893,9 +1898,7 @@ function LGraphTextureMinMax() {
         use_previous_frame: true, // to avoid stalls
     };
 
-    this._uniforms = {
-        u_texture: 0,
-    };
+    this._uniforms = {u_texture: 0};
 
     this._max = new Float32Array(4);
     this._min = new Float32Array(4);
@@ -1904,7 +1907,10 @@ function LGraphTextureMinMax() {
 }
 
 LGraphTextureMinMax.widgets_info = {
-    mode: { widget: "combo", values: ["min", "max", "avg"] },
+    mode: {
+        widget: "combo",
+        values: ["min", "max", "avg"],
+    },
 };
 
 LGraphTextureMinMax.title = "MinMax";
@@ -2680,7 +2686,10 @@ function LGraphChannelsTexture() {
 LGraphChannelsTexture.title = "Channels to Texture";
 LGraphChannelsTexture.desc = "Split texture channels";
 LGraphChannelsTexture.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphChannelsTexture.prototype.onExecute = function () {
@@ -2778,7 +2787,10 @@ LGraphTextureColor.title = "Color";
 LGraphTextureColor.desc = "Generates a 1x1 texture with a constant color";
 
 LGraphTextureColor.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureColor.prototype.onDrawBackground = function (ctx) {
@@ -3002,7 +3014,10 @@ LGraphTextureMix.title = "Mix";
 LGraphTextureMix.desc = "Generates a texture mixing two textures";
 
 LGraphTextureMix.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureMix.prototype.onExecute = function () {
@@ -3127,7 +3142,10 @@ LGraphTextureEdges.title = "Edges";
 LGraphTextureEdges.desc = "Detects edges";
 
 LGraphTextureEdges.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureEdges.prototype.onExecute = function () {
@@ -3363,7 +3381,10 @@ function LGraphTextureLinearDepth() {
 }
 
 LGraphTextureLinearDepth.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureLinearDepth.title = "Linear Depth";
@@ -3479,7 +3500,10 @@ LGraphTextureBlur.title = "Blur";
 LGraphTextureBlur.desc = "Blur a texture";
 
 LGraphTextureBlur.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureBlur.max_iterations = 20;
@@ -4485,9 +4509,7 @@ function LGraphLensFX() {
 LGraphLensFX.title = "Lens FX";
 LGraphLensFX.desc = "distortion and chromatic aberration";
 
-LGraphLensFX.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
+LGraphLensFX.widgets_info = {precision: { widget: "combo", values: LGraphTexture.MODE_VALUES }};
 
 LGraphLensFX.prototype.onGetInputs = function () {
     return [["enabled", "boolean"]];
@@ -4620,7 +4642,10 @@ function LGraphTextureFromData() {
 LGraphTextureFromData.title = "Data->Tex";
 LGraphTextureFromData.desc = "Generates or applies a curve to a texture";
 LGraphTextureFromData.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureFromData.prototype.onExecute = function () {
@@ -4691,9 +4716,12 @@ function LGraphTextureCurve() {
     };
     this.curve_editor = null;
     this.addWidget("toggle", "Split Channels", false, "split_channels");
-    this.addWidget("combo", "Channel", "RGB", {
-        values: ["RGB", "R", "G", "B"],
-    });
+    this.addWidget(
+        "combo", 
+        "Channel", 
+        "RGB", 
+        {values: ["RGB", "R", "G", "B"]},
+    );
     this.curve_offset = 68;
     this.size = [240, 160];
 }
@@ -4701,7 +4729,10 @@ function LGraphTextureCurve() {
 LGraphTextureCurve.title = "Curve";
 LGraphTextureCurve.desc = "Generates or applies a curve to a texture";
 LGraphTextureCurve.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    precision: {
+        widget: "combo",
+        values: LGraphTexture.MODE_VALUES,
+    },
 };
 
 LGraphTextureCurve.prototype.onExecute = function () {
@@ -5030,7 +5061,7 @@ LGraphExposition.pixel_shader = `
             gl_FragColor = vec4(color.xyz * u_exposition, color.a);
         }
     `;
-    
+
 
 LiteGraph.registerNodeType("texture/exposition", LGraphExposition);
 
@@ -5059,9 +5090,7 @@ function LGraphToneMapping() {
 LGraphToneMapping.title = "Tone Mapping";
 LGraphToneMapping.desc = "Applies Tone Mapping to convert from high to low";
 
-LGraphToneMapping.widgets_info = {
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
+LGraphToneMapping.widgets_info = {precision: { widget: "combo", values: LGraphTexture.MODE_VALUES }};
 
 LGraphToneMapping.prototype.onGetInputs = function () {
     return [["enabled", "boolean"]];

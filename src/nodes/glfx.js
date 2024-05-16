@@ -98,8 +98,8 @@ if (typeof GL != "undefined") {
             this.setOutputData(0, this._tex);
         }
 
-        static pixel_shader = 
-        "precision highp float;\n\
+        static pixel_shader =
+            "precision highp float;\n\
         precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
@@ -427,7 +427,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         */
 
         static _first_pixel_shader =
-        "precision highp float;\n\
+            "precision highp float;\n\
         precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
@@ -443,7 +443,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         ";
 
         static _second_vertex_shader =
-        "precision highp float;\n\
+            "precision highp float;\n\
         attribute vec2 a_vertex2D;\n\
         varying vec4 v_color;\n\
         uniform sampler2D u_texture;\n\
@@ -473,7 +473,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         ";
 
         static _second_pixel_shader =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec4 v_color;\n\
         uniform sampler2D u_shape;\n\
         uniform float u_alpha;\n\
@@ -606,7 +606,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }
 
         static pixel_shader_halftone =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform vec2 u_camera_planes;\n\
@@ -630,7 +630,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }\n";
 
         static pixel_shader_pixelate =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform vec2 u_camera_planes;\n\
@@ -645,7 +645,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }\n";
 
         static pixel_shader_lowpalette =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform vec2 u_camera_planes;\n\
@@ -659,7 +659,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }\n";
 
         static pixel_shader_noise =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform sampler2D u_noise;\n\
@@ -675,7 +675,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }\n";
 
         static pixel_shader_gamma =
-        "precision highp float;\n\
+            "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform float u_value1;\n\
@@ -766,7 +766,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
         }
 
         static pixel_shader =
-        "precision highp float;\n\
+            "precision highp float;\n\
         precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\

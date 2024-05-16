@@ -341,9 +341,7 @@ if (typeof GL != "undefined") {
         this.fs_template = "";
 
         // required so nodes now where to fetch the input data
-        this.buffer_names = {
-            uvs: "v_coord",
-        };
+        this.buffer_names = {uvs: "v_coord"};
 
         this.extra = {}; // to store custom info from the nodes (like if this shader supports a feature, etc)
 
@@ -474,7 +472,7 @@ if (typeof GL != "undefined") {
                         })
                         .join("\n")
                     );
-                else 
+                else
                     console.log(finalcode.vs_code);
             }
             this._shader_error = true;
@@ -575,7 +573,7 @@ if (typeof GL != "undefined") {
                 gl_FragColor = fragcolor;
             }
         `;
-        
+
 
         static widgets_info = {
             precision: {
@@ -764,7 +762,7 @@ if (typeof GL != "undefined") {
             }
         }
 
-        /* 
+        /*
         * @TODO: Either make it or excise it
         * LGraphShaderGraph.prototype.onDrawSubgraphBackground = function () {};
         */
@@ -1114,7 +1112,7 @@ if (typeof GL != "undefined") {
         static varmodes = ["xy", "x", "y"];
 
         onPropertyChanged() {
-            if (this.graph) 
+            if (this.graph)
                 this.graph._version++;
         }
 
@@ -1375,9 +1373,7 @@ if (typeof GL != "undefined") {
             this.addInput("A", LGShaders.ALL_TYPES);
             this.addInput("B", LGShaders.ALL_TYPES);
             this.addOutput("out", "");
-            this.properties = {
-                operation: "*",
-            };
+            this.properties = {operation: "*"};
             this.addWidget("combo", "op.", this.properties.operation, {
                 property: "operation",
                 values: LGraphShaderOperation.operations,
@@ -1389,16 +1385,16 @@ if (typeof GL != "undefined") {
 
         getTitle() {
             if (this.flags.collapsed)
-                 return "A" + this.properties.operation + "B";
-            else 
+                return "A" + this.properties.operation + "B";
+            else
                 return "Operation";
         }
 
         onGetCode(context) {
-            if (!this.shader_destination) 
+            if (!this.shader_destination)
                 return;
 
-            if (!this.isOutputConnected(0)) 
+            if (!this.isOutputConnected(0))
                 return;
 
             var inlinks = [];
@@ -1463,9 +1459,7 @@ if (typeof GL != "undefined") {
             this.addInput("A", LGShaders.ALL_TYPES);
             this.addInput("B", LGShaders.ALL_TYPES);
             this.addOutput("out", "");
-            this.properties = {
-                func: "floor",
-            };
+            this.properties = {func: "floor"};
             this._current = "floor";
             this.addWidget(
                 "combo",
@@ -1504,17 +1498,17 @@ if (typeof GL != "undefined") {
         }
 
         getTitle() {
-            if (this.flags.collapsed) 
+            if (this.flags.collapsed)
                 return this.properties.func;
-            else 
+            else
                 return "Func";
         }
 
         onGetCode(context) {
-            if (!this.shader_destination) 
+            if (!this.shader_destination)
                 return;
 
-            if (!this.isOutputConnected(0)) 
+            if (!this.isOutputConnected(0))
                 return;
 
             var inlinks = [];
@@ -1530,13 +1524,13 @@ if (typeof GL != "undefined") {
                 return;
 
             var func_desc = GLSL_functions[this.properties.func];
-            if (!func_desc) 
+            if (!func_desc)
                 return;
 
             // func_desc
             var base_type = inlinks[0].type;
             var return_type = func_desc.return_type;
-            if (return_type == "T") 
+            if (return_type == "T")
                 return_type = base_type;
 
             var params = [];
@@ -1591,9 +1585,7 @@ if (typeof GL != "undefined") {
                 code: "C = A+B",
                 type: "vec4",
             };
-            this.addWidget("text", "code", this.properties.code, {
-                property: "code",
-            });
+            this.addWidget("text", "code", this.properties.code, {property: "code"});
             this.addWidget("combo", "type", this.properties.type, {
                 values: ["float", "vec2", "vec3", "vec4"],
                 property: "type",
@@ -1603,7 +1595,7 @@ if (typeof GL != "undefined") {
         static title = "Snippet";
 
         onPropertyChanged(name, value) {
-            if (this.graph) 
+            if (this.graph)
                 this.graph._version++;
 
             if (name == "type" && this.outputs[0].type != value) {
@@ -1613,21 +1605,21 @@ if (typeof GL != "undefined") {
         }
 
         getTitle() {
-            if (this.flags.collapsed) 
+            if (this.flags.collapsed)
                 return this.properties.code;
-            else 
+            else
                 return "Snippet";
         }
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var inlinkA = getInputLinkID(this, 0);
-            if (!inlinkA) 
+            if (!inlinkA)
                 inlinkA = "1.0";
             var inlinkB = getInputLinkID(this, 1);
-            if (!inlinkB) 
+            if (!inlinkB)
                 inlinkB = "1.0";
             var outlink = getOutputLinkID(this, 0);
             if (!outlink)
@@ -1690,7 +1682,7 @@ if (typeof GL != "undefined") {
         static title = "Rand";
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var outlink = getOutputLinkID(this, 0);
@@ -1723,9 +1715,7 @@ if (typeof GL != "undefined") {
                 property: "type",
                 values: LGraphShaderNoise.NOISE_TYPES,
             });
-            this.addWidget("number", "scale", this.properties.scale, {
-                property: "scale",
-            });
+            this.addWidget("number", "scale", this.properties.scale, {property: "scale"});
         }
 
         static NOISE_TYPES = ["noise", "rand"];
@@ -1733,7 +1723,7 @@ if (typeof GL != "undefined") {
         static title = "noise";
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var inlink = getInputLinkID(this, 0);
@@ -1937,7 +1927,7 @@ if (typeof GL != "undefined") {
         static title = "Time";
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var outlink = getOutputLinkID(this, 0);
@@ -1964,7 +1954,7 @@ if (typeof GL != "undefined") {
         static title = "Dither";
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var inlink = getInputLinkID(this, 0);
@@ -2057,7 +2047,7 @@ if (typeof GL != "undefined") {
         }
 
         onGetCode(context) {
-            if (!this.shader_destination || !this.isOutputConnected(0)) 
+            if (!this.shader_destination || !this.isOutputConnected(0))
                 return;
 
             var inlink = getInputLinkID(this, 0);
