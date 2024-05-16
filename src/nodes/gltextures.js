@@ -371,331 +371,352 @@ export class LGraphTexture {
 LiteGraph.registerNodeType("texture/texture", LGraphTexture);
 
 //* *************************
-function LGraphTexturePreview() {
-    this.addInput("Texture", "Texture");
-    this.properties = { flipY: false };
-    this.size = [
-        LGraphTexture.image_preview_size,
-        LGraphTexture.image_preview_size,
-    ];
+class LGraphTexturePreview {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.properties = { flipY: false };
+        this.size = [
+            LGraphTexture.image_preview_size,
+            LGraphTexture.image_preview_size,
+        ];
+    }
+
+    static title = "Preview";
+    static desc = "Show a texture in the graph canvas";
+    static allow_preview = false;
+
+    onDrawBackground(ctx) {
+        if (this.flags.collapsed) {
+            return;
+        }
+
+        if (!ctx.webgl && !LGraphTexturePreview.allow_preview) {
+            return;
+        } // not working well
+
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        var tex_canvas = null;
+
+        if (!tex.handle && ctx.webgl) {
+            tex_canvas = tex;
+        } else {
+            tex_canvas = LGraphTexture.generateLowResTexturePreview(tex);
+        }
+
+        // render to graph canvas
+        ctx.save();
+        if (this.properties.flipY) {
+            ctx.translate(0, this.size[1]);
+            ctx.scale(1, -1);
+        }
+        ctx.drawImage(tex_canvas, 0, 0, this.size[0], this.size[1]);
+        ctx.restore();
+    }
 }
-
-LGraphTexturePreview.title = "Preview";
-LGraphTexturePreview.desc = "Show a texture in the graph canvas";
-LGraphTexturePreview.allow_preview = false;
-
-LGraphTexturePreview.prototype.onDrawBackground = function (ctx) {
-    if (this.flags.collapsed) {
-        return;
-    }
-
-    if (!ctx.webgl && !LGraphTexturePreview.allow_preview) {
-        return;
-    } // not working well
-
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
-    }
-
-    var tex_canvas = null;
-
-    if (!tex.handle && ctx.webgl) {
-        tex_canvas = tex;
-    } else {
-        tex_canvas = LGraphTexture.generateLowResTexturePreview(tex);
-    }
-
-    // render to graph canvas
-    ctx.save();
-    if (this.properties.flipY) {
-        ctx.translate(0, this.size[1]);
-        ctx.scale(1, -1);
-    }
-    ctx.drawImage(tex_canvas, 0, 0, this.size[0], this.size[1]);
-    ctx.restore();
-};
-
 LiteGraph.registerNodeType("texture/preview", LGraphTexturePreview);
 
 //* *************************************
 
-function LGraphTextureSave() {
-    this.addInput("Texture", "Texture");
-    this.addOutput("tex", "Texture");
-    this.addOutput("name", "string");
-    this.properties = { name: "", generate_mipmaps: false };
-}
-
-LGraphTextureSave.title = "Save";
-LGraphTextureSave.desc = "Save a texture in the repository";
-
-LGraphTextureSave.prototype.getPreviewTexture = function () {
-    return this._texture;
-};
-
-LGraphTextureSave.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+class LGraphTextureSave {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addOutput("tex", "Texture");
+        this.addOutput("name", "string");
+        this.properties = { name: "", generate_mipmaps: false };
     }
 
-    if (this.properties.generate_mipmaps) {
-        tex.bind(0);
-        tex.setParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.generateMipmap(tex.texture_type);
-        tex.unbind(0);
+    static title = "Save";
+    static desc = "Save a texture in the repository";
+
+    getPreviewTexture() {
+        return this._texture;
     }
 
-    if (this.properties.name) {
-        // for cases where we want to perform something when storing it
-        if (LGraphTexture.storeTexture) {
-            LGraphTexture.storeTexture(this.properties.name, tex);
-        } else {
-            var container = LGraphTexture.getTexturesContainer();
-            container[this.properties.name] = tex;
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
         }
+
+        if (this.properties.generate_mipmaps) {
+            tex.bind(0);
+            tex.setParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.generateMipmap(tex.texture_type);
+            tex.unbind(0);
+        }
+
+        if (this.properties.name) {
+            // for cases where we want to perform something when storing it
+            if (LGraphTexture.storeTexture) {
+                LGraphTexture.storeTexture(this.properties.name, tex);
+            } else {
+                var container = LGraphTexture.getTexturesContainer();
+                container[this.properties.name] = tex;
+            }
+        }
+
+        this._texture = tex;
+        this.setOutputData(0, tex);
+        this.setOutputData(1, this.properties.name);
     }
-
-    this._texture = tex;
-    this.setOutputData(0, tex);
-    this.setOutputData(1, this.properties.name);
-};
-
+}
 LiteGraph.registerNodeType("texture/save", LGraphTextureSave);
 
 //* ***************************************************
 
-function LGraphTextureOperation() {
-    this.addInput("Texture", "Texture");
-    this.addInput("TextureB", "Texture");
-    this.addInput("value", "number");
-    this.addOutput("Texture", "Texture");
-    this.help =
-        "<p>pixelcode must be vec3, uvcode must be vec2, is optional</p>\
-    <p><strong>uv:</strong> tex. coords</p><p><strong>color:</strong> texture <strong>colorB:</strong> textureB</p><p><strong>time:</strong> scene time <strong>value:</strong> input value</p><p>For multiline you must type: result = ...</p>";
+class LGraphTextureOperation {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addInput("TextureB", "Texture");
+        this.addInput("value", "number");
+        this.addOutput("Texture", "Texture");
+        this.help =
+            "<p>pixelcode must be vec3, uvcode must be vec2, is optional</p>\
+        <p><strong>uv:</strong> tex. coords</p><p><strong>color:</strong> texture <strong>colorB:</strong> textureB</p><p><strong>time:</strong> scene time <strong>value:</strong> input value</p><p>For multiline you must type: result = ...</p>";
 
-    this.properties = {
-        value: 1,
-        pixelcode: "color + colorB * value",
-        uvcode: "",
-        precision: LGraphTexture.DEFAULT,
+        this.properties = {
+            value: 1,
+            pixelcode: "color + colorB * value",
+            uvcode: "",
+            precision: LGraphTexture.DEFAULT,
+        };
+
+        this.has_error = false;
+    }
+
+    static widgets_info = {
+        uvcode: { widget: "code" },
+        pixelcode: { widget: "code" },
+        precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
     };
 
-    this.has_error = false;
-}
+    static title = "Operation";
+    static desc = "Texture shader operation";
 
-LGraphTextureOperation.widgets_info = {
-    uvcode: { widget: "code" },
-    pixelcode: { widget: "code" },
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
+    static presets = {};
 
-LGraphTextureOperation.title = "Operation";
-LGraphTextureOperation.desc = "Texture shader operation";
-
-LGraphTextureOperation.presets = {};
-
-LGraphTextureOperation.prototype.getExtraMenuOptions = function () {
-    var that = this;
-    var txt = !that.properties.show ? "Show Texture" : "Hide Texture";
-    return [
-        {
-            content: txt,
-            callback: function () {
-                that.properties.show = !that.properties.show;
+    getExtraMenuOptions() {
+        var that = this;
+        var txt = !that.properties.show ? "Show Texture" : "Hide Texture";
+        return [
+            {
+                content: txt,
+                callback: function () {
+                    that.properties.show = !that.properties.show;
+                },
             },
-        },
-    ];
-};
-
-LGraphTextureOperation.prototype.onPropertyChanged = function () {
-    this.has_error = false;
-};
-
-LGraphTextureOperation.prototype.onDrawBackground = function (ctx) {
-    if (
-        this.flags.collapsed ||
-        this.size[1] <= 20 ||
-        !this.properties.show
-    ) {
-        return;
+        ];
     }
 
-    if (!this._tex) {
-        return;
+    onPropertyChanged() {
+        this.has_error = false;
     }
 
-    // only works if using a webgl renderer
-    if (this._tex.gl != ctx) {
-        return;
-    }
-
-    // render to graph canvas
-    ctx.save();
-    ctx.drawImage(this._tex, 0, 0, this.size[0], this.size[1]);
-    ctx.restore();
-};
-
-LGraphTextureOperation.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
-        this.setOutputData(0, tex);
-        return;
-    }
-
-    var texB = this.getInputData(1);
-
-    if (!this.properties.uvcode && !this.properties.pixelcode) {
-        return;
-    }
-
-    var width = 512;
-    var height = 512;
-    if (tex) {
-        width = tex.width;
-        height = tex.height;
-    } else if (texB) {
-        width = texB.width;
-        height = texB.height;
-    }
-
-    if (!texB) texB = GL.Texture.getWhiteTexture();
-
-    var type = LGraphTexture.getTextureType(this.properties.precision, tex);
-
-    if (!tex && !this._tex) {
-        this._tex = new GL.Texture(width, height, {
-            type: type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
-        });
-    } else {
-        this._tex = LGraphTexture.getTargetTexture(
-            tex || this._tex,
-            this._tex,
-            this.properties.precision,
-        );
-    }
-
-    var uvcode = "";
-    if (this.properties.uvcode) {
-        uvcode = "uv = " + this.properties.uvcode;
-        if (this.properties.uvcode.indexOf(";") != -1) {
-            // there are line breaks, means multiline code
-            uvcode = this.properties.uvcode;
-        }
-    }
-
-    var pixelcode = "";
-    if (this.properties.pixelcode) {
-        pixelcode = "result = " + this.properties.pixelcode;
-        if (this.properties.pixelcode.indexOf(";") != -1) {
-            // there are line breaks, means multiline code
-            pixelcode = this.properties.pixelcode;
-        }
-    }
-
-    var shader = this._shader;
-
-    if (
-        !this.has_error &&
-        (!shader || this._shader_code != uvcode + "|" + pixelcode)
-    ) {
-        var final_pixel_code = LGraphTexture.replaceCode(
-            LGraphTextureOperation.pixel_shader,
-            { UV_CODE: uvcode, PIXEL_CODE: pixelcode },
-        );
-
-        try {
-            shader = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
-                final_pixel_code,
-            );
-            this.boxcolor = "#00FF00";
-        } catch (err) {
-            // console.log("Error compiling shader: ", err, final_pixel_code );
-            GL.Shader.dumpErrorToConsole(
-                err,
-                Shader.SCREEN_VERTEX_SHADER,
-                final_pixel_code,
-            );
-            this.boxcolor = "#FF0000";
-            this.has_error = true;
+    onDrawBackground(ctx) {
+        if (
+            this.flags.collapsed ||
+            this.size[1] <= 20 ||
+            !this.properties.show
+        ) {
             return;
         }
-        this._shader = shader;
-        this._shader_code = uvcode + "|" + pixelcode;
+
+        if (!this._tex) {
+            return;
+        }
+
+        // only works if using a webgl renderer
+        if (this._tex.gl != ctx) {
+            return;
+        }
+
+        // render to graph canvas
+        ctx.save();
+        ctx.drawImage(this._tex, 0, 0, this.size[0], this.size[1]);
+        ctx.restore();
     }
 
-    if (!this._shader) return;
+    onExecute() {
+        var tex = this.getInputData(0);
 
-    var value = this.getInputData(2);
-    if (value != null) {
-        this.properties.value = value;
-    } else {
-        value = parseFloat(this.properties.value);
-    }
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-    var time = this.graph.getTime();
+        if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
+            this.setOutputData(0, tex);
+            return;
+        }
 
-    this._tex.drawTo(function () {
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
-        gl.disable(gl.BLEND);
+        var texB = this.getInputData(1);
+
+        if (!this.properties.uvcode && !this.properties.pixelcode) {
+            return;
+        }
+
+        var width = 512;
+        var height = 512;
         if (tex) {
-            tex.bind(0);
+            width = tex.width;
+            height = tex.height;
+        } else if (texB) {
+            width = texB.width;
+            height = texB.height;
         }
-        if (texB) {
-            texB.bind(1);
+
+        if (!texB) texB = GL.Texture.getWhiteTexture();
+
+        var type = LGraphTexture.getTextureType(this.properties.precision, tex);
+
+        if (!tex && !this._tex) {
+            this._tex = new GL.Texture(width, height, {
+                type: type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        } else {
+            this._tex = LGraphTexture.getTargetTexture(
+                tex || this._tex,
+                this._tex,
+                this.properties.precision,
+            );
         }
-        var mesh = Mesh.getScreenQuad();
-        shader
-            .uniforms({
-                u_texture: 0,
-                u_textureB: 1,
-                value: value,
-                texSize: [width, height, 1 / width, 1 / height],
-                time: time,
-            })
-            .draw(mesh);
-    });
 
-    this.setOutputData(0, this._tex);
-};
+        var uvcode = "";
+        if (this.properties.uvcode) {
+            uvcode = "uv = " + this.properties.uvcode;
+            if (this.properties.uvcode.indexOf(";") != -1) {
+                // there are line breaks, means multiline code
+                uvcode = this.properties.uvcode;
+            }
+        }
 
-LGraphTextureOperation.pixel_shader =
-    "precision highp float;\n\
-    \n\
-    uniform sampler2D u_texture;\n\
-    uniform sampler2D u_textureB;\n\
-    varying vec2 v_coord;\n\
-    uniform vec4 texSize;\n\
-    uniform float time;\n\
-    uniform float value;\n\
-    \n\
-    void main() {\n\
-        vec2 uv = v_coord;\n\
-        {{UV_CODE}};\n\
-        vec4 color4 = texture2D(u_texture, uv);\n\
-        vec3 color = color4.rgb;\n\
-        vec4 color4B = texture2D(u_textureB, uv);\n\
-        vec3 colorB = color4B.rgb;\n\
-        vec3 result = color;\n\
-        float alpha = 1.0;\n\
-        {{PIXEL_CODE}};\n\
-        gl_FragColor = vec4(result, alpha);\n\
-    }\n\
-    ";
+        var pixelcode = "";
+        if (this.properties.pixelcode) {
+            pixelcode = "result = " + this.properties.pixelcode;
+            if (this.properties.pixelcode.indexOf(";") != -1) {
+                // there are line breaks, means multiline code
+                pixelcode = this.properties.pixelcode;
+            }
+        }
 
-LGraphTextureOperation.registerPreset = function (name, code) {
-    LGraphTextureOperation.presets[name] = code;
-};
+        var shader = this._shader;
+
+        if (
+            !this.has_error &&
+            (!shader || this._shader_code != uvcode + "|" + pixelcode)
+        ) {
+            var final_pixel_code = LGraphTexture.replaceCode(
+                LGraphTextureOperation.pixel_shader,
+                { UV_CODE: uvcode, PIXEL_CODE: pixelcode },
+            );
+
+            try {
+                shader = new GL.Shader(
+                    Shader.SCREEN_VERTEX_SHADER,
+                    final_pixel_code,
+                );
+                this.boxcolor = "#00FF00";
+            } catch (err) {
+                // console.log("Error compiling shader: ", err, final_pixel_code );
+                GL.Shader.dumpErrorToConsole(
+                    err,
+                    Shader.SCREEN_VERTEX_SHADER,
+                    final_pixel_code,
+                );
+                this.boxcolor = "#FF0000";
+                this.has_error = true;
+                return;
+            }
+            this._shader = shader;
+            this._shader_code = uvcode + "|" + pixelcode;
+        }
+
+        if (!this._shader) return;
+
+        var value = this.getInputData(2);
+        if (value != null) {
+            this.properties.value = value;
+        } else {
+            value = parseFloat(this.properties.value);
+        }
+
+        var time = this.graph.getTime();
+
+        this._tex.drawTo(function () {
+            gl.disable(gl.DEPTH_TEST);
+            gl.disable(gl.CULL_FACE);
+            gl.disable(gl.BLEND);
+            if (tex) {
+                tex.bind(0);
+            }
+            if (texB) {
+                texB.bind(1);
+            }
+            var mesh = Mesh.getScreenQuad();
+            shader
+                .uniforms({
+                    u_texture: 0,
+                    u_textureB: 1,
+                    value: value,
+                    texSize: [width, height, 1 / width, 1 / height],
+                    time: time,
+                })
+                .draw(mesh);
+        });
+
+        this.setOutputData(0, this._tex);
+    }
+
+    static pixel_shader = `
+        precision highp float;
+    
+        uniform sampler2D u_texture;
+        uniform sampler2D u_textureB;
+        varying vec2 v_coord;
+        uniform vec4 texSize;
+        uniform float time;
+        uniform float value;
+    
+        void main() {
+            vec2 uv = v_coord;
+            {{UV_CODE}};
+            vec4 color4 = texture2D(u_texture, uv);
+            vec3 color = color4.rgb;
+            vec4 color4B = texture2D(u_textureB, uv);
+            vec3 colorB = color4B.rgb;
+            vec3 result = color;
+            float alpha = 1.0;
+            {{PIXEL_CODE}};
+            gl_FragColor = vec4(result, alpha);
+        }
+    `;
+    
+    static registerPreset(name, code) {
+        LGraphTextureOperation.presets[name] = code;
+    }
+
+
+    // webglstudio stuff...
+    onInspect(widgets) {
+        var that = this;
+        widgets.addCombo("Presets", "", {
+            values: Object.keys(LGraphTextureOperation.presets),
+            callback: function (v) {
+                var code = LGraphTextureOperation.presets[v];
+                if (!code)
+                    return;
+                that.setProperty("pixelcode", code);
+                that.title = v;
+                widgets.refresh();
+            },
+        });
+    }
+}
 
 LGraphTextureOperation.registerPreset("", "");
 LGraphTextureOperation.registerPreset("bypass", "color");
@@ -750,256 +771,242 @@ LGraphTextureOperation.registerPreset(
     "threshold",
     "vec3(color.x > colorB.x * value ? 1.0 : 0.0,color.y > colorB.y * value ? 1.0 : 0.0,color.z > colorB.z * value ? 1.0 : 0.0)",
 );
-
-// webglstudio stuff...
-LGraphTextureOperation.prototype.onInspect = function (widgets) {
-    var that = this;
-    widgets.addCombo("Presets", "", {
-        values: Object.keys(LGraphTextureOperation.presets),
-        callback: function (v) {
-            var code = LGraphTextureOperation.presets[v];
-            if (!code) return;
-            that.setProperty("pixelcode", code);
-            that.title = v;
-            widgets.refresh();
-        },
-    });
-};
-
 LiteGraph.registerNodeType("texture/operation", LGraphTextureOperation);
 
-//* ***************************************************
 
-function LGraphTextureShader() {
-    this.addOutput("out", "Texture");
-    this.properties = {
-        code: "",
-        u_value: 1,
-        u_color: [1, 1, 1, 1],
-        width: 512,
-        height: 512,
-        precision: LGraphTexture.DEFAULT,
+class LGraphTextureShader {
+    constructor() {
+        this.addOutput("out", "Texture");
+        this.properties = {
+            code: "",
+            u_value: 1,
+            u_color: [1, 1, 1, 1],
+            width: 512,
+            height: 512,
+            precision: LGraphTexture.DEFAULT,
+        };
+
+        this.properties.code = LGraphTextureShader.pixel_shader;
+        this._uniforms = {
+            u_value: 1,
+            u_color: vec4.create(),
+            in_texture: 0,
+            texSize: vec4.create(),
+            time: 0,
+        };
+    }
+
+    static title = "Shader";
+    static desc = "Texture shader";
+    static widgets_info = {
+        code: { type: "code", lang: "glsl" },
+        precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
     };
 
-    this.properties.code = LGraphTextureShader.pixel_shader;
-    this._uniforms = {
-        u_value: 1,
-        u_color: vec4.create(),
-        in_texture: 0,
-        texSize: vec4.create(),
-        time: 0,
-    };
-}
-
-LGraphTextureShader.title = "Shader";
-LGraphTextureShader.desc = "Texture shader";
-LGraphTextureShader.widgets_info = {
-    code: { type: "code", lang: "glsl" },
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
-
-LGraphTextureShader.prototype.onPropertyChanged = function (name, _value) {
-    if (name != "code") {
-        return;
-    }
-
-    var shader = this.getShader();
-    if (!shader) {
-        return;
-    }
-
-    // update connections
-    var uniforms = shader.uniformInfo;
-
-    // remove deprecated slots
-    if (this.inputs) {
-        var already = {};
-        for (let i = 0; i < this.inputs.length; ++i) {
-            let info = this.getInputInfo(i);
-            if (!info) {
-                continue;
-            }
-
-            if (uniforms[info.name] && !already[info.name]) {
-                already[info.name] = true;
-                continue;
-            }
-            this.removeInput(i);
-            i--;
-        }
-    }
-
-    // update existing ones
-    for (let i in uniforms) {
-        let info = shader.uniformInfo[i];
-        if (info.loc === null) {
-            continue;
-        } // is an attribute, not a uniform
-        if (i == "time") {
-            // default one
-            continue;
+    onPropertyChanged(name, _value) {
+        if (name != "code") {
+            return;
         }
 
-        var type = "number";
-        if (this._shader.samplers[i]) {
-            type = "texture";
-        } else {
-            switch (info.size) {
-                case 1:
-                    type = "number";
-                    break;
-                case 2:
-                    type = "vec2";
-                    break;
-                case 3:
-                    type = "vec3";
-                    break;
-                case 4:
-                    type = "vec4";
-                    break;
-                case 9:
-                    type = "mat3";
-                    break;
-                case 16:
-                    type = "mat4";
-                    break;
-                default:
+        var shader = this.getShader();
+        if (!shader) {
+            return;
+        }
+
+        // update connections
+        var uniforms = shader.uniformInfo;
+
+        // remove deprecated slots
+        if (this.inputs) {
+            var already = {};
+            for (let i = 0; i < this.inputs.length; ++i) {
+                let info = this.getInputInfo(i);
+                if (!info) {
                     continue;
+                }
+
+                if (uniforms[info.name] && !already[info.name]) {
+                    already[info.name] = true;
+                    continue;
+                }
+                this.removeInput(i);
+                i--;
             }
         }
 
-        var slot = this.findInputSlot(i);
-        if (slot == -1) {
-            this.addInput(i, type);
-            continue;
-        }
-
-        var input_info = this.getInputInfo(slot);
-        if (!input_info) {
-            this.addInput(i, type);
-        } else {
-            if (input_info.type == type) {
+        // update existing ones
+        for (let i in uniforms) {
+            let info = shader.uniformInfo[i];
+            if (info.loc === null) {
+                continue;
+            } // is an attribute, not a uniform
+            if (i == "time") {
+                // default one
                 continue;
             }
-            this.removeInput(slot, type);
-            this.addInput(i, type);
+
+            var type = "number";
+            if (this._shader.samplers[i]) {
+                type = "texture";
+            } else {
+                switch (info.size) {
+                    case 1:
+                        type = "number";
+                        break;
+                    case 2:
+                        type = "vec2";
+                        break;
+                    case 3:
+                        type = "vec3";
+                        break;
+                    case 4:
+                        type = "vec4";
+                        break;
+                    case 9:
+                        type = "mat3";
+                        break;
+                    case 16:
+                        type = "mat4";
+                        break;
+                    default:
+                        continue;
+                }
+            }
+
+            var slot = this.findInputSlot(i);
+            if (slot == -1) {
+                this.addInput(i, type);
+                continue;
+            }
+
+            var input_info = this.getInputInfo(slot);
+            if (!input_info) {
+                this.addInput(i, type);
+            } else {
+                if (input_info.type == type) {
+                    continue;
+                }
+                this.removeInput(slot, type);
+                this.addInput(i, type);
+            }
         }
     }
-};
 
-LGraphTextureShader.prototype.getShader = function () {
-    // replug
-    if (this._shader && this._shader_code == this.properties.code) {
+    getShader() {
+        // replug
+        if (this._shader && this._shader_code == this.properties.code) {
+            return this._shader;
+        }
+
+        this._shader_code = this.properties.code;
+        this._shader = new GL.Shader(
+            Shader.SCREEN_VERTEX_SHADER,
+            this.properties.code,
+        );
+        if (!this._shader) {
+            this.boxcolor = "red";
+            return null;
+        } else {
+            this.boxcolor = "green";
+        }
         return this._shader;
     }
 
-    this._shader_code = this.properties.code;
-    this._shader = new GL.Shader(
-        Shader.SCREEN_VERTEX_SHADER,
-        this.properties.code,
-    );
-    if (!this._shader) {
-        this.boxcolor = "red";
-        return null;
-    } else {
-        this.boxcolor = "green";
-    }
-    return this._shader;
-};
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-LGraphTextureShader.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var shader = this.getShader();
-    if (!shader) {
-        return;
-    }
-
-    var tex_slot = 0;
-    var in_tex = null;
-
-    // set uniforms
-    if (this.inputs)
-        for (var i = 0; i < this.inputs.length; ++i) {
-            var info = this.getInputInfo(i);
-            var data = this.getInputData(i);
-            if (data == null) {
-                continue;
-            }
-
-            if (data.constructor === GL.Texture) {
-                data.bind(tex_slot);
-                if (!in_tex) {
-                    in_tex = data;
-                }
-                data = tex_slot;
-                tex_slot++;
-            }
-            shader.setUniform(info.name, data); // data is tex_slot
+        var shader = this.getShader();
+        if (!shader) {
+            return;
         }
 
-    var uniforms = this._uniforms;
-    var type = LGraphTexture.getTextureType(
-        this.properties.precision,
-        in_tex,
-    );
+        var tex_slot = 0;
+        var in_tex = null;
 
-    // render to texture
-    var w = this.properties.width | 0;
-    var h = this.properties.height | 0;
-    if (w == 0) {
-        w = in_tex ? in_tex.width : gl.canvas.width;
-    }
-    if (h == 0) {
-        h = in_tex ? in_tex.height : gl.canvas.height;
-    }
-    uniforms.texSize[0] = w;
-    uniforms.texSize[1] = h;
-    uniforms.texSize[2] = 1 / w;
-    uniforms.texSize[3] = 1 / h;
-    uniforms.time = this.graph.getTime();
-    uniforms.u_value = this.properties.u_value;
-    uniforms.u_color.set(this.properties.u_color);
+        // set uniforms
+        if (this.inputs)
+            for (var i = 0; i < this.inputs.length; ++i) {
+                var info = this.getInputInfo(i);
+                var data = this.getInputData(i);
+                if (data == null) {
+                    continue;
+                }
 
-    if (
-        !this._tex ||
-        this._tex.type != type ||
-        this._tex.width != w ||
-        this._tex.height != h
-    ) {
-        this._tex = new GL.Texture(w, h, {
-            type: type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
+                if (data.constructor === GL.Texture) {
+                    data.bind(tex_slot);
+                    if (!in_tex) {
+                        in_tex = data;
+                    }
+                    data = tex_slot;
+                    tex_slot++;
+                }
+                shader.setUniform(info.name, data); // data is tex_slot
+            }
+
+        var uniforms = this._uniforms;
+        var type = LGraphTexture.getTextureType(
+            this.properties.precision,
+            in_tex,
+        );
+
+        // render to texture
+        var w = this.properties.width | 0;
+        var h = this.properties.height | 0;
+        if (w == 0) {
+            w = in_tex ? in_tex.width : gl.canvas.width;
+        }
+        if (h == 0) {
+            h = in_tex ? in_tex.height : gl.canvas.height;
+        }
+        uniforms.texSize[0] = w;
+        uniforms.texSize[1] = h;
+        uniforms.texSize[2] = 1 / w;
+        uniforms.texSize[3] = 1 / h;
+        uniforms.time = this.graph.getTime();
+        uniforms.u_value = this.properties.u_value;
+        uniforms.u_color.set(this.properties.u_color);
+
+        if (
+            !this._tex ||
+            this._tex.type != type ||
+            this._tex.width != w ||
+            this._tex.height != h
+        ) {
+            this._tex = new GL.Texture(w, h, {
+                type: type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
+        var tex = this._tex;
+        tex.drawTo(function () {
+            shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
         });
+
+        this.setOutputData(0, this._tex);
     }
-    var tex = this._tex;
-    tex.drawTo(function () {
-        shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
-    });
 
-    this.setOutputData(0, this._tex);
-};
-
-LGraphTextureShader.pixel_shader =
-    "precision highp float;\n\
-\n\
-varying vec2 v_coord;\n\
-uniform float time; //time in seconds\n\
-uniform vec4 texSize; //tex resolution\n\
-uniform float u_value;\n\
-uniform vec4 u_color;\n\n\
-void main() {\n\
-vec2 uv = v_coord;\n\
-vec3 color = vec3(0.0);\n\
-//your code here\n\
-color.xy=uv;\n\n\
-gl_FragColor = vec4(color, 1.0);\n\
-}\n\
-";
-
+    static pixel_shader = `
+        precision highp float;
+    
+        varying vec2 v_coord;
+        uniform float time; // time in seconds
+        uniform vec4 texSize; // tex resolution
+        uniform float u_value;
+        uniform vec4 u_color;
+    
+        void main() {
+            vec2 uv = v_coord;
+            vec3 color = vec3(0.0);
+            // Your custom code here
+            color.xy = uv;
+    
+            gl_FragColor = vec4(color, 1.0);
+        }
+    `;
+}
 LiteGraph.registerNodeType("texture/shader", LGraphTextureShader);
 
 // Texture Scale Offset
@@ -5012,16 +5019,18 @@ LGraphExposition.prototype.onExecute = function () {
     this.setOutputData(0, temp);
 };
 
-LGraphExposition.pixel_shader =
-    "precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform float u_exposition;\n\
-    \n\
-    void main() {\n\
-        vec4 color = texture2D( u_texture, v_coord );\n\
-        gl_FragColor = vec4( color.xyz * u_exposition, color.a );\n\
-    }";
+LGraphExposition.pixel_shader = `
+        precision highp float;
+        varying vec2 v_coord;
+        uniform sampler2D u_texture;
+        uniform float u_exposition;
+    
+        void main() {
+            vec4 color = texture2D(u_texture, v_coord);
+            gl_FragColor = vec4(color.xyz * u_exposition, color.a);
+        }
+    `;
+    
 
 LiteGraph.registerNodeType("texture/exposition", LGraphExposition);
 
