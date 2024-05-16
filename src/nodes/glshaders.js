@@ -190,10 +190,13 @@ if (typeof GL != "undefined") {
         precision,
     ) {
         var n = 5; // num decimals
-        if (precision != null) n = precision;
+        if (precision != null) {
+            n = precision;
+        }
         if (!type) {
-            if (v.constructor === Number) type = "float";
-            else if (v.length) {
+            if (v.constructor === Number) {
+                type = "float";
+            } else if (v.length) {
                 switch (v.length) {
                     case 2:
                         type = "vec2";
@@ -213,52 +216,28 @@ if (typeof GL != "undefined") {
                     default:
                         throw "unknown type for glsl value size";
                 }
-            } else throw "unknown type for glsl value: " + v.constructor;
+            } else {
+                throw "unknown type for glsl value: " + v.constructor;
+            }
         }
         switch (type) {
             case "float":
                 return v.toFixed(n);
-                break;
             case "vec2":
-                return "vec2(" + v[0].toFixed(n) + "," + v[1].toFixed(n) + ")";
-                break;
+                return `vec2(${v[0].toFixed(n)},${v[1].toFixed(n)})`;
             case "color3":
             case "vec3":
-                return (
-                    "vec3(" +
-                    v[0].toFixed(n) +
-                    "," +
-                    v[1].toFixed(n) +
-                    "," +
-                    v[2].toFixed(n) +
-                    ")"
-                );
-                break;
+                return `vec3(${v[0].toFixed(n)},${v[1].toFixed(n)},${v[2].toFixed(n)})`;
             case "color4":
             case "vec4":
-                return (
-                    "vec4(" +
-                    v[0].toFixed(n) +
-                    "," +
-                    v[1].toFixed(n) +
-                    "," +
-                    v[2].toFixed(n) +
-                    "," +
-                    v[3].toFixed(n) +
-                    ")"
-                );
-                break;
+                return `vec4(${v[0].toFixed(n)},${v[1].toFixed(n)},${v[2].toFixed(n)},${v[3].toFixed(n)})`;
             case "mat3":
                 return "mat3(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)";
-                break; // not fully supported yet
             case "mat4":
                 return "mat4(1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0)";
-                break; // not fully supported yet
             default:
                 throw ("unknown glsl type in valueToGLSL:", type);
         }
-
-        return "";
     });
 
     // makes sure that a var is of a type, and if not, it converts it
@@ -267,8 +246,10 @@ if (typeof GL != "undefined") {
         input_type,
         output_type,
     ) {
-        if (input_type == output_type) return v;
-        if (v == null)
+        if (input_type == output_type) {
+            return v;
+        }
+        if (v == null) {
             switch (output_type) {
                 case "float":
                     return "0.0";
@@ -281,8 +262,10 @@ if (typeof GL != "undefined") {
                 default: // null
                     return null;
             }
-
-        if (!output_type) throw "error: no output type specified";
+        }
+        if (!output_type) {
+            throw "error: no output type specified";
+        }
         if (output_type == "float") {
             switch (input_type) {
                 // case "float":
@@ -290,10 +273,8 @@ if (typeof GL != "undefined") {
                 case "vec3":
                 case "vec4":
                     return v + ".x";
-                    break;
                 default: // null
                     return "0.0";
-                    break;
             }
         } else if (output_type == "vec2") {
             switch (input_type) {
@@ -428,14 +409,14 @@ if (typeof GL != "undefined") {
         graph.sendEventToAllNodes("onGetCode", this);
 
         var uniforms = "";
-        for (var i in this._uniforms)
+        for (let i in this._uniforms)
             uniforms += "uniform " + this._uniforms[i] + " " + i + ";\n";
         if (extra_uniforms)
-            for (var i in extra_uniforms)
+            for (let i in extra_uniforms)
                 uniforms += "uniform " + extra_uniforms[i] + " " + i + ";\n";
 
         var functions = "";
-        for (var i in this._functions)
+        for (let i in this._functions)
             functions += "//" + i + "\n" + this._functions[i] + "\n";
 
         var blocks = this._codeparts;
@@ -499,8 +480,6 @@ if (typeof GL != "undefined") {
             this._shader_error = true;
             return null;
         }
-
-        return null; // never here
     };
 
     LGShaderContext.prototype.getShader = function (graph) {
@@ -536,588 +515,587 @@ if (typeof GL != "undefined") {
     // LGraphShaderGraph *****************************
     // applies a shader graph to texture, it can be uses as an example
 
-    function LGraphShaderGraph() {
-        // before inputs
-        this.subgraph = new LGraph();
-        this.subgraph._subgraph_node = this;
-        this.subgraph._is_subgraph = true;
-        this.subgraph.filter = "shader";
+    class LGraphShaderGraph {
+        constructor() {
+            // before inputs
+            this.subgraph = new LGraph();
+            this.subgraph._subgraph_node = this;
+            this.subgraph._is_subgraph = true;
+            this.subgraph.filter = "shader";
 
-        this.addInput("in", "texture");
-        this.addOutput("out", "texture");
-        this.properties = {
-            width: 0,
-            height: 0,
-            alpha: false,
-            precision:
-                typeof LGraphTexture != "undefined" ? LGraphTexture.DEFAULT : 2,
+            this.addInput("in", "texture");
+            this.addOutput("out", "texture");
+            this.properties = {
+                width: 0,
+                height: 0,
+                alpha: false,
+                precision:
+                    typeof LGraphTexture != "undefined" ? LGraphTexture.DEFAULT : 2,
+            };
+
+            var inputNode = this.subgraph.findNodesByType("shader::input/uniform")[0];
+            inputNode.pos = [200, 300];
+
+            var sampler = LiteGraph.createNode("shader::texture/sampler2D");
+            sampler.pos = [400, 300];
+            this.subgraph.add(sampler);
+
+            var outnode = LiteGraph.createNode("shader::output/fragcolor");
+            outnode.pos = [600, 300];
+            this.subgraph.add(outnode);
+
+            inputNode.connect(0, sampler);
+            sampler.connect(0, outnode);
+
+            this.size = [180, 60];
+            this.redraw_on_mouse = true; // force redraw
+
+            this._uniforms = {};
+            this._shader = null;
+            this._context = new LGShaderContext();
+            this._context.vs_template =
+                "#define VERTEX\n" + GL.Shader.SCREEN_VERTEX_SHADER;
+            this._context.fs_template = LGraphShaderGraph.template;
+        }
+
+        static template = `
+            #define FRAGMENT
+            precision highp float;
+            varying vec2 v_coord;
+            {{varying}}
+            {{uniforms}}
+            {{functions}}
+            {{fs_functions}}
+            void main() {
+        
+                vec2 uv = v_coord;
+                vec4 fragcolor = vec4(0.0);
+                vec4 fragcolor1 = vec4(0.0);
+                {{fs_code}}
+                gl_FragColor = fragcolor;
+            }
+        `;
+        
+
+        static widgets_info = {
+            precision: {
+                widget: "combo",
+                values: LGraphTexture.MODE_VALUES,
+            },
         };
 
-        var inputNode = this.subgraph.findNodesByType("shader::input/uniform")[0];
-        inputNode.pos = [200, 300];
+        static title = "ShaderGraph";
+        static desc = "Builds a shader using a graph";
+        static input_node_type = "input/uniform";
+        static output_node_type = "output/fragcolor";
+        static title_color = SHADERNODES_COLOR;
 
-        var sampler = LiteGraph.createNode("shader::texture/sampler2D");
-        sampler.pos = [400, 300];
-        this.subgraph.add(sampler);
-
-        var outnode = LiteGraph.createNode("shader::output/fragcolor");
-        outnode.pos = [600, 300];
-        this.subgraph.add(outnode);
-
-        inputNode.connect(0, sampler);
-        sampler.connect(0, outnode);
-
-        this.size = [180, 60];
-        this.redraw_on_mouse = true; // force redraw
-
-        this._uniforms = {};
-        this._shader = null;
-        this._context = new LGShaderContext();
-        this._context.vs_template =
-            "#define VERTEX\n" + GL.Shader.SCREEN_VERTEX_SHADER;
-        this._context.fs_template = LGraphShaderGraph.template;
-    }
-
-    LGraphShaderGraph.template =
-        "\n\
-    #define FRAGMENT\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    {{varying}}\n\
-    {{uniforms}}\n\
-    {{functions}}\n\
-    {{fs_functions}}\n\
-    void main() {\n\n\
-    vec2 uv = v_coord;\n\
-    vec4 fragcolor = vec4(0.0);\n\
-    vec4 fragcolor1 = vec4(0.0);\n\
-    {{fs_code}}\n\
-    gl_FragColor = fragcolor;\n\
-    }\n\
-    ";
-
-    LGraphShaderGraph.widgets_info = {
-        precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-    };
-
-    LGraphShaderGraph.title = "ShaderGraph";
-    LGraphShaderGraph.desc = "Builds a shader using a graph";
-    LGraphShaderGraph.input_node_type = "input/uniform";
-    LGraphShaderGraph.output_node_type = "output/fragcolor";
-    LGraphShaderGraph.title_color = SHADERNODES_COLOR;
-
-    LGraphShaderGraph.prototype.onSerialize = function (o) {
-        o.subgraph = this.subgraph.serialize();
-    };
-
-    LGraphShaderGraph.prototype.onConfigure = function (o) {
-        this.subgraph.configure(o.subgraph);
-    };
-
-    LGraphShaderGraph.prototype.onExecute = function () {
-        if (!this.isOutputConnected(0)) return;
-
-        // read input texture
-        var intex = this.getInputData(0);
-        if (intex && intex.constructor != GL.Texture) intex = null;
-
-        var w = this.properties.width | 0;
-        var h = this.properties.height | 0;
-        if (w == 0) {
-            w = intex ? intex.width : gl.viewport_data[2];
-        } // 0 means default
-        if (h == 0) {
-            h = intex ? intex.height : gl.viewport_data[3];
-        } // 0 means default
-
-        var type = LGraphTexture.getTextureType(
-            this.properties.precision,
-            intex,
-        );
-
-        var texture = this._texture;
-        if (
-            !texture ||
-            texture.width != w ||
-            texture.height != h ||
-            texture.type != type
-        ) {
-            texture = this._texture = new GL.Texture(w, h, {
-                type: type,
-                format: this.alpha ? gl.RGBA : gl.RGB,
-                filter: gl.LINEAR,
-            });
+        onSerialize(o) {
+            o.subgraph = this.subgraph.serialize();
         }
 
-        var shader = this.getShader(this.subgraph);
-        if (!shader) return;
+        onConfigure(o) {
+            this.subgraph.configure(o.subgraph);
+        }
 
-        var uniforms = this._uniforms;
-        this._context.fillUniforms(uniforms);
+        onExecute() {
+            if (!this.isOutputConnected(0)) return;
 
-        var tex_slot = 0;
-        if (this.inputs)
-            for (var i = 0; i < this.inputs.length; ++i) {
-                var input = this.inputs[i];
-                var data = this.getInputData(i);
-                if (input.type == "texture") {
-                    if (!data) data = GL.Texture.getWhiteTexture();
-                    data = data.bind(tex_slot++);
-                }
+            // read input texture
+            var intex = this.getInputData(0);
+            if (intex && intex.constructor != GL.Texture) intex = null;
 
-                if (data != null) uniforms["u_" + input.name] = data;
+            var w = this.properties.width | 0;
+            var h = this.properties.height | 0;
+            if (w == 0) {
+                w = intex ? intex.width : gl.viewport_data[2];
+            } // 0 means default
+            if (h == 0) {
+                h = intex ? intex.height : gl.viewport_data[3];
+            } // 0 means default
+
+            var type = LGraphTexture.getTextureType(
+                this.properties.precision,
+                intex,
+            );
+
+            var texture = this._texture;
+            if (
+                !texture ||
+                texture.width != w ||
+                texture.height != h ||
+                texture.type != type
+            ) {
+                texture = this._texture = new GL.Texture(w, h, {
+                    type: type,
+                    format: this.alpha ? gl.RGBA : gl.RGB,
+                    filter: gl.LINEAR,
+                });
             }
 
-        var mesh = GL.Mesh.getScreenQuad();
+            var shader = this.getShader(this.subgraph);
+            if (!shader) return;
 
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.BLEND);
+            var uniforms = this._uniforms;
+            this._context.fillUniforms(uniforms);
 
-        texture.drawTo(function () {
-            shader.uniforms(uniforms);
-            shader.draw(mesh);
-        });
+            var tex_slot = 0;
+            if (this.inputs)
+                for (var i = 0; i < this.inputs.length; ++i) {
+                    var input = this.inputs[i];
+                    var data = this.getInputData(i);
+                    if (input.type == "texture") {
+                        if (!data) data = GL.Texture.getWhiteTexture();
+                        data = data.bind(tex_slot++);
+                    }
 
-        // use subgraph output
-        this.setOutputData(0, texture);
-    };
+                    if (data != null) uniforms["u_" + input.name] = data;
+                }
 
-    // add input node inside subgraph
-    LGraphShaderGraph.prototype.onInputAdded = function (slot_info) {
-        var subnode = LiteGraph.createNode("shader::input/uniform");
-        subnode.setProperty("name", slot_info.name);
-        subnode.setProperty("type", slot_info.type);
-        this.subgraph.add(subnode);
-    };
+            var mesh = GL.Mesh.getScreenQuad();
 
-    // remove all
-    LGraphShaderGraph.prototype.onInputRemoved = function (slot, slot_info) {
-        var nodes = this.subgraph.findNodesByType("shader::input/uniform");
-        for (var i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
-            if (node.properties.name == slot_info.name)
-                this.subgraph.remove(node);
-        }
-    };
+            gl.disable(gl.DEPTH_TEST);
+            gl.disable(gl.BLEND);
 
-    LGraphShaderGraph.prototype.computeSize = function () {
-        var num_inputs = this.inputs ? this.inputs.length : 0;
-        var num_outputs = this.outputs ? this.outputs.length : 0;
-        return [
-            200,
-            Math.max(num_inputs, num_outputs) * LiteGraph.NODE_SLOT_HEIGHT +
-                LiteGraph.NODE_TITLE_HEIGHT +
-                10,
-        ];
-    };
+            texture.drawTo(function () {
+                shader.uniforms(uniforms);
+                shader.draw(mesh);
+            });
 
-    LGraphShaderGraph.prototype.getShader = function () {
-        var shader = this._context.getShader(this.subgraph);
-        if (!shader) this.boxcolor = "red";
-        else this.boxcolor = null;
-        return shader;
-    };
-
-    LGraphShaderGraph.prototype.onDrawBackground = function (
-        ctx,
-        graphcanvas,
-        canvas,
-        pos,
-    ) {
-        if (this.flags.collapsed) return;
-
-        // allows to preview the node if the canvas is a webgl canvas
-        var tex = this.getOutputData(0);
-        var inputs_y = this.inputs
-            ? this.inputs.length * LiteGraph.NODE_SLOT_HEIGHT
-            : 0;
-        if (
-            tex &&
-            ctx == tex.gl &&
-            this.size[1] > inputs_y + LiteGraph.NODE_TITLE_HEIGHT
-        ) {
-            ctx.drawImage(
-                tex,
-                10,
-                y,
-                this.size[0] - 20,
-                this.size[1] - inputs_y - LiteGraph.NODE_TITLE_HEIGHT,
-            );
+            // use subgraph output
+            this.setOutputData(0, texture);
         }
 
-        var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
+        // add input node inside subgraph
+        onInputAdded(slot_info) {
+            var subnode = LiteGraph.createNode("shader::input/uniform");
+            subnode.setProperty("name", slot_info.name);
+            subnode.setProperty("type", slot_info.type);
+            this.subgraph.add(subnode);
+        }
 
-        // button
-        var over = LiteGraph.isInsideRectangle(
-            pos[0],
-            pos[1],
-            this.pos[0],
-            this.pos[1] + y,
-            this.size[0],
-            LiteGraph.NODE_TITLE_HEIGHT,
-        );
-        ctx.fillStyle = over ? "#555" : "#222";
-        ctx.beginPath();
-        if (this._shape == LiteGraph.BOX_SHAPE)
-            ctx.rect(0, y, this.size[0] + 1, LiteGraph.NODE_TITLE_HEIGHT);
-        else
-            ctx.roundRect(
-                0,
-                y,
-                this.size[0] + 1,
+        // remove all
+        onInputRemoved(slot, slot_info) {
+            var nodes = this.subgraph.findNodesByType("shader::input/uniform");
+            for (var i = 0; i < nodes.length; ++i) {
+                var node = nodes[i];
+                if (node.properties.name == slot_info.name)
+                    this.subgraph.remove(node);
+            }
+        }
+
+        computeSize() {
+            var num_inputs = this.inputs ? this.inputs.length : 0;
+            var num_outputs = this.outputs ? this.outputs.length : 0;
+            return [
+                200,
+                Math.max(num_inputs, num_outputs) * LiteGraph.NODE_SLOT_HEIGHT +
+                    LiteGraph.NODE_TITLE_HEIGHT +
+                    10,
+            ];
+        }
+
+        getShader() {
+            var shader = this._context.getShader(this.subgraph);
+            if (!shader) this.boxcolor = "red";
+            else this.boxcolor = null;
+            return shader;
+        }
+
+        onDrawBackground(ctx, graphcanvas, canvas, pos) {
+            if (this.flags.collapsed) return;
+
+            // allows to preview the node if the canvas is a webgl canvas
+            var tex = this.getOutputData(0);
+            var inputs_y = this.inputs
+                ? this.inputs.length * LiteGraph.NODE_SLOT_HEIGHT
+                : 0;
+            if (
+                tex &&
+                ctx == tex.gl &&
+                this.size[1] > inputs_y + LiteGraph.NODE_TITLE_HEIGHT
+            ) {
+                ctx.drawImage(
+                    tex,
+                    10,
+                    y,
+                    this.size[0] - 20,
+                    this.size[1] - inputs_y - LiteGraph.NODE_TITLE_HEIGHT,
+                );
+            }
+
+            var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
+
+            // button
+            var over = LiteGraph.isInsideRectangle(
+                pos[0],
+                pos[1],
+                this.pos[0],
+                this.pos[1] + y,
+                this.size[0],
                 LiteGraph.NODE_TITLE_HEIGHT,
-                0,
-                8,
             );
-        ctx.fill();
+            ctx.fillStyle = over ? "#555" : "#222";
+            ctx.beginPath();
+            if (this._shape == LiteGraph.BOX_SHAPE)
+                ctx.rect(0, y, this.size[0] + 1, LiteGraph.NODE_TITLE_HEIGHT);
+            else
+                ctx.roundRect(
+                    0,
+                    y,
+                    this.size[0] + 1,
+                    LiteGraph.NODE_TITLE_HEIGHT,
+                    0,
+                    8,
+                );
+            ctx.fill();
 
-        // button
-        ctx.textAlign = "center";
-        ctx.font = "24px Arial";
-        ctx.fillStyle = over ? "#DDD" : "#999";
-        ctx.fillText("+", this.size[0] * 0.5, y + 24);
-    };
-
-    LGraphShaderGraph.prototype.onMouseDown = function (
-        e,
-        localpos,
-        graphcanvas,
-    ) {
-        var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
-        if (localpos[1] > y) {
-            graphcanvas.showSubgraphPropertiesDialog(this);
+            // button
+            ctx.textAlign = "center";
+            ctx.font = "24px Arial";
+            ctx.fillStyle = over ? "#DDD" : "#999";
+            ctx.fillText("+", this.size[0] * 0.5, y + 24);
         }
-    };
 
-    LGraphShaderGraph.prototype.onDrawSubgraphBackground = function (graphcanvas) {
-        // TODO
-    };
+        onMouseDown(e, localpos, graphcanvas) {
+            var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
+            if (localpos[1] > y) {
+                graphcanvas.showSubgraphPropertiesDialog(this);
+            }
+        }
 
-    LGraphShaderGraph.prototype.getExtraMenuOptions = function (graphcanvas) {
-        var that = this;
-        var options = [
-            {
-                content: "Print Code",
-                callback: function () {
-                    var code = that._context.computeShaderCode();
-                    console.log(code.vs_code, code.fs_code);
+        /* 
+        * @TODO: Either make it or excise it
+        * LGraphShaderGraph.prototype.onDrawSubgraphBackground = function () {};
+        */
+        getExtraMenuOptions() {
+            var that = this;
+            var options = [
+                {
+                    content: "Print Code",
+                    callback: function () {
+                        var code = that._context.computeShaderCode();
+                        console.log(code.vs_code, code.fs_code);
+                    },
                 },
-            },
-        ];
+            ];
 
-        return options;
-    };
-
+            return options;
+        }
+    }
     LiteGraph.registerNodeType("texture/shaderGraph", LGraphShaderGraph);
 
-    function shaderNodeFromFunction(classname, params, return_type, code) {
-        // TODO
-    }
-
-    // Shader Nodes ***********************************************************
+    /*
+     * @TODO: Either write it or excise it.
+     * function shaderNodeFromFunction() {};
+     */
 
     // applies a shader graph to a code
-    function LGraphShaderUniform() {
-        this.addOutput("out", "");
-        this.properties = { name: "", type: "" };
-    }
-
-    LGraphShaderUniform.title = "Uniform";
-    LGraphShaderUniform.desc = "Input data for the shader";
-
-    LGraphShaderUniform.prototype.getTitle = function () {
-        if (this.properties.name && this.flags.collapsed)
-            return this.properties.type + " " + this.properties.name;
-        return "Uniform";
-    };
-
-    LGraphShaderUniform.prototype.onPropertyChanged = function (name, value) {
-        this.outputs[0].name =
-            this.properties.type + " " + this.properties.name;
-    };
-
-    LGraphShaderUniform.prototype.onGetCode = function (context) {
-        if (!this.shader_destination) return;
-
-        var type = this.properties.type;
-        if (!type) {
-            if (!context.onGetPropertyInfo) return;
-            var info = context.onGetPropertyInfo(this.property.name);
-            if (!info) return;
-            type = info.type;
+    class LGraphShaderUniform {
+        constructor() {
+            this.addOutput("out", "");
+            this.properties = { name: "", type: "" };
         }
-        if (type == "number") type = "float";
-        else if (type == "texture") type = "sampler2D";
-        if (LGShaders.GLSL_types.indexOf(type) == -1) return;
 
-        context.addUniform("u_" + this.properties.name, type);
-        this.setOutputData(0, type);
-    };
+        static title = "Uniform";
+        static desc = "Input data for the shader";
 
-    LGraphShaderUniform.prototype.getOutputVarName = function (slot) {
-        return "u_" + this.properties.name;
-    };
+        getTitle() {
+            if (this.properties.name && this.flags.collapsed)
+                return this.properties.type + " " + this.properties.name;
+            return "Uniform";
+        }
 
+        onPropertyChanged(name, value) {
+            this.outputs[0].name =
+                this.properties.type + " " + this.properties.name;
+        }
+
+        onGetCode(context) {
+            if (!this.shader_destination) return;
+
+            var type = this.properties.type;
+            if (!type) {
+                if (!context.onGetPropertyInfo) return;
+                var info = context.onGetPropertyInfo(this.property.name);
+                if (!info) return;
+                type = info.type;
+            }
+            if (type == "number") type = "float";
+            else if (type == "texture") type = "sampler2D";
+            if (LGShaders.GLSL_types.indexOf(type) == -1) return;
+
+            context.addUniform("u_" + this.properties.name, type);
+            this.setOutputData(0, type);
+        }
+
+        getOutputVarName(slot) {
+            return "u_" + this.properties.name;
+        }
+    }
     registerShaderNode("input/uniform", LGraphShaderUniform);
 
-    function LGraphShaderAttribute() {
-        this.addOutput("out", "vec2");
-        this.properties = { name: "coord", type: "vec2" };
-    }
-
-    LGraphShaderAttribute.title = "Attribute";
-    LGraphShaderAttribute.desc = "Input data from mesh attribute";
-
-    LGraphShaderAttribute.prototype.getTitle = function () {
-        return "att. " + this.properties.name;
-    };
-
-    LGraphShaderAttribute.prototype.onGetCode = function (context) {
-        if (!this.shader_destination) return;
-
-        var type = this.properties.type;
-        if (!type || LGShaders.GLSL_types.indexOf(type) == -1) return;
-        if (type == "number") type = "float";
-        if (this.properties.name != "coord") {
-            context.addCode(
-                "varying",
-                " varying " + type + " v_" + this.properties.name + ";",
-            );
-            // if( !context.varyings[ this.properties.name ] )
-            // context.addCode( "vs_code", "v_" + this.properties.name + " = " + input_name + ";" );
+    class LGraphShaderAttribute {
+        constructor () {
+            this.addOutput("out", "vec2");
+            this.properties = { name: "coord", type: "vec2" };
         }
-        this.setOutputData(0, type);
-    };
 
-    LGraphShaderAttribute.prototype.getOutputVarName = function (slot) {
-        return "v_" + this.properties.name;
-    };
+        static title = "Attribute";
+        static desc = "Input data from mesh attribute";
 
+        getTitle() {
+            return "att. " + this.properties.name;
+        }
+
+        onGetCode(context) {
+            if (!this.shader_destination) return;
+
+            var type = this.properties.type;
+            if (!type || LGShaders.GLSL_types.indexOf(type) == -1) return;
+            if (type == "number") type = "float";
+            if (this.properties.name != "coord") {
+                context.addCode(
+                    "varying",
+                    " varying " + type + " v_" + this.properties.name + ";",
+                );
+                // if( !context.varyings[ this.properties.name ] )
+                // context.addCode( "vs_code", "v_" + this.properties.name + " = " + input_name + ";" );
+            }
+            this.setOutputData(0, type);
+        }
+
+        getOutputVarName(slot) {
+            return "v_" + this.properties.name;
+        }
+    }
     registerShaderNode("input/attribute", LGraphShaderAttribute);
 
-    function LGraphShaderSampler2D() {
-        this.addInput("tex", "sampler2D");
-        this.addInput("uv", "vec2");
-        this.addOutput("rgba", "vec4");
-        this.addOutput("rgb", "vec3");
-    }
-
-    LGraphShaderSampler2D.title = "Sampler2D";
-    LGraphShaderSampler2D.desc = "Reads a pixel from a texture";
-
-    LGraphShaderSampler2D.prototype.onGetCode = function (context) {
-        if (!this.shader_destination) return;
-
-        var texname = getInputLinkID(this, 0);
-        var varname = getShaderNodeVarName(this);
-        var code = "vec4 " + varname + " = vec4(0.0);\n";
-        if (texname) {
-            var uvname = getInputLinkID(this, 1) || context.buffer_names.uvs;
-            code += varname + " = texture2D(" + texname + "," + uvname + ");\n";
+    class LGraphShaderSampler2D {
+        constructor() {
+            this.addInput("tex", "sampler2D");
+            this.addInput("uv", "vec2");
+            this.addOutput("rgba", "vec4");
+            this.addOutput("rgb", "vec3");
         }
 
-        var link0 = getOutputLinkID(this, 0);
-        if (link0)
-            code +=
-                "vec4 " + getOutputLinkID(this, 0) + " = " + varname + ";\n";
+        static title = "Sampler2D";
+        static desc = "Reads a pixel from a texture";
 
-        var link1 = getOutputLinkID(this, 1);
-        if (link1)
-            code +=
-                "vec3 " +
-                getOutputLinkID(this, 1) +
-                " = " +
-                varname +
-                ".xyz;\n";
+        onGetCode(context) {
+            if (!this.shader_destination) return;
 
-        context.addCode("code", code, this.shader_destination);
-        this.setOutputData(0, "vec4");
-        this.setOutputData(1, "vec3");
-    };
+            var texname = getInputLinkID(this, 0);
+            var varname = getShaderNodeVarName(this);
+            var code = "vec4 " + varname + " = vec4(0.0);\n";
+            if (texname) {
+                var uvname = getInputLinkID(this, 1) || context.buffer_names.uvs;
+                code += varname + " = texture2D(" + texname + "," + uvname + ");\n";
+            }
 
+            var link0 = getOutputLinkID(this, 0);
+            if (link0)
+                code +=
+                    "vec4 " + getOutputLinkID(this, 0) + " = " + varname + ";\n";
+
+            var link1 = getOutputLinkID(this, 1);
+            if (link1)
+                code +=
+                    "vec3 " +
+                    getOutputLinkID(this, 1) +
+                    " = " +
+                    varname +
+                    ".xyz;\n";
+
+            context.addCode("code", code, this.shader_destination);
+            this.setOutputData(0, "vec4");
+            this.setOutputData(1, "vec3");
+        }
+    }
     registerShaderNode("texture/sampler2D", LGraphShaderSampler2D);
 
     //* ********************************
 
-    function LGraphShaderConstant() {
-        this.addOutput("", "float");
+    class LGraphShaderConstant {
+        constructor() {
+            this.addOutput("", "float");
 
-        this.properties = {
-            type: "float",
-            value: 0,
-        };
+            this.properties = {
+                type: "float",
+                value: 0,
+            };
 
-        this.addWidget("combo", "type", "float", null, {
-            values: GLSL_types_const,
-            property: "type",
-        });
-        this.updateWidgets();
-    }
-
-    LGraphShaderConstant.title = "const";
-
-    LGraphShaderConstant.prototype.getTitle = function () {
-        if (this.flags.collapsed)
-            return valueToGLSL(this.properties.value, this.properties.type, 2);
-        return "Const";
-    };
-
-    LGraphShaderConstant.prototype.onPropertyChanged = function (name, value) {
-        if (name == "type") {
-            if (this.outputs[0].type != value) {
-                this.disconnectOutput(0);
-                this.outputs[0].type = value;
-            }
-            this.widgets.length = 1; // remove extra widgets
+            this.addWidget("combo", "type", "float", null, {
+                values: GLSL_types_const,
+                property: "type",
+            });
             this.updateWidgets();
         }
-        if (name == "value") {
-            if (!value.length) this.widgets[1].value = value;
-            else {
-                this.widgets[1].value = value[1];
-                if (value.length > 2) this.widgets[2].value = value[2];
-                if (value.length > 3) this.widgets[3].value = value[3];
+
+        static title = "const";
+
+        getTitle() {
+            if (this.flags.collapsed)
+                return valueToGLSL(this.properties.value, this.properties.type, 2);
+            return "Const";
+        }
+
+        onPropertyChanged(name, value) {
+            if (name == "type") {
+                if (this.outputs[0].type != value) {
+                    this.disconnectOutput(0);
+                    this.outputs[0].type = value;
+                }
+                this.widgets.length = 1; // remove extra widgets
+                this.updateWidgets();
+            }
+            if (name == "value") {
+                if (!value.length) this.widgets[1].value = value;
+                else {
+                    this.widgets[1].value = value[1];
+                    if (value.length > 2) this.widgets[2].value = value[2];
+                    if (value.length > 3) this.widgets[3].value = value[3];
+                }
             }
         }
-    };
 
-    LGraphShaderConstant.prototype.updateWidgets = function (old_value) {
-        var that = this;
-        var old_value = this.properties.value;
-        var options = { step: 0.01 };
-        switch (this.properties.type) {
-            case "float":
-                this.properties.value = 0;
-                this.addWidget("number", "v", 0, {
-                    step: 0.01,
-                    property: "value",
-                });
-                break;
-            case "vec2":
-                this.properties.value =
-                    old_value && old_value.length == 2
-                        ? [old_value[0], old_value[1]]
-                        : [0, 0, 0];
-                this.addWidget(
-                    "number",
-                    "x",
-                    this.properties.value[0],
-                    function (v) {
-                        that.properties.value[0] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "y",
-                    this.properties.value[1],
-                    function (v) {
-                        that.properties.value[1] = v;
-                    },
-                    options,
-                );
-                break;
-            case "vec3":
-                this.properties.value =
-                    old_value && old_value.length == 3
-                        ? [old_value[0], old_value[1], old_value[2]]
-                        : [0, 0, 0];
-                this.addWidget(
-                    "number",
-                    "x",
-                    this.properties.value[0],
-                    function (v) {
-                        that.properties.value[0] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "y",
-                    this.properties.value[1],
-                    function (v) {
-                        that.properties.value[1] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "z",
-                    this.properties.value[2],
-                    function (v) {
-                        that.properties.value[2] = v;
-                    },
-                    options,
-                );
-                break;
-            case "vec4":
-                this.properties.value =
-                    old_value && old_value.length == 4
-                        ? [
-                            old_value[0],
-                            old_value[1],
-                            old_value[2],
-                            old_value[3],
-                        ]
-                        : [0, 0, 0, 0];
-                this.addWidget(
-                    "number",
-                    "x",
-                    this.properties.value[0],
-                    function (v) {
-                        that.properties.value[0] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "y",
-                    this.properties.value[1],
-                    function (v) {
-                        that.properties.value[1] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "z",
-                    this.properties.value[2],
-                    function (v) {
-                        that.properties.value[2] = v;
-                    },
-                    options,
-                );
-                this.addWidget(
-                    "number",
-                    "w",
-                    this.properties.value[3],
-                    function (v) {
-                        that.properties.value[3] = v;
-                    },
-                    options,
-                );
-                break;
-            default:
-                console.error("unknown type for constant");
+        updateWidgets(old_value) {
+            var that = this;
+            var old_value = this.properties.value;
+            var options = { step: 0.01 };
+            switch (this.properties.type) {
+                case "float":
+                    this.properties.value = 0;
+                    this.addWidget("number", "v", 0, {
+                        step: 0.01,
+                        property: "value",
+                    });
+                    break;
+                case "vec2":
+                    this.properties.value =
+                        old_value && old_value.length == 2
+                            ? [old_value[0], old_value[1]]
+                            : [0, 0, 0];
+                    this.addWidget(
+                        "number",
+                        "x",
+                        this.properties.value[0],
+                        function (v) {
+                            that.properties.value[0] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "y",
+                        this.properties.value[1],
+                        function (v) {
+                            that.properties.value[1] = v;
+                        },
+                        options,
+                    );
+                    break;
+                case "vec3":
+                    this.properties.value =
+                        old_value && old_value.length == 3
+                            ? [old_value[0], old_value[1], old_value[2]]
+                            : [0, 0, 0];
+                    this.addWidget(
+                        "number",
+                        "x",
+                        this.properties.value[0],
+                        function (v) {
+                            that.properties.value[0] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "y",
+                        this.properties.value[1],
+                        function (v) {
+                            that.properties.value[1] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "z",
+                        this.properties.value[2],
+                        function (v) {
+                            that.properties.value[2] = v;
+                        },
+                        options,
+                    );
+                    break;
+                case "vec4":
+                    this.properties.value =
+                        old_value && old_value.length == 4
+                            ? [
+                                old_value[0],
+                                old_value[1],
+                                old_value[2],
+                                old_value[3],
+                            ]
+                            : [0, 0, 0, 0];
+                    this.addWidget(
+                        "number",
+                        "x",
+                        this.properties.value[0],
+                        function (v) {
+                            that.properties.value[0] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "y",
+                        this.properties.value[1],
+                        function (v) {
+                            that.properties.value[1] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "z",
+                        this.properties.value[2],
+                        function (v) {
+                            that.properties.value[2] = v;
+                        },
+                        options,
+                    );
+                    this.addWidget(
+                        "number",
+                        "w",
+                        this.properties.value[3],
+                        function (v) {
+                            that.properties.value[3] = v;
+                        },
+                        options,
+                    );
+                    break;
+                default:
+                    console.error("unknown type for constant");
+            }
         }
-    };
 
-    LGraphShaderConstant.prototype.onGetCode = function (context) {
-        if (!this.shader_destination) return;
+        onGetCode(context) {
+            if (!this.shader_destination) return;
 
-        var value = valueToGLSL(this.properties.value, this.properties.type);
-        var link_name = getOutputLinkID(this, 0);
-        if (!link_name)
-            // not connected
-            return;
+            var value = valueToGLSL(this.properties.value, this.properties.type);
+            var link_name = getOutputLinkID(this, 0);
+            if (!link_name)
+                // not connected
+                return;
 
-        var code =
-            "	" + this.properties.type + " " + link_name + " = " + value + ";";
-        context.addCode("code", code, this.shader_destination);
+            var code =
+                "	" + this.properties.type + " " + link_name + " = " + value + ";";
+            context.addCode("code", code, this.shader_destination);
 
-        this.setOutputData(0, this.properties.type);
-    };
-
+            this.setOutputData(0, this.properties.type);
+        }
+    }
     registerShaderNode("const/const", LGraphShaderConstant);
 
     function LGraphShaderVec2() {
@@ -1510,7 +1488,7 @@ if (typeof GL != "undefined") {
         if (!this.isOutputConnected(0)) return;
 
         var inlinks = [];
-        for (var i = 0; i < 3; ++i)
+        for (let i = 0; i < 3; ++i)
             inlinks.push({
                 name: getInputLinkID(this, i),
                 type: this.getInputData(i) || "float",
@@ -1530,7 +1508,7 @@ if (typeof GL != "undefined") {
         if (return_type == "T") return_type = base_type;
 
         var params = [];
-        for (var i = 0; i < func_desc.params.length; ++i) {
+        for (let i = 0; i < func_desc.params.length; ++i) {
             var p = func_desc.params[i];
             var param_code = inlinks[i].name;
             if (param_code == null) {
