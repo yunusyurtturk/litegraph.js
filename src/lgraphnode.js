@@ -152,7 +152,7 @@ export class LGraphNode {
         });
 
         if (this.widgets) {
-            this.widgets.forEach((w, i) => {
+            this.widgets.forEach((w) => {
                 if (!w) {
                     return;
                 }
@@ -648,7 +648,7 @@ export class LGraphNode {
     addOnTriggerInput() {
         var trigS = this.findInputSlot("onTrigger");
         if (trigS == -1) { // !trigS ||
-            var input = this.addInput("onTrigger", LiteGraph.EVENT, {optional: true, nameLocked: true});
+            this.addInput("onTrigger", LiteGraph.EVENT, {optional: true, nameLocked: true});
             return this.findInputSlot("onTrigger");
         }
         return trigS;
@@ -657,7 +657,7 @@ export class LGraphNode {
     addOnExecutedOutput() {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS == -1) { // !trigS ||
-            var output = this.addOutput("onExecuted", LiteGraph.ACTION, {optional: true, nameLocked: true});
+            this.addOutput("onExecuted", LiteGraph.ACTION, {optional: true, nameLocked: true});
             return this.findOutputSlot("onExecuted");
         }
         return trigS;
@@ -677,27 +677,24 @@ export class LGraphNode {
 
     changeMode(modeTo) {
         switch(modeTo) {
-            case LiteGraph.ON_EVENT:
-                // this.addOnExecutedOutput();
-                break;
 
             case LiteGraph.ON_TRIGGER:
                 this.addOnTriggerInput();
                 this.addOnExecutedOutput();
                 break;
 
+            case LiteGraph.ON_EVENT:
+                // this.addOnExecutedOutput();
+                break;
             case LiteGraph.NEVER:
                 break;
-
             case LiteGraph.ALWAYS:
                 break;
-
             case LiteGraph.ON_REQUEST:
                 break;
 
             default:
                 return false;
-                break;
         }
         this.mode = modeTo;
         return true;
@@ -860,7 +857,7 @@ export class LGraphNode {
                 // generate unique action ID if not present
                 if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 // pass the action name
-                var target_connection = node.inputs[link_info.target_slot];
+                target_connection = node.inputs[link_info.target_slot];
 
                 // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
@@ -1113,14 +1110,14 @@ export class LGraphNode {
         var output_width = 0;
 
         if (this.inputs) {
-            const input_width = this.inputs.reduce((maxWidth, input) => {
+            input_width = this.inputs.reduce((maxWidth, input) => {
                 const text = input.label || input.name || "";
                 const text_width = compute_text_size(text);
                 return Math.max(maxWidth, text_width);
             }, 0);
         }
         if (this.outputs) {
-            const output_width = this.outputs.reduce((maxWidth, output) => {
+            output_width = this.outputs.reduce((maxWidth, output) => {
                 const text = output.label || output.name || "";
                 const text_width = compute_text_size(text);
 
@@ -1371,8 +1368,8 @@ export class LGraphNode {
         // search for inputs
         var link_pos = new Float32Array(2);
         if (this.inputs) {
-            for (var i = 0, l = this.inputs.length; i < l; ++i) {
-                var input = this.inputs[i];
+            for (let i = 0, l = this.inputs.length; i < l; ++i) {
+                let input = this.inputs[i];
                 this.getConnectionPos(true, i, link_pos);
                 if (
                     LiteGraph.isInsideRectangle(
@@ -1390,8 +1387,8 @@ export class LGraphNode {
         }
 
         if (this.outputs) {
-            for (var i = 0, l = this.outputs.length; i < l; ++i) {
-                var output = this.outputs[i];
+            for (let i = 0, l = this.outputs.length; i < l; ++i) {
+                let output = this.outputs[i];
                 this.getConnectionPos(false, i, link_pos);
                 if (
                     LiteGraph.isInsideRectangle(
@@ -1457,8 +1454,7 @@ export class LGraphNode {
      * @param {object} options
      * @return {number_or_object} the slot (-1 if not found)
      */
-    findInputSlotFree(optsIn) {
-        var optsIn = optsIn || {};
+    findInputSlotFree(optsIn = {}) {
         var optsDef = {
             returnObj: false,
             typesNotAccepted: [],
@@ -1485,8 +1481,7 @@ export class LGraphNode {
      * @param {object} options
      * @return {number_or_object} the slot (-1 if not found)
      */
-    findOutputSlotFree(optsIn) {
-        var optsIn = optsIn || {};
+    findOutputSlotFree(optsIn = {}) {
         var optsDef = {
             returnObj: false,
             typesNotAccepted: [],
@@ -1495,7 +1490,7 @@ export class LGraphNode {
         if (!this.outputs) {
             return -1;
         }
-        for (var i = 0, l = this.outputs.length; i < l; ++i) {
+        for (let i = 0, l = this.outputs.length; i < l; ++i) {
             if (this.outputs[i].links && this.outputs[i].links != null) {
                 continue;
             }
@@ -1543,12 +1538,12 @@ export class LGraphNode {
         }
         // !! empty string type is considered 0, * !!
         if (type == "" || type == "*") type = 0;
-        for (var i = 0, l = aSlots.length; i < l; ++i) {
-            var aSource = (type+"").toLowerCase().split(",");
-            var aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
+        for (let i = 0, l = aSlots.length; i < l; ++i) {
+            let aSource = (type+"").toLowerCase().split(",");
+            let aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
             aDest = (aDest+"").toLowerCase().split(",");
-            for(var sI=0;sI<aSource.length;sI++) {
-                for(var dI=0;dI<aDest.length;dI++) {
+            for(let sI=0;sI<aSource.length;sI++) {
+                for(let dI=0;dI<aDest.length;dI++) {
                     if (aSource[sI]=="_event_") aSource[sI] = LiteGraph.EVENT;
                     if (aDest[sI]=="_event_") aDest[sI] = LiteGraph.EVENT;
                     if (aSource[sI]=="*") aSource[sI] = 0;
@@ -1562,12 +1557,12 @@ export class LGraphNode {
         }
         // if didnt find some, stop checking for free slots
         if (preferFreeSlot && !doNotUseOccupied) {
-            for (var i = 0, l = aSlots.length; i < l; ++i) {
-                var aSource = (type+"").toLowerCase().split(",");
-                var aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
+            for (let i = 0, l = aSlots.length; i < l; ++i) {
+                let aSource = (type+"").toLowerCase().split(",");
+                let aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
                 aDest = (aDest+"").toLowerCase().split(",");
-                for(var sI=0;sI<aSource.length;sI++) {
-                    for(var dI=0;dI<aDest.length;dI++) {
+                for(let sI=0;sI<aSource.length;sI++) {
+                    for(let dI=0;dI<aDest.length;dI++) {
                         if (aSource[sI]=="*") aSource[sI] = 0;
                         if (aDest[sI]=="*") aDest[sI] = 0;
                         if (aSource[sI] == aDest[dI]) {
@@ -1588,8 +1583,7 @@ export class LGraphNode {
      * @param {string} target_type the input slot type of the target node
      * @return {Object} the link_info is created, otherwise null
      */
-    connectByType(slot, target_node, target_slotType, optsIn) {
-        var optsIn = optsIn || {};
+    connectByType(slot, target_node, target_slotType, optsIn = {}) {
         var optsDef = {
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
@@ -1612,7 +1606,7 @@ export class LGraphNode {
             }
             // connect to the first general output slot if not found a specific type and
             if (opts.generalTypeInCase) {
-                var target_slot = target_node.findInputSlotByType(0, false, true, true);
+                target_slot = target_node.findInputSlotByType(0, false, true, true);
                 // console.debug("connect TO a general type (*, 0), if not found the specific type ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
                 if (target_slot >= 0) {
                     return this.connect(slot, target_node, target_slot);
@@ -1620,7 +1614,7 @@ export class LGraphNode {
             }
             // connect to the first free input slot if not found a specific type and this output is general
             if (opts.firstFreeIfOutputGeneralInCase && (target_slotType == 0 || target_slotType == "*" || target_slotType == "")) {
-                var target_slot = target_node.findInputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
+                target_slot = target_node.findInputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
                 // console.debug("connect TO TheFirstFREE ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
                 if (target_slot >= 0) {
                     return this.connect(slot, target_node, target_slot);
@@ -1642,8 +1636,7 @@ export class LGraphNode {
      * @param {string} target_type the output slot type of the target node
      * @return {Object} the link_info is created, otherwise null
      */
-    connectByTypeOutput(slot, source_node, source_slotType, optsIn) {
-        var optsIn = optsIn || {};
+    connectByTypeOutput(slot, source_node, source_slotType, optsIn = {}) {
         var optsDef = {
             createEventInCase: true,
             firstFreeIfInputGeneralInCase: true,
@@ -1661,7 +1654,7 @@ export class LGraphNode {
 
             // connect to the first general output slot if not found a specific type and
             if (opts.generalTypeInCase) {
-                var source_slot = source_node.findOutputSlotByType(0, false, true, true);
+                source_slot = source_node.findOutputSlotByType(0, false, true, true);
                 if (source_slot >= 0) {
                     return source_node.connect(source_slot, this, slot);
                 }
@@ -1670,13 +1663,13 @@ export class LGraphNode {
             if (opts.createEventInCase && source_slotType == LiteGraph.EVENT) {
                 // WILL CREATE THE onExecuted OUT SLOT
                 if (LiteGraph.do_add_triggers_slots) {
-                    var source_slot = source_node.addOnExecutedOutput();
+                    source_slot = source_node.addOnExecutedOutput();
                     return source_node.connect(source_slot, this, slot);
                 }
             }
             // connect to the first free output slot if not found a specific type and this input is general
             if (opts.firstFreeIfInputGeneralInCase && (source_slotType == 0 || source_slotType == "*" || source_slotType == "")) {
-                var source_slot = source_node.findOutputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
+                source_slot = source_node.findOutputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
                 if (source_slot >= 0) {
                     return source_node.connect(source_slot, this, slot);
                 }
@@ -1932,9 +1925,9 @@ export class LGraphNode {
                 throw "Target Node not found";
             }
 
-            for (var i = 0, l = output.links.length; i < l; i++) {
-                var link_id = output.links[i];
-                var link_info = this.graph.links[link_id];
+            for (let i = 0, l = output.links.length; i < l; i++) {
+                let link_id = output.links[i];
+                let link_info = this.graph.links[link_id];
 
                 // is the link we are searching for...
                 if (link_info.target_id == target_node.id) {
@@ -1986,16 +1979,16 @@ export class LGraphNode {
                 }
             }
         } else { // all the links in this output slot
-            for (var i = 0, l = output.links.length; i < l; i++) {
-                var link_id = output.links[i];
-                var link_info = this.graph.links[link_id];
+            for (let i = 0, l = output.links.length; i < l; i++) {
+                let link_id = output.links[i];
+                let link_info = this.graph.links[link_id];
                 if (!link_info) {
                     // bug: it happens sometimes
                     continue;
                 }
 
-                var target_node = this.graph.getNodeById(link_info.target_id);
-                var input = null;
+                target_node = this.graph.getNodeById(link_info.target_id);
+                input = null;
                 if (this.graph) {
                     this.graph._version++;
                 }
