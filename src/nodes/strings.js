@@ -99,9 +99,7 @@ function toFixed(a) {
     }
     return a;
 }
-LiteGraph.wrapFunctionAsNode("string/toFixed", toFixed, ["number"], "string", {
-    precision: 0,
-});
+LiteGraph.wrapFunctionAsNode("string/toFixed", toFixed, ["number"], "string", { precision: 0 });
 
 
 class StringToTable {

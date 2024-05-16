@@ -483,9 +483,7 @@ class LGAudioMediaSource {
     static desc = "Plays microphone";
 
     constructor() {
-        this.properties = {
-            gain: 0.5,
-        };
+        this.properties = { gain: 0.5 };
 
         this._audionodes = [];
         this._media_stream = null;
@@ -723,9 +721,7 @@ class LGAudioGain {
 
     constructor() {
         // default
-        this.properties = {
-            gain: 1,
-        };
+        this.properties = { gain: 1 };
 
         this.audionode = LGAudio.getAudioContext().createGain();
         this.addInput("in", "audio");
@@ -1054,9 +1050,7 @@ class LGAudioDelay {
 
     constructor() {
         // default
-        this.properties = {
-            delayTime: 0.5,
-        };
+        this.properties = { delayTime: 0.5 };
 
         this.audionode = LGAudio.getAudioContext().createDelay(10);
         this.audionode.delayTime.value = this.properties.delayTime;
@@ -1150,9 +1144,19 @@ class LGAudioOscillatorNode {
             detune: 0,
             type: "sine",
         };
-        this.addProperty("type", "sine", "enum", {
-            values: ["sine", "square", "sawtooth", "triangle", "custom"],
-        });
+        this.addProperty(
+            "type",
+            "sine",
+            "enum", {
+                values: [
+                    "sine",
+                    "square",
+                    "sawtooth",
+                    "triangle",
+                    "custom",
+                ],
+            },
+        );
 
         // create node
         this.audionode = LGAudio.getAudioContext().createOscillator();
@@ -1361,9 +1365,7 @@ class LGAudioScript {
         }
 
         // default
-        this.properties = {
-            code: LGAudioScript.default_code,
-        };
+        this.properties = { code: LGAudioScript.default_code };
 
         // create node
         var ctx = LGAudio.getAudioContext();

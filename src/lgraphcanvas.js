@@ -42,7 +42,7 @@ export class LGraphCanvas {
             /* number: "#7F7",
             string: "#77F",
             boolean: "#F77",*/
-        }
+        };
         this.default_connection_color_byTypeOff = {
             /* number: "#474",
             string: "#447",
@@ -5050,34 +5050,41 @@ export class LGraphCanvas {
                     return entry.value === category_path
                 });
                 if (index === -1) {
-                    entries.push({ value: category_path, content: name, has_submenu: true, callback: function(value, event, mouseEvent, contextMenu) {
-                        inner_onMenuAdded(value.value, contextMenu)
-                    }});
+                    entries.push({
+                        value: category_path,
+                        content: name,
+                        has_submenu: true,
+                        callback: function(value, event, mouseEvent, contextMenu) {
+                            inner_onMenuAdded(value.value, contextMenu);
+                        },
+                    });
                 }
 
             });
 
-            var nodes = LiteGraph.getNodeTypesInCategory(base_category.slice(0, -1), canvas.filter || graph.filter );
+            var nodes = LiteGraph.getNodeTypesInCategory(base_category.slice(0, -1), canvas.filter || graph.filter);
             nodes.map(function(node) {
 
                 if (node.skip_list)
                     return;
 
-                var entry = { value: node.type, content: node.title, has_submenu: false , callback: function(value, event, mouseEvent, contextMenu) {
-
-                    var first_event = contextMenu.getFirstEvent();
-                    canvas.graph.beforeChange();
-                    var node = LiteGraph.createNode(value.value);
-                    if (node) {
-                        node.pos = canvas.convertEventToCanvasOffset(first_event);
-                        canvas.graph.add(node);
-                    }
-                    if(callback)
-                        callback(node);
-                    canvas.graph.afterChange();
-
-                },
-                }
+                var entry = {
+                    value: node.type,
+                    content: node.title,
+                    has_submenu: false ,
+                    callback: function(value, event, mouseEvent, contextMenu) {
+                        var first_event = contextMenu.getFirstEvent();
+                        canvas.graph.beforeChange();
+                        var node = LiteGraph.createNode(value.value);
+                        if (node) {
+                            node.pos = canvas.convertEventToCanvasOffset(first_event);
+                            canvas.graph.add(node);
+                        }
+                        if(callback)
+                            callback(node);
+                        canvas.graph.afterChange();
+                    },
+                };
 
                 entries.push(entry);
 
@@ -5351,9 +5358,7 @@ export class LGraphCanvas {
                 return;
             }
             var rect = this.getBoundingClientRect();
-            canvas.showEditPropertyValue(node, v.value, {
-                position: [rect.left, rect.top],
-            });
+            canvas.showEditPropertyValue(node, v.value, { position: [rect.left, rect.top] });
         }
 
         return false;
@@ -5445,7 +5450,8 @@ export class LGraphCanvas {
     createDefaultNodeForSlot(optPass) { // addNodeMenu for connection
         var optPass = optPass || {};
         var opts = Object.assign(
-            { nodeFrom: null, // input
+            {
+                nodeFrom: null, // input
                 slotFrom: null, // input
                 nodeTo: null, // output
                 slotTo: null, // output
@@ -5453,8 +5459,8 @@ export class LGraphCanvas {
                 nodeType: null,	// choose a nodetype to add, AUTO to set at first good
                 posAdd: [0,0],	// adjust x,y
                 posSizeFix: [0,0], // alpha, adjust the position x,y based on the new node size w,h
-            }
-            ,optPass,
+            },
+            optPass,
         );
         var that = this;
 
@@ -5900,7 +5906,8 @@ export class LGraphCanvas {
 
     showSearchBox(event, options) {
         // proposed defaults
-        var def_options = { slot_from: null,
+        var def_options = {
+            slot_from: null,
             node_from: null,
             node_to: null,
             do_type_filter: LiteGraph.search_filter_enabled, // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
@@ -6380,9 +6387,9 @@ export class LGraphCanvas {
                     }
                 }
 
-                function inner_test_filter( type, optsIn ) {
-                    var optsIn = optsIn || {};
-                    var optsDef = { skipFilter: false,
+                function inner_test_filter( type, optsIn = {} ) {
+                    var optsDef = {
+                        skipFilter: false,
                         inTypeOverride: false,
                         outTypeOverride: false,
                     };
@@ -7605,7 +7612,8 @@ export class LGraphCanvas {
                 }];
             if(node.resizable !== false) {
                 options.push({
-                    content: "Resize", callback: LGraphCanvas.onMenuResizeNode,
+                    content: "Resize",
+                    callback: LGraphCanvas.onMenuResizeNode,
                 });
             }
             options.push(

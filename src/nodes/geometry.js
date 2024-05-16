@@ -11,9 +11,8 @@ var global_uniforms = {
     u_model: model_matrix,
 };
 
-const LGraphRender = {
-    onRequestCameraMatrices: null, // overwrite with your 3D engine specifics, it will receive (view_matrix, projection_matrix,viewprojection_matrix) and must be filled
-};
+// overwrite with your 3D engine specifics, it will receive (view_matrix, projection_matrix,viewprojection_matrix) and must be filled
+const LGraphRender = { onRequestCameraMatrices: null };
 
 function generateGeometryId() {
     return (Math.random() * 100000) | 0;
@@ -455,7 +454,10 @@ LGraphPoints3D.MODE_VALUES = {
 };
 
 LGraphPoints3D.widgets_info = {
-    mode: { widget: "combo", values: LGraphPoints3D.MODE_VALUES },
+    mode: {
+        widget: "combo",
+        values: LGraphPoints3D.MODE_VALUES,
+    },
 };
 
 LGraphPoints3D.title = "list of points";
@@ -610,7 +612,10 @@ LGraphPointsToInstances.modes = {
     random_vertical: 4,
 };
 LGraphPointsToInstances.widgets_info = {
-    mode: { widget: "combo", values: LGraphPointsToInstances.modes },
+    mode: {
+        widget: "combo",
+        values: LGraphPointsToInstances.modes,
+    },
 };
 
 LGraphPointsToInstances.title = "points to inst";
@@ -1005,9 +1010,7 @@ class LGraphGeometryEval {
 LGraphGeometryEval.title = "geoeval";
 LGraphGeometryEval.desc = "eval code";
 
-LGraphGeometryEval.widgets_info = {
-    code: { widget: "code" },
-};
+LGraphGeometryEval.widgets_info = { code: { widget: "code" } };
 
 LiteGraph.registerNodeType("geometry/eval", LGraphGeometryEval);
 
@@ -1522,7 +1525,10 @@ if (typeof GL != "undefined") {
         QUAD: 9,
     };
     LGraphGeometryPrimitive.widgets_info = {
-        type: { widget: "combo", values: LGraphGeometryPrimitive.VALID },
+        type: {
+            widget: "combo",
+            values: LGraphGeometryPrimitive.VALID,
+        },
     };
 
     LiteGraph.registerNodeType(
@@ -1659,9 +1665,7 @@ if (typeof GL != "undefined") {
     LGraphRenderPoints.title = "renderPoints";
     LGraphRenderPoints.desc = "render points with a texture";
 
-    LGraphRenderPoints.widgets_info = {
-        color: { widget: "color" },
-    };
+    LGraphRenderPoints.widgets_info = { color: { widget: "color" } };
 
     LiteGraph.registerNodeType("geometry/render_points", LGraphRenderPoints);
 

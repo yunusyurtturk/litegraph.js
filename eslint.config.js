@@ -76,12 +76,14 @@ export default [
         "@stylistic/new-parens":[0,
             "always"
         ],
-        "@stylistic/no-extra-semi":[2],
+        "@stylistic/no-extra-semi":[1],
         "@stylistic/no-floating-decimal":[2],
         "@stylistic/no-multi-spaces":[1],
         "@stylistic/no-tabs":[0],
         "@stylistic/no-trailing-spaces":[1],
-        "@stylistic/object-curly-newline":[0, "multiline"],
+        "@stylistic/object-curly-newline":[1, 
+            {"multiline":true}
+        ],
         "@stylistic/quotes":[0,
             "double",
             {"allowTemplateLiterals": true}

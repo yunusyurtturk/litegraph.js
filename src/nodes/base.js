@@ -1699,9 +1699,7 @@ class NodeScript {
         return [["C", ""]];
     }
 
-    static widgets_info = {
-        onExecute: { type: "code" },
-    };
+    static widgets_info = { onExecute: { type: "code" } };
 }
 LiteGraph.registerNodeType("basic/script", NodeScript);
 

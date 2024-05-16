@@ -307,9 +307,12 @@ class EventCounter {
         this.addInput("reset", LiteGraph.ACTION);
         this.addOutput("change", LiteGraph.EVENT);
         this.addOutput("num", "number");
-        this.addProperty("doCountExecution", false, "boolean", {
-            name: "Count Executions",
-        });
+        this.addProperty(
+            "doCountExecution",
+            false,
+            "boolean",
+            { name: "Count Executions" },
+        );
         this.addWidget(
             "toggle",
             "Count Exec.",
