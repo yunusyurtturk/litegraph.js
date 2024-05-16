@@ -184,7 +184,7 @@ export class LGraphNode {
             size: this.size,
             flags: LiteGraph.cloneObject(this.flags),
             order: this.order,
-            mode: this.mode
+            mode: this.mode,
         };
 
         // special case for when there were errors
@@ -233,7 +233,7 @@ export class LGraphNode {
 
         if (this.onSerialize?.(o)) {
             console.warn(
-                "node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter"
+                "node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter",
             );
         }
         return o;
@@ -996,12 +996,12 @@ export class LGraphNode {
                 name: info[0],
                 type: info[1],
                 link: null,
-                ...(info[2] ?? {})
+                ...(info[2] ?? {}),
             } : {
                 name: info[0],
                 type: info[1],
                 links: null,
-                ...(info[2] ?? {})
+                ...(info[2] ?? {}),
             };
 
             if (isInput) {
@@ -1085,7 +1085,7 @@ export class LGraphNode {
             type: type,
             pos: pos,
             direction: direction,
-            links: null
+            links: null,
         };
         this.connections.push(o);
         return o;
@@ -1104,7 +1104,7 @@ export class LGraphNode {
 
         var rows = Math.max(
             this.inputs ? this.inputs.length : 1,
-            this.outputs ? this.outputs.length : 1
+            this.outputs ? this.outputs.length : 1,
         );
         var size = out || new Float32Array([0, 0]);
         rows = Math.max(rows, 1);
@@ -1256,7 +1256,7 @@ export class LGraphNode {
             name: name,
             value: value,
             callback: callback,
-            options: options || {}
+            options: options || {},
         };
 
         if (w.options.y !== undefined) {
@@ -1346,7 +1346,7 @@ export class LGraphNode {
                     this.pos[1] - LiteGraph.NODE_TITLE_HEIGHT - margin,
                     (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH) +
                         2 * margin,
-                    LiteGraph.NODE_TITLE_HEIGHT + 2 * margin
+                    LiteGraph.NODE_TITLE_HEIGHT + 2 * margin,
                 )
             ) {
                 return true;
@@ -1383,7 +1383,7 @@ export class LGraphNode {
                         link_pos[0] - 10,
                         link_pos[1] - 5,
                         20,
-                        10
+                        10,
                     )
                 ) {
                     return { input: input, slot: i, link_pos: link_pos };
@@ -1402,7 +1402,7 @@ export class LGraphNode {
                         link_pos[0] - 10,
                         link_pos[1] - 5,
                         20,
-                        10
+                        10,
                     )
                 ) {
                     return { output: output, slot: i, link_pos: link_pos };
@@ -1463,7 +1463,7 @@ export class LGraphNode {
         var optsIn = optsIn || {};
         var optsDef = {
             returnObj: false,
-            typesNotAccepted: []
+            typesNotAccepted: [],
         };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.inputs) {
@@ -1489,9 +1489,9 @@ export class LGraphNode {
      */
     findOutputSlotFree(optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { 
+        var optsDef = {
             returnObj: false,
-            typesNotAccepted: []
+            typesNotAccepted: [],
         };
         var opts = Object.assign(optsDef,optsIn);
         if (!this.outputs) {
@@ -1537,7 +1537,7 @@ export class LGraphNode {
         type,
         returnObj = false,
         preferFreeSlot = false,
-        doNotUseOccupied = false
+        doNotUseOccupied = false,
     ) {
         var aSlots = input ? this.inputs : this.outputs;
         if (!aSlots) {
@@ -1592,10 +1592,10 @@ export class LGraphNode {
      */
     connectByType(slot, target_node, target_slotType, optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { 
+        var optsDef = {
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
-            generalTypeInCase: true
+            generalTypeInCase: true,
         };
         var opts = Object.assign(optsDef,optsIn);
         if (target_node && target_node.constructor === Number) {
@@ -1646,10 +1646,10 @@ export class LGraphNode {
      */
     connectByTypeOutput(slot, source_node, source_slotType, optsIn) {
         var optsIn = optsIn || {};
-        var optsDef = { 
+        var optsDef = {
             createEventInCase: true,
             firstFreeIfInputGeneralInCase: true,
-            generalTypeInCase: true
+            generalTypeInCase: true,
         };
         var opts = Object.assign(optsDef,optsIn);
         if (source_node && source_node.constructor === Number) {
@@ -1704,7 +1704,7 @@ export class LGraphNode {
         if (!this.graph) {
             // could be connected before adding it to a graph
             console.log(
-                "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
+                "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them.",
             ); // due to link ids being associated with graphs
             return null;
         }
@@ -1743,7 +1743,7 @@ export class LGraphNode {
             if (target_slot == -1) {
                 if (LiteGraph.debug) {
                     console.log(
-                        `Connect: Error, no slot of name ${target_slot}`
+                        `Connect: Error, no slot of name ${target_slot}`,
                     );
                 }
                 return null;
@@ -1842,7 +1842,7 @@ export class LGraphNode {
             this.id,
             slot,
             target_node.id,
-            target_slot
+            target_slot,
         );
 
         // add to graph links list
@@ -1864,7 +1864,7 @@ export class LGraphNode {
                 slot,
                 true,
                 link_info,
-                output
+                output,
             );
         } // link_info has been created now, so its updated
         if (target_node.onConnectionsChange) {
@@ -1873,7 +1873,7 @@ export class LGraphNode {
                 target_slot,
                 true,
                 link_info,
-                input
+                input,
             );
         }
         if (this.graph && this.graph.onNodeConnectionChange) {
@@ -1882,14 +1882,14 @@ export class LGraphNode {
                 target_node,
                 target_slot,
                 this,
-                slot
+                slot,
             );
             this.graph.onNodeConnectionChange(
                 LiteGraph.OUTPUT,
                 this,
                 slot,
                 target_node,
-                target_slot
+                target_slot,
             );
         }
 
@@ -1957,7 +1957,7 @@ export class LGraphNode {
                             link_info.target_slot,
                             false,
                             link_info,
-                            input
+                            input,
                         );
                     } // link_info hasn't been modified so its ok
                     if (this.onConnectionsChange) {
@@ -1966,26 +1966,26 @@ export class LGraphNode {
                             slot,
                             false,
                             link_info,
-                            output
+                            output,
                         );
                     }
                     if (this.graph && this.graph.onNodeConnectionChange) {
                         this.graph.onNodeConnectionChange(
                             LiteGraph.OUTPUT,
                             this,
-                            slot
+                            slot,
                         );
                     }
                     if (this.graph && this.graph.onNodeConnectionChange) {
                         this.graph.onNodeConnectionChange(
                             LiteGraph.OUTPUT,
                             this,
-                            slot
+                            slot,
                         );
                         this.graph.onNodeConnectionChange(
                             LiteGraph.INPUT,
                             target_node,
-                            link_info.target_slot
+                            link_info.target_slot,
                         );
                     }
                     break;
@@ -2014,14 +2014,14 @@ export class LGraphNode {
                             link_info.target_slot,
                             false,
                             link_info,
-                            input
+                            input,
                         );
                     } // link_info hasn't been modified so its ok
                     if (this.graph && this.graph.onNodeConnectionChange) {
                         this.graph.onNodeConnectionChange(
                             LiteGraph.INPUT,
                             target_node,
-                            link_info.target_slot
+                            link_info.target_slot,
                         );
                     }
                 }
@@ -2032,19 +2032,19 @@ export class LGraphNode {
                         slot,
                         false,
                         link_info,
-                        output
+                        output,
                     );
                 }
                 if (this.graph && this.graph.onNodeConnectionChange) {
                     this.graph.onNodeConnectionChange(
                         LiteGraph.OUTPUT,
                         this,
-                        slot
+                        slot,
                     );
                     this.graph.onNodeConnectionChange(
                         LiteGraph.INPUT,
                         target_node,
-                        link_info.target_slot
+                        link_info.target_slot,
                     );
                 }
             }
@@ -2119,7 +2119,7 @@ export class LGraphNode {
                         slot,
                         false,
                         link_info,
-                        input
+                        input,
                     );
                 }
                 if (target_node.onConnectionsChange) {
@@ -2128,14 +2128,14 @@ export class LGraphNode {
                         i,
                         false,
                         link_info,
-                        output
+                        output,
                     );
                 }
                 if (this.graph && this.graph.onNodeConnectionChange) {
                     this.graph.onNodeConnectionChange(
                         LiteGraph.OUTPUT,
                         target_node,
-                        i
+                        i,
                     );
                     this.graph.onNodeConnectionChange(LiteGraph.INPUT, this, slot);
                 }
@@ -2270,7 +2270,7 @@ export class LGraphNode {
         }
         this.graph.sendActionToCanvas("setDirty", [
             dirty_foreground,
-            dirty_background
+            dirty_background,
         ]);
     }
 
@@ -2380,7 +2380,7 @@ export class LGraphNode {
     localToScreen(x, y, graphcanvas) {
         return [
             (x + this.pos[0]) * graphcanvas.scale + graphcanvas.offset[0],
-            (y + this.pos[1]) * graphcanvas.scale + graphcanvas.offset[1]
+            (y + this.pos[1]) * graphcanvas.scale + graphcanvas.offset[1],
         ];
     }
 }

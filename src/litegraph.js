@@ -222,7 +222,7 @@ export var LiteGraph = new class {
                     return this._shape;
                 },
                 enumerable: true,
-                configurable: true
+                configurable: true,
             });
 
 
@@ -253,7 +253,7 @@ export var LiteGraph = new class {
             console.warn(
                 "LiteGraph node class " +
                     type +
-                    " has onPropertyChange method, it must be called onPropertyChanged with d at the end"
+                    " has onPropertyChange method, it must be called onPropertyChanged with d at the end",
             );
         }
 
@@ -345,7 +345,7 @@ export var LiteGraph = new class {
      */
     buildNodeClassFromObject(
         name,
-        object
+        object,
     ) {
         var ctor_code = "";
         if(object.inputs)
@@ -397,7 +397,7 @@ export var LiteGraph = new class {
         func,
         param_types,
         return_type,
-        properties
+        properties,
     ) {
         var params = Array(func.length);
         var code = "";
@@ -483,7 +483,7 @@ export var LiteGraph = new class {
         if (!base_class) {
             if (LiteGraph.debug) {
                 console.log(
-                    'GraphNode type "' + type + '" not registered.'
+                    'GraphNode type "' + type + '" not registered.',
                 );
             }
             return null;
@@ -733,7 +733,7 @@ export var LiteGraph = new class {
         this.searchbox_extras[description.toLowerCase()] = {
             type: node_type,
             desc: description,
-            data: data
+            data: data,
         };
     }
 
@@ -808,7 +808,7 @@ export var LiteGraph = new class {
 
     distance(a, b) {
         return Math.sqrt(
-            (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
+            (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]),
         );
     }
 
@@ -941,7 +941,7 @@ export var LiteGraph = new class {
                 if (origin.prototype.__lookupGetter__(i)) {
                     target.prototype.__defineGetter__(
                         i,
-                        origin.prototype.__lookupGetter__(i)
+                        origin.prototype.__lookupGetter__(i),
                     );
                 } else {
                     target.prototype[i] = origin.prototype[i];
@@ -951,7 +951,7 @@ export var LiteGraph = new class {
                 if (origin.prototype.__lookupSetter__(i)) {
                     target.prototype.__defineSetter__(
                         i,
-                        origin.prototype.__lookupSetter__(i)
+                        origin.prototype.__lookupSetter__(i),
                     );
                 }
             }

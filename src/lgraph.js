@@ -619,7 +619,7 @@ export class LGraph {
         // nodes
         if (node.id != -1 && this._nodes_by_id[node.id] != null) {
             console.warn(
-                "LiteGraph: there is already a node with this ID, changing it"
+                "LiteGraph: there is already a node with this ID, changing it",
             );
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
@@ -870,7 +870,7 @@ export class LGraph {
     onAction(action, param, options) {
         this._input_nodes = this.findNodesByClass(
             LiteGraph.GraphInput,
-            this._input_nodes
+            this._input_nodes,
         );
         for (var i = 0; i < this._input_nodes.length; ++i) {
             var node = this._input_nodes[i];
@@ -1252,7 +1252,7 @@ export class LGraph {
             if (!link.serialize) {
                 // weird bug I havent solved yet
                 console.warn(
-                    "weird LLink bug, link info is not a LLink but a regular object"
+                    "weird LLink bug, link info is not a LLink but a regular object",
                 );
                 var link2 = new LLink();
                 for (var j in link) {
@@ -1275,7 +1275,7 @@ export class LGraph {
             groups: groupsInfo,
             config: this.config,
             extra: this.extra,
-            version: LiteGraph.VERSION
+            version: LiteGraph.VERSION,
         };
         this.onSerialize?.(data);
         return data;
@@ -1331,7 +1331,7 @@ export class LGraph {
                 if (!node) {
                     if (LiteGraph.debug) {
                         console.log(
-                            `Node not found or has errors: ${n_info.type}`
+                            `Node not found or has errors: ${n_info.type}`,
                         );
                     }
 

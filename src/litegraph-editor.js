@@ -47,14 +47,14 @@ export class Editor {
             "Play",
             "imgs/icon-play.png",
             this.onPlayButton.bind(this),
-            ".tools-right"
+            ".tools-right",
         );
         this.addToolsButton(
             "playstepnode_button",
             "Step",
             "imgs/icon-playstep.png",
             this.onPlayStepButton.bind(this),
-            ".tools-right"
+            ".tools-right",
         );
 
         if (!options.skip_livemode) {
@@ -63,7 +63,7 @@ export class Editor {
                 "Live",
                 "imgs/icon-record.png",
                 this.onLiveButton.bind(this),
-                ".tools-right"
+                ".tools-right",
             );
         }
         if (!options.skip_maximize) {
@@ -72,7 +72,7 @@ export class Editor {
                 "",
                 "imgs/icon-maximize.png",
                 this.onFullscreenButton.bind(this),
-                ".tools-right"
+                ".tools-right",
             );
         }
         if (options.miniwindow) {
@@ -253,7 +253,7 @@ export class Editor {
             var tl = that.graphcanvas.convertOffsetToCanvas([0, 0]);
             var br = that.graphcanvas.convertOffsetToCanvas([
                 that.graphcanvas.canvas.width,
-                that.graphcanvas.canvas.height
+                that.graphcanvas.canvas.height,
             ]);
             tl = this.convertCanvasToOffset(tl);
             br = this.convertCanvasToOffset(br);
@@ -262,7 +262,7 @@ export class Editor {
                 Math.floor(tl[0]) + 0.5,
                 Math.floor(tl[1]) + 0.5,
                 Math.floor(br[0] - tl[0]),
-                Math.floor(br[1] - tl[1])
+                Math.floor(br[1] - tl[1]),
             );
         };
 

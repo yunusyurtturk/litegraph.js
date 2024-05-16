@@ -28,7 +28,7 @@ export default [
             "1tbs",
             {"allowSingleLine":false}
         ],
-        "@stylistic/comma-dangle": [0, "always-multiline"],
+        "@stylistic/comma-dangle": [1, "always-multiline"],
         "@stylistic/comma-spacing": [0, { "before": false, "after": true }],
         "@stylistic/comma-style": [1, "last"],
         "@stylistic/computed-property-spacing": [1, "never"],

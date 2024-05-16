@@ -71,7 +71,7 @@ export class LGraphGroup {
             title: this.title,
             bounding: b.map((value) => Math.round(value)),
             color: this.color,
-            font_size: this.font_size
+            font_size: this.font_size,
         };
     }
 

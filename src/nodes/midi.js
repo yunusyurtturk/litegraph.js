@@ -367,7 +367,7 @@ class MIDIInterface {
                 id: inputPort.id,
                 manufacturer: inputPort.manufacturer,
                 name: inputPort.name,
-                version: inputPort.version
+                version: inputPort.version,
             };
             this.input_ports_info.push(portInfo);
             console.log(
@@ -376,7 +376,7 @@ class MIDIInterface {
                 }' manufacturer:'${portInfo.manufacturer
                 }' name:'${portInfo.name
                 }' version:'${portInfo.version
-                }'`
+                }'`,
             );
             this.num_input_ports++;
         }
@@ -386,7 +386,7 @@ class MIDIInterface {
                 id: outputPort.id,
                 manufacturer: outputPort.manufacturer,
                 name: outputPort.name,
-                version: outputPort.version
+                version: outputPort.version,
             };
             this.output_ports_info.push(portInfo);
             console.log(
@@ -395,7 +395,7 @@ class MIDIInterface {
                 }' manufacturer:'${portInfo.manufacturer
                 }' name:'${portInfo.name
                 }' version:'${portInfo.version
-                }'`
+                }'`,
             );
             this.num_output_ports++;
         }

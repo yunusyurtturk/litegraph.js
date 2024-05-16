@@ -161,7 +161,7 @@ export class DragAndScale {
     convertOffsetToCanvas(pos) {
         return [
             (pos[0] + this.offset[0]) * this.scale,
-            (pos[1] + this.offset[1]) * this.scale
+            (pos[1] + this.offset[1]) * this.scale,
         ];
     }
 
@@ -205,7 +205,7 @@ export class DragAndScale {
 
         zooming_center = zooming_center || [
             rect.width * 0.5,
-            rect.height * 0.5
+            rect.height * 0.5,
         ];
 
         var center = this.convertCanvasToOffset(zooming_center);
@@ -217,7 +217,7 @@ export class DragAndScale {
         var new_center = this.convertCanvasToOffset(zooming_center);
         var delta_offset = [
             new_center[0] - center[0],
-            new_center[1] - center[1]
+            new_center[1] - center[1],
         ];
 
         this.offset[0] += delta_offset[0];
