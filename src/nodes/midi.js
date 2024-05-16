@@ -399,53 +399,6 @@ class MIDIInterface {
             );
             this.num_output_ports++;
         }
-
-
-        var it = this.input_ports.values();
-        var it_value = it.next();
-        while (it_value && it_value.done === false) {
-            var port_info = it_value.value;
-            this.input_ports_info.push(port_info);
-            console.log("Input port [type:'" +
-                port_info.type +
-                "'] id:'" +
-                port_info.id +
-                "' manufacturer:'" +
-                port_info.manufacturer +
-                "' name:'" +
-                port_info.name +
-                "' version:'" +
-                port_info.version +
-                "'"
-            );
-            num++;
-            it_value = it.next();
-        }
-        this.num_input_ports = num;
-
-        num = 0;
-        var it = this.output_ports.values();
-        var it_value = it.next();
-        while (it_value && it_value.done === false) {
-            var port_info = it_value.value;
-            this.output_ports_info.push(port_info);
-            console.log(
-                "Output port [type:'" +
-                port_info.type +
-                "'] id:'" +
-                port_info.id +
-                "' manufacturer:'" +
-                port_info.manufacturer +
-                "' name:'" +
-                port_info.name +
-                "' version:'" +
-                port_info.version +
-                "'"
-            );
-            num++;
-            it_value = it.next();
-        }
-        this.num_output_ports = num;
     }
 
     onMIDIFailure(msg) {

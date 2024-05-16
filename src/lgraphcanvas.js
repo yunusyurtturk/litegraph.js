@@ -3166,7 +3166,9 @@ export class LGraphCanvas {
                     if (slot_type == "array") {
                         slot_shape = LiteGraph.GRID_SHAPE; // place in addInput? addOutput instead?
                     }
-                    doStroke = true;
+
+                    var doStroke = true;
+
                     if (
                         slot.type === LiteGraph.EVENT ||
                         slot.shape === LiteGraph.BOX_SHAPE
@@ -3201,6 +3203,7 @@ export class LGraphCanvas {
                         ctx.rect(pos[0] - 4, pos[1] + 2, 2, 2);
                         ctx.rect(pos[0] - 1, pos[1] + 2, 2, 2);
                         ctx.rect(pos[0] + 2, pos[1] + 2, 2, 2);
+                        doStroke = false;
                     } else {
                         if(low_quality)
                             ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8 ); // faster
@@ -3211,7 +3214,7 @@ export class LGraphCanvas {
 
                     // render name
                     if (render_text) {
-                        let text = slot.label != null ? slot.label : slot.name;
+                        var text = slot.label != null ? slot.label : slot.name;
                         if (text) {
                             ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR;
                             if (horizontal || slot.dir == LiteGraph.UP) {
@@ -3261,7 +3264,9 @@ export class LGraphCanvas {
                     if (slot_type == "array") {
                         slot_shape = LiteGraph.GRID_SHAPE;
                     }
-                    doStroke = true;
+
+                    var doStroke = true;
+
                     if (
                         slot_type === LiteGraph.EVENT ||
                         slot_shape === LiteGraph.BOX_SHAPE
@@ -3315,7 +3320,7 @@ export class LGraphCanvas {
 
                     // render output name
                     if (render_text) {
-                        let text = slot.label != null ? slot.label : slot.name;
+                        var text = slot.label != null ? slot.label : slot.name;
                         if (text) {
                             ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR;
                             if (horizontal || slot.dir == LiteGraph.DOWN) {
@@ -3355,7 +3360,7 @@ export class LGraphCanvas {
             // get first connected slot to render
             if (node.inputs) {
                 for (let i = 0; i < node.inputs.length; i++) {
-                    let slot = node.inputs[i];
+                    var slot = node.inputs[i];
                     if (slot.link == null) {
                         continue;
                     }
@@ -3365,7 +3370,7 @@ export class LGraphCanvas {
             }
             if (node.outputs) {
                 for (let i = 0; i < node.outputs.length; i++) {
-                    let slot = node.outputs[i];
+                    var slot = node.outputs[i];
                     if (!slot.links || !slot.links.length) {
                         continue;
                     }
@@ -3374,8 +3379,8 @@ export class LGraphCanvas {
             }
 
             if (input_slot) {
-                let x = 0;
-                let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5; // center
+                var x = 0;
+                var y = LiteGraph.NODE_TITLE_HEIGHT * -0.5; // center
                 if (horizontal) {
                     x = node._collapsed_width * 0.5;
                     y = -LiteGraph.NODE_TITLE_HEIGHT;
@@ -3399,8 +3404,8 @@ export class LGraphCanvas {
             }
 
             if (output_slot) {
-                let x = node._collapsed_width;
-                let y = LiteGraph.NODE_TITLE_HEIGHT * -0.5; // center
+                var x = node._collapsed_width;
+                var y = LiteGraph.NODE_TITLE_HEIGHT * -0.5; // center
                 if (horizontal) {
                     x = node._collapsed_width * 0.5;
                     y = 0;
@@ -4018,10 +4023,10 @@ export class LGraphCanvas {
                 );
             } else if (this.links_render_mode == LiteGraph.LINEAR_LINK) {
                 ctx.moveTo(a[0], a[1] + offsety);
-                let start_offset_x = 0;
-                let start_offset_y = 0;
-                let end_offset_x = 0;
-                let end_offset_y = 0;
+                var start_offset_x = 0;
+                var start_offset_y = 0;
+                var end_offset_x = 0;
+                var end_offset_y = 0;
                 switch (start_dir) {
                     case LiteGraph.LEFT:
                         start_offset_x = -1;
@@ -4062,10 +4067,10 @@ export class LGraphCanvas {
                 ctx.lineTo(b[0], b[1] + offsety);
             } else if (this.links_render_mode == LiteGraph.STRAIGHT_LINK) {
                 ctx.moveTo(a[0], a[1]);
-                let start_x = a[0];
-                let start_y = a[1];
-                let end_x = b[0];
-                let end_y = b[1];
+                var start_x = a[0];
+                var start_y = a[1];
+                var end_x = b[0];
+                var end_y = b[1];
                 if (start_dir == LiteGraph.RIGHT) {
                     start_x += 10;
                 } else {
@@ -4186,8 +4191,8 @@ export class LGraphCanvas {
         if (flow) {
             ctx.fillStyle = color;
             for (let i = 0; i < 5; ++i) {
-                let f = (LiteGraph.getTime() * 0.001 + i * 0.2) % 1;
-                let pos = this.computeConnectionPoint(
+                var f = (LiteGraph.getTime() * 0.001 + i * 0.2) % 1;
+                var pos = this.computeConnectionPoint(
                     a,
                     b,
                     f,
@@ -4534,7 +4539,6 @@ export class LGraphCanvas {
 
             // if ( w == active_widget || (x > 6 && x < widget_width - 12 && y > w.last_y && y < w.last_y + widget_height) ) {
             // inside widget
-
             switch (w.type) {
                 case "button":
                     if (event.type === "mousedown") {
@@ -4548,7 +4552,7 @@ export class LGraphCanvas {
                     }
                     break;
                 case "slider":
-                    old_value = w.value;
+                    var old_value = w.value;
                     var nvalue = LiteGraph.clamp((x - 15) / (widget_width - 30), 0, 1);
                     if(w.options.read_only) break;
                     w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
@@ -4561,7 +4565,7 @@ export class LGraphCanvas {
                     break;
                 case "number":
                 case "combo":
-                    old_value = w.value;
+                    var old_value = w.value;
                     if (event.type == "mousemove" && w.type == "number") {
                         if(deltaX)
                             w.value += deltaX * 0.1 * (w.options.step || 1);
