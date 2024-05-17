@@ -214,10 +214,7 @@ class MIDIEvent {
     }
 
     toHexString() {
-        var str = "";
-        for (var i = 0; i < this.data.length; i++) {
-            str += this.data[i].toString(16) + " ";
-        }
+        return this.data.map((byte) => byte.toString(16)).join(' ');
     }
 
     toJSON() {
@@ -367,7 +364,7 @@ class MIDIInterface {
         var it = this.input_ports.values();
         var it_value = it.next();
         while (it_value && it_value.done === false) {
-            var port_info = it_value.value;
+            let port_info = it_value.value;
             this.input_ports_info.push(port_info);
             console.log("Input port [type:'" +
                     port_info.type +
@@ -386,10 +383,10 @@ class MIDIInterface {
         this.num_input_ports = num;
 
         num = 0;
-        var it = this.output_ports.values();
-        var it_value = it.next();
+        it = this.output_ports.values();
+        it_value = it.next();
         while (it_value && it_value.done === false) {
-            var port_info = it_value.value;
+            let port_info = it_value.value;
             this.output_ports_info.push(port_info);
             console.log("Output port [type:'" +
                     port_info.type +
@@ -433,8 +430,6 @@ class MIDIInterface {
         console.log("port open: ", input_port);
         return true;
     }
-
-    static parseMsg(data) {}
 
     updateState(midi_event) {
         switch (midi_event.cmd) {
@@ -866,7 +861,7 @@ class LGMIDIEvent {
         }
 
         // send
-        var midi_event = this.midi_event;
+        midi_event = this.midi_event;
         midi_event.channel = this.properties.channel;
         if (this.properties.cmd && this.properties.cmd.constructor === String) {
             midi_event.setCommandFromString(this.properties.cmd);
@@ -884,14 +879,15 @@ class LGMIDIEvent {
         var props = this.properties;
 
         if (this.inputs) {
-            for (var i = 0; i < this.inputs.length; ++i) {
+            for (let i = 0; i < this.inputs.length; ++i) {
                 var input = this.inputs[i];
                 if (input.link == -1) {
                     continue;
                 }
+                let v;
                 switch (input.name) {
                     case "note":
-                        var v = this.getInputData(i);
+                        v = this.getInputData(i);
                         if (v != null) {
                             if (v.constructor === String) {
                                 v = MIDIEvent.NoteStringToPitch(v);
@@ -900,19 +896,19 @@ class LGMIDIEvent {
                         }
                         break;
                     case "cmd":
-                        var v = this.getInputData(i);
+                        v = this.getInputData(i);
                         if (v != null) {
                             this.properties.cmd = v;
                         }
                         break;
                     case "value1":
-                        var v = this.getInputData(i);
+                        v = this.getInputData(i);
                         if (v != null) {
                             this.properties.value1 = LiteGraph.clamp(v | 0, 0, 127);
                         }
                         break;
                     case "value2":
-                        var v = this.getInputData(i);
+                        v = this.getInputData(i);
                         if (v != null) {
                             this.properties.value2 = LiteGraph.clamp(v | 0, 0, 127);
                         }
@@ -922,9 +918,9 @@ class LGMIDIEvent {
         }
 
         if (this.outputs) {
-            for (var i = 0; i < this.outputs.length; ++i) {
+            for (let i = 0; i < this.outputs.length; ++i) {
                 var output = this.outputs[i];
-                var v = null;
+                let v = null;
                 switch (output.name) {
                     case "midi":
                         v = new MIDIEvent();
@@ -1111,7 +1107,7 @@ class LGMIDIGenerator {
             pitch = -note;
         }
 
-        var midi_event = new MIDIEvent();
+        midi_event = new MIDIEvent();
         midi_event.setup([MIDIEvent.NOTEON, pitch, 10]);
         var duration = this.properties.duration || 1;
         this.trigger("note", midi_event);
@@ -1199,10 +1195,10 @@ class LGMIDIQuantize {
     processScale(scale) {
         this._current_scale = scale;
         this.notes_pitches = LGMIDIGenerator.processScale(scale);
-        for (var i = 0; i < 12; ++i) {
+        for (let i = 0; i < 12; ++i) {
             this.valid_notes[i] = this.notes_pitches.indexOf(i) != -1;
         }
-        for (var i = 0; i < 12; ++i) {
+        for (let i = 0; i < 12; ++i) {
             if (this.valid_notes[i]) {
                 this.offset_notes[i] = 0;
                 continue;
@@ -1328,18 +1324,18 @@ class LGMIDIFromFile {
     }
 
     loadMIDIFile(url) {
-        var that = this;
         LiteGraph.fetchFile(
             url,
             "arraybuffer",
-            function (data) {
-                that.boxcolor = "#AFA";
-                that._midi = MidiParser.parse(new Uint8Array(data));
-                if (that.properties.autoplay) that.play();
+            (data) => {
+                this.boxcolor = "#AFA";
+                this._midi = MidiParser.parse(new Uint8Array(data));
+                if (this.properties.autoplay)
+                    this.play();
             },
-            function (err) {
-                that.boxcolor = "#FAA";
-                that._midi = null;
+            () => {
+                this.boxcolor = "#FAA";
+                this._midi = null;
             },
         );
     }
@@ -1552,8 +1548,8 @@ class LGMIDIKeys {
         this.trigger("note", midi_event);
 
         this.keys[index] = true;
-        var pitch = (this.properties.start_octave - 1) * 12 + 29 + index;
-        var midi_event = new MIDIEvent();
+        pitch = (this.properties.start_octave - 1) * 12 + 29 + index;
+        midi_event = new MIDIEvent();
         midi_event.setup([MIDIEvent.NOTEON, pitch, 100]);
         this.trigger("note", midi_event);
 
