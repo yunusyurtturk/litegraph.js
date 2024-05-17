@@ -1,6 +1,9 @@
 
 # 1. Unit Testing and Debugging
 
+Done up to L1995, gltextures.js
+82 globals left, litegl.js
+24 problems in lint
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 
 # 2. Documentation
