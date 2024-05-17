@@ -3006,14 +3006,14 @@
         if (this.outputs){
             for (var i = 0; i < this.outputs.length; ++i) {
                 if(this.outputs[i].link) if (LiteGraph.debug) {
-                    console.debug("outputsLink",this.outputs[i]);
+                    console.debug("NodeConfigure outputsLink",this.outputs[i]);
                 }
             }
         }
         if (this.inputs){
             for (var i = 0; i < this.inputs.length; ++i) {
                 if(this.inputs[i].link) if (LiteGraph.debug) {
-                    console.debug("inputsLink",this.inputs[i]);
+                    console.debug("NodeConfigure inputsLink",this.inputs[i]);
                 }
             }
         }
@@ -3764,18 +3764,24 @@
 			if (!options.action_call) options.action_call = this.id+"_exec_"+Math.floor(Math.random()*9999);
             
             if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]){
-                //console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
+                if (LiteGraph.debug) {
+                    console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
+                }
                 return;
             }
             if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined){
-                //console.debug("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
+                if (LiteGraph.debug) {
+                    console.debug("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
+                }
                 return;
             }
             //console.debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
             if (LiteGraph.ensureUniqueExecutionAndActionCall){
                 //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
-                    //console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);
+                    if (LiteGraph.debug) {
+                        console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);
+                    }
                     return;
                 }
             }
@@ -3822,12 +3828,14 @@
                 }
             }
             if (LiteGraph.debug) {
-                console.debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
+                console.debug("CheckActioned ? "+this.id+":"+this.order+" :: "+this.action_call);
             }
             if (LiteGraph.ensureUniqueExecutionAndActionCall){
                 //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
-                    //console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);
+                    if (LiteGraph.debug) {
+                        console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);ç
+                    }
                     return;
                 }
             }
@@ -3950,7 +3958,7 @@
                 //pass the action name
                 var target_connection = node.inputs[link_info.target_slot];
 				if (LiteGraph.debug) {
-                    console.debug("ACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
+                    console.debug("will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
                 }
                 
                 // METHOD 1 ancestors
@@ -3960,8 +3968,9 @@
                 //instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute)
                 {
-                    if(!node._waiting_actions)
+                    if(!node._waiting_actions){
                         node._waiting_actions = [];
+                    }
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
                 }
                 else
@@ -6620,7 +6629,7 @@ LGraphNode.prototype.executeAction = function(action)
 		
 		this.userInput_touches = (e.changedTouches!==undefined && e.changedTouches.length!==undefined) ? e.changedTouches : false;
 		if (this.userInput_touches && this.userInput_touches.length){
-			console.debug("multiTouches",e.changedTouches);
+			console.debug("check multiTouches",e.changedTouches);
 		}
 		
 		return this.processMouseDown(e);
