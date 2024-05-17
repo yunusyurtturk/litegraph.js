@@ -5715,6 +5715,13 @@ export class LGraphCanvas {
         var title = dialog.querySelector(".name");
         title.innerText = property;
         var input = dialog.querySelector(".value");
+
+        const inner = () => {
+            if (input) {
+                setValue(input.value);
+            }
+        };
+
         if (input) {
             input.value = value;
             input.addEventListener("blur", function(_event) {
@@ -5773,12 +5780,6 @@ export class LGraphCanvas {
                 clearTimeout(dialogCloseTimer);
             }
         });
-
-        const inner = () => {
-            if (input) {
-                setValue(input.value);
-            }
-        };
 
         const setValue = (value) => {
             switch (item.type) {

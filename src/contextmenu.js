@@ -360,13 +360,18 @@ export class ContextMenu {
      * @BUG: Probable bug related to params, origin not being configured/populated correctly
      */
     static trigger(element, event_name, params, origin) {
-        const event = new CustomEvent(event_name, params );
+        const evt = new CustomEvent(event_name, {
+            bubbles: true,
+            cancelable: true,
+            detail: params,
+        });
+        Object.defineProperty(evt, 'target', { value: origin });
         if (element.dispatchEvent) {
-            element.dispatchEvent(event);
+            element.dispatchEvent(evt);
         } else if (element.__events) {
-            element.__events.dispatchEvent(event);
+            element.__events.dispatchEvent(evt);
         }
-        return event;
+        return evt;
     }
 
     // returns the top most menu
