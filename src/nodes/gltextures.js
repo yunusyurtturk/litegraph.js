@@ -2067,7 +2067,7 @@ class LGraphTextureTemporalSmooth {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     uniform sampler2D u_texture;\n\
     uniform sampler2D u_textureB;\n\
@@ -2177,7 +2177,7 @@ class LGraphTextureLinearAvgSmooth {
     }
 
     static pixel_shader_copy =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     uniform sampler2D u_texture;\n\
     uniform sampler2D u_textureB;\n\
@@ -2193,7 +2193,7 @@ class LGraphTextureLinearAvgSmooth {
     ";
 
     static pixel_shader_avg =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     uniform sampler2D u_texture;\n\
     uniform int u_samples;\n\
@@ -2224,7 +2224,7 @@ class LGraphImageToTexture {
 
     static title = "Image to Texture";
     static desc = "Uploads an image to the GPU";
-// LGraphImageToTexture.widgets_info = { size: { widget:"combo", values:[0,32,64,128,256,512,1024,2048]} };
+    // LGraphImageToTexture.widgets_info = { size: { widget:"combo", values:[0,32,64,128,256,512,1024,2048]} };
 
     onExecute() {
         var img = this.getInputData(0);
@@ -2353,7 +2353,7 @@ class LGraphTextureLUT {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_texture;\n\
@@ -2505,7 +2505,7 @@ class LGraphTextureEncode {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_texture;\n\
@@ -2733,7 +2733,7 @@ class LGraphChannelsTexture {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_textureR;\n\

@@ -545,15 +545,6 @@ if( global.XMLHttpRequest )
 		}});
 }
 
-global.typedArrayToArray = function(array)
-{
-	var r = [];
-	r.length = array.length;
-	for(var i = 0; i < array.length; i++)
-		r[i] = array[i];
-	return r;
-}
-
 // unused but cool
 GL.RGBToHex = function(r, g, b) { 
 	r = Math.min(255, r*255)|0;
@@ -12194,19 +12185,19 @@ Mesh.encoders["mesh"] = function( mesh, options )
 	for(var i in mesh.vertexBuffers )
 	{
 		var buffer = mesh.vertexBuffers[i];
-		var line = ["-"+i, buffer.data.length, buffer.data, typedArrayToArray( buffer.data ) ];
+		var line = ["-"+i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
 		lines.push(line.join(","));
 	}
 
 	for(var i in mesh.indexBuffers )
 	{
 		var buffer = mesh.indexBuffers[i];
-		var line = [ "*" + i, buffer.data.length, buffer.data, typedArrayToArray( buffer.data ) ];
+		var line = [ "*" + i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
 		lines.push(line.join(","));
 	}
 
 	if(mesh.bounding)
-		lines.push( ["@bounding", typedArrayToArray(mesh.bounding.subarray(0,6))].join(",") );
+		lines.push( ["@bounding", Array.from(mesh.bounding.subarray(0,6))].join(",") );
 	if(mesh.info && mesh.info.groups)
 	{
 		var groups_info = [];
@@ -12221,7 +12212,7 @@ Mesh.encoders["mesh"] = function( mesh, options )
 	if(mesh.bones)
 		lines.push( ["@bones", mesh.bones.length, mesh.bones.flat()].join(",") );
 	if(mesh.bind_matrix)
-		lines.push( ["@bind_matrix", typedArrayToArray(mesh.bind_matrix) ].join(",") );
+		lines.push( ["@bind_matrix", Array.from(mesh.bind_matrix) ].join(",") );
 
 	return lines.join("\n");
 }

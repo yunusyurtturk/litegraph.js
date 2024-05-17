@@ -686,7 +686,7 @@ class LGraphGeometryTransform {
             return;
         }
 
-        var key = typedArrayToArray(model).join(",");
+        var key = Array.from(model).join(",");
 
         if (
             this.must_update ||
