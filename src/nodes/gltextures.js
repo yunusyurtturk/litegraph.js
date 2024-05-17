@@ -1852,7 +1852,7 @@ LGraphTextureAverage.prototype.updateAverage = function () {
         var pixel = this._temp_texture.getPixels();
         if (pixel) {
             var v = this._luminance;
-            var type = this._temp_texture.type;
+            type = this._temp_texture.type;
             v.set(pixel);
             if (type == gl.UNSIGNED_BYTE) {
                 vec4.scale(v, v, 1 / 255);
@@ -1972,6 +1972,7 @@ LGraphTextureMinMax.prototype.update = function () {
         }
     }
 
+    // @BUG: the behavior of tex here is probably a bug.
     tex.copyTo(this._textures_chain[0]);
     for (var i = 1; i <= this._textures_chain.length; ++i) {
         var tex = this._textures_chain[i];
@@ -5034,6 +5035,7 @@ LGraphExposition.prototype.onExecute = function () {
         );
     }
 
+    // @BUG: It isn't actually *using* exp or exp_input in execution.
     var exp = this.properties.exposition;
     var exp_input = this.getInputData(1);
     if (exp_input != null) {

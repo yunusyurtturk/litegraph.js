@@ -562,7 +562,6 @@ export class LGraphCanvas {
 
         var ref_window = this.getCanvasWindow();
         LGraphCanvas.active_canvas = this;
-        var that = this;
 
         var x = e.clientX;
         var y = e.clientY;
@@ -809,9 +808,8 @@ export class LGraphCanvas {
                         // open subgraph button
                         if(node.subgraph && !node.skip_subgraph_button) {
                             if ( !node.flags.collapsed && pos[0] > node.size[0] - LiteGraph.NODE_TITLE_HEIGHT && pos[1] < 0 ) {
-                                var that = this;
-                                setTimeout(function() {
-                                    that.openSubgraph(node.subgraph);
+                                setTimeout(() => {
+                                    this.openSubgraph(node.subgraph);
                                 }, 10);
                             }
                         }
@@ -1482,7 +1480,7 @@ export class LGraphCanvas {
                 this.resizing_node = null;
             } else if (this.node_dragged) {
                 // node being dragged?
-                var node = this.node_dragged;
+                node = this.node_dragged;
                 if (
                     node &&
                     e.click_time < 300 &&
@@ -1504,7 +1502,7 @@ export class LGraphCanvas {
                 this.node_dragged = null;
             } else { // no node being dragged
                 // get node over
-                var node = this.graph.getNodeOnPos(
+                node = this.graph.getNodeOnPos(
                     e.canvasX,
                     e.canvasY,
                     this.visible_nodes,
@@ -3128,6 +3126,7 @@ export class LGraphCanvas {
 
         var max_y = 0;
         var slot_pos = new Float32Array(2); // to reuse
+        var doStroke;
 
         // render inputs and outputs
         if (!node.flags.collapsed) {
@@ -3167,7 +3166,7 @@ export class LGraphCanvas {
                         slot_shape = LiteGraph.GRID_SHAPE; // place in addInput? addOutput instead?
                     }
 
-                    var doStroke = true;
+                    doStroke = true;
 
                     if (
                         slot.type === LiteGraph.EVENT ||
@@ -3265,7 +3264,7 @@ export class LGraphCanvas {
                         slot_shape = LiteGraph.GRID_SHAPE;
                     }
 
-                    var doStroke = true;
+                    doStroke = true;
 
                     if (
                         slot_type === LiteGraph.EVENT ||
