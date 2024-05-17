@@ -334,7 +334,7 @@
                 }
 
                 // call execute
-                console.debug("CALLING EXECUTE",parValues);
+                console.debug("NodeObjMethod Execute",parValues);
                 var r = this._function(parValues); //this._function.apply(this, parValues);
                 
                 this.triggerSlot(0);
@@ -364,10 +364,9 @@
     };
     objMethodWidget.prototype.getExtraMenuOptions = function(canvas, options){
         return [{
-            content: "Console DBG", //has_submenu: false,
+            content: "NodeObjMethod DBG", //has_submenu: false,
             callback: function(menuitO,obX,ev,htmO,nodeX){
-                console.debug(nodeX.widg_prop);
-                console.debug(nodeX);
+                console.debug(NodeObjMethod, nodeX.widg_prop, nodeX);
             }
         }];
     }
@@ -377,22 +376,21 @@
     function objEvalGlo() {
         this.size = [60, 30];
         this.addProperty("obj_eval", "window");
-        
-        this.addOutput("ref", 0);
-
+        this.addOutput("obj", "object");
         this._func = null;
         this.data = {};
     }
-// FIXME FINISH THIS
+
+    // SINGLE object EVAL
     objEvalGlo.prototype.onConfigure = function(o) {
         if (o.properties.obj_eval && LiteGraph.allow_scripts)
             this.compileCode(o.properties.obj_eval);
         else
-            console.warn("Obj Eval not done, LiteGraph.allow_scripts is false");
+            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
     };
 
-    objEvalGlo.title = "Script";
-    objEvalGlo.desc = "executes a code (max 256 characters)";
+    objEvalGlo.title = "Eval Obj";
+    objEvalGlo.desc = "Evaluate an object";
 
     objEvalGlo.widgets_info = {
         obj_eval: { type: "code" }
@@ -402,7 +400,7 @@
         if (name == "obj_eval" && LiteGraph.allow_scripts)
             this.compileCode(value);
         else
-            console.warn("Script not compiled, LiteGraph.allow_scripts is false");
+            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
     };
 
     objEvalGlo.prototype.compileCode = function(code) {
@@ -410,25 +408,25 @@
         if (code.length > 256) {
             console.warn("Script too long, max 256 chars");
         } else {
-            var code_low = code.toLowerCase();
-            var forbidden_words = [
-                "script",
-                "body",
-                "document",
-                "eval",
-                "objEvalGlo",
-                "function"
-            ]; //bad security solution
-            for (var i = 0; i < forbidden_words.length; ++i) {
-                if (code_low.indexOf(forbidden_words[i]) != -1) {
-                    console.warn("invalid script");
-                    return;
-                }
-            }
+            var code_eval = "return "+code;
+            // var forbidden_words = [
+            //     "script",
+            //     "body",
+            //     "document",
+            //     "eval",
+            //     "objEvalGlo",
+            //     "function"
+            // ]; //bad security solution
+            // for (var i = 0; i < forbidden_words.length; ++i) {
+            //     if (code_low.indexOf(forbidden_words[i]) != -1) {
+            //         console.warn("invalid script");
+            //         return;
+            //     }
+            // }
             try {
-                this._func = new Function("A", "B", "C", "DATA", "node", code);
+                this._func = new Function("DATA", "node", code_eval);
             } catch (err) {
-                console.error("Error parsing script");
+                console.error("Error parsing obj evaluation");
                 console.error(err);
             }
         }
@@ -438,22 +436,18 @@
         if (!this._func) {
             return;
         }
-
         try {
-            var A = this.getInputData(0);
-            var B = this.getInputData(1);
-            var C = this.getInputData(2);
-            this.setOutputData(0, this._func(A, B, C, this.data, this));
+            this.setOutputData(0, this._func(this.data, this));
         } catch (err) {
-            console.error("Error in script");
+            console.error("Error in code eval");
             console.error(err);
         }
     };
 
-    objEvalGlo.prototype.onGetOutputs = function() {
-        return [["C", ""]];
-    };
+    // objEvalGlo.prototype.onGetOutputs = function() {
+    //     return [["C", ""]];
+    // };
 
-    LiteGraph.registerNodeType("basic/script", objEvalGlo);
+    LiteGraph.registerNodeType("objects/evaluate", objEvalGlo);
 
 })(this);

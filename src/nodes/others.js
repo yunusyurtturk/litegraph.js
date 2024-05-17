@@ -36,7 +36,7 @@
 												  ,{node:"math/compare",outputs:[["A>B", "boolean"]],title:"A>B"}
 												  ,{node:"math/compare",outputs:[["A<B", "boolean"]],title:"A<B"}
 												];
-    LiteGraph.slot_types_default_out["object"] = ["basic/object_property","basic/keys",["string/toString","basic/watch"]];
+    LiteGraph.slot_types_default_out["object"] = ["objects/property_widget", "objects/method_widget", "objects/properties", "basic/object_property", "basic/keys", "string/toString", "basic/watch"];
     LiteGraph.slot_types_default_out["string"] = ["basic/watch","string/compare","string/concatenate","string/contains"];
     LiteGraph.slot_types_default_out["vec2"] = "math3d/vec2-to-xy";
     LiteGraph.slot_types_default_out["vec3"] = "math3d/vec3-to-xyz";
