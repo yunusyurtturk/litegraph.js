@@ -390,56 +390,37 @@ export var LiteGraph = new class {
      * @param {String} return_type [optional] string with the return type, otherwise it will be generic
      * @param {Object} properties [optional] properties to be configurable
      */
-    wrapFunctionAsNode(
-        name,
-        func,
-        param_types,
-        return_type,
-        properties,
-    ) {
-        var params = Array(func.length);
-        var code = "";
-        if(param_types !== null) { // null means no inputs
-            var names = LiteGraph.getParameterNames(func);
-            for (var i = 0; i < names.length; ++i) {
-                var type = 0;
-                if(param_types) {
-                    // type = param_types[i] != null ? "'" + param_types[i] + "'" : "0";
-                    if( param_types[i] != null && param_types[i].constructor === String )
-                        type = "'" + param_types[i] + "'" ;
-                    else if( param_types[i] != null )
-                        type = param_types[i];
-                }
-                code +=
-                    "this.addInput('" +
-                    names[i] +
-                    "'," +
-                    type +
-                    ");\n";
-            }
-        }
-        if(return_type !== null) // null means no output
-            code +=
-            "this.addOutput('out'," +
-            (return_type != null ? (return_type.constructor === String ? "'" + return_type + "'" : return_type) : 0) +
-            ");\n";
-        if (properties) {
-            code +=
-                "this.properties = " + JSON.stringify(properties) + ";\n";
-        }
-        var classobj = Function(code);
-        classobj.title = name.split("/").pop();
-        classobj.desc = "Generated from " + func.name;
-        classobj.prototype.onExecute = function onExecute() {
-            for (var i = 0; i < params.length; ++i) {
-                params[i] = this.getInputData(i);
-            }
-            var r = func.apply(this, params);
-            this.setOutputData(0, r);
+    wrapFunctionAsNode(name, func, param_types, return_type, properties) {
+        const names = LiteGraph.getParameterNames(func);
+
+        const code = names.map((name, i) => {
+            const paramType = param_types?.[i] ? `'${param_types[i]}'` : "0";
+            return `this.addInput('${name}', ${paramType});`;
+        }).join("\n");
+
+        const returnTypeStr = return_type ? `'${return_type}'` : 0;
+        const propertiesStr = properties ? `this.properties = ${JSON.stringify(properties)};` : "";
+
+        const classObj = new Function(`
+            ${code}
+            this.addOutput('out', ${returnTypeStr});
+            ${propertiesStr}
+        `);
+
+        classObj.title = name.split("/").pop();
+        classObj.desc = `Generated from ${func.name}`;
+
+        classObj.prototype.onExecute = function() {
+            const params = names.map((name, i) => this.getInputData(i));
+            const result = func.apply(this, params);
+            this.setOutputData(0, result);
         };
-        this.registerNodeType(name, classobj);
-        return classobj;
+
+        this.registerNodeType(name, classObj);
+
+        return classObj;
     }
+
 
     /**
      * Removes all previously registered node's types
@@ -476,19 +457,20 @@ export var LiteGraph = new class {
      * @param {Object} options to set options
      */
 
-    createNode(type, title, options) {
-        var base_class = this.registered_node_types[type];
+    createNode(type, title, options = {}) {
+        const base_class = this.registered_node_types[type] ?? null;
+        
         if (!base_class) {
             if (LiteGraph.debug) {
-                console.log('GraphNode type "' + type + '" not registered.');
+                console.log(`GraphNode type "${type}" not registered.`);
             }
             return null;
         }
-
-        title = title || base_class.title || type;
-
-        var node = null;
-
+    
+        title = title ?? base_class.title ?? type;
+    
+        let node = null;
+    
         if (LiteGraph.catch_exceptions) {
             try {
                 node = new base_class(title);
@@ -499,46 +481,24 @@ export var LiteGraph = new class {
         } else {
             node = new base_class(title);
         }
-
+    
         node.type = type;
-
-        if (!node.title && title) {
-            node.title = title;
-        }
-        if (!node.properties) {
-            node.properties = {};
-        }
-        if (!node.properties_info) {
-            node.properties_info = [];
-        }
-        if (!node.flags) {
-            node.flags = {};
-        }
-        if (!node.size) {
-            node.size = node.computeSize();
-            // call onresize?
-        }
-        if (!node.pos) {
-            node.pos = LiteGraph.DEFAULT_POSITION.concat();
-        }
-        if (!node.mode) {
-            node.mode = LiteGraph.ALWAYS;
-        }
-
+        node.title ??= title;
+        node.properties ??= {};
+        node.properties_info ??= [];
+        node.flags ??= {};
+        node.size ??= node.computeSize();
+        node.pos ??= LiteGraph.DEFAULT_POSITION.concat();
+        node.mode ??= LiteGraph.ALWAYS;
+    
         // extra options
-        if (options) {
-            for (var i in options) {
-                node[i] = options[i];
-            }
-        }
-
+        Object.assign(node, options);
+    
         // callback
-        if ( node.onNodeCreated ) {
-            node.onNodeCreated();
-        }
-
+        node.onNodeCreated?.();
         return node;
     }
+    
 
     /**
      * Returns a registered node type with a given name
@@ -558,28 +518,25 @@ export var LiteGraph = new class {
      */
 
     getNodeTypesInCategory(category, filter) {
-        var r = [];
-        for (var i in this.registered_node_types) {
-            var type = this.registered_node_types[i];
-            if (type.filter != filter) {
-                continue;
+        const filteredTypes = Object.values(this.registered_node_types).filter(type => {
+            if (type.filter !== filter) {
+                return false;
             }
-
-            if (category == "") {
-                if (type.category == null) {
-                    r.push(type);
-                }
-            } else if (type.category == category) {
-                r.push(type);
+    
+            if (category === "") {
+                return type.category === null;
+            } else {
+                return type.category === category;
             }
-        }
-
+        });
+    
         if (this.auto_sort_node_types) {
-            r.sort((a, b) => a.title.localeCompare(b.title));
+            filteredTypes.sort((a, b) => a.title.localeCompare(b.title));
         }
-
-        return r;
+    
+        return filteredTypes;
     }
+    
 
     /**
      * Returns a list with all the node type categories
@@ -587,22 +544,20 @@ export var LiteGraph = new class {
      * @param {String} filter only nodes with ctor.filter equal can be shown
      * @return {Array} array with all the names of the categories
      */
-    getNodeTypesCategories( filter ) {
-        var categories = { "": 1 };
-        for (let i in this.registered_node_types) {
-            var type = this.registered_node_types[i];
-            if ( type.category && !type.skip_list ) {
-                if(type.filter != filter)
-                    continue;
+    getNodeTypesCategories(filter) {
+        const categories = { "": 1 };
+    
+        Object.values(this.registered_node_types).forEach(type => {
+            if (type.category && !type.skip_list && type.filter === filter) {
                 categories[type.category] = 1;
             }
-        }
-        var result = [];
-        for (let i in categories) {
-            result.push(i);
-        }
+        });
+    
+        const result = Object.keys(categories);
+    
         return this.auto_sort_node_types ? result.sort() : result;
     }
+    
 
     // debug purposes: reloads all the js scripts that matches a wildcard
     reloadNodes(folder_wildcard) {
@@ -654,16 +609,20 @@ export var LiteGraph = new class {
         if (obj == null) {
             return null;
         }
-        var r = JSON.parse(JSON.stringify(obj));
+    
+        const clonedObj = JSON.parse(JSON.stringify(obj));
+    
         if (!target) {
-            return r;
+            return clonedObj;
         }
-
-        for (var i in r) {
-            target[i] = r[i];
+        for (const key in clonedObj) {
+            if (Object.prototype.hasOwnProperty.call(clonedObj, key)) {
+                target[key] = clonedObj[key];
+            }
         }
         return target;
     }
+    
 
     /*
         * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
@@ -680,42 +639,34 @@ export var LiteGraph = new class {
      * @return {Boolean} true if they can be connected
      */
     isValidConnection(type_a, type_b) {
-        if (type_a=="" || type_a==="*") type_a = 0;
-        if (type_b=="" || type_b==="*") type_b = 0;
-        if (
-            !type_a // generic output
-            || !type_b // generic input
-            || type_a == type_b // same type (is valid for triggers)
-            || (type_a == LiteGraph.EVENT && type_b == LiteGraph.ACTION)
-        ) {
+        if (type_a === "" || type_a === "*") type_a = 0;
+        if (type_b === "" || type_b === "*") type_b = 0;
+    
+        if (!type_a || !type_b || type_a === type_b || (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION)) {
             return true;
         }
-
-        // Enforce string type to handle toLowerCase call (-1 number not ok)
-        type_a = String(type_a);
-        type_b = String(type_b);
-        type_a = type_a.toLowerCase();
-        type_b = type_b.toLowerCase();
-
-        // For nodes supporting multiple connection types
+    
+        type_a = String(type_a).toLowerCase();
+        type_b = String(type_b).toLowerCase();
+    
         if (!type_a.includes(",") && !type_b.includes(",")) {
-            return type_a == type_b;
+            return type_a === type_b;
         }
-
-        // Check all permutations to see if one is valid
-        var supported_types_a = type_a.split(",");
-        var supported_types_b = type_b.split(",");
-        for (var i = 0; i < supported_types_a.length; ++i) {
-            for (var j = 0; j < supported_types_b.length; ++j) {
-                if(this.isValidConnection(supported_types_a[i],supported_types_b[j])) {
-                // if (supported_types_a[i] == supported_types_b[j]) {
+    
+        const supported_types_a = type_a.split(",");
+        const supported_types_b = type_b.split(",");
+    
+        for (const supported_type_a of supported_types_a) {
+            for (const supported_type_b of supported_types_b) {
+                if (this.isValidConnection(supported_type_a, supported_type_b)) {
                     return true;
                 }
             }
         }
-
+    
         return false;
     }
+    
 
     /**
      * Register a string in the search box so when the user types it it will recommend this node
@@ -794,17 +745,22 @@ export var LiteGraph = new class {
 
     // @TODO These weren't even directly bound, so could be used as free functions
     compareObjects(a, b) {
-        for (var i in a) {
-            if (a[i] != b[i]) {
-                return false;
-            }
+        const aKeys = Object.keys(a);
+    
+        if (aKeys.length !== Object.keys(b).length) {
+            return false;
         }
-        return true;
+    
+        return aKeys.every(key => a[key] === b[key]);
     }
 
     distance(a, b) {
-        return Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+        const [xA, yA] = a;
+        const [xB, yB] = b;
+    
+        return Math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2);
     }
+    
 
     colorToString(c) {
         return (
@@ -821,10 +777,7 @@ export var LiteGraph = new class {
     }
 
     isInsideRectangle(x, y, left, top, width, height) {
-        if (left < x && left + width > x && top < y && top + height > y) {
-            return true;
-        }
-        return false;
+        return x > left && x < left + width && y > top && y < top + height;
     }
 
     // [minx,miny,maxx,maxy]
@@ -844,33 +797,17 @@ export var LiteGraph = new class {
 
     // point inside bounding box
     isInsideBounding(p, bb) {
-        if (
-            p[0] < bb[0][0] ||
-            p[1] < bb[0][1] ||
-            p[0] > bb[1][0] ||
-            p[1] > bb[1][1]
-        ) {
-            return false;
-        }
-        return true;
+        return p[0] >= bb[0][0] && p[1] >= bb[0][1] && p[0] <= bb[1][0] && p[1] <= bb[1][1];
     }
-
+    
     // bounding overlap, format: [ startx, starty, width, height ]
     overlapBounding(a, b) {
-        var A_end_x = a[0] + a[2];
-        var A_end_y = a[1] + a[3];
-        var B_end_x = b[0] + b[2];
-        var B_end_y = b[1] + b[3];
-
-        if (
-            a[0] > B_end_x ||
-            a[1] > B_end_y ||
-            A_end_x < b[0] ||
-            A_end_y < b[1]
-        ) {
-            return false;
-        }
-        return true;
+        const A_end_x = a[0] + a[2];
+        const A_end_y = a[1] + a[3];
+        const B_end_x = b[0] + b[2];
+        const B_end_y = b[1] + b[3];
+    
+        return !(a[0] > B_end_x || a[1] > B_end_y || A_end_x < b[0] || A_end_y < b[1]);
     }
 
     // Convert a hex value to its decimal value - the inputted hex must be in the

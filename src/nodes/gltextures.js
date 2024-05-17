@@ -1534,7 +1534,7 @@ class LGraphTextureDownsample {
 
     static title = "Downsample";
     static desc = "Downsample Texture";
-    
+
     static widgets_info = {
         iterations: { type: "number", step: 1, precision: 0, min: 0 },
         precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
@@ -1731,7 +1731,7 @@ class LGraphTextureAverage {
 
     static title = "Average";
     static desc =
-    "Compute a partial average (32 random samples) of a texture and stores it as a 1x1 pixel texture.\n If high_quality is true, then it generates the mipmaps first and reads from the lower one.";
+        "Compute a partial average (32 random samples) of a texture and stores it as a 1x1 pixel texture.\n If high_quality is true, then it generates the mipmaps first and reads from the lower one.";
 
     onExecute() {
         if (!this.properties.use_previous_frame) {

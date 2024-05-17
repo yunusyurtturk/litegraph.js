@@ -1097,29 +1097,32 @@ export class LGraphNode {
             return this.constructor.size.concat();
         }
 
-        var rows = Math.max(
-            this.inputs ? this.inputs.length : 1,
-            this.outputs ? this.outputs.length : 1,
-        );
         var size = out || new Float32Array([0, 0]);
-        rows = Math.max(rows, 1);
+
         var font_size = LiteGraph.NODE_TEXT_SIZE; // although it should be graphcanvas.inner_text_font size
 
-        var title_width = compute_text_size(this.title);
+        // computeWidth
+        const get_text_width = (text) => {
+            if (!text) {
+                return 0;
+            }
+            return font_size * text.length * 0.6;
+        };
+        var title_width = get_text_width(this.title);
         var input_width = 0;
         var output_width = 0;
 
         if (this.inputs) {
             input_width = this.inputs.reduce((maxWidth, input) => {
                 const text = input.label || input.name || "";
-                const text_width = compute_text_size(text);
+                const text_width = get_text_width(text);
                 return Math.max(maxWidth, text_width);
             }, 0);
         }
         if (this.outputs) {
             output_width = this.outputs.reduce((maxWidth, output) => {
                 const text = output.label || output.name || "";
-                const text_width = compute_text_size(text);
+                const text_width = get_text_width(text);
 
                 return Math.max(maxWidth, text_width);
             }, 0);
@@ -1131,34 +1134,37 @@ export class LGraphNode {
             size[0] = Math.max(size[0], LiteGraph.NODE_WIDTH * 1.5);
         }
 
-        size[1] = (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT;
+        // computeHeight
 
-        var widgets_height = 0;
+        // minimum height calculated by slots or 1
+        const rowHeight = Math.max(
+            this.inputs ? this.inputs.length : 1,
+            this.outputs ? this.outputs.length : 1,
+            1,
+        ) * LiteGraph.NODE_SLOT_HEIGHT;
+
+        // add margin (should this be always?)
+        size[1] = rowHeight + (this.constructor.slot_start_y || 0);
+
+        // minimum height calculated by widgets
+        let widgetsHeight = 0;
         if (this.widgets && this.widgets.length) {
             for (var i = 0, l = this.widgets.length; i < l; ++i) {
                 if (this.widgets[i].computeSize)
-                    widgets_height += this.widgets[i].computeSize(size[0])[1] + 4;
+                    widgetsHeight += this.widgets[i].computeSize(size[0])[1] + 4;
                 else
-                    widgets_height += LiteGraph.NODE_WIDGET_HEIGHT + 4;
+                    widgetsHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4;
             }
-            widgets_height += 8;
+            widgetsHeight += 8;
         }
 
         // compute height using widgets height
         if( this.widgets_up )
-            size[1] = Math.max( size[1], widgets_height );
+            size[1] = Math.max( size[1], widgetsHeight );
         else if( this.widgets_start_y != null )
-            size[1] = Math.max( size[1], widgets_height + this.widgets_start_y );
+            size[1] = Math.max( size[1], widgetsHeight + this.widgets_start_y );
         else
-            size[1] += widgets_height;
-
-        function compute_text_size(text) {
-            if (!text) {
-                return 0;
-            }
-            return font_size * text.length * 0.6;
-        }
-
+            size[1] += widgetsHeight;
         if (
             this.constructor.min_height &&
             size[1] < this.constructor.min_height
@@ -1167,7 +1173,6 @@ export class LGraphNode {
         }
 
         size[1] += 6; // margin
-
         return size;
     }
 
