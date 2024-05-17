@@ -2,7 +2,7 @@
 
 This fork takes the 2011-2014 code for LiteGraph and renews it.
 
-## For 0.8.x:
+## For 0.8.x "The Middle Class":
 
 ### Non-Breaking
 
@@ -17,7 +17,7 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * Replaced LiteGraph.*class* with just *class*
 * SubgraphOutput's location on screen is glitched
 
-## For 0.9.x/master:
+## For 0.9.x/master "On Lint Bunnies":
 
 ### Non-Breaking
 
@@ -29,13 +29,14 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * Fix links sometimes not being correct when copy pasting nodes
 * Added favicon
 * Fixed SubgraphOutput location glitch
-* Fixed over 800 linting errors (total so far)
+* ESLint down to 24 errors so far
 
 ### Breaking
 
 * Removed LiteGraph.closeAllContextMenus in favor of ContextMenu.closeAll()
 * Removed LiteGraph.pointerAddListener in favor of addEventListener()
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
+* Removed some unused/blank methods
 
 # litegraph.js
 
