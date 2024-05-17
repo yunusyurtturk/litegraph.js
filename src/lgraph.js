@@ -210,10 +210,6 @@ export class LGraph {
         var start = LiteGraph.getTime();
         this.globaltime = 0.001 * (start - this.starttime);
 
-        // not optimal: executes possible pending actions in node, problem is it is not optimized
-        // it is done here as if it was done in the later loop it wont be called in the node missed the onExecute
-
-        // from now on it will iterate only on executable nodes which is faster
         var nodes = this._nodes_executable ?? this._nodes;
         if (!nodes) {
             return;

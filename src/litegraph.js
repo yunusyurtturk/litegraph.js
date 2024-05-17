@@ -19,7 +19,7 @@ export var LiteGraph = new class {
     constructor() {
         // @TODO: This is awful, and these settings need to be put where they belong.
 
-        this.VERSION = "0.9.8";
+        this.VERSION = "0.9.9";
 
         this.CANVAS_GRID_SIZE = 10;
 
@@ -459,18 +459,18 @@ export var LiteGraph = new class {
 
     createNode(type, title, options = {}) {
         const base_class = this.registered_node_types[type] ?? null;
-        
+
         if (!base_class) {
             if (LiteGraph.debug) {
                 console.log(`GraphNode type "${type}" not registered.`);
             }
             return null;
         }
-    
+
         title = title ?? base_class.title ?? type;
-    
+
         let node = null;
-    
+
         if (LiteGraph.catch_exceptions) {
             try {
                 node = new base_class(title);
@@ -481,7 +481,7 @@ export var LiteGraph = new class {
         } else {
             node = new base_class(title);
         }
-    
+
         node.type = type;
         node.title ??= title;
         node.properties ??= {};
@@ -490,15 +490,15 @@ export var LiteGraph = new class {
         node.size ??= node.computeSize();
         node.pos ??= LiteGraph.DEFAULT_POSITION.concat();
         node.mode ??= LiteGraph.ALWAYS;
-    
+
         // extra options
         Object.assign(node, options);
-    
+
         // callback
         node.onNodeCreated?.();
         return node;
     }
-    
+
 
     /**
      * Returns a registered node type with a given name
@@ -518,25 +518,25 @@ export var LiteGraph = new class {
      */
 
     getNodeTypesInCategory(category, filter) {
-        const filteredTypes = Object.values(this.registered_node_types).filter(type => {
+        const filteredTypes = Object.values(this.registered_node_types).filter((type) => {
             if (type.filter !== filter) {
                 return false;
             }
-    
+
             if (category === "") {
                 return type.category === null;
             } else {
                 return type.category === category;
             }
         });
-    
+
         if (this.auto_sort_node_types) {
             filteredTypes.sort((a, b) => a.title.localeCompare(b.title));
         }
-    
+
         return filteredTypes;
     }
-    
+
 
     /**
      * Returns a list with all the node type categories
@@ -546,18 +546,18 @@ export var LiteGraph = new class {
      */
     getNodeTypesCategories(filter) {
         const categories = { "": 1 };
-    
-        Object.values(this.registered_node_types).forEach(type => {
+
+        Object.values(this.registered_node_types).forEach((type) => {
             if (type.category && !type.skip_list && type.filter === filter) {
                 categories[type.category] = 1;
             }
         });
-    
+
         const result = Object.keys(categories);
-    
+
         return this.auto_sort_node_types ? result.sort() : result;
     }
-    
+
 
     // debug purposes: reloads all the js scripts that matches a wildcard
     reloadNodes(folder_wildcard) {
@@ -609,9 +609,9 @@ export var LiteGraph = new class {
         if (obj == null) {
             return null;
         }
-    
+
         const clonedObj = JSON.parse(JSON.stringify(obj));
-    
+
         if (!target) {
             return clonedObj;
         }
@@ -622,7 +622,7 @@ export var LiteGraph = new class {
         }
         return target;
     }
-    
+
 
     /*
         * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
@@ -641,21 +641,21 @@ export var LiteGraph = new class {
     isValidConnection(type_a, type_b) {
         if (type_a === "" || type_a === "*") type_a = 0;
         if (type_b === "" || type_b === "*") type_b = 0;
-    
+
         if (!type_a || !type_b || type_a === type_b || (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION)) {
             return true;
         }
-    
+
         type_a = String(type_a).toLowerCase();
         type_b = String(type_b).toLowerCase();
-    
+
         if (!type_a.includes(",") && !type_b.includes(",")) {
             return type_a === type_b;
         }
-    
+
         const supported_types_a = type_a.split(",");
         const supported_types_b = type_b.split(",");
-    
+
         for (const supported_type_a of supported_types_a) {
             for (const supported_type_b of supported_types_b) {
                 if (this.isValidConnection(supported_type_a, supported_type_b)) {
@@ -663,10 +663,10 @@ export var LiteGraph = new class {
                 }
             }
         }
-    
+
         return false;
     }
-    
+
 
     /**
      * Register a string in the search box so when the user types it it will recommend this node
@@ -746,21 +746,21 @@ export var LiteGraph = new class {
     // @TODO These weren't even directly bound, so could be used as free functions
     compareObjects(a, b) {
         const aKeys = Object.keys(a);
-    
+
         if (aKeys.length !== Object.keys(b).length) {
             return false;
         }
-    
-        return aKeys.every(key => a[key] === b[key]);
+
+        return aKeys.every((key) => a[key] === b[key]);
     }
 
     distance(a, b) {
         const [xA, yA] = a;
         const [xB, yB] = b;
-    
+
         return Math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2);
     }
-    
+
 
     colorToString(c) {
         return (
@@ -799,14 +799,14 @@ export var LiteGraph = new class {
     isInsideBounding(p, bb) {
         return p[0] >= bb[0][0] && p[1] >= bb[0][1] && p[0] <= bb[1][0] && p[1] <= bb[1][1];
     }
-    
+
     // bounding overlap, format: [ startx, starty, width, height ]
     overlapBounding(a, b) {
         const A_end_x = a[0] + a[2];
         const A_end_y = a[1] + a[3];
         const B_end_x = b[0] + b[2];
         const B_end_y = b[1] + b[3];
-    
+
         return !(a[0] > B_end_x || a[1] > B_end_y || A_end_x < b[0] || A_end_y < b[1]);
     }
 

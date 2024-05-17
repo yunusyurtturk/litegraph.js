@@ -17,6 +17,7 @@ jquery 1.6.x
 
 # Diff Comfy's version with Javi's version and Adjust
 
+Done up to L1000
 There may be other forks that I should also learn from
 
 # Examine Issues in old repo
