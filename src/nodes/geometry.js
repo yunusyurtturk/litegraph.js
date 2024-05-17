@@ -661,7 +661,7 @@ class LGraphGeometryTransform {
                 return;
             }
 
-            if (!this._output) 
+            if (!this._output)
                 this._output = new Array();
             if (this._output.length != input.length)
                 this._output.length = input.length;
@@ -675,11 +675,11 @@ class LGraphGeometryTransform {
         }
 
         // geometry
-        if (!input.vertices || !input.vertices.length) 
+        if (!input.vertices || !input.vertices.length)
             return;
         var geo = input;
         this.outputs[0].type = "geometry";
-        if (!this.isOutputConnected(0)) 
+        if (!this.isOutputConnected(0))
             return;
         if (!model) {
             this.setOutputData(0, geo);
@@ -1702,7 +1702,7 @@ if (typeof GL != "undefined") {
                     gl_PointSize = computePointSize( gl_PointSize, gl_Position.w );
             }
         `;
-        
+
         static fragment_shader_code = `
             precision mediump float;
             uniform vec4 u_color;

@@ -462,14 +462,12 @@ if (typeof GL != "undefined") {
                 if (!this._shader_error) {
                     console.error(err);
                     if (err.indexOf("Fragment shader") != -1)
-                        console.log(
-                            finalcode.fs_code
+                        console.log(finalcode.fs_code
                             .split("\n")
                             .map(function (v, i) {
                                 return i + ".- " + v;
                             })
-                            .join("\n")
-                        );
+                            .join("\n"));
                     else
                         console.log(finalcode.vs_code);
                 }
@@ -697,7 +695,7 @@ if (typeof GL != "undefined") {
         }
 
         onDrawBackground(ctx, graphcanvas, canvas, pos) {
-            if (this.flags.collapsed) 
+            if (this.flags.collapsed)
                 return;
 
             // allows to preview the node if the canvas is a webgl canvas
@@ -2080,7 +2078,7 @@ if (typeof GL != "undefined") {
                 `${return_type} ${outlink} = ( (${inlink} - ${minv}) / (${maxv} - ${minv}) ) * (${maxv2} - ${minv2}) + ${minv2};`,
                 this.shader_destination,
             );
-            
+
             this.setOutputData(0, return_type);
         }
     }

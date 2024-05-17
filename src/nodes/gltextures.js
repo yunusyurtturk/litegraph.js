@@ -4717,9 +4717,9 @@ function LGraphTextureCurve() {
     this.curve_editor = null;
     this.addWidget("toggle", "Split Channels", false, "split_channels");
     this.addWidget(
-        "combo", 
-        "Channel", 
-        "RGB", 
+        "combo",
+        "Channel",
+        "RGB",
         {values: ["RGB", "R", "G", "B"]},
     );
     this.curve_offset = 68;

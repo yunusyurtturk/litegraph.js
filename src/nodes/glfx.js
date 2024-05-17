@@ -120,7 +120,7 @@ if (typeof GL != "undefined") {
                 gl_FragColor = color;
             }
         `;
-        
+
     /*
         float normalized_tunable_sigmoid(float xs, float k)\n\
         {\n\
@@ -436,7 +436,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
                 gl_FragColor = mix(color, blurred_color, mask);
             }
         `;
-        
+
 
         static _second_vertex_shader = `
             precision highp float;
@@ -467,7 +467,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
                 gl_Position = vec4(a_vertex2D, 0.0, 1.0);
             }
         `;
-        
+
 
         static _second_pixel_shader = `
             precision highp float;
