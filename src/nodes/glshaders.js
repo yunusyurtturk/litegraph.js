@@ -334,185 +334,182 @@ if (typeof GL != "undefined") {
             return null;
         });
 
-    // used to host a shader body **************************************
-    function LGShaderContext() {
-        // to store the code template
-        this.vs_template = "";
-        this.fs_template = "";
+    // used to host a shader body
+    // @TODO: export this!
+    class LGShaderContext {
+        constructor() {
+            // to store the code template
+            this.vs_template = "";
+            this.fs_template = "";
 
-        // required so nodes now where to fetch the input data
-        this.buffer_names = {uvs: "v_coord"};
+            // required so nodes now where to fetch the input data
+            this.buffer_names = {uvs: "v_coord"};
 
-        this.extra = {}; // to store custom info from the nodes (like if this shader supports a feature, etc)
+            this.extra = {}; // to store custom info from the nodes (like if this shader supports a feature, etc)
 
-        this._functions = {};
-        this._uniforms = {};
-        this._codeparts = {};
-        this._uniform_value = null;
-    }
-
-    LGShaderContext.prototype.clear = function () {
-        this._uniforms = {};
-        this._functions = {};
-        this._codeparts = {};
-        this._uniform_value = null;
-
-        this.extra = {};
-    };
-
-    LGShaderContext.prototype.addUniform = function (name, type, value) {
-        this._uniforms[name] = type;
-        if (value != null) {
-            if (!this._uniform_value) this._uniform_value = {};
-            this._uniform_value[name] = value;
-        }
-    };
-
-    LGShaderContext.prototype.addFunction = function (name, code) {
-        this._functions[name] = code;
-    };
-
-    LGShaderContext.prototype.addCode = function (hook, code, destinations) {
-        destinations = destinations || { "": "" };
-        for (var i in destinations) {
-            var h = i ? i + "_" + hook : hook;
-            if (!this._codeparts[h]) this._codeparts[h] = code + "\n";
-            else this._codeparts[h] += code + "\n";
-        }
-    };
-
-    // the system works by grabbing code fragments from every node and concatenating them in blocks depending on where must they be attached
-    LGShaderContext.prototype.computeCodeBlocks = function (
-        graph,
-        extra_uniforms,
-    ) {
-        // prepare context
-        this.clear();
-
-        // grab output nodes
-        var vertexout = graph.findNodesByType("shader::output/vertex");
-        vertexout = vertexout && vertexout.length ? vertexout[0] : null;
-        var fragmentout = graph.findNodesByType("shader::output/fragcolor");
-        fragmentout = fragmentout && fragmentout.length ? fragmentout[0] : null;
-        if (!fragmentout)
-            // ??
-            return null;
-
-        // propagate back destinations
-        graph.sendEventToAllNodes("clearDestination");
-        if (vertexout) vertexout.propagateDestination("vs");
-        if (fragmentout) fragmentout.propagateDestination("fs");
-
-        // gets code from graph
-        graph.sendEventToAllNodes("onGetCode", this);
-
-        var uniforms = "";
-        for (let i in this._uniforms)
-            uniforms += "uniform " + this._uniforms[i] + " " + i + ";\n";
-        if (extra_uniforms)
-            for (let i in extra_uniforms)
-                uniforms += "uniform " + extra_uniforms[i] + " " + i + ";\n";
-
-        var functions = "";
-        for (let i in this._functions)
-            functions += "//" + i + "\n" + this._functions[i] + "\n";
-
-        var blocks = this._codeparts;
-        blocks.uniforms = uniforms;
-        blocks.functions = functions;
-        return blocks;
-    };
-
-    // replaces blocks using the vs and fs template and returns the final codes
-    LGShaderContext.prototype.computeShaderCode = function (graph) {
-        var blocks = this.computeCodeBlocks(graph);
-        var vs_code = GL.Shader.replaceCodeUsingContext(
-            this.vs_template,
-            blocks,
-        );
-        var fs_code = GL.Shader.replaceCodeUsingContext(
-            this.fs_template,
-            blocks,
-        );
-        return {
-            vs_code: vs_code,
-            fs_code: fs_code,
-        };
-    };
-
-    // generates the shader code from the template and the
-    LGShaderContext.prototype.computeShader = function (graph, shader) {
-        var finalcode = this.computeShaderCode(graph);
-        console.log(finalcode.vs_code, finalcode.fs_code);
-
-        if (!LiteGraph.catch_exceptions) {
-            this._shader_error = true;
-            if (shader)
-                shader.updateShader(finalcode.vs_code, finalcode.fs_code);
-            else shader = new GL.Shader(finalcode.vs_code, finalcode.fs_code);
-            this._shader_error = false;
-            return shader;
+            this._functions = {};
+            this._uniforms = {};
+            this._codeparts = {};
+            this._uniform_value = null;
         }
 
-        try {
-            if (shader)
-                shader.updateShader(finalcode.vs_code, finalcode.fs_code);
-            else shader = new GL.Shader(finalcode.vs_code, finalcode.fs_code);
-            this._shader_error = false;
-            return shader;
-        } catch (err) {
-            if (!this._shader_error) {
-                console.error(err);
-                if (err.indexOf("Fragment shader") != -1)
-                    console.log(
-                        finalcode.fs_code
-                        .split("\n")
-                        .map(function (v, i) {
-                            return i + ".- " + v;
-                        })
-                        .join("\n")
-                    );
-                else
-                    console.log(finalcode.vs_code);
+        clear() {
+            this._uniforms = {};
+            this._functions = {};
+            this._codeparts = {};
+            this._uniform_value = null;
+            this.extra = {};
+        }
+
+        addUniform(name, type, value) {
+            this._uniforms[name] = type;
+            if (value != null) {
+                if (!this._uniform_value) this._uniform_value = {};
+                this._uniform_value[name] = value;
             }
-            this._shader_error = true;
-            return null;
         }
-    };
 
-    LGShaderContext.prototype.getShader = function (graph) {
-        // if graph not changed?
-        if (this._shader && this._shader._version == graph._version)
-            return this._shader;
-
-        // compile shader
-        var shader = this.computeShader(graph, this._shader);
-        if (!shader) return null;
-
-        this._shader = shader;
-        shader._version = graph._version;
-        return shader;
-    };
-
-    // some shader nodes could require to fill the box with some uniforms
-    LGShaderContext.prototype.fillUniforms = function (uniforms, param) {
-        if (!this._uniform_value) return;
-
-        for (var i in this._uniform_value) {
-            var v = this._uniform_value[i];
-            if (v == null) continue;
-            if (v.constructor === Function) uniforms[i] = v.call(this, param);
-            else if (v.constructor === GL.Texture) {
-                // todo...
-            } else uniforms[i] = v;
+        addFunction(name, code) {
+            this._functions[name] = code;
         }
-    };
 
+        addCode(hook, code, destinations) {
+            destinations = destinations || { "": "" };
+            for (var i in destinations) {
+                var h = i ? i + "_" + hook : hook;
+                if (!this._codeparts[h]) this._codeparts[h] = code + "\n";
+                else this._codeparts[h] += code + "\n";
+            }
+        }
+
+        // the system works by grabbing code fragments from every node and concatenating them in blocks depending on where must they be attached
+        computeCodeBlocks(graph, extra_uniforms) {
+            // prepare context
+            this.clear();
+
+            // grab output nodes
+            var vertexout = graph.findNodesByType("shader::output/vertex");
+            vertexout = vertexout && vertexout.length ? vertexout[0] : null;
+            var fragmentout = graph.findNodesByType("shader::output/fragcolor");
+            fragmentout = fragmentout && fragmentout.length ? fragmentout[0] : null;
+            if (!fragmentout)
+                // ??
+                return null;
+
+            // propagate back destinations
+            graph.sendEventToAllNodes("clearDestination");
+            if (vertexout) vertexout.propagateDestination("vs");
+            if (fragmentout) fragmentout.propagateDestination("fs");
+
+            // gets code from graph
+            graph.sendEventToAllNodes("onGetCode", this);
+
+            var uniforms = "";
+            for (let i in this._uniforms)
+                uniforms += "uniform " + this._uniforms[i] + " " + i + ";\n";
+            if (extra_uniforms)
+                for (let i in extra_uniforms)
+                    uniforms += "uniform " + extra_uniforms[i] + " " + i + ";\n";
+
+            var functions = "";
+            for (let i in this._functions)
+                functions += "//" + i + "\n" + this._functions[i] + "\n";
+
+            var blocks = this._codeparts;
+            blocks.uniforms = uniforms;
+            blocks.functions = functions;
+            return blocks;
+        }
+
+        // replaces blocks using the vs and fs template and returns the final codes
+        computeShaderCode(graph) {
+            var blocks = this.computeCodeBlocks(graph);
+            var vs_code = GL.Shader.replaceCodeUsingContext(
+                this.vs_template,
+                blocks,
+            );
+            var fs_code = GL.Shader.replaceCodeUsingContext(
+                this.fs_template,
+                blocks,
+            );
+            return {
+                vs_code: vs_code,
+                fs_code: fs_code,
+            };
+        }
+
+        // generates the shader code from the template and the
+        computeShader(graph, shader) {
+            var finalcode = this.computeShaderCode(graph);
+            console.log(finalcode.vs_code, finalcode.fs_code);
+
+            if (!LiteGraph.catch_exceptions) {
+                this._shader_error = true;
+                if (shader)
+                    shader.updateShader(finalcode.vs_code, finalcode.fs_code);
+                else shader = new GL.Shader(finalcode.vs_code, finalcode.fs_code);
+                this._shader_error = false;
+                return shader;
+            }
+
+            try {
+                if (shader)
+                    shader.updateShader(finalcode.vs_code, finalcode.fs_code);
+                else shader = new GL.Shader(finalcode.vs_code, finalcode.fs_code);
+                this._shader_error = false;
+                return shader;
+            } catch (err) {
+                if (!this._shader_error) {
+                    console.error(err);
+                    if (err.indexOf("Fragment shader") != -1)
+                        console.log(
+                            finalcode.fs_code
+                            .split("\n")
+                            .map(function (v, i) {
+                                return i + ".- " + v;
+                            })
+                            .join("\n")
+                        );
+                    else
+                        console.log(finalcode.vs_code);
+                }
+                this._shader_error = true;
+                return null;
+            }
+        }
+
+        getShader(graph) {
+            // if graph not changed?
+            if (this._shader && this._shader._version == graph._version)
+                return this._shader;
+
+            // compile shader
+            var shader = this.computeShader(graph, this._shader);
+            if (!shader) return null;
+
+            this._shader = shader;
+            shader._version = graph._version;
+            return shader;
+        }
+
+        // some shader nodes could require to fill the box with some uniforms
+        fillUniforms(uniforms, param) {
+            if (!this._uniform_value) return;
+
+            for (var i in this._uniform_value) {
+                var v = this._uniform_value[i];
+                if (v == null) continue;
+                if (v.constructor === Function) uniforms[i] = v.call(this, param);
+                else if (v.constructor === GL.Texture) {
+                    // todo...
+                } else uniforms[i] = v;
+            }
+        }
+    }
     LiteGraph.ShaderContext = LiteGraph.Shaders.Context = LGShaderContext;
 
-    // LGraphShaderGraph *****************************
-    // applies a shader graph to texture, it can be uses as an example
 
+    // applies a shader graph to texture, it can be uses as an example
     class LGraphShaderGraph {
         constructor() {
             // before inputs
@@ -573,7 +570,6 @@ if (typeof GL != "undefined") {
                 gl_FragColor = fragcolor;
             }
         `;
-
 
         static widgets_info = {
             precision: {
@@ -701,7 +697,8 @@ if (typeof GL != "undefined") {
         }
 
         onDrawBackground(ctx, graphcanvas, canvas, pos) {
-            if (this.flags.collapsed) return;
+            if (this.flags.collapsed) 
+                return;
 
             // allows to preview the node if the canvas is a webgl canvas
             var tex = this.getOutputData(0);
@@ -833,6 +830,7 @@ if (typeof GL != "undefined") {
     }
     registerShaderNode("input/uniform", LGraphShaderUniform);
 
+
     class LGraphShaderAttribute {
         constructor () {
             this.addOutput("out", "vec2");
@@ -868,6 +866,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("input/attribute", LGraphShaderAttribute);
+
 
     class LGraphShaderSampler2D {
         constructor() {
@@ -912,7 +911,6 @@ if (typeof GL != "undefined") {
     }
     registerShaderNode("texture/sampler2D", LGraphShaderSampler2D);
 
-    //* ********************************
 
     class LGraphShaderConstant {
         constructor() {
@@ -1096,6 +1094,7 @@ if (typeof GL != "undefined") {
     }
     registerShaderNode("const/const", LGraphShaderConstant);
 
+
     class LGraphShaderVec2 {
         constructor() {
             this.addInput("xy", "vec2");
@@ -1154,6 +1153,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("const/vec2", LGraphShaderVec2);
+
 
     class LGraphShaderVec3 {
         constructor() {
@@ -1228,6 +1228,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("const/vec3", LGraphShaderVec3);
+
 
     class LGraphShaderVec4 {
         constructor() {
@@ -1315,7 +1316,6 @@ if (typeof GL != "undefined") {
     }
     registerShaderNode("const/vec4", LGraphShaderVec4);
 
-    //* ********************************
 
     class LGraphShaderFragColor {
         constructor() {
@@ -1337,6 +1337,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("output/fragcolor", LGraphShaderFragColor);
+
 
     /*
     function LGraphShaderDiscard()
@@ -1366,7 +1367,6 @@ if (typeof GL != "undefined") {
     registerShaderNode( "output/discard", LGraphShaderDiscard );
     */
 
-    // *************************************************
 
     class LGraphShaderOperation {
         constructor() {
@@ -1453,6 +1453,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("math/operation", LGraphShaderOperation);
+
 
     class LGraphShaderFunc {
         constructor() {
@@ -1672,7 +1673,6 @@ if (typeof GL != "undefined") {
     }
     registerShaderNode("utils/snippet", LGraphShaderSnippet);
 
-    //* ***********************************
 
     class LGraphShaderRand {
         constructor() {
@@ -1699,6 +1699,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("input/rand", LGraphShaderRand);
+
 
     // noise
     // https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
@@ -1780,144 +1781,135 @@ if (typeof GL != "undefined") {
             this.setOutputData(0, "float");
         }
 
-        static shader_functions =
-            "\n\
-        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }\n\
-        \n\
-        float snoise(vec2 v){\n\
-        const vec4 C = vec4(0.211324865405187, 0.366025403784439,-0.577350269189626, 0.024390243902439);\n\
-        vec2 i  = floor(v + dot(v, C.yy) );\n\
-        vec2 x0 = v -   i + dot(i, C.xx);\n\
-        vec2 i1;\n\
-        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\
-        vec4 x12 = x0.xyxy + C.xxzz;\n\
-        x12.xy -= i1;\n\
-        i = mod(i, 289.0);\n\
-        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n\
-        + i.x + vec3(0.0, i1.x, 1.0 ));\n\
-        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)), 0.0);\n\
-        m = m*m ;\n\
-        m = m*m ;\n\
-        vec3 x = 2.0 * fract(p * C.www) - 1.0;\n\
-        vec3 h = abs(x) - 0.5;\n\
-        vec3 ox = floor(x + 0.5);\n\
-        vec3 a0 = x - ox;\n\
-        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\
-        vec3 g;\n\
-        g.x  = a0.x  * x0.x  + h.x  * x0.y;\n\
-        g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\
-        return 130.0 * dot(m, g);\n\
-        }\n\
-        vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}\n\
-        vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}\n\
-        \n\
-        float snoise(vec3 v){ \n\
-        const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n\
-        const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\
-        \n\
-        // First corner\n\
-        vec3 i  = floor(v + dot(v, C.yyy) );\n\
-        vec3 x0 =   v - i + dot(i, C.xxx) ;\n\
-        \n\
-        // Other corners\n\
-        vec3 g = step(x0.yzx, x0.xyz);\n\
-        vec3 l = 1.0 - g;\n\
-        vec3 i1 = min( g.xyz, l.zxy );\n\
-        vec3 i2 = max( g.xyz, l.zxy );\n\
-        \n\
-        //  x0 = x0 - 0. + 0.0 * C \n\
-        vec3 x1 = x0 - i1 + 1.0 * C.xxx;\n\
-        vec3 x2 = x0 - i2 + 2.0 * C.xxx;\n\
-        vec3 x3 = x0 - 1. + 3.0 * C.xxx;\n\
-        \n\
-        // Permutations\n\
-        i = mod(i, 289.0 ); \n\
-        vec4 p = permute( permute( permute( \n\
-                    i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n\
-                + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n\
-                + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\
-        \n\
-        // Gradients\n\
-        // ( N*N points uniformly over a square, mapped onto an octahedron.)\n\
-        float n_ = 1.0/7.0; // N=7\n\
-        vec3  ns = n_ * D.wyz - D.xzx;\n\
-        \n\
-        vec4 j = p - 49.0 * floor(p * ns.z *ns.z);  //  mod(p,N*N)\n\
-        \n\
-        vec4 x_ = floor(j * ns.z);\n\
-        vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\
-        \n\
-        vec4 x = x_ *ns.x + ns.yyyy;\n\
-        vec4 y = y_ *ns.x + ns.yyyy;\n\
-        vec4 h = 1.0 - abs(x) - abs(y);\n\
-        \n\
-        vec4 b0 = vec4( x.xy, y.xy );\n\
-        vec4 b1 = vec4( x.zw, y.zw );\n\
-        \n\
-        vec4 s0 = floor(b0)*2.0 + 1.0;\n\
-        vec4 s1 = floor(b1)*2.0 + 1.0;\n\
-        vec4 sh = -step(h, vec4(0.0));\n\
-        \n\
-        vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n\
-        vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\
-        \n\
-        vec3 p0 = vec3(a0.xy,h.x);\n\
-        vec3 p1 = vec3(a0.zw,h.y);\n\
-        vec3 p2 = vec3(a1.xy,h.z);\n\
-        vec3 p3 = vec3(a1.zw,h.w);\n\
-        \n\
-        //Normalise gradients\n\
-        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n\
-        p0 *= norm.x;\n\
-        p1 *= norm.y;\n\
-        p2 *= norm.z;\n\
-        p3 *= norm.w;\n\
-        \n\
-        // Mix final noise value\n\
-        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n\
-        m = m * m;\n\
-        return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),dot(p2,x2), dot(p3,x3) ) );\n\
-        }\n\
-        \n\
-        vec3 hash3( vec2 p ){\n\
-        vec3 q = vec3( dot(p,vec2(127.1,311.7)), \n\
-                        dot(p,vec2(269.5,183.3)), \n\
-                        dot(p,vec2(419.2,371.9)) );\n\
-        return fract(sin(q)*43758.5453);\n\
-        }\n\
-        vec4 hash4( vec3 p ){\n\
-        vec4 q = vec4( dot(p,vec3(127.1,311.7,257.3)), \n\
-                        dot(p,vec3(269.5,183.3,335.1)), \n\
-                        dot(p,vec3(314.5,235.1,467.3)), \n\
-                        dot(p,vec3(419.2,371.9,114.9)) );\n\
-        return fract(sin(q)*43758.5453);\n\
-        }\n\
-        \n\
-        float iqnoise( in vec2 x, float u, float v ){\n\
-        vec2 p = floor(x);\n\
-        vec2 f = fract(x);\n\
-        \n\
-        float k = 1.0+63.0*pow(1.0-v,4.0);\n\
-        \n\
-        float va = 0.0;\n\
-        float wt = 0.0;\n\
-        for( int j=-2; j<=2; j++ )\n\
-        for( int i=-2; i<=2; i++ )\n\
-        {\n\
-            vec2 g = vec2( float(i),float(j) );\n\
-            vec3 o = hash3( p + g )*vec3(u,u,1.0);\n\
-            vec2 r = g - f + o.xy;\n\
-            float d = dot(r,r);\n\
-            float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), k );\n\
-            va += o.z*ww;\n\
-            wt += ww;\n\
-        }\n\
-        \n\
-        return va/wt;\n\
-        }\n\
-        ";
+        static shader_functions = `
+            vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
+    
+            float snoise(vec2 v) {
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                vec2 i = floor(v + dot(v, C.yy));
+                vec2 x0 = v - i + dot(i, C.xx);
+                vec2 i1;
+                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.xxzz;
+                x12.xy -= i1;
+                i = mod(i, 289.0);
+                vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+                m = m * m ;
+                m = m * m ;
+                vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                vec3 h = abs(x) - 0.5;
+                vec3 ox = floor(x + 0.5);
+                vec3 a0 = x - ox;
+                m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+                vec3 g;
+                g.x = a0.x  * x0.x + h.x  * x0.y;
+                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                return 130.0 * dot(m, g);
+            }
+    
+            vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
+    
+            vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+    
+            float snoise(vec3 v) {
+                const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+                const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+    
+                vec3 i  = floor(v + dot(v, C.yyy));
+                vec3 x0 = v - i + dot(i, C.xxx);
+    
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min(g.xyz, l.zxy);
+                vec3 i2 = max(g.xyz, l.zxy);
+    
+                vec3 x1 = x0 - i1 + 1.0 * C.xxx;
+                vec3 x2 = x0 - i2 + 2.0 * C.xxx;
+                vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
+    
+                i = mod(i, 289.0);
+                vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+    
+                float n_ = 1.0 / 7.0;
+                vec3 ns = n_ * D.wyz - D.xzx;
+    
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+    
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_);
+                
+                vec4 x = x_ * ns.x + ns.yyyy;
+                vec4 y = y_ * ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+                
+                vec4 b0 = vec4(x.xy, y.xy);
+                vec4 b1 = vec4(x.zw, y.zw);
+                
+                vec4 s0 = floor(b0) * 2.0 + 1.0;
+                vec4 s1 = floor(b1) * 2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+                
+                vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+                vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+                
+                vec3 p0 = vec3(a0.xy, h.x);
+                vec3 p1 = vec3(a0.zw, h.y);
+                vec3 p2 = vec3(a1.xy, h.z);
+                vec3 p3 = vec3(a1.zw, h.w);
+                
+                vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+                p0 *= norm.x;
+                p1 *= norm.y;
+                p2 *= norm.z;
+                p3 *= norm.w;
+                
+                vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+                m = m * m;
+                
+                return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+            }
+    
+            vec3 hash3(vec2 p) {
+                vec3 q = vec3(dot(p, vec2(127.1, 311.7)),
+                            dot(p, vec2(269.5, 183.3)),
+                            dot(p, vec2(419.2, 371.9)));
+                return fract(sin(q) * 43758.5453);
+            }
+    
+            vec4 hash4(vec3 p) {
+                vec4 q = vec4(dot(p, vec3(127.1, 311.7, 257.3)),
+                            dot(p, vec3(269.5, 183.3, 335.1)),
+                            dot(p, vec3(314.5, 235.1, 467.3)),
+                            dot(p, vec3(419.2, 371.9, 114.9)));
+                return fract(sin(q) * 43758.5453);
+            }
+    
+            float iqnoise(in vec2 x, float u, float v) {
+                vec2 p = floor(x);
+                vec2 f = fract(x);
+                
+                float k = 1.0 + 63.0 * pow(1.0 - v, 4.0);
+                
+                float va = 0.0;
+                float wt = 0.0;
+                for (int j = -2; j <= 2; j++)
+                    for (int i = -2; i <= 2; i++) {
+                        vec2 g = vec2(float(i), float(j));
+                        vec3 o = hash3(p + g) * vec3(u, u, 1.0);
+                        vec2 r = g - f + o.xy;
+                        float d = dot(r, r);
+                        float ww = pow(1.0 - smoothstep(0.0, 1.414, sqrt(d)), k);
+                        va += o.z * ww;
+                        wt += ww;
+                    }
+                
+                return va / wt;
+            }
+        `;
     }
     registerShaderNode("math/noise", LGraphShaderNoise);
+
 
     class LGraphShaderTime {
         constructor() {
@@ -1944,6 +1936,7 @@ if (typeof GL != "undefined") {
         }
     }
     registerShaderNode("input/time", LGraphShaderTime);
+
 
     class LGraphShaderDither {
         constructor() {
@@ -1999,12 +1992,12 @@ if (typeof GL != "undefined") {
                     // Example: if (condition) { ... }
                 }
                 ${LGraphShaderDither.dither_values.map((v, i) => `else if (index == ${i + 1}) limit = ${v};`).join("\n")}
+                return brightness < limit ? 0.0 : 1.0;
             }
-            }
-            return brightness < limit ? 0.0 : 1.0;
-        }`;
+        `;
     }
     registerShaderNode("math/dither", LGraphShaderDither);
+
 
     class LGraphShaderRemap {
         constructor() {
@@ -2084,26 +2077,10 @@ if (typeof GL != "undefined") {
 
             context.addCode(
                 "code",
-                return_type +
-                    " " +
-                    outlink +
-                    " = ( (" +
-                    inlink +
-                    " - " +
-                    minv +
-                    ") / (" +
-                    maxv +
-                    " - " +
-                    minv +
-                    ") ) * (" +
-                    maxv2 +
-                    " - " +
-                    minv2 +
-                    ") + " +
-                    minv2 +
-                    ";",
+                `${return_type} ${outlink} = ( (${inlink} - ${minv}) / (${maxv} - ${minv}) ) * (${maxv2} - ${minv2}) + ${minv2};`,
                 this.shader_destination,
             );
+            
             this.setOutputData(0, return_type);
         }
     }
