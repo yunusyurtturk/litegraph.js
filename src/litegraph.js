@@ -11014,7 +11014,7 @@ LGraphNode.prototype.executeAction = function(action)
                         w.clicked = true;
                         this.dirty_canvas = true;
                     }
-					break;
+                break;
 				case "slider":
 					var old_value = w.value;
 					var nvalue = clamp((x - 15) / (widget_width - 30), 0, 1);
@@ -11022,14 +11022,17 @@ LGraphNode.prototype.executeAction = function(action)
 					w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
 					if (old_value != w.value) {
 						setTimeout(function() {
-							inner_value_change(w, w.value);
+							inner_value_change(w, w.value, old_value);
 						}, 20);
 					}
 					this.dirty_canvas = true;
-					break;
-				case "number":
-				case "combo":
+                break;
+				case "number": // no break
+				case "combo": case "enum":
 					var old_value = w.value;
+                    if (LiteGraph.debug) {
+                        console.debug("WidgetCombo(orNum) event cases",event.type,w.type,w);
+                    }
 					if (event.type == LiteGraph.pointerevents_method+"move" && w.type == "number") {
                         if(deltaX)
 						    w.value += deltaX * 0.1 * (w.options.step || 1);
@@ -11085,12 +11088,16 @@ LGraphNode.prototype.executeAction = function(action)
 								},
 								ref_window);
 							function inner_clicked(v, option, event) {
-								if(values != values_list)
+                                console.debug("WidgetCombo contextInnerClick",v,option,event);
+								if(values != values_list){
+                                    console.debug("WidgetCombo contextInnerClick Update V",values,values_list,text_values.indexOf(v));
 									v = text_values.indexOf(v);
+                                }
 								this.value = v;
-								inner_value_change(this, v);
+                                console.debug("WidgetCombo contextInnerClick Update THIS","widget",this,"value",v,"canvas",that);
+								inner_value_change(this, v, old_value);
 								that.dirty_canvas = true;
-								return false;
+								return false; // ?
 							}
 						}
 					} //end mousedown
@@ -11106,60 +11113,76 @@ LGraphNode.prototype.executeAction = function(action)
 										} catch (e) { }
 									}	
 									this.value = Number(v);
-									inner_value_change(this, this.value);
+									inner_value_change(this, this.value, old_value);
 								}.bind(w),
 								event);
 						}
-					}
+					}else{
+                        // other cases ?
+                        console.debug("WidgetCombo (STRANGE)other event cases ?",event.type,w.type);
+                    }
 
 					if( old_value != w.value )
 						setTimeout(
 							function() {
-								inner_value_change(this, this.value);
+								inner_value_change(this, this.value, old_value);
 							}.bind(w),
 							20
 						);
 					this.dirty_canvas = true;
-					break;
+                // end case combo
+                break;
 				case "toggle":
 					if (event.type == LiteGraph.pointerevents_method+"down") {
 						w.value = !w.value;
 						setTimeout(function() {
-							inner_value_change(w, w.value);
+							inner_value_change(w, w.value, old_value);
 						}, 20);
 					}
-					break;
+                break;
 				case "string":
 				case "text":
 					if (event.type == LiteGraph.pointerevents_method+"down") {
 						this.prompt("Value",w.value,function(v) {
 								this.value = v; // atlasan merge :: CHECK THIS
-								inner_value_change(this, v);
+								inner_value_change(this, v, old_value);
 							}.bind(w),
 							event,w.options ? w.options.multiline : false );
 					}
-					break;
+                break;
 				default:
 					if (w.mouse) { // could have a better name this widget callback, right?
 						this.dirty_canvas = w.mouse(event, [x, y], node); // should update only with true right? (false would eventually not make it dirty?)
 					}
-					break;
+                break;
 			} //end switch
 
-			//value changed
-			if( old_value != w.value )
-			{
-				if(node.onWidgetChanged){
-					node.onWidgetChanged( w.name,w.value,old_value,w ); // tag: event entrypoint
-                }
-                // node.graph._version++;
-                node.graph.onGraphChanged({action: "widgetChanged", doSave: true}); // tag: graph event entrypoint
-			}
+            // MOVED TO inner_value_change
+			// //value changed
+			// if( old_value != w.value )
+			// {
+			// 	if(node.onWidgetChanged){
+			// 		node.onWidgetChanged( w.name,w.value,old_value,w ); // tag: event entrypoint
+            //     }
+            //     // node.graph._version++;
+            //     node.graph.onGraphChanged({action: "widgetChanged", doSave: true}); // tag: graph event entrypoint
+			// }
 
 			return w;
         }//end for
 
-        function inner_value_change(widget, value) {
+        function inner_value_change(widget, value, old_value) {
+            if (LiteGraph.debug) {
+                console.debug("inner_value_change for processNodeWidgets",widget,value);
+            }
+            //value changed
+			if( old_value != w.value ){
+                if(node.onWidgetChanged){
+                    node.onWidgetChanged( w.name,w.value,old_value,w ); // tag: event entrypoint
+                }
+                // node.graph._version++;
+                node.graph.onGraphChanged({action: "widgetChanged", doSave: true}); // tag: graph event entrypoint
+            }
             if(widget.type == "number"){
                 value = Number(value);
             }
@@ -13010,6 +13033,9 @@ LGraphNode.prototype.executeAction = function(action)
         if (type == "string" || type == "number" || type == "array" || type == "object") {
             input_html = "<input autofocus type='text' class='value'/>";
         } else if ( (type == "enum" || type == "combo") && info.values) {
+            if(LiteGraph.debug){
+                console.debug("CREATING showEditPropertyValue ENUM COMBO",input,type,dialog);
+            }
             input_html = "<select autofocus type='text' class='value'>";
             for (var i in info.values) {
                 var v = i;
@@ -13047,24 +13073,36 @@ LGraphNode.prototype.executeAction = function(action)
 
         var input = false;
         if ((type == "enum" || type == "combo") && info.values) {
+            if(LiteGraph.debug){
+                console.debug("showEditPropertyValue ENUM COMBO",input,type,dialog);
+            }
             input = dialog.querySelector("select");
             input.addEventListener("change", function(e) {
                 dialog.modified();
+                if(LiteGraph.debug){
+                    console.debug("Enum change",input,info,e.target);
+                }
                 setValue(e.target.value);
                 //var index = e.target.value;
                 //setValue( e.options[e.selectedIndex].value );
             });
         } else if (type == "boolean" || type == "toggle") {
+            if(LiteGraph.debug){
+                console.debug("showEditPropertyValue TOGGLE",input,type,dialog);
+            }
             input = dialog.querySelector("input");
             if (input) {
                 input.addEventListener("click", function(e) {
                     dialog.modified();
-                    setValue(!!input.checked);
+                    setValue(!!input.checked); // ? !!
                 });
                 
             }
         } else {
             input = dialog.querySelector("input");
+            if(LiteGraph.debug){
+                console.debug("showEditPropertyValue",input,type,dialog);
+            }
             if (input) {
                 input.addEventListener("blur", function(e) {
                     this.focus();
@@ -13348,6 +13386,10 @@ LGraphNode.prototype.executeAction = function(action)
 			elem.options = options;
 			elem.value = value;
 
+            if(LiteGraph.debug){
+                console.debug("addWidget",type,value,value_element,options);
+            }
+
 			if( type == "code" )
 				elem.addEventListener("click", function(e){ root.inner_showCodePad( this.dataset["property"] ); });
 			else if (type == "boolean")
@@ -13387,7 +13429,9 @@ LGraphNode.prototype.executeAction = function(action)
 			else if (type == "enum" || type == "combo") {
 				var str_value = LGraphCanvas.getPropertyPrintableValue( value, options.values );
 				value_element.innerText = str_value;
-
+                if(LiteGraph.debug){
+                    console.debug("addWidget ENUM COMBO",type,str_value,value_element,options);
+                }
 				value_element.addEventListener("click", function(event){ 
 					var values = options.values || [];
 					var propname = this.parentNode.dataset["property"];
@@ -13399,7 +13443,7 @@ LGraphNode.prototype.executeAction = function(action)
 						},
 						ref_window);
 					function inner_clicked(v, option, event) {
-						//node.setProperty(propname,v); 
+						// node.setProperty(propname,v); 
 						//graphcanvas.dirty_canvas = true;
 						elem_that.innerText = v;
 						innerChange(propname,v);
@@ -13411,8 +13455,10 @@ LGraphNode.prototype.executeAction = function(action)
 
 			root.content.appendChild(elem);
 
-			function innerChange(name, value)
-			{
+			function innerChange(name, value){
+                if(LiteGraph.debug){
+                    console.debug("widgetInnerChange",name,value,options);
+                }
 				//DBG("change",name,value);
 				//that.dirty_canvas = true;
 				if(options.callback)
@@ -14852,7 +14898,7 @@ LGraphNode.prototype.executeAction = function(action)
                                     && that.selectedOption < that.allOptions.length-1
                             );
                             // fix last filtered pos
-                            if(that.allOptions[that.selectedOption].hidden){
+                            if(that.allOptions[that.selectedOption] &&  that.allOptions[that.selectedOption].hidden){
                                 that.selectedOption = that.currentOptions[that.currentOptions.length-1].menu_index;
                             }
                             kdone = true;
@@ -14868,7 +14914,7 @@ LGraphNode.prototype.executeAction = function(action)
                                     && that.selectedOption > 0
                             );
                             // fix first filtered pos
-                            if(that.allOptions[that.selectedOption].hidden){
+                            if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden){
                                 if(that.currentOptions && that.currentOptions.length){
                                     that.selectedOption = that.currentOptions[0].menu_index;
                                 }else{
@@ -15003,7 +15049,7 @@ LGraphNode.prototype.executeAction = function(action)
                         : 0
                     ;
                     // fix first filtered pos
-                    if(that.allOptions[that.selectedOption].hidden){
+                    if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden && that.currentOptions.length){
                         that.selectedOption = that.currentOptions[0].menu_index;
                     }
                 }else{
@@ -15170,12 +15216,21 @@ LGraphNode.prototype.executeAction = function(action)
             var value = this.value;
             var close_parent = true;
 
+            if(LiteGraph.debug){
+                console.debug("ContextMenu inner_onclick",value,options,close_parent,this.current_submenu,this);
+            }
+
+            // FIXME CONTINUE here, clicking on combo widget does not update !!
+
             if (that.current_submenu) {
                 that.current_submenu.close(e);
             }
 
             //global callback
             if (options.callback) {
+                if(LiteGraph.debug){
+                    console.debug("ContextMenu inner_onclick callback",this,value,options,e,that,options.node);
+                }
                 var r = options.callback.call(
                     this,
                     value,
@@ -15196,6 +15251,9 @@ LGraphNode.prototype.executeAction = function(action)
                     !options.ignore_item_callbacks &&
                     value.disabled !== true
                 ) {
+                    if(LiteGraph.debug){
+                        console.debug("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,e,that,options.node);
+                    }
                     //item callback
                     var r = value.callback.call(
                         this,
@@ -15210,6 +15268,9 @@ LGraphNode.prototype.executeAction = function(action)
                     }
                 }
                 if (value.submenu) {
+                    if(LiteGraph.debug){
+                        console.debug("ContextMenu SUBMENU",this,value,value.submenu.options,e,that,options);
+                    }
                     if (!value.submenu.options) {
                         throw "ContextMenu submenu needs options";
                     }

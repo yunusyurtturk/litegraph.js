@@ -1608,7 +1608,7 @@ LiteGraph.registerNodeType("basic/jsonparse", JSONParse);
 
     LiteGraph.registerNodeType("basic/alert", Alert);
 
-    //Execites simple code
+    //Execute simple code
     function NodeScript() {
         this.size = [60, 30];
         this.addProperty("onExecute", "return A;");
