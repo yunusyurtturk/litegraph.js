@@ -2,8 +2,8 @@ import { LiteGraph } from "../litegraph.js";
 
 // Works with Litegl.js to create WebGL nodes
 if (typeof GL != "undefined") {
-    // Texture Lens *****************************************
 
+    // Texture Lens
     class LGraphFXLens {
         constructor() {
             this.addInput("Texture", "Texture");
@@ -98,29 +98,29 @@ if (typeof GL != "undefined") {
             this.setOutputData(0, this._tex);
         }
 
-        static pixel_shader =
-            "precision highp float;\n\
-        precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform vec2 u_camera_planes;\n\
-        uniform float u_aberration;\n\
-        uniform float u_distortion;\n\
-        uniform float u_blur;\n\
-        \n\
-        void main() {\n\
-            vec2 coord = v_coord;\n\
-            float dist = distance(vec2(0.5), coord);\n\
-            vec2 dist_coord = coord - vec2(0.5);\n\
-            float percent = 1.0 + ((0.5 - dist) / 0.5) * u_distortion;\n\
-            dist_coord *= percent;\n\
-            coord = dist_coord + vec2(0.5);\n\
-            vec4 color = texture2D(u_texture,coord, u_blur * dist);\n\
-            color.r = texture2D(u_texture,vec2(0.5) + dist_coord * (1.0+0.01*u_aberration), u_blur * dist ).r;\n\
-            color.b = texture2D(u_texture,vec2(0.5) + dist_coord * (1.0-0.01*u_aberration), u_blur * dist ).b;\n\
-            gl_FragColor = color;\n\
-        }\n\
-        ";
+        static pixel_shader = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform vec2 u_camera_planes;
+            uniform float u_aberration;
+            uniform float u_distortion;
+            uniform float u_blur;
+            
+            void main() {
+                vec2 coord = v_coord;
+                float dist = distance(vec2(0.5), coord);
+                vec2 dist_coord = coord - vec2(0.5);
+                float percent = 1.0 + ((0.5 - dist) / 0.5) * u_distortion;
+                dist_coord *= percent;
+                coord = dist_coord + vec2(0.5);
+                vec4 color = texture2D(u_texture, coord, u_blur * dist);
+                color.r = texture2D(u_texture, vec2(0.5) + dist_coord * (1.0 + 0.01 * u_aberration), u_blur * dist).r;
+                color.b = texture2D(u_texture, vec2(0.5) + dist_coord * (1.0 - 0.01 * u_aberration), u_blur * dist).b;
+                gl_FragColor = color;
+            }
+        `;
+        
     /*
         float normalized_tunable_sigmoid(float xs, float k)\n\
         {\n\
@@ -308,9 +308,6 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
                 });
             }
 
-            // iterations
-            var size = this.properties.size;
-
             var first_shader = LGraphFXBokeh._first_shader;
             if (!first_shader) {
                 first_shader = LGraphFXBokeh._first_shader = new GL.Shader(
@@ -340,7 +337,6 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
             var screen_mesh = Mesh.getScreenQuad();
 
             var point_size = this.properties.size;
-            var min_light = this.properties.min_light;
             var alpha = this.properties.alpha;
 
             gl.disable(gl.DEPTH_TEST);
@@ -426,67 +422,68 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
                 }\n";
         */
 
-        static _first_pixel_shader =
-            "precision highp float;\n\
-        precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform sampler2D u_texture_blur;\n\
-        uniform sampler2D u_mask;\n\
-        \n\
-        void main() {\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            vec4 blurred_color = texture2D(u_texture_blur, v_coord);\n\
-            float mask = texture2D(u_mask, v_coord).x;\n\
-            gl_FragColor = mix(color, blurred_color, mask);\n\
-        }\n\
-        ";
+        static _first_pixel_shader = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform sampler2D u_texture_blur;
+            uniform sampler2D u_mask;
+    
+            void main() {
+                vec4 color = texture2D(u_texture, v_coord);
+                vec4 blurred_color = texture2D(u_texture_blur, v_coord);
+                float mask = texture2D(u_mask, v_coord).x;
+                gl_FragColor = mix(color, blurred_color, mask);
+            }
+        `;
+        
 
-        static _second_vertex_shader =
-            "precision highp float;\n\
-        attribute vec2 a_vertex2D;\n\
-        varying vec4 v_color;\n\
-        uniform sampler2D u_texture;\n\
-        uniform sampler2D u_mask;\n\
-        uniform vec2 u_itexsize;\n\
-        uniform float u_pointSize;\n\
-        uniform float u_threshold;\n\
-        void main() {\n\
-            vec2 coord = a_vertex2D * 0.5 + 0.5;\n\
-            v_color = texture2D( u_texture, coord );\n\
-            v_color += texture2D( u_texture, coord + vec2(u_itexsize.x, 0.0) );\n\
-            v_color += texture2D( u_texture, coord + vec2(0.0, u_itexsize.y));\n\
-            v_color += texture2D( u_texture, coord + u_itexsize);\n\
-            v_color *= 0.25;\n\
-            float mask = texture2D(u_mask, coord).x;\n\
-            float luminance = length(v_color) * mask;\n\
-            /*luminance /= (u_pointSize*u_pointSize)*0.01 */;\n\
-            luminance -= u_threshold;\n\
-            if(luminance < 0.0)\n\
-            {\n\
-                gl_Position.x = -100.0;\n\
-                return;\n\
-            }\n\
-            gl_PointSize = u_pointSize;\n\
-            gl_Position = vec4(a_vertex2D,0.0,1.0);\n\
-        }\n\
-        ";
+        static _second_vertex_shader = `
+            precision highp float;
+            attribute vec2 a_vertex2D;
+            varying vec4 v_color;
+            uniform sampler2D u_texture;
+            uniform sampler2D u_mask;
+            uniform vec2 u_itexsize;
+            uniform float u_pointSize;
+            uniform float u_threshold;
+            
+            void main() {
+                vec2 coord = a_vertex2D * 0.5 + 0.5;
+                v_color = texture2D(u_texture, coord);
+                v_color += texture2D(u_texture, coord + vec2(u_itexsize.x, 0.0));
+                v_color += texture2D(u_texture, coord + vec2(0.0, u_itexsize.y));
+                v_color += texture2D(u_texture, coord + u_itexsize);
+                v_color *= 0.25;
+                float mask = texture2D(u_mask, coord).x;
+                float luminance = length(v_color) * mask;
+                // luminance /= (u_pointSize * u_pointSize) * 0.01;
+                luminance -= u_threshold;
+                if (luminance < 0.0) {
+                    gl_Position.x = -100.0;
+                    return;
+                }
+                gl_PointSize = u_pointSize;
+                gl_Position = vec4(a_vertex2D, 0.0, 1.0);
+            }
+        `;
+        
 
-        static _second_pixel_shader =
-            "precision highp float;\n\
-        varying vec4 v_color;\n\
-        uniform sampler2D u_shape;\n\
-        uniform float u_alpha;\n\
-        \n\
-        void main() {\n\
-            vec4 color = texture2D( u_shape, gl_PointCoord );\n\
-            color *= v_color * u_alpha;\n\
-            gl_FragColor = color;\n\
-        }\n";
+        static _second_pixel_shader = `
+            precision highp float;
+            varying vec4 v_color;
+            uniform sampler2D u_shape;
+            uniform float u_alpha;
+            
+            void main() {
+                vec4 color = texture2D(u_shape, gl_PointCoord);
+                color *= v_color * u_alpha;
+                gl_FragColor = color;
+            }
+        `;
     }
     LiteGraph.registerNodeType("fx/bokeh", LGraphFXBokeh);
 
-    //* ***********************************************
 
     class LGraphFXGeneric {
         constructor() {
@@ -514,6 +511,7 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
                 values: LGraphTexture.MODE_VALUES,
             },
         };
+
         static shaders = {};
 
         onExecute() {
@@ -605,90 +603,95 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
             this.setOutputData(0, this._tex);
         }
 
-        static pixel_shader_halftone =
-            "precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform vec2 u_camera_planes;\n\
-        uniform vec2 u_size;\n\
-        uniform float u_value1;\n\
-        uniform float u_value2;\n\
-        \n\
-        float pattern() {\n\
-            float s = sin(u_value1 * 3.1415), c = cos(u_value1 * 3.1415);\n\
-            vec2 tex = v_coord * u_size.xy;\n\
-            vec2 point = vec2(\n\
-                c * tex.x - s * tex.y ,\n\
-                s * tex.x + c * tex.y \n\
-            ) * u_value2;\n\
-            return (sin(point.x) * sin(point.y)) * 4.0;\n\
-        }\n\
-        void main() {\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            float average = (color.r + color.g + color.b) / 3.0;\n\
-            gl_FragColor = vec4(vec3(average * 10.0 - 5.0 + pattern()), color.a);\n\
-        }\n";
+        static pixel_shader_halftone = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform vec2 u_camera_planes;
+            uniform vec2 u_size;
+            uniform float u_value1;
+            uniform float u_value2;
+            
+            float pattern() {
+                float s = sin(u_value1 * 3.1415), c = cos(u_value1 * 3.1415);
+                vec2 tex = v_coord * u_size.xy;
+                vec2 point = vec2(
+                    c * tex.x - s * tex.y ,
+                    s * tex.x + c * tex.y
+                ) * u_value2;
+                return (sin(point.x) * sin(point.y)) * 4.0;
+            }
+            
+            void main() {
+                vec4 color = texture2D(u_texture, v_coord);
+                float average = (color.r + color.g + color.b) / 3.0;
+                gl_FragColor = vec4(vec3(average * 10.0 - 5.0 + pattern()), color.a);
+            }
+        `;
 
-        static pixel_shader_pixelate =
-            "precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform vec2 u_camera_planes;\n\
-        uniform vec2 u_size;\n\
-        uniform float u_value1;\n\
-        uniform float u_value2;\n\
-        \n\
-        void main() {\n\
-            vec2 coord = vec2( floor(v_coord.x * u_value1) / u_value1, floor(v_coord.y * u_value2) / u_value2 );\n\
-            vec4 color = texture2D(u_texture, coord);\n\
-            gl_FragColor = color;\n\
-        }\n";
+        static pixel_shader_pixelate = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform vec2 u_camera_planes;
+            uniform vec2 u_size;
+            uniform float u_value1;
+            uniform float u_value2;
+            
+            void main() {
+                vec2 coord = vec2(floor(v_coord.x * u_value1) / u_value1, floor(v_coord.y * u_value2) / u_value2);
+                vec4 color = texture2D(u_texture, coord);
+                gl_FragColor = color;
+            }
+        `;
 
-        static pixel_shader_lowpalette =
-            "precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform vec2 u_camera_planes;\n\
-        uniform vec2 u_size;\n\
-        uniform float u_value1;\n\
-        uniform float u_value2;\n\
-        \n\
-        void main() {\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            gl_FragColor = floor(color * u_value1) / u_value1;\n\
-        }\n";
+        static pixel_shader_lowpalette = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform vec2 u_camera_planes;
+            uniform vec2 u_size;
+            uniform float u_value1;
+            uniform float u_value2;
+            
+            void main() {
+                vec4 color = texture2D(u_texture, v_coord);
+                gl_FragColor = floor(color * u_value1) / u_value1;
+            }
+        `;
 
-        static pixel_shader_noise =
-            "precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform sampler2D u_noise;\n\
-        uniform vec2 u_size;\n\
-        uniform float u_value1;\n\
-        uniform float u_value2;\n\
-        uniform vec2 u_rand;\n\
-        \n\
-        void main() {\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            vec3 noise = texture2D(u_noise, v_coord * vec2(u_size.x / 512.0, u_size.y / 512.0) + u_rand).xyz - vec3(0.5);\n\
-            gl_FragColor = vec4( color.xyz + noise * u_value1, color.a );\n\
-        }\n";
+        static pixel_shader_noise = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform sampler2D u_noise;
+            uniform vec2 u_size;
+            uniform float u_value1;
+            uniform float u_value2;
+            uniform vec2 u_rand;
+            
+            void main() {
+                vec4 color = texture2D(u_texture, v_coord);
+                vec3 noise = texture2D(u_noise, v_coord * vec2(u_size.x / 512.0, u_size.y / 512.0) + u_rand).xyz - vec3(0.5);
+                gl_FragColor = vec4(color.xyz + noise * u_value1, color.a);
+            }
+        `;
 
-        static pixel_shader_gamma =
-            "precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform float u_value1;\n\
-        \n\
-        void main() {\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            float gamma = 1.0 / u_value1;\n\
-            gl_FragColor = vec4( pow( color.xyz, vec3(gamma) ), color.a );\n\
-        }\n";
+        static pixel_shader_gamma = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform float u_value1;
+            
+            void main() {
+                vec4 color = texture2D(u_texture, v_coord);
+                float gamma = 1.0 / u_value1;
+                gl_FragColor = vec4(pow(color.xyz, vec3(gamma)), color.a);
+            }
+        `;
     }
     LiteGraph.registerNodeType("fx/generic", LGraphFXGeneric);
 
-    // Vigneting ************************************
 
     class LGraphFXVigneting {
         constructor() {
@@ -765,23 +768,25 @@ LiteGraph.registerNodeType("fx/DOF", LGraphDepthOfField );
             this.setOutputData(0, this._tex);
         }
 
-        static pixel_shader =
-            "precision highp float;\n\
-        precision highp float;\n\
-        varying vec2 v_coord;\n\
-        uniform sampler2D u_texture;\n\
-        uniform float u_intensity;\n\
-        uniform int u_invert;\n\
-        \n\
-        void main() {\n\
-            float luminance = 1.0 - length( v_coord - vec2(0.5) ) * 1.414;\n\
-            vec4 color = texture2D(u_texture, v_coord);\n\
-            if(u_invert == 1)\n\
-                luminance = 1.0 - luminance;\n\
-            luminance = mix(1.0, luminance, u_intensity);\n\
-            gl_FragColor = vec4( luminance * color.xyz, color.a);\n\
-        }\n\
-        ";
+        static pixel_shader = `
+            precision highp float;
+            varying vec2 v_coord;
+            uniform sampler2D u_texture;
+            uniform float u_intensity;
+            uniform int u_invert;
+            
+            void main() {
+                float luminance = 1.0 - length(v_coord - vec2(0.5)) * 1.414;
+                vec4 color = texture2D(u_texture, v_coord);
+                
+                if (u_invert == 1) {
+                    luminance = 1.0 - luminance;
+                }
+                
+                luminance = mix(1.0, luminance, u_intensity);
+                gl_FragColor = vec4(luminance * color.xyz, color.a);
+            }
+        `;
     }
     LiteGraph.registerNodeType("fx/vigneting", LGraphFXVigneting);
 }
