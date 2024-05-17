@@ -238,7 +238,7 @@ export function valueToGLSL(
         default:
             throw ("unknown glsl type in valueToGLSL:", type);
     }
-};
+}
 
 // makes sure that a var is of a type, and if not, it converts it
 var varToTypeGLSL = (LiteGraph.varToTypeGLSL = function varToTypeGLSL(

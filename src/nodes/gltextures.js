@@ -6,6 +6,7 @@ LGraphCanvas.link_type_colors["Texture"] = "#987";
 
 const DEG2RAD = 0.0174532925;
 
+
 export class LGraphTexture {
 
     static title = "Texture";
@@ -286,7 +287,7 @@ export class LGraphTexture {
                 }
 
                 this._last_preview_tex = this._last_tex;
-                this._canvas = cloneCanvas(tex_canvas);
+                this._canvas = GL.cloneCanvas(tex_canvas);
             }
         }
 
@@ -334,7 +335,7 @@ export class LGraphTexture {
         // create intermediate canvas with lowquality version
         var tex_canvas = this._preview_canvas;
         if (!tex_canvas) {
-            tex_canvas = createCanvas(size, size);
+            tex_canvas = GL.createCanvas(size, size);
             this._preview_canvas = tex_canvas;
         }
 
@@ -1521,8 +1522,8 @@ LGraphTextureCopy.prototype.onExecute = function () {
             var minFilter = gl.LINEAR;
             if (
                 this.properties.generate_mipmaps &&
-                isPowerOfTwo(width) &&
-                isPowerOfTwo(height)
+                GL.isPowerOfTwo(width) &&
+                GL.isPowerOfTwo(height)
             ) {
                 minFilter = gl.LINEAR_MIPMAP_LINEAR;
             }
@@ -5499,7 +5500,7 @@ LGraphTextureCanvas2D.prototype.executeDraw = function (func_context) {
     var canvas = gl.canvas;
     if (this.properties.use_html_canvas || !enableWebGLCanvas) {
         if (!this._canvas) {
-            canvas = this._canvas = createCanvas(width.height);
+            canvas = this._canvas = GL.createCanvas(width.height);
             ctx = this._ctx = canvas.getContext("2d");
         } else {
             canvas = this._canvas;

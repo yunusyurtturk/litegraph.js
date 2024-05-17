@@ -144,7 +144,7 @@ class LGraphPoints3D {
                 for (let i = 0; i < side; ++i)
                     for (let j = 0; j < side; ++j) {
                         let pos = i * 3 + j * 3 * side;
-                        polarToCartesian(
+                        GL.polarToCartesian(
                             temp,
                             (i / side) * 2 * Math.PI,
                             (j / side - 0.5) * 2 * Math.PI,

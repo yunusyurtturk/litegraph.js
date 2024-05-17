@@ -4,12 +4,8 @@
 
 export const GL = {};
 
-if(typeof(glMatrix) == "undefined")
-	throw("litegl.js requires gl-matrix to work. It must be included before litegl.");
-else
-{
-//	if(!global.vec2)
-//		throw("litegl.js does not support gl-matrix 3.0, download 2.8 https://github.com/toji/gl-matrix/releases/tag/v2.8.1");
+if(typeof(glMatrix) == "undefined") {
+	throw new Error("litegl.js requires gl-matrix to work. It must be included before litegl.");
 }
 
 //polyfill
@@ -220,7 +216,7 @@ const EPSILON = 0.000001;
 */
 GL.isPowerOfTwo = (v) => {
 	return ((Math.log(v) / Math.log(2)) % 1) == 0;
-}
+};
 
 /**
 * Tells if one number is power of two (used for textures)
@@ -230,7 +226,7 @@ GL.isPowerOfTwo = (v) => {
 */
 GL.nearestPowerOfTwo = (v) => {
 	return Math.pow(2, Math.round( Math.log( v ) / Math.log(2) ) )
-}
+};
 
 
 /**
@@ -242,14 +238,13 @@ GL.nearestPowerOfTwo = (v) => {
 * @param {number} radius
 * @return {vec3} returns out
 */
-global.polarToCartesian = function( out, azimuth, inclination, radius )
-{
+GL.polarToCartesian = function( out, azimuth, inclination, radius ) {
 	out = out || vec3.create();
 	out[0] = radius * Math.sin(inclination) * Math.cos(azimuth);
 	out[1] = radius * Math.cos(inclination);
 	out[2] = radius * Math.sin(inclination) * Math.sin(azimuth);
 	return out;
-}
+};
 
 /**
 * converts from cartesian to polar
@@ -260,14 +255,14 @@ global.polarToCartesian = function( out, azimuth, inclination, radius )
 * @param {number} z
 * @return {vec3} returns [azimuth,inclination,radius]
 */
-global.cartesianToPolar = function( out, x,y,z )
+GL.cartesianToPolar = function( out, x,y,z )
 {
 	out = out || vec3.create();
 	out[2] = Math.sqrt(x*x+y*y+z*z);
 	out[0] = Math.atan2(x,z);
 	out[1] = Math.acos(z/out[2]);
 	return out;
-}
+};
 
 //Global Scope
 //better array conversion to string for serializing
@@ -290,45 +285,14 @@ typed_arrays.forEach( function(v) {
 * @method getTime
 * @return {number}
 */
+// @BUG:
+// getTime is defined a few places differently and used in alot of places.
 if(typeof(performance) != "undefined")
   global.getTime = performance.now.bind(performance);
 else
   global.getTime = Date.now.bind( Date );
 GL.getTime = global.getTime;
 
-
-global.isFunction = function isFunction(obj) {
-  return !!(obj && obj.constructor && obj.call && obj.apply);
-}
-
-global.isArray = function isArray(obj) {
-  return (obj && obj.constructor === Array );
-  //var str = Object.prototype.toString.call(obj);
-  //return str == '[object Array]' || str == '[object Float32Array]';
-}
-
-global.isNumber = function isNumber(obj) {
-  return (obj != null && obj.constructor === Number );
-}
-
-global.getClassName = function getClassName(obj)
-{
-	if (!obj)
-		return;
-
-	//from function info, but not standard
-	if(obj.name)
-		return obj.name;
-
-	//from sourcecode
-	if(obj.toString) {
-		var arr = obj.toString().match(
-			/function\s*(\w+)/);
-		if (arr && arr.length == 2) {
-			return arr[1];
-		}
-	}
-}
 
 /**
 * clone one object recursively, only allows objects containing number,strings,typed-arrays or other objects
@@ -337,8 +301,7 @@ global.getClassName = function getClassName(obj)
 * @param {Object} target if omited an empty object is created
 * @return {Object}
 */
-global.cloneObject = GL.cloneObject = function(o, t)
-{
+GL.cloneObject = function(o, t) {
 	if(o.constructor !== Object)
 		throw("cloneObject only can clone pure javascript objects, not classes");
 
@@ -390,22 +353,14 @@ function isNumber(obj) {
 }
 */
 
-//given a regular expression, a text and a callback, it calls the function every time it finds it
-global.regexMap = function regexMap(regex, text, callback) {
-  var result;
-  while ((result = regex.exec(text)) != null) {
-    callback(result);
-  }
-}
-
-global.createCanvas = GL.createCanvas = function createCanvas(width, height) {
+GL.createCanvas = function(width, height) {
     var canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     return canvas;
 }
 
-global.cloneCanvas = GL.cloneCanvas = function cloneCanvas(c) {
+GL.cloneCanvas = function(c) {
     var canvas = document.createElement('canvas');
     canvas.width = c.width;
     canvas.height = c.height;
@@ -475,18 +430,8 @@ if(!Float32Array.prototype.hasOwnProperty("clone"))
 	Object.defineProperty(Float32Array.prototype, "clone", { value: function() { return new Float32Array(this); }, enumerable: false });
 
 
-// remove all properties on obj, effectively reverting it to a new object (to reduce garbage)
-global.wipeObject = function wipeObject(obj)
-{
-  for (var p in obj)
-  {
-    if (obj.hasOwnProperty(p))
-      delete obj[p];
-  }
-};
-
 //copy methods from origin to target
-global.extendClass = GL.extendClass = function extendClass( target, origin ) {
+GL.extendClass = function( target, origin ) {
 	for(var i in origin) //copy class properties
 	{
 		if(target.hasOwnProperty(i))
@@ -525,8 +470,7 @@ global.extendClass = GL.extendClass = function extendClass( target, origin ) {
 		});	
 }
 
-
-
+// @TODO: Why is this in a GL library!?
 //simple http request
 global.HttpRequest = GL.request = function HttpRequest( url, params, callback, error, options )
 {
@@ -600,115 +544,6 @@ if( global.XMLHttpRequest )
 		}});
 }
 
-global.getFileExtension = function getFileExtension(url)
-{
-	var question = url.indexOf("?");
-	if(question != -1)
-		url = url.substr(0,question);
-	var point = url.lastIndexOf(".");
-	if(point == -1) 
-		return "";
-	return url.substr(point+1).toLowerCase();
-} 
-
-
-//allows to pack several (text)files inside one single file (useful for shaders)
-//every file must start with \filename.ext  or /filename.ext
-global.loadFileAtlas = GL.loadFileAtlas = function loadFileAtlas(url, callback, sync)
-{
-	var deferred_callback = null;
-
-	HttpRequest(url, null, function(data) {
-		var files = GL.processFileAtlas(data); 
-		if(callback)
-			callback(files);
-		if(deferred_callback)
-			deferred_callback(files);
-	}, alert, sync);
-
-	return { done: function(callback) { deferred_callback = callback; } };
-}
-
-//This parses a text file that contains several text files (they are separated by "\filename"), and returns an object with every file separatly
-global.processFileAtlas = GL.processFileAtlas = function(data, skip_trim)
-{
-	var lines = data.split("\n");
-	var files = {};
-
-	var current_file_lines = [];
-	var current_file_name = "";
-	for(var i = 0, l = lines.length; i < l; i++)
-	{
-		var line = skip_trim ? lines[i] : lines[i].trim();
-		if(!line.length)
-			continue;
-		if( line[0] != "\\")
-		{
-			current_file_lines.push(line);
-			continue;
-		}
-
-		if( current_file_lines.length )
-			files[ current_file_name ] = current_file_lines.join("\n");
-		current_file_lines.length = 0;
-		current_file_name = line.substr(1);
-	}
-
-	if( current_file_lines.length )
-		files[ current_file_name ] = current_file_lines.join("\n");
-
-	return files;
-}
-
-
-/*
-global.halfFloatToFloat = function( h )
-{
-	function convertMantissa(i) {
-	    if (i == 0) 
-			return 0
-		else if (i < 1024)
-		{
-	        var m = i << 13;
-			var e = 0;
-			while (!(m & 0x00800000))
-			{
-				e -= 0x00800000
-				m = m << 1
-			}
-	        m &= ~0x00800000
-		    e += 0x38800000
-	        return m | e;
-		}
-		return 0x38000000 + ((i - 1024) << 13);
-	}
-
-	function convertExponent(i)	{
-		if (i == 0)
-			return 0;
-		else if (i >= 1 && i <= 31)
-			return i << 23;
-		else if (i == 31)
-			return 0x47800000;
-		else if (i == 32)
-			return 0x80000000;
-		else if (i >= 33 && i <= 63)
-			return 0x80000000 + ((i - 32) << 23);
-		return 0xC7800000;
-	}
-
-	function convertOffset(i) {
-	    if (i == 0 || i == 32)
-		    return 0
-		return 1024;
-	}
-
-	var v = convertMantissa( convertOffset( h >> 10) + (h & 0x3ff) ) + convertExponent(h >> 10);
-	var a = new Uint32Array([v]);
-	return (new Float32Array(a.buffer))[0]; 
-}
-*/
-
 global.typedArrayToArray = function(array)
 {
 	var r = [];
@@ -718,14 +553,16 @@ global.typedArrayToArray = function(array)
 	return r;
 }
 
-global.RGBToHex = function(r, g, b) { 
+// unused but cool
+GL.RGBToHex = function(r, g, b) { 
 	r = Math.min(255, r*255)|0;
 	g = Math.min(255, g*255)|0;
 	b = Math.min(255, b*255)|0;
 	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-global.HUEToRGB = function ( p, q, t ){
+// unused but cool
+GL.HUEToRGB = function ( p, q, t ){
 	if(t < 0) t += 1;
 	if(t > 1) t -= 1;
 	if(t < 1/6) return p + (q - p) * 6 * t;
@@ -734,7 +571,8 @@ global.HUEToRGB = function ( p, q, t ){
 	return p;
 }
 
-global.HSLToRGB = function( h, s, l, out ){
+// unused but cool
+GL.HSLToRGB = function( h, s, l, out ){
 	var r, g, b;
 	out = out || vec3.create();
 	if(s == 0){
@@ -752,114 +590,7 @@ global.HSLToRGB = function( h, s, l, out ){
 	return out;
 }
 
-global.hexColorToRGBA = (function() {
-	//to change the color: from http://www.w3schools.com/cssref/css_colorsfull.asp
-	var string_colors = {
-		white: [1,1,1],
-		black: [0,0,0],
-		gray: [0.501960813999176, 0.501960813999176, 0.501960813999176],
-		red: [1,0,0],
-		orange: [1, 0.6470588445663452, 0],
-		pink: [1, 0.7529411911964417, 0.7960784435272217],
-		green: [0, 0.501960813999176, 0],
-		lime: [0,1,0],
-		blue: [0,0,1],
-		violet: [0.9333333373069763, 0.5098039507865906, 0.9333333373069763],
-		magenta: [1,0,1],
-		cyan: [0,1,1],
-		yellow: [1,1,0],
-		brown: [0.6470588445663452, 0.16470588743686676, 0.16470588743686676],
-		silver: [0.7529411911964417, 0.7529411911964417, 0.7529411911964417],
-		gold: [1, 0.843137264251709, 0],
-		transparent: [0,0,0,0]
-	};
 
-	return function( hex, color, alpha )
-	{
-	alpha = (alpha === undefined ? 1 : alpha);
-	color = color || new Float32Array(4);
-	color[3] = alpha;
-
-	if(typeof(hex) != "string")
-		return color;
-
-
-	//for those hardcoded colors
-	var col = string_colors[hex];
-	if( col !== undefined )
-	{
-		color.set( col );
-		if(color.length == 3)
-			color[3] = alpha;
-		else
-			color[3] *= alpha;
-		return color;
-	}
-
-	//rgba colors
-	var pos = hex.indexOf("rgba(");
-	if(pos != -1)
-	{
-		var str = hex.substr(5,hex.length-2);
-		str = str.split(",");
-		color[0] = parseInt( str[0] ) / 255;
-		color[1] = parseInt( str[1] ) / 255;
-		color[2] = parseInt( str[2] ) / 255;
-		color[3] = parseFloat( str[3] ) * alpha;
-		return color;
-	}
-
-	var pos = hex.indexOf("hsla(");
-	if(pos != -1)
-	{
-		var str = hex.substr(5,hex.length-2);
-		str = str.split(",");
-		HSLToRGB( parseInt( str[0] ) / 360, parseInt( str[1] ) / 100, parseInt( str[2] ) / 100, color );
-		color[3] = parseFloat( str[3] ) * alpha;
-		return color;
-	}
-
-	color[3] = alpha;
-
-	//rgb colors
-	var pos = hex.indexOf("rgb(");
-	if(pos != -1)
-	{
-		var str = hex.substr(4,hex.length-2);
-		str = str.split(",");
-		color[0] = parseInt( str[0] ) / 255;
-		color[1] = parseInt( str[1] ) / 255;
-		color[2] = parseInt( str[2] ) / 255;
-		return color;
-	}
-
-	var pos = hex.indexOf("hsl(");
-	if(pos != -1)
-	{
-		var str = hex.substr(4,hex.length-2);
-		str = str.split(",");
-		HSLToRGB( parseInt( str[0] ) / 360, parseInt( str[1] ) / 100, parseInt( str[2] ) / 100, color );
-		return color;
-	}
-
-
-	//the rest
-	// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
-	var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-	hex = hex.replace( shorthandRegex, function(m, r, g, b) {
-		return r + r + g + g + b + b;
-	});
-
-	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	if(!result)
-		return color;
-
-	color[0] = parseInt(result[1], 16) / 255;
-	color[1] = parseInt(result[2], 16) / 255;
-	color[2] = parseInt(result[3], 16) / 255;
-	return color;
-	}
-})();
 /**
  * @fileoverview dds - Utilities for loading DDS texture files
  * @author Brandon Jones
@@ -2374,8 +2105,7 @@ GL.Buffer.prototype.compile = GL.Buffer.prototype.upload;
 * @param {ArrayBufferView} data in Float32Array format usually
 * @param {number} offset offset in bytes
 */
-GL.Buffer.prototype.setData = function( data, offset )
-{
+GL.Buffer.prototype.setData = function( data, offset ){
 	if(!data.buffer)
 		throw("Data must be typed array");
 	offset = offset || 0;
@@ -2414,8 +2144,7 @@ GL.Buffer.prototype.setData = function( data, offset )
 * @param {number} start offset in bytes
 * @param {number} size sizes in bytes
 */
-GL.Buffer.prototype.uploadRange = function(start, size)
-{
+GL.Buffer.prototype.uploadRange = function(start, size){
 	if(!this.data)
 		throw("No data stored in this buffer");
 
@@ -2437,8 +2166,7 @@ GL.Buffer.prototype.uploadRange = function(start, size)
 * @param {boolean} share if you want that both buffers share the same data (default false)
 * return {GL.Buffer} buffer cloned
 */
-GL.Buffer.prototype.clone = function(share)
-{
+GL.Buffer.prototype.clone = function(share){
 	var buffer = new GL.Buffer();
 	if(share)
 	{
@@ -2463,12 +2191,29 @@ GL.Buffer.prototype.clone = function(share)
 }
 
 
-GL.Buffer.prototype.toJSON = function()
-{
+GL.Buffer.prototype.toJSON = function() {
 	if(!this.data)
 	{
 		console.error("cannot serialize a mesh without data");
 		return null;
+	}
+
+	function getClassName(obj){
+		if (!obj)
+			return;
+
+		//from function info, but not standard
+		if(obj.name)
+			return obj.name;
+
+		//from sourcecode
+		if(obj.toString) {
+			var arr = obj.toString().match(
+				/function\s*(\w+)/);
+			if (arr && arr.length == 2) {
+				return arr[1];
+			}
+		}
 	}
 
 	return {
@@ -2994,7 +2739,7 @@ Mesh.prototype.toObject = function()
 	return { 
 		vertexBuffers: vbs, 
 		indexBuffers: ibs,
-		info: this.info ? cloneObject( this.info ) : null,
+		info: this.info ? GL.cloneObject( this.info ) : null,
 		bounding: this._bounding.toJSON()
 	};
 }
@@ -3005,7 +2750,7 @@ Mesh.prototype.toJSON = function()
 	var r = {
 		vertexBuffers: {},
 		indexBuffers: {},
-		info: this.info ? cloneObject( this.info ) : null,
+		info: this.info ? GL.cloneObject( this.info ) : null,
 		bounding: this._bounding.toJSON() 
 	};
 
@@ -3044,7 +2789,7 @@ Mesh.prototype.fromJSON = function(o)
 	}
 
 	if(o.info)
-		this.info = cloneObject( o.info );
+		this.info = GL.cloneObject( o.info );
 	if(o.bounding)
 		this.bounding = o.bounding; //setter does the job
 }
@@ -4439,7 +4184,7 @@ DynamicMesh.prototype.update = function( force )
 	return this.current_pos;
 }
 
-extendClass( DynamicMesh, Mesh );
+GL.extendClass( DynamicMesh, Mesh );
 
 /**
 * @class Mesh
@@ -6737,7 +6482,7 @@ Texture.cubemapFromImage = function( image, options ) {
 	var images = [];
 	for(var i = 0; i < 6; i++)
 	{
-		var canvas = createCanvas( size, size );
+		var canvas = GL.createCanvas( size, size );
 		var ctx = canvas.getContext("2d");
 		if(options.faces)
 			ctx.drawImage(image, options.faces[i].x, options.faces[i].y, options.faces[i].width || size, options.faces[i].height || size, 0,0, size, size );
@@ -6939,7 +6684,7 @@ Texture.prototype.toCanvas = function( canvas, flip_y, max_size )
 		h = h * 3;
 	}
 
-	canvas = canvas || createCanvas( w, h );
+	canvas = canvas || GL.createCanvas( w, h );
 	if(canvas.width != w) 
 		canvas.width = w;
 	if(canvas.height != h)
@@ -6965,7 +6710,7 @@ Texture.prototype.toCanvas = function( canvas, flip_y, max_size )
 
 		if(flip_y)
 		{
-			var temp = createCanvas(w,h);
+			var temp = GL.createCanvas(w,h);
 			var temp_ctx = temp.getContext("2d");
 			temp_ctx.translate(0,temp.height);
 			temp_ctx.scale(1,-1);
@@ -6976,7 +6721,7 @@ Texture.prototype.toCanvas = function( canvas, flip_y, max_size )
 	}
 	else if(this.texture_type == gl.TEXTURE_CUBE_MAP )
 	{
-		var temp_canvas = createCanvas( this.width, this.height );
+		var temp_canvas = GL.createCanvas( this.width, this.height );
 		var temp_ctx = temp_canvas.getContext("2d");
 		var info = GL.Texture.generateCubemapCrossFacesInfo( canvas.width, 1 );
 		var ctx = canvas.getContext("2d");
@@ -7076,7 +6821,7 @@ Texture.prototype.toBase64 = function( flip_y )
 	var buffer = this.getPixels();
 
 	//dump to canvas so we can encode it
-	var canvas = createCanvas(w,h);
+	var canvas = GL.createCanvas(w,h);
 	var ctx = canvas.getContext("2d");
 	var pixels = ctx.getImageData(0,0,w,h);
 	pixels.data.set( buffer );
@@ -7084,7 +6829,7 @@ Texture.prototype.toBase64 = function( flip_y )
 
 	if(flip_y)
 	{
-		var temp_canvas = createCanvas(w,h);
+		var temp_canvas = GL.createCanvas(w,h);
 		var temp_ctx = temp_canvas.getContext("2d");
 		temp_ctx.translate(0,h);
 		temp_ctx.scale(1,-1);
@@ -9314,7 +9059,7 @@ GL.create = function(options) {
 			options.height = rect.height;
 		}
 
-		canvas = createCanvas(  options.width || 800, options.height || 600 );
+		canvas = GL.createCanvas(  options.width || 800, options.height || 600 );
 		if(root)
 			root.appendChild(canvas);
 	}
@@ -10057,7 +9802,7 @@ GL.create = function(options) {
 	*/
 	gl.snapshot = function(startx, starty, areax, areay, skip_reverse)
 	{
-		var canvas = createCanvas(areax,areay);
+		var canvas = GL.createCanvas(areax,areay);
 		var ctx = canvas.getContext("2d");
 		var pixels = ctx.getImageData(0,0,canvas.width,canvas.height);
 
@@ -10071,7 +9816,7 @@ GL.create = function(options) {
 			return canvas;
 
 		//flip image 
-		var final_canvas = createCanvas(areax,areay);
+		var final_canvas = GL.createCanvas(areax,areay);
 		var ctx = final_canvas.getContext("2d");
 		ctx.translate(0,areay);
 		ctx.scale(1,-1);
