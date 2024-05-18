@@ -66,7 +66,7 @@ class MIDIEvent {
     }
 
     set note(v) {
-        throw "notes cannot be assigned this way, must modify the data[1]";
+        throw new Error("notes cannot be assigned this way, must modify the data[1]");
     }
 
     get octave() {
@@ -78,7 +78,7 @@ class MIDIEvent {
     }
 
     set octave(v) {
-        throw "octave cannot be assigned this way, must modify the data[1]";
+        throw new Error("octave cannot be assigned this way, must modify the data[1]");
     }
 
     // returns HZs

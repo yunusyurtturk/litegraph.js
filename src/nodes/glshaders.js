@@ -214,10 +214,10 @@ export function valueToGLSL(
                     type = "mat4";
                     break;
                 default:
-                    throw "unknown type for glsl value size";
+                    throw new Error("unknown type for glsl value size");
             }
         } else {
-            throw "unknown type for glsl value: " + v.constructor;
+            throw new Error("unknown type for glsl value: " + v.constructor);
         }
     }
     switch (type) {
@@ -264,7 +264,7 @@ var varToTypeGLSL = (LiteGraph.varToTypeGLSL = function varToTypeGLSL(
         }
     }
     if (!output_type) {
-        throw "error: no output type specified";
+        throw new Error("error: no output type specified");
     }
     if (output_type == "float") {
         switch (input_type) {
@@ -311,7 +311,7 @@ var varToTypeGLSL = (LiteGraph.varToTypeGLSL = function varToTypeGLSL(
                 return "vec4(0.0,0.0,0.0,1.0)";
         }
     }
-    throw "type cannot be converted";
+    throw new Error("type cannot be converted");
 });
 
 // used to plug incompatible stuff

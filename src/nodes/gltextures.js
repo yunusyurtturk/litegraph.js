@@ -78,7 +78,7 @@ export class LGraphTexture {
         var container = this.getTexturesContainer();
 
         if (!container) {
-            throw "Cannot load texture, container of textures not found";
+            throw new Error("Cannot load texture, container of textures not found");
         }
 
         var tex = container[name];
@@ -92,7 +92,7 @@ export class LGraphTexture {
     // used to compute the appropiate output texture
     static getTargetTexture(origin, target, mode) {
         if (!origin) {
-            throw "LGraphTexture.getTargetTexture expects a reference texture";
+            throw new Error("LGraphTexture.getTargetTexture expects a reference texture");
         }
 
         var tex_type = null;

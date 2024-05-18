@@ -1723,7 +1723,7 @@ export class LGraphNode {
             target_node = this.graph.getNodeById(target_node);
         }
         if (!target_node) {
-            throw "target node is null";
+            throw new Error("target node is null");
         }
 
         // avoid loopback
@@ -1927,7 +1927,7 @@ export class LGraphNode {
                 target_node = this.graph.getNodeById(target_node);
             }
             if (!target_node) {
-                throw "Target Node not found";
+                throw new Error("Target Node not found");
             }
 
             for (let i = 0, l = output.links.length; i < l; i++) {

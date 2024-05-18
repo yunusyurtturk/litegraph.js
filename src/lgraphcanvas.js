@@ -18,7 +18,7 @@ export class LGraphCanvas {
         this.options = options;
 
         // if(graph === undefined)
-        //	throw ("No graph assigned");
+        //	throw new Error("No graph assigned");
         this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE;
 
         if (canvas && canvas.constructor === String) {
@@ -225,11 +225,11 @@ export class LGraphCanvas {
      */
     openSubgraph(graph) {
         if (!graph) {
-            throw "graph cannot be null";
+            throw new Error("graph cannot be null");
         }
 
         if (this.graph == graph) {
-            throw "graph cannot be the same";
+            throw new Error("graph cannot be the same");
         }
 
         this.clear();
@@ -290,7 +290,7 @@ export class LGraphCanvas {
             if (canvas.constructor === String) {
                 canvas = document.getElementById(canvas);
                 if (!canvas) {
-                    throw "Error creating LiteGraph canvas: Canvas not found";
+                    throw new Error("Error creating LiteGraph canvas: Canvas not found");
                 }
             }
         }
@@ -325,16 +325,17 @@ export class LGraphCanvas {
 
         if (canvas.getContext == null) {
             if (canvas.localName != "canvas") {
-                throw "Element supplied for LGraphCanvas must be a <canvas> element, you passed a " +
-                    canvas.localName;
+                throw new Error(
+                    "Element supplied for LGraphCanvas must be a <canvas> element, you passed a "+canvas.localName
+                );
             }
-            throw "This browser doesn't support Canvas";
+            throw new Error("This browser doesn't support Canvas");
         }
 
         var ctx = this.ctx = canvas.getContext("2d");
         if (ctx == null) {
             if (!canvas.webgl_enabled) {
-                console.warn("This canvas seems to be WebGL, enabling WebGL renderer");
+                console.info("This canvas seems to be WebGL, enabling WebGL renderer");
             }
             this.enableWebGL();
         }
@@ -449,10 +450,10 @@ export class LGraphCanvas {
      **/
     enableWebGL() {
         if (typeof GL === "undefined") {
-            throw "litegl.js must be included to use a WebGL canvas";
+            throw new Error("litegl.js must be included to use a WebGL canvas");
         }
         if (typeof enableWebGLCanvas === "undefined") {
-            throw "webglCanvas.js must be included to use this feature";
+            throw new Error("webglCanvas.js must be included to use this feature");
         }
 
         this.gl = this.ctx = enableWebGLCanvas(this.canvas);
@@ -7354,7 +7355,7 @@ export class LGraphCanvas {
 
     static onMenuNodeColors(value, options, e, menu, node) {
         if (!node) {
-            throw "no node for color";
+            throw new Error("no node for color");
         }
 
         var values = [];
@@ -7423,7 +7424,7 @@ export class LGraphCanvas {
 
     static onMenuNodeShapes(value, options, e, menu, node) {
         if (!node) {
-            throw "no node passed";
+            throw new Error("no node passed");
         }
 
         new ContextMenu(LiteGraph.VALID_SHAPES, {
@@ -7461,7 +7462,7 @@ export class LGraphCanvas {
 
     static onMenuNodeRemove(value, options, e, menu, node) {
         if (!node) {
-            throw "no node passed";
+            throw new Error("no node passed");
         }
 
         var graph = node.graph;
