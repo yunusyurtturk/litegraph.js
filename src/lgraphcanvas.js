@@ -374,9 +374,9 @@ export class LGraphCanvas {
         this._mousedown_callback = this.processMouseDown.bind(this);
         this._mousemove_callback = this.processMouseMove.bind(this);
         this._mouseup_callback = this.processMouseUp.bind(this);
-        canvas.addEventListener("mousedown", this._mousedown_callback, true);
-        canvas.addEventListener("mousemove", this._mousemove_callback);
-        canvas.addEventListener("mouseup", this._mouseup_callback, true);
+        canvas.addEventListener("pointerdown", this._mousedown_callback, true);
+        canvas.addEventListener("pointermove", this._mousemove_callback);
+        canvas.addEventListener("pointerup", this._mouseup_callback, true);
         canvas.addEventListener("contextmenu", this._doNothing);
 
         // Wheel
@@ -408,9 +408,9 @@ export class LGraphCanvas {
         var document = ref_window.document;
 
         // Pointer
-        canvas.removeEventListener("mousedown", this._mousedown_callback);
-        canvas.removeEventListener("mousemove", this._mousemove_callback);
-        canvas.removeEventListener("mouseup", this._mouseup_callback);
+        canvas.removeEventListener("pointerdown", this._mousedown_callback);
+        canvas.removeEventListener("pointermove", this._mousemove_callback);
+        canvas.removeEventListener("pointerup", this._mouseup_callback);
         canvas.removeEventListener("contextmenu", this._doNothing);
 
         // Wheel
@@ -572,9 +572,9 @@ export class LGraphCanvas {
 
         // move mouse move event to the window in case it drags outside of the canvas
         if(!this.options.skip_events) {
-            this.canvas.removeEventListener("mousemove", this._mousemove_callback);
-            ref_window.document.addEventListener("mousemove", this._mousemove_callback,true); // catch for the entire window
-            ref_window.document.addEventListener("mouseup", this._mouseup_callback,true);
+            this.canvas.removeEventListener("pointermove", this._mousemove_callback);
+            ref_window.document.addEventListener("pointermove", this._mousemove_callback,true); // catch for the entire window
+            ref_window.document.addEventListener("pointerup", this._mouseup_callback,true);
         }
 
         if(!is_inside) {
@@ -1289,9 +1289,9 @@ export class LGraphCanvas {
         // restore the mousemove event back to the canvas
         if(!this.options.skip_events) {
             // console.log("pointerevents: processMouseUp adjustEventListener");
-            document.removeEventListener("mousemove", this._mousemove_callback,true);
-            this.canvas.addEventListener("mousemove", this._mousemove_callback,true);
-            document.removeEventListener("mouseup", this._mouseup_callback,true);
+            document.removeEventListener("pointermove", this._mousemove_callback,true);
+            this.canvas.addEventListener("pointermove", this._mousemove_callback,true);
+            document.removeEventListener("pointerup", this._mouseup_callback,true);
         }
 
         this.adjustMouseEvent(e);
@@ -4539,7 +4539,7 @@ export class LGraphCanvas {
             // inside widget
             switch (w.type) {
                 case "button":
-                    if (event.type === "mousedown") {
+                    if (event.type === "pointerdown") {
                         if (w.callback) {
                             setTimeout(function() {
                                 w.callback(w, that, node, pos, event);
@@ -4562,7 +4562,7 @@ export class LGraphCanvas {
                     break;
                 case "number":
                 case "combo":
-                    if (event.type == "mousemove" && w.type == "number") {
+                    if (event.type == "pointermove" && w.type == "number") {
                         if(deltaX)
                             w.value += deltaX * 0.1 * (w.options.step || 1);
                         if ( w.options.min != null && w.value < w.options.min ) {
@@ -4571,7 +4571,7 @@ export class LGraphCanvas {
                         if ( w.options.max != null && w.value > w.options.max ) {
                             w.value = w.options.max;
                         }
-                    } else if (event.type == "mousedown") {
+                    } else if (event.type == "pointerdown") {
                         var values = w.options.values;
                         if (values && values.constructor === Function) {
                             values = w.options.values(w, node);
@@ -4630,7 +4630,7 @@ export class LGraphCanvas {
                             }
                         }
                         // end mousedown
-                    } else if(event.type == "mouseup" && w.type == "number") {
+                    } else if(event.type == "pointerup" && w.type == "number") {
                         let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
                         if (event.click_time < 200 && delta == 0) {
                             this.prompt(
@@ -4661,7 +4661,7 @@ export class LGraphCanvas {
                     this.dirty_canvas = true;
                     break;
                 case "toggle":
-                    if (event.type == "mousedown") {
+                    if (event.type == "pointerdown") {
                         w.value = !w.value;
                         setTimeout(function() {
                             inner_value_change(w, w.value);
@@ -4670,7 +4670,7 @@ export class LGraphCanvas {
                     break;
                 case "string":
                 case "text":
-                    if (event.type == "mousedown") {
+                    if (event.type == "pointerdown") {
                         this.prompt(
                             "Value",w.value,function(v) {
                                 inner_value_change(this, v);
@@ -4844,13 +4844,13 @@ export class LGraphCanvas {
 
         switch (event.type) {
             case "touchstart":
-                type = "mousedown";
+                type = "pointerdown";
                 break;
             case "touchmove":
-                type = "mousemove";
+                type = "pointermove";
                 break;
             case "touchend":
-                type = "mouseup";
+                type = "pointerup";
                 break;
             default:
                 return;
@@ -5765,13 +5765,13 @@ export class LGraphCanvas {
 
         let dialogCloseTimer = null;
 
-        dialog.addEventListener("mouseleave", (_event) => {
+        dialog.addEventListener("pointerleave", (_event) => {
             if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified) {
                 dialogCloseTimer = setTimeout(dialog.close, LiteGraph.dialog_close_on_mouse_leave_delay);
             }
         });
 
-        dialog.addEventListener("mouseenter", (_event) => {
+        dialog.addEventListener("pointerenter", (_event) => {
             if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer) {
                 clearTimeout(dialogCloseTimer);
             }
@@ -5817,14 +5817,14 @@ export class LGraphCanvas {
 
         var dialogCloseTimer = null;
         var prevent_timeout = false;
-        dialog.addEventListener("mouseleave", (_event) => {
+        dialog.addEventListener("pointerleave", (_event) => {
             if (prevent_timeout) return;
             if (LiteGraph.dialog_close_on_mouse_leave && !dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
                 dialogCloseTimer = setTimeout(dialog.close, LiteGraph.dialog_close_on_mouse_leave_delay);
             }
         });
 
-        dialog.addEventListener("mouseenter", (_event) => {
+        dialog.addEventListener("pointerenter", (_event) => {
             if (LiteGraph.dialog_close_on_mouse_leave && dialogCloseTimer) {
                 clearTimeout(dialogCloseTimer);
             }
@@ -5977,13 +5977,13 @@ export class LGraphCanvas {
         if(options.hide_on_mouse_leave) {
             var prevent_timeout = false;
             var timeout_close = null;
-            dialog.addEventListener("mouseenter", function(_event) {
+            dialog.addEventListener("pointerenter", function(_event) {
                 if (timeout_close) {
                     clearTimeout(timeout_close);
                     timeout_close = null;
                 }
             });
-            dialog.addEventListener("mouseleave", function(_event) {
+            dialog.addEventListener("pointerleave", function(_event) {
                 if (prevent_timeout) {
                     return;
                 }
@@ -6679,14 +6679,14 @@ export class LGraphCanvas {
 
         var dialogCloseTimer = null;
         var prevent_timeout = false;
-        dialog.addEventListener("mouseleave", function(_event) {
+        dialog.addEventListener("pointerleave", function(_event) {
             if (prevent_timeout)
                 return;
             if(options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave)
                 if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave)
                     dialogCloseTimer = setTimeout(dialog.close, LiteGraph.dialog_close_on_mouse_leave_delay); // dialog.close();
         });
-        dialog.addEventListener("mouseenter", function(_event) {
+        dialog.addEventListener("pointerenter", function(_event) {
             if(options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave)
                 if(dialogCloseTimer) clearTimeout(dialogCloseTimer);
         });

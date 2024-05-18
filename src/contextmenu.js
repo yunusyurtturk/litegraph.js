@@ -47,7 +47,7 @@ export class ContextMenu {
         }, 100); // delay so the mouse up event is not caught by this element
 
         // this prevents the default context browser menu to open in case this menu was created when pressing right button
-        root.addEventListener("mouseup", (e) => {
+        root.addEventListener("pointerup", (e) => {
             // console.log("pointerevents: ContextMenu up root prevent");
             e.preventDefault();
             return true;
@@ -60,7 +60,7 @@ export class ContextMenu {
             e.preventDefault();
             return false;
         });
-        root.addEventListener("mousedown", (e) => {
+        root.addEventListener("pointerdown", (e) => {
             // console.log("pointerevents: ContextMenu down");
             if (e.button == 2) {
                 this.close();
@@ -75,7 +75,7 @@ export class ContextMenu {
             e.preventDefault();
             return true;
         });
-        root.addEventListener("mouseenter", (_event) => {
+        root.addEventListener("pointerenter", (_event) => {
             // console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
@@ -239,7 +239,7 @@ export class ContextMenu {
             element.addEventListener("click", handleMenuItemClick);
         }
         if (!disabled && options.autoopen) {
-            element.addEventListener("mouseenter",(event) => {
+            element.addEventListener("pointerenter",(event) => {
                 const value = this.value;
                 if (!value || !value.has_submenu) {
                     return;
@@ -319,7 +319,7 @@ export class ContextMenu {
                 e &&
                 !ContextMenu.isCursorOverElement(e, this.parentMenu.root)
             ) {
-                ContextMenu.trigger(this.parentMenu.root, "mouseleave", e);
+                ContextMenu.trigger(this.parentMenu.root, "pointerleave", e);
             }
         }
         this.current_submenu?.close(e, true);

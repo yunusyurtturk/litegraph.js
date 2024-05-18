@@ -8644,16 +8644,13 @@ GL.create = function(options = {}) {
 	*/
 	gl.captureMouse = function(capture_wheel, translate_touchs ) {
 
-		canvas.addEventListener("mousedown", onmouse);
-		canvas.addEventListener("mousemove", onmouse);
+		canvas.addEventListener("pointerdown", onmouse);
+		canvas.addEventListener("pointermove", onmouse);
 		canvas.addEventListener("dragstart", onmouse);
-		//canvas.addEventListener("mouseup", onmouse); ??
+		//canvas.addEventListener("pointerup", onmouse); ??
 		if(capture_wheel)
-		{
-			canvas.addEventListener("mousewheel", onmouse, false);
 			canvas.addEventListener("wheel", onmouse, false);
-			//canvas.addEventListener("DOMMouseScroll", onmouse, false); //deprecated or non-standard
-		}
+
 		//prevent right click context menu
 		canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); return false; });
 
@@ -8688,47 +8685,46 @@ GL.create = function(options = {}) {
 		mouse.middle_button = !!(mouse.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK);
 		mouse.right_button = !!(mouse.buttons & GL.RIGHT_MOUSE_BUTTON_MASK);
 
-		if(e.eventType == "mousedown")
+		if(e.eventType == "pointerdown")
 		{
 			if(old_mouse_mask == 0) //no mouse button was pressed till now
 			{
-				canvas.removeEventListener("mousemove", onmouse);
+				canvas.removeEventListener("pointermove", onmouse);
 				var doc = canvas.ownerDocument;
-				doc.addEventListener("mousemove", onmouse);
-				doc.addEventListener("mouseup", onmouse);
+				doc.addEventListener("pointermove", onmouse);
+				doc.addEventListener("pointerup", onmouse);
 			}
 			last_click_time = now;
 
 			if(gl.onmousedown)
 				gl.onmousedown(e);
-			LEvent.trigger(gl,"mousedown");
+			LEvent.trigger(gl,"pointerdown");
 		}
-		else if(e.eventType == "mousemove")
+		else if(e.eventType == "pointermove")
 		{ 
 			if(gl.onmousemove)
 				gl.onmousemove(e); 
-			LEvent.trigger(gl,"mousemove",e);
+			LEvent.trigger(gl,"pointermove",e);
 		} 
-		else if(e.eventType == "mouseup")
+		else if(e.eventType == "pointerup")
 		{
-			//console.log("mouseup");
+			//console.log("pointerup");
 			if(gl.mouse.buttons == 0) //no more buttons pressed
 			{
-				canvas.addEventListener("mousemove", onmouse);
+				canvas.addEventListener("pointermove", onmouse);
 				var doc = canvas.ownerDocument;
-				doc.removeEventListener("mousemove", onmouse);
-				doc.removeEventListener("mouseup", onmouse);
+				doc.removeEventListener("pointermove", onmouse);
+				doc.removeEventListener("pointerup", onmouse);
 			}
 			e.click_time = now - last_click_time;
 			//last_click_time = now; //commented to avoid reseting click time when unclicking two mouse buttons
 
 			if(gl.onmouseup)
 				gl.onmouseup(e);
-			LEvent.trigger(gl,"mouseup",e);
+			LEvent.trigger(gl,"pointerup",e);
 		}
-		else if((e.eventType == "mousewheel" || e.eventType == "wheel" || e.eventType == "DOMMouseScroll"))
+		else if(e.eventType == "wheel")
 		{ 
-			e.eventType = "mousewheel";
 			if(e.type == "wheel")
 				e.wheel = -e.deltaY; //in firefox deltaY is 1 while in Chrome is 120
 			else
@@ -8741,7 +8737,7 @@ GL.create = function(options = {}) {
 			if(gl.onmousewheel)
 				gl.onmousewheel(e);
 
-			LEvent.trigger(gl, "mousewheel", e);
+			LEvent.trigger(gl, "wheel", e);
 		}
 		else if(e.eventType == "dragstart")
 		{
@@ -8755,7 +8751,7 @@ GL.create = function(options = {}) {
 
 		if(!e.skip_preventDefault)
 		{
-			if(e.eventType != "mousemove")
+			if(e.eventType != "pointermove")
 				e.stopPropagation();
 			e.preventDefault();
 			return false;
@@ -8803,9 +8799,9 @@ GL.create = function(options = {}) {
 
 		 switch(e.type)
 		{
-			case "touchstart": type = "mousedown"; break;
-			case "touchmove":  type = "mousemove"; break;        
-			case "touchend":   type = "mouseup"; break;
+			case "touchstart": type = "pointerdown"; break;
+			case "touchmove":  type = "pointermove"; break;        
+			case "touchend":   type = "pointerup"; break;
 			default: return;
 		}
 
@@ -9318,15 +9314,15 @@ GL.augmentEvent = function(e, root_element)
 	e.deltax = 0;
 	e.deltay = 0;
 	
-	if(e.type == "mousedown")
+	if(e.type == "pointerdown")
 	{
 		this.dragging = true;
 		//gl.mouse.buttons |= (1 << e.which); //enable
 	}
-	else if (e.type == "mousemove")
+	else if (e.type == "pointermove")
 	{
 	}
-	else if (e.type == "mouseup")
+	else if (e.type == "pointerup")
 	{
 		//gl.mouse.buttons = gl.mouse.buttons & ~(1 << e.which);
 		if(e.buttons == 0)

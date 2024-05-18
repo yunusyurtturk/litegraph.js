@@ -41,7 +41,7 @@ export class DragAndScale {
      */
     bindEvents(element) {
         this.last_mouse = new Float32Array(2);
-        element.addEventListener("mousedown", this.onMouseDown);
+        element.addEventListener("pointerdown", this.onMouseDown);
         element.addEventListener("wheel", this.onWheel);
     }
 
@@ -63,8 +63,8 @@ export class DragAndScale {
         if (is_inside) {
             this.dragging = true;
             this.abortController = new AbortController();
-            document.addEventListener("mousemove",this.onMouseMove, { signal: this.abortController.signal });
-            document.addEventListener("mouseup",this.onMouseUp, { signal: this.abortController.signal });
+            document.addEventListener("pointermove",this.onMouseMove, { signal: this.abortController.signal });
+            document.addEventListener("pointerup",this.onMouseUp, { signal: this.abortController.signal });
         }
 
         this.last_mouse[0] = x;
