@@ -343,7 +343,8 @@ class MIDIInterface {
 
     onMIDISuccess(midiAccess) {
         console.log("MIDI ready!");
-        console.log(midiAccess);
+        if(LiteGraph.debug)
+            console.log(midiAccess);
         this.midi = midiAccess; // store in the global (in real usage, would probably keep in an object instance)
         this.updatePorts();
 
@@ -366,7 +367,8 @@ class MIDIInterface {
         while (it_value && it_value.done === false) {
             let port_info = it_value.value;
             this.input_ports_info.push(port_info);
-            console.log("Input port [type:'" +
+            if(LiteGraph.debug)
+                console.log("Input port [type:'" +
                     port_info.type +
                     "'] id:'" +
                     port_info.id +
@@ -388,7 +390,8 @@ class MIDIInterface {
         while (it_value && it_value.done === false) {
             let port_info = it_value.value;
             this.output_ports_info.push(port_info);
-            console.log("Output port [type:'" +
+            if(LiteGraph.debug)
+                console.log("Output port [type:'" +
                     port_info.type +
                     "'] id:'" +
                     port_info.id +
