@@ -14,18 +14,10 @@ Set up JSDocs comments for LGraphNode, LLink, LGraphCanvas even if their program
 
 Removed ones for context menu.  Others likely on lgraphcanvas, editor, code, etc.
 
-# 4. Replace deprecated dependencies
-
-jquery 1.6.x
-
-# Diff Comfy's version with Javi's version and Adjust
-
-Done up to L8228
-There may be other forks that I should also learn from
-
 # Examine Issues in old repo
 
 https://github.com/jagenjo/litegraph.js/issues
+* There may be other forks that I should also learn from
 
 # Extend classes with a *Canvas class
 
