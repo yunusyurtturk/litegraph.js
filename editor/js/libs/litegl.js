@@ -1709,7 +1709,6 @@ class Mesh {
 		}
 	}
 
-
 	/**
 	* Adds vertex and indices buffers to a mesh
 	* @method addBuffers
@@ -1936,7 +1935,7 @@ class Mesh {
 	* @param {String} name of vertex buffer
 	* @return {Buffer} the buffer
 	*/
-	getBuffer = function(name) {
+	getBuffer(name) {
 		return this.vertexBuffers[name];
 	}
 
@@ -1999,733 +1998,611 @@ class Mesh {
 		}
 		this.indexBuffers = {};
 	}
-}
 
-GL.Mesh = Mesh;
-Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
+	bindBuffers( shader ) {
+		// enable attributes as necessary.
+		for (var name in this.vertexBuffers)
+		{
+			var buffer = this.vertexBuffers[ name ];
+			var attribute = buffer.attribute || name;
+			var location = shader.attributes[ attribute ];
+			if (location == null || !buffer.buffer) 
+				continue; 
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+			gl.enableVertexAttribArray(location);
+			gl.vertexAttribPointer(location, buffer.buffer.spacing, buffer.buffer.gl_type, false, 0, 0);
+		}
+	}
 
-Mesh.prototype.bindBuffers = function( shader )
-{
-	// enable attributes as necessary.
-	for (var name in this.vertexBuffers)
+	unbindBuffers( shader )	{
+		// disable attributes
+		for (var name in this.vertexBuffers)
+		{
+			var buffer = this.vertexBuffers[ name ];
+			var attribute = buffer.attribute || name;
+			var location = shader.attributes[ attribute ];
+			if (location == null || !buffer.buffer)
+				continue; //ignore this buffer
+			gl.disableVertexAttribArray( shader.attributes[attribute] );
+		}
+	}
+
+	/**
+	* Creates a clone of the mesh, the datarrays are cloned too
+	* @method clone
+	*/
+	clone( gl )	{
+		var gl = gl || global.gl;
+		var vbs = {};
+		var ibs = {};
+
+		for(var i in this.vertexBuffers)
+		{
+			var b = this.vertexBuffers[i];
+			vbs[i] = new b.data.constructor( b.data ); //clone
+		}
+		for(var i in this.indexBuffers)
+		{
+			var b = this.indexBuffers[i];
+			ibs[i] = new b.data.constructor( b.data ); //clone
+		}
+
+		return new GL.Mesh( vbs, ibs, undefined, gl );
+	}
+
+	/**
+	* Creates a clone of the mesh, but the data-arrays are shared between both meshes (useful for sharing a mesh between contexts)
+	* @method cloneShared
+	*/
+	cloneShared(gl) {
+		var gl = gl || global.gl;
+		return new GL.Mesh( this.vertexBuffers, this.indexBuffers, undefined, gl );
+	}
+
+	/**
+	* Creates an object with the info of the mesh (useful to transfer to workers)
+	* @method toObject
+	*/
+	toObject() {
+		var vbs = {};
+		var ibs = {};
+
+		for(var i in this.vertexBuffers)
+		{
+			var b = this.vertexBuffers[i];
+			vbs[i] = { 
+				spacing: b.spacing,
+				data: new b.data.constructor( b.data ) //clone
+			}; 
+		}
+		for(var i in this.indexBuffers)
+		{
+			var b = this.indexBuffers[i];
+			ibs[i] = { 
+				data: new b.data.constructor( b.data ) //clone
+			}
+		}
+
+		return { 
+			vertexBuffers: vbs, 
+			indexBuffers: ibs,
+			info: this.info ? GL.cloneObject( this.info ) : null,
+			bounding: this._bounding.toJSON()
+		};
+	}
+
+	toJSON() {
+		var r = {
+			vertexBuffers: {},
+			indexBuffers: {},
+			info: this.info ? GL.cloneObject( this.info ) : null,
+			bounding: this._bounding.toJSON() 
+		};
+
+		for(var i in this.vertexBuffers)
+			r.vertexBuffers[i] = this.vertexBuffers[i].toJSON();
+
+		for(var i in this.indexBuffers)
+			r.indexBuffers[i] = this.indexBuffers[i].toJSON();
+
+		return r;
+	}
+
+	fromJSON(o) {
+		this.vertexBuffers = {};
+		this.indexBuffers = {};
+
+		for(var i in o.vertexBuffers)
+		{
+			if(!o.vertexBuffers[i])
+				continue;
+			var buffer = new GL.Buffer();
+			buffer.fromJSON( o.vertexBuffers[i] );
+			if(!buffer.attribute && GL.Mesh.common_buffers[i])
+				buffer.attribute = GL.Mesh.common_buffers[i].attribute;
+			this.vertexBuffers[i] = buffer;
+		}
+
+		for(var i in o.indexBuffers)
+		{
+			if(!o.indexBuffers[i])
+				continue;
+			var buffer = new GL.Buffer();
+			buffer.fromJSON( o.indexBuffers[i] );
+			this.indexBuffers[i] = buffer;
+		}
+
+		if(o.info)
+			this.info = GL.cloneObject( o.info );
+		if(o.bounding)
+			this.bounding = o.bounding; //setter does the job
+	}
+
+	/**
+	* Computes some data about the mesh
+	* @method generateMetadata
+	*/
+	generateMetadata() {
+		var metadata = {};
+
+		var vertices = this.vertexBuffers["vertices"].data;
+		var triangles = this.indexBuffers["triangles"].data;
+
+		metadata.vertices = vertices.length / 3;
+		if(triangles)
+			metadata.faces = triangles.length / 3;
+		else
+			metadata.faces = vertices.length / 9;
+
+		metadata.indexed = !!this.metadata.faces;
+		this.metadata = metadata;
+	}
+/*
+	//never tested
+	Mesh.prototype.draw = function(shader, mode, range_start, range_length)
 	{
-		var buffer = this.vertexBuffers[ name ];
-		var attribute = buffer.attribute || name;
-		var location = shader.attributes[ attribute ];
-		if (location == null || !buffer.buffer) 
-			continue; 
+		if(range_length == 0) return;
+
+		// Create and enable attribute pointers as necessary.
+		var length = 0;
+		for (var attribute in this.vertexBuffers) {
+		var buffer = this.vertexBuffers[attribute];
+		var location = shader.attributes[attribute] ||
+			gl.getAttribLocation(shader.program, attribute);
+		if (location == -1 || !buffer.buffer) continue;
+		shader.attributes[attribute] = location;
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
 		gl.enableVertexAttribArray(location);
-		gl.vertexAttribPointer(location, buffer.buffer.spacing, buffer.buffer.gl_type, false, 0, 0);
-	}
-}
-
-Mesh.prototype.unbindBuffers = function( shader )
-{
-	// disable attributes
-	for (var name in this.vertexBuffers)
-	{
-		var buffer = this.vertexBuffers[ name ];
-		var attribute = buffer.attribute || name;
-		var location = shader.attributes[ attribute ];
-		if (location == null || !buffer.buffer)
-			continue; //ignore this buffer
-		gl.disableVertexAttribArray( shader.attributes[attribute] );
-	}
-}
-
-/**
-* Creates a clone of the mesh, the datarrays are cloned too
-* @method clone
-*/
-Mesh.prototype.clone = function( gl )
-{
-	var gl = gl || global.gl;
-	var vbs = {};
-	var ibs = {};
-
-	for(var i in this.vertexBuffers)
-	{
-		var b = this.vertexBuffers[i];
-		vbs[i] = new b.data.constructor( b.data ); //clone
-	}
-	for(var i in this.indexBuffers)
-	{
-		var b = this.indexBuffers[i];
-		ibs[i] = new b.data.constructor( b.data ); //clone
-	}
-
-	return new GL.Mesh( vbs, ibs, undefined, gl );
-}
-
-/**
-* Creates a clone of the mesh, but the data-arrays are shared between both meshes (useful for sharing a mesh between contexts)
-* @method clone
-*/
-Mesh.prototype.cloneShared = function( gl )
-{
-	var gl = gl || global.gl;
-	return new GL.Mesh( this.vertexBuffers, this.indexBuffers, undefined, gl );
-}
-
-
-/**
-* Creates an object with the info of the mesh (useful to transfer to workers)
-* @method toObject
-*/
-Mesh.prototype.toObject = function()
-{
-	var vbs = {};
-	var ibs = {};
-
-	for(var i in this.vertexBuffers)
-	{
-		var b = this.vertexBuffers[i];
-		vbs[i] = { 
-			spacing: b.spacing,
-			data: new b.data.constructor( b.data ) //clone
-		}; 
-	}
-	for(var i in this.indexBuffers)
-	{
-		var b = this.indexBuffers[i];
-		ibs[i] = { 
-			data: new b.data.constructor( b.data ) //clone
+		gl.vertexAttribPointer(location, buffer.buffer.spacing, gl.FLOAT, false, 0, 0);
+		length = buffer.buffer.length / buffer.buffer.spacing;
 		}
+
+		//range rendering
+		var offset = 0;
+		if(arguments.length > 3) //render a polygon range
+			offset = range_start * (this.indexBuffer ? this.indexBuffer.constructor.BYTES_PER_ELEMENT : 1); //in bytes (Uint16 == 2 bytes)
+
+		if(arguments.length > 4)
+			length = range_length;
+		else if (this.indexBuffer)
+			length = this.indexBuffer.buffer.length - offset;
+
+		// Disable unused attribute pointers.
+		for (var attribute in shader.attributes) {
+		if (!(attribute in this.vertexBuffers)) {
+			gl.disableVertexAttribArray(shader.attributes[attribute]);
+		}
+		}
+
+		// Draw the geometry.
+		if (length && (!this.indexBuffer || indexBuffer.buffer)) {
+		if (this.indexBuffer) {
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer.buffer);
+			gl.drawElements(mode, length, gl.UNSIGNED_SHORT, offset);
+		} else {
+			gl.drawArrays(mode, offset, length);
+		}
+		}
+
+		return this;
 	}
-
-	return { 
-		vertexBuffers: vbs, 
-		indexBuffers: ibs,
-		info: this.info ? GL.cloneObject( this.info ) : null,
-		bounding: this._bounding.toJSON()
-	};
-}
-
-
-Mesh.prototype.toJSON = function()
-{
-	var r = {
-		vertexBuffers: {},
-		indexBuffers: {},
-		info: this.info ? GL.cloneObject( this.info ) : null,
-		bounding: this._bounding.toJSON() 
-	};
-
-	for(var i in this.vertexBuffers)
-		r.vertexBuffers[i] = this.vertexBuffers[i].toJSON();
-
-	for(var i in this.indexBuffers)
-		r.indexBuffers[i] = this.indexBuffers[i].toJSON();
-
-	return r;
-}
-
-Mesh.prototype.fromJSON = function(o)
-{
-	this.vertexBuffers = {};
-	this.indexBuffers = {};
-
-	for(var i in o.vertexBuffers)
-	{
-		if(!o.vertexBuffers[i])
-			continue;
-		var buffer = new GL.Buffer();
-		buffer.fromJSON( o.vertexBuffers[i] );
-		if(!buffer.attribute && GL.Mesh.common_buffers[i])
-			buffer.attribute = GL.Mesh.common_buffers[i].attribute;
-		this.vertexBuffers[i] = buffer;
-	}
-
-	for(var i in o.indexBuffers)
-	{
-		if(!o.indexBuffers[i])
-			continue;
-		var buffer = new GL.Buffer();
-		buffer.fromJSON( o.indexBuffers[i] );
-		this.indexBuffers[i] = buffer;
-	}
-
-	if(o.info)
-		this.info = GL.cloneObject( o.info );
-	if(o.bounding)
-		this.bounding = o.bounding; //setter does the job
-}
-
-
-/**
-* Computes some data about the mesh
-* @method generateMetadata
-*/
-Mesh.prototype.generateMetadata = function()
-{
-	var metadata = {};
-
-	var vertices = this.vertexBuffers["vertices"].data;
-	var triangles = this.indexBuffers["triangles"].data;
-
-	metadata.vertices = vertices.length / 3;
-	if(triangles)
-		metadata.faces = triangles.length / 3;
-	else
-		metadata.faces = vertices.length / 9;
-
-	metadata.indexed = !!this.metadata.faces;
-	this.metadata = metadata;
-}
-
-//never tested
-/*
-Mesh.prototype.draw = function(shader, mode, range_start, range_length)
-{
-	if(range_length == 0) return;
-
-	// Create and enable attribute pointers as necessary.
-	var length = 0;
-	for (var attribute in this.vertexBuffers) {
-	  var buffer = this.vertexBuffers[attribute];
-	  var location = shader.attributes[attribute] ||
-		gl.getAttribLocation(shader.program, attribute);
-	  if (location == -1 || !buffer.buffer) continue;
-	  shader.attributes[attribute] = location;
-	  gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
-	  gl.enableVertexAttribArray(location);
-	  gl.vertexAttribPointer(location, buffer.buffer.spacing, gl.FLOAT, false, 0, 0);
-	  length = buffer.buffer.length / buffer.buffer.spacing;
-	}
-
-	//range rendering
-	var offset = 0;
-	if(arguments.length > 3) //render a polygon range
-		offset = range_start * (this.indexBuffer ? this.indexBuffer.constructor.BYTES_PER_ELEMENT : 1); //in bytes (Uint16 == 2 bytes)
-
-	if(arguments.length > 4)
-		length = range_length;
-	else if (this.indexBuffer)
-		length = this.indexBuffer.buffer.length - offset;
-
-	// Disable unused attribute pointers.
-	for (var attribute in shader.attributes) {
-	  if (!(attribute in this.vertexBuffers)) {
-		gl.disableVertexAttribArray(shader.attributes[attribute]);
-	  }
-	}
-
-	// Draw the geometry.
-	if (length && (!this.indexBuffer || indexBuffer.buffer)) {
-	  if (this.indexBuffer) {
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer.buffer);
-		gl.drawElements(mode, length, gl.UNSIGNED_SHORT, offset);
-	  } else {
-		gl.drawArrays(mode, offset, length);
-	  }
-	}
-
-	return this;
-}
 */
 
-/**
-* Creates a new index stream with wireframe 
-* @method computeWireframe
-*/
-Mesh.prototype.computeWireframe = function() {
-	var index_buffer = this.indexBuffers["triangles"];
+	/**
+	* Creates a new index stream with wireframe 
+	* @method computeWireframe
+	*/
+	computeWireframe() {
+		var index_buffer = this.indexBuffers["triangles"];
 
-	var vertices = this.vertexBuffers["vertices"].data;
-	var num_vertices = (vertices.length/3);
+		var vertices = this.vertexBuffers["vertices"].data;
+		var num_vertices = (vertices.length/3);
 
-	if(!index_buffer) //unindexed
-	{
-		var num_triangles = num_vertices / 3;
-		var buffer = num_vertices > 256*256 ? new Uint32Array( num_triangles * 6 ) : new Uint16Array( num_triangles * 6 );
-		for(var i = 0; i < num_vertices; i += 3)
+		if(!index_buffer) //unindexed
 		{
-			buffer[i*2] = i;
-			buffer[i*2+1] = i+1;
-			buffer[i*2+2] = i+1;
-			buffer[i*2+3] = i+2;
-			buffer[i*2+4] = i+2;
-			buffer[i*2+5] = i;
-		}
-
-	}
-	else //indexed
-	{
-		var data = index_buffer.data;
-
-		var indexer = new GL.Indexer();
-		for (var i = 0; i < data.length; i+=3) {
-		  var t = data.subarray(i,i+3);
-		  for (var j = 0; j < t.length; j++) {
-			var a = t[j], b = t[(j + 1) % t.length];
-			indexer.add([Math.min(a, b), Math.max(a, b)]);
-		  }
-		}
-
-		//linearize
-		var unique = indexer.unique;
-		var buffer = num_vertices > 256*256 ? new Uint32Array( unique.length * 2 ) : new Uint16Array( unique.length * 2 );
-		for(var i = 0, l = unique.length; i < l; ++i)
-			buffer.set(unique[i],i*2);
-	}
-
-	//create stream
-	this.createIndexBuffer('wireframe', buffer);
-	return this;
-}
-
-
-/**
-* Multiplies every normal by -1 and uploads it
-* @method flipNormals
-* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW)
-*/
-Mesh.prototype.flipNormals = function( stream_type  ) {
-	var normals_buffer = this.vertexBuffers["normals"];
-	if(!normals_buffer)
-		return;
-	var data = normals_buffer.data;
-	var l = data.length;
-	for(var i = 0; i < l; ++i)
-		data[i] *= -1;
-	normals_buffer.upload( stream_type );
-
-	//reverse indices too
-	if( !this.indexBuffers["triangles"] )
-		this.computeIndices(); //create indices
-
-	var triangles_buffer = this.indexBuffers["triangles"];
-	var data = triangles_buffer.data;
-	var l = data.length;
-	for(var i = 0; i < l; i += 3)
-	{
-		var tmp = data[i];
-		data[i] = data[i+1];
-		data[i+1] = tmp;
-		//the [i+2] stays the same
-	}
-	triangles_buffer.upload( stream_type );
-}
-
-
-/**
-* Compute indices for a mesh where vertices are shared
-* @method computeIndices
-*/
-Mesh.prototype.computeIndices = function() {
-
-	//cluster by distance
-	var new_vertices = [];
-	var new_normals = [];
-	var new_coords = [];
-
-	var indices = [];
-
-	var old_vertices_buffer = this.vertexBuffers["vertices"];
-	var old_normals_buffer = this.vertexBuffers["normals"];
-	var old_coords_buffer = this.vertexBuffers["coords"];
-
-	var old_vertices_data = old_vertices_buffer.data;
-
-	var old_normals_data = null;
-	if( old_normals_buffer )
-		old_normals_data = old_normals_buffer.data;
-
-	var old_coords_data = null;
-	if( old_coords_buffer )
-		old_coords_data = old_coords_buffer.data;
-
-
-	var indexer = {};
-
-	var l = old_vertices_data.length / 3;
-	for(var i = 0; i < l; ++i)
-	{
-		var v = old_vertices_data.subarray( i*3,(i+1)*3 );
-		var key = (v[0] * 1000)|0;
-
-		//search in new_vertices
-		var j = 0;
-		var candidates = indexer[key];
-		if(candidates)
-		{
-			var l2 = candidates.length;
-			for(; j < l2; j++)
+			var num_triangles = num_vertices / 3;
+			var buffer = num_vertices > 256*256 ? new Uint32Array( num_triangles * 6 ) : new Uint16Array( num_triangles * 6 );
+			for(var i = 0; i < num_vertices; i += 3)
 			{
-				var v2 = new_vertices[ candidates[j] ];
+				buffer[i*2] = i;
+				buffer[i*2+1] = i+1;
+				buffer[i*2+2] = i+1;
+				buffer[i*2+3] = i+2;
+				buffer[i*2+4] = i+2;
+				buffer[i*2+5] = i;
+			}
+
+		}
+		else //indexed
+		{
+			var data = index_buffer.data;
+
+			var indexer = new GL.Indexer();
+			for (var i = 0; i < data.length; i+=3) {
+			var t = data.subarray(i,i+3);
+			for (var j = 0; j < t.length; j++) {
+				var a = t[j], b = t[(j + 1) % t.length];
+				indexer.add([Math.min(a, b), Math.max(a, b)]);
+			}
+			}
+
+			//linearize
+			var unique = indexer.unique;
+			var buffer = num_vertices > 256*256 ? new Uint32Array( unique.length * 2 ) : new Uint16Array( unique.length * 2 );
+			for(var i = 0, l = unique.length; i < l; ++i)
+				buffer.set(unique[i],i*2);
+		}
+
+		//create stream
+		this.createIndexBuffer('wireframe', buffer);
+		return this;
+	}
+
+	/**
+	* Multiplies every normal by -1 and uploads it
+	* @method flipNormals
+	* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW)
+	*/
+	flipNormals(stream_type) {
+		var normals_buffer = this.vertexBuffers["normals"];
+		if(!normals_buffer)
+			return;
+		var data = normals_buffer.data;
+		var l = data.length;
+		for(var i = 0; i < l; ++i)
+			data[i] *= -1;
+		normals_buffer.upload( stream_type );
+
+		//reverse indices too
+		if( !this.indexBuffers["triangles"] )
+			this.computeIndices(); //create indices
+
+		var triangles_buffer = this.indexBuffers["triangles"];
+		var data = triangles_buffer.data;
+		var l = data.length;
+		for(var i = 0; i < l; i += 3)
+		{
+			var tmp = data[i];
+			data[i] = data[i+1];
+			data[i+1] = tmp;
+			//the [i+2] stays the same
+		}
+		triangles_buffer.upload( stream_type );
+	}
+
+	/**
+	* Compute indices for a mesh where vertices are shared
+	* @method computeIndices
+	*/
+	computeIndices() {
+
+		//cluster by distance
+		var new_vertices = [];
+		var new_normals = [];
+		var new_coords = [];
+
+		var indices = [];
+
+		var old_vertices_buffer = this.vertexBuffers["vertices"];
+		var old_normals_buffer = this.vertexBuffers["normals"];
+		var old_coords_buffer = this.vertexBuffers["coords"];
+
+		var old_vertices_data = old_vertices_buffer.data;
+
+		var old_normals_data = null;
+		if( old_normals_buffer )
+			old_normals_data = old_normals_buffer.data;
+
+		var old_coords_data = null;
+		if( old_coords_buffer )
+			old_coords_data = old_coords_buffer.data;
+
+
+		var indexer = {};
+
+		var l = old_vertices_data.length / 3;
+		for(var i = 0; i < l; ++i)
+		{
+			var v = old_vertices_data.subarray( i*3,(i+1)*3 );
+			var key = (v[0] * 1000)|0;
+
+			//search in new_vertices
+			var j = 0;
+			var candidates = indexer[key];
+			if(candidates)
+			{
+				var l2 = candidates.length;
+				for(; j < l2; j++)
+				{
+					var v2 = new_vertices[ candidates[j] ];
+					//same vertex
+					if( vec3.sqrDist( v, v2 ) < 0.01 )
+					{
+						indices.push(j);
+						break;
+					}
+				}
+			}
+
+			/*
+			var l2 = new_vertices.length;
+			for(var j = 0; j < l2; j++)
+			{
 				//same vertex
-				if( vec3.sqrDist( v, v2 ) < 0.01 )
+				if( vec3.sqrDist( v, new_vertices[j] ) < 0.001 )
 				{
 					indices.push(j);
 					break;
 				}
 			}
+			*/
+
+			if(candidates && j != l2)
+				continue;
+
+			var index = j;
+			new_vertices.push(v);
+			if( indexer[ key ] )
+				indexer[ key ].push( index );
+			else
+				indexer[ key ] = [ index ];
+
+			if(old_normals_data)
+				new_normals.push( old_normals_data.subarray(i*3, (i+1)*3) );
+			if(old_coords_data)
+				new_coords.push( old_coords_data.subarray(i*2, (i+1)*2) );
+			indices.push(index);
+		}
+
+		this.vertexBuffers = {}; //erase all
+
+		//new buffers
+		this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, linearizeArray( new_vertices ) );	
+		if(old_normals_data)
+			this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, linearizeArray( new_normals ) );	
+		if(old_coords_data)
+			this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, linearizeArray( new_coords ) );	
+
+		this.createIndexBuffer( "triangles", indices );
+	}
+
+	/**
+	* Breaks the indices
+	* @method explodeIndices
+	*/
+	explodeIndices( buffer_name ) {
+
+		buffer_name = buffer_name || "triangles";
+
+		var indices_buffer = this.getIndexBuffer( buffer_name );
+		if(!indices_buffer)
+			return;
+
+		var indices = indices_buffer.data;
+
+		var new_buffers = {};
+		for(var i in this.vertexBuffers)
+		{
+			var info = GL.Mesh.common_buffers[i];
+			new_buffers[i] = new (info.type || Float32Array)( info.spacing * indices.length );
+		}
+
+		for(var i = 0, l = indices.length; i < l; ++i)
+		{
+			var index = indices[i];
+			for(var j in this.vertexBuffers)
+			{
+				var buffer = this.vertexBuffers[j];
+				var info = GL.Mesh.common_buffers[j];
+				var spacing = buffer.spacing || info.spacing;
+				var new_buffer = new_buffers[j];
+				new_buffer.set( buffer.data.subarray( index*spacing, index*spacing + spacing ), i*spacing );
+			}
 		}
 
 		/*
-		var l2 = new_vertices.length;
-		for(var j = 0; j < l2; j++)
+		//cluster by distance
+		var new_vertices = new Float32Array(indices.length * 3);
+		var new_normals = null;
+		var new_coords = null;
+
+		var old_vertices_buffer = this.vertexBuffers["vertices"];
+		var old_vertices = old_vertices_buffer.data;
+
+		var old_normals_buffer = this.vertexBuffers["normals"];
+		var old_normals = null;
+		if(old_normals_buffer)
 		{
-			//same vertex
-			if( vec3.sqrDist( v, new_vertices[j] ) < 0.001 )
-			{
-				indices.push(j);
-				break;
-			}
+			old_normals = old_normals_buffer.data;
+			new_normals = new Float32Array(indices.length * 3);
 		}
+
+		var old_coords_buffer = this.vertexBuffers["coords"];
+		var old_coords = null;
+		if( old_coords_buffer )
+		{
+			old_coords = old_coords_buffer.data;
+			new_coords = new Float32Array(indices.length * 2);
+		}
+
+		for(var i = 0, l = indices.length; i < l; ++i)
+		{
+			var index = indices[i];
+			new_vertices.set( old_vertices.subarray( index*3, index*3 + 3 ), i*3 );
+			if(old_normals)
+				new_normals.set( old_normals.subarray( index*3, index*3 + 3 ), i*3 );
+			if(old_coords)
+				new_coords.set( old_coords.subarray( index*2, index*2 + 2 ), i*2 );
+		}
+
+		//erase all
+		this.vertexBuffers = {}; 
+
+		//new buffers
+		this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, new_vertices );	
+		if(new_normals)
+			this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, new_normals );	
+		if(new_coords)
+			this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, new_coords );	
 		*/
 
-		if(candidates && j != l2)
-			continue;
-
-		var index = j;
-		new_vertices.push(v);
-		if( indexer[ key ] )
-			indexer[ key ].push( index );
-		else
-			indexer[ key ] = [ index ];
-
-		if(old_normals_data)
-			new_normals.push( old_normals_data.subarray(i*3, (i+1)*3) );
-		if(old_coords_data)
-			new_coords.push( old_coords_data.subarray(i*2, (i+1)*2) );
-		indices.push(index);
-	}
-
-	this.vertexBuffers = {}; //erase all
-
-	//new buffers
-	this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, linearizeArray( new_vertices ) );	
-	if(old_normals_data)
-		this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, linearizeArray( new_normals ) );	
-	if(old_coords_data)
-		this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, linearizeArray( new_coords ) );	
-
-	this.createIndexBuffer( "triangles", indices );
-}
-
-/**
-* Breaks the indices
-* @method explodeIndices
-*/
-Mesh.prototype.explodeIndices = function( buffer_name ) {
-
-	buffer_name = buffer_name || "triangles";
-
-	var indices_buffer = this.getIndexBuffer( buffer_name );
-	if(!indices_buffer)
-		return;
-
-	var indices = indices_buffer.data;
-
-	var new_buffers = {};
-	for(var i in this.vertexBuffers)
-	{
-		var info = GL.Mesh.common_buffers[i];
-		new_buffers[i] = new (info.type || Float32Array)( info.spacing * indices.length );
-	}
-
-	for(var i = 0, l = indices.length; i < l; ++i)
-	{
-		var index = indices[i];
-		for(var j in this.vertexBuffers)
+		for(var i in new_buffers)
 		{
-			var buffer = this.vertexBuffers[j];
-			var info = GL.Mesh.common_buffers[j];
-			var spacing = buffer.spacing || info.spacing;
-			var new_buffer = new_buffers[j];
-			new_buffer.set( buffer.data.subarray( index*spacing, index*spacing + spacing ), i*spacing );
+			var old = this.vertexBuffers[i];
+			this.createVertexBuffer( i, old.attribute, old.spacing, new_buffers[i] );	
 		}
+
+		delete this.indexBuffers[ buffer_name ];
 	}
 
-	/*
-	//cluster by distance
-	var new_vertices = new Float32Array(indices.length * 3);
-	var new_normals = null;
-	var new_coords = null;
-
-	var old_vertices_buffer = this.vertexBuffers["vertices"];
-	var old_vertices = old_vertices_buffer.data;
-
-	var old_normals_buffer = this.vertexBuffers["normals"];
-	var old_normals = null;
-	if(old_normals_buffer)
-	{
-		old_normals = old_normals_buffer.data;
-		new_normals = new Float32Array(indices.length * 3);
-	}
-
-	var old_coords_buffer = this.vertexBuffers["coords"];
-	var old_coords = null;
-	if( old_coords_buffer )
-	{
-		old_coords = old_coords_buffer.data;
-		new_coords = new Float32Array(indices.length * 2);
-	}
-
-	for(var i = 0, l = indices.length; i < l; ++i)
-	{
-		var index = indices[i];
-		new_vertices.set( old_vertices.subarray( index*3, index*3 + 3 ), i*3 );
-		if(old_normals)
-			new_normals.set( old_normals.subarray( index*3, index*3 + 3 ), i*3 );
-		if(old_coords)
-			new_coords.set( old_coords.subarray( index*2, index*2 + 2 ), i*2 );
-	}
-
-	//erase all
-	this.vertexBuffers = {}; 
-
-	//new buffers
-	this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, new_vertices );	
-	if(new_normals)
-		this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, new_normals );	
-	if(new_coords)
-		this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, new_coords );	
+	/**
+	* Creates a stream with the normals
+	* @method computeNormals
+	* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW)
 	*/
+	computeNormals( stream_type  ) {
+		var vertices_buffer = this.vertexBuffers["vertices"];
+		if(!vertices_buffer)
+			return console.error("Cannot compute normals of a mesh without vertices");
 
-	for(var i in new_buffers)
-	{
-		var old = this.vertexBuffers[i];
-		this.createVertexBuffer( i, old.attribute, old.spacing, new_buffers[i] );	
-	}
+		var vertices = this.vertexBuffers["vertices"].data;
+		var num_vertices = vertices.length / 3;
 
-	delete this.indexBuffers[ buffer_name ];
-}
+		//create because it is faster than filling it with zeros
+		var normals = new Float32Array( vertices.length );
 
+		var triangles = null;
+		if(this.indexBuffers["triangles"])
+			triangles = this.indexBuffers["triangles"].data;
 
+		var temp = GL.temp_vec3;
+		var temp2 = GL.temp2_vec3;
 
-/**
-* Creates a stream with the normals
-* @method computeNormals
-* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW)
-*/
-Mesh.prototype.computeNormals = function( stream_type  ) {
-	var vertices_buffer = this.vertexBuffers["vertices"];
-	if(!vertices_buffer)
-		return console.error("Cannot compute normals of a mesh without vertices");
+		var i1,i2,i3,v1,v2,v3,n1,n2,n3;
 
-	var vertices = this.vertexBuffers["vertices"].data;
-	var num_vertices = vertices.length / 3;
-
-	//create because it is faster than filling it with zeros
-	var normals = new Float32Array( vertices.length );
-
-	var triangles = null;
-	if(this.indexBuffers["triangles"])
-		triangles = this.indexBuffers["triangles"].data;
-
-	var temp = GL.temp_vec3;
-	var temp2 = GL.temp2_vec3;
-
-	var i1,i2,i3,v1,v2,v3,n1,n2,n3;
-
-	//compute the plane normal
-	var l = triangles ? triangles.length : vertices.length;
-	for (var a = 0; a < l; a+=3)
-	{
-		if(triangles)
+		//compute the plane normal
+		var l = triangles ? triangles.length : vertices.length;
+		for (var a = 0; a < l; a+=3)
 		{
-			i1 = triangles[a];
-			i2 = triangles[a+1];
-			i3 = triangles[a+2];
+			if(triangles)
+			{
+				i1 = triangles[a];
+				i2 = triangles[a+1];
+				i3 = triangles[a+2];
 
-			v1 = vertices.subarray(i1*3,i1*3+3);
-			v2 = vertices.subarray(i2*3,i2*3+3);
-			v3 = vertices.subarray(i3*3,i3*3+3);
+				v1 = vertices.subarray(i1*3,i1*3+3);
+				v2 = vertices.subarray(i2*3,i2*3+3);
+				v3 = vertices.subarray(i3*3,i3*3+3);
 
-			n1 = normals.subarray(i1*3,i1*3+3);
-			n2 = normals.subarray(i2*3,i2*3+3);
-			n3 = normals.subarray(i3*3,i3*3+3);
-		}
-		else
-		{
-			v1 = vertices.subarray(a*3,a*3+3);
-			v2 = vertices.subarray(a*3+3,a*3+6);
-			v3 = vertices.subarray(a*3+6,a*3+9);
+				n1 = normals.subarray(i1*3,i1*3+3);
+				n2 = normals.subarray(i2*3,i2*3+3);
+				n3 = normals.subarray(i3*3,i3*3+3);
+			}
+			else
+			{
+				v1 = vertices.subarray(a*3,a*3+3);
+				v2 = vertices.subarray(a*3+3,a*3+6);
+				v3 = vertices.subarray(a*3+6,a*3+9);
 
-			n1 = normals.subarray(a*3,a*3+3);
-			n2 = normals.subarray(a*3+3,a*3+6);
-			n3 = normals.subarray(a*3+6,a*3+9);
+				n1 = normals.subarray(a*3,a*3+3);
+				n2 = normals.subarray(a*3+3,a*3+6);
+				n3 = normals.subarray(a*3+6,a*3+9);
+			}
+
+			vec3.sub( temp, v2, v1 );
+			vec3.sub( temp2, v3, v1 );
+			vec3.cross( temp, temp, temp2 );
+			vec3.normalize(temp,temp);
+
+			//save
+			vec3.add( n1, n1, temp );
+			vec3.add( n2, n2, temp );
+			vec3.add( n3, n3, temp );
 		}
 
-		vec3.sub( temp, v2, v1 );
-		vec3.sub( temp2, v3, v1 );
-		vec3.cross( temp, temp, temp2 );
-		vec3.normalize(temp,temp);
-
-		//save
-		vec3.add( n1, n1, temp );
-		vec3.add( n2, n2, temp );
-		vec3.add( n3, n3, temp );
-	}
-
-	//normalize if vertices are shared
-	if(triangles)
-	for (var a = 0, l = normals.length; a < l; a+=3)
-	{
-		var n = normals.subarray(a,a+3);
-		vec3.normalize(n,n);
-	}
-
-	var normals_buffer = this.vertexBuffers["normals"];
-
-	if(normals_buffer)
-	{
-		normals_buffer.data = normals;
-		normals_buffer.upload( stream_type );
-	}
-	else
-		return this.createVertexBuffer('normals', GL.Mesh.common_buffers["normals"].attribute, 3, normals );
-	return normals_buffer;
-}
-
-
-/**
-* Creates a new stream with the tangents
-* @method computeTangents
-*/
-Mesh.prototype.computeTangents = function()
-{
-	var vertices_buffer = this.vertexBuffers["vertices"];
-	if(!vertices_buffer)
-		return console.error("Cannot compute tangents of a mesh without vertices");
-
-	var normals_buffer = this.vertexBuffers["normals"];
-	if(!normals_buffer)
-		return console.error("Cannot compute tangents of a mesh without normals");
-
-	var uvs_buffer = this.vertexBuffers["coords"];
-	if(!uvs_buffer)
-		return console.error("Cannot compute tangents of a mesh without uvs");
-
-	var triangles_buffer = this.indexBuffers["triangles"];
-	if(!triangles_buffer)
-		return console.error("Cannot compute tangents of a mesh without indices");
-
-	var vertices = vertices_buffer.data;
-	var normals = normals_buffer.data;
-	var uvs = uvs_buffer.data;
-	var triangles = triangles_buffer.data;
-
-	if(!vertices || !normals || !uvs) return;
-
-	var num_vertices = vertices.length / 3;
-
-	var tangents = new Float32Array(num_vertices * 4);
-	
-	//temporary (shared)
-	var tan1 = new Float32Array(num_vertices*3*2);
-	var tan2 = tan1.subarray(num_vertices*3);
-
-	var a,l;
-	var sdir = vec3.create();
-	var tdir = vec3.create();
-	var temp = vec3.create();
-	var temp2 = vec3.create();
-
-	for (a = 0, l = triangles.length; a < l; a+=3)
-	{
-		var i1 = triangles[a];
-		var i2 = triangles[a+1];
-		var i3 = triangles[a+2];
-
-		var v1 = vertices.subarray(i1*3,i1*3+3);
-		var v2 = vertices.subarray(i2*3,i2*3+3);
-		var v3 = vertices.subarray(i3*3,i3*3+3);
-
-		var w1 = uvs.subarray(i1*2,i1*2+2);
-		var w2 = uvs.subarray(i2*2,i2*2+2);
-		var w3 = uvs.subarray(i3*2,i3*2+2);
-
-		var x1 = v2[0] - v1[0];
-		var x2 = v3[0] - v1[0];
-		var y1 = v2[1] - v1[1];
-		var y2 = v3[1] - v1[1];
-		var z1 = v2[2] - v1[2];
-		var z2 = v3[2] - v1[2];
-
-		var s1 = w2[0] - w1[0];
-		var s2 = w3[0] - w1[0];
-		var t1 = w2[1] - w1[1];
-		var t2 = w3[1] - w1[1];
-
-		var r;
-		var den = (s1 * t2 - s2 * t1);
-		if ( Math.abs(den) < 0.000000001 )
-		  r = 0.0;
-		else
-		  r = 1.0 / den;
-
-		vec3.copy(sdir, [(t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r] );
-		vec3.copy(tdir, [(s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r] );
-
-		vec3.add( tan1.subarray( i1*3, i1*3+3), tan1.subarray( i1*3, i1*3+3), sdir);
-		vec3.add( tan1.subarray( i2*3, i2*3+3), tan1.subarray( i2*3, i2*3+3), sdir);
-		vec3.add( tan1.subarray( i3*3, i3*3+3), tan1.subarray( i3*3, i3*3+3), sdir);
-
-		vec3.add( tan2.subarray( i1*3, i1*3+3), tan2.subarray( i1*3, i1*3+3), tdir);
-		vec3.add( tan2.subarray( i2*3, i2*3+3), tan2.subarray( i2*3, i2*3+3), tdir);
-		vec3.add( tan2.subarray( i3*3, i3*3+3), tan2.subarray( i3*3, i3*3+3), tdir);
-	}
-
-	for (a = 0, l = vertices.length; a < l; a+=3)
-	{
-		var n = normals.subarray(a,a+3);
-		var t = tan1.subarray(a,a+3);
-
-		// Gram-Schmidt orthogonalize
-		vec3.subtract(temp, t, vec3.scale(temp, n, vec3.dot(n, t) ) );
-		vec3.normalize(temp,temp);
-
-		// Calculate handedness
-		var w = ( vec3.dot( vec3.cross(temp2, n, t), tan2.subarray(a,a+3) ) < 0.0) ? -1.0 : 1.0;
-		tangents.set([temp[0], temp[1], temp[2], w],(a/3)*4);
-	}
-
-	this.createVertexBuffer('tangents', Mesh.common_buffers["tangents"].attribute, 4, tangents );
-}
-
-/**
-* Creates texture coordinates using a triplanar aproximation
-* @method computeTextureCoordinates
-*/
-Mesh.prototype.computeTextureCoordinates = function( stream_type )
-{
-	var vertices_buffer = this.vertexBuffers["vertices"];
-	if(!vertices_buffer)
-		return console.error("Cannot compute uvs of a mesh without vertices");
-
-	this.explodeIndices( "triangles" );
-
-	vertices_buffer = this.vertexBuffers["vertices"];
-	var vertices = vertices_buffer.data;
-	var num_vertices = vertices.length / 3;
-
-	var uvs_buffer = this.vertexBuffers["coords"];
-	var uvs = new Float32Array( num_vertices * 2 );
-
-	var triangles_buffer = this.indexBuffers["triangles"];
-	var triangles = null;
-	if( triangles_buffer )
-		triangles = triangles_buffer.data;
-
-	var plane_normal = vec3.create();
-	var side1 = vec3.create();
-	var side2 = vec3.create();
-
-	var bbox = this.getBoundingBox();
-	var bboxcenter = BBox.getCenter( bbox );
-	var bboxhs = vec3.create();
-	bboxhs.set( BBox.getHalfsize( bbox ) ); //careful, this is a reference
-	vec3.scale( bboxhs, bboxhs, 2 );
-
-	var num = triangles ? triangles.length : vertices.length/3;
-
-	for (var a = 0; a < num; a+=3)
-	{
+		//normalize if vertices are shared
 		if(triangles)
+		for (var a = 0, l = normals.length; a < l; a+=3)
+		{
+			var n = normals.subarray(a,a+3);
+			vec3.normalize(n,n);
+		}
+
+		var normals_buffer = this.vertexBuffers["normals"];
+
+		if(normals_buffer)
+		{
+			normals_buffer.data = normals;
+			normals_buffer.upload( stream_type );
+		}
+		else
+			return this.createVertexBuffer('normals', GL.Mesh.common_buffers["normals"].attribute, 3, normals );
+		return normals_buffer;
+	}
+
+	/**
+	* Creates a new stream with the tangents
+	* @method computeTangents
+	*/
+	computeTangents() {
+		var vertices_buffer = this.vertexBuffers["vertices"];
+		if(!vertices_buffer)
+			return console.error("Cannot compute tangents of a mesh without vertices");
+
+		var normals_buffer = this.vertexBuffers["normals"];
+		if(!normals_buffer)
+			return console.error("Cannot compute tangents of a mesh without normals");
+
+		var uvs_buffer = this.vertexBuffers["coords"];
+		if(!uvs_buffer)
+			return console.error("Cannot compute tangents of a mesh without uvs");
+
+		var triangles_buffer = this.indexBuffers["triangles"];
+		if(!triangles_buffer)
+			return console.error("Cannot compute tangents of a mesh without indices");
+
+		var vertices = vertices_buffer.data;
+		var normals = normals_buffer.data;
+		var uvs = uvs_buffer.data;
+		var triangles = triangles_buffer.data;
+
+		if(!vertices || !normals || !uvs) return;
+
+		var num_vertices = vertices.length / 3;
+
+		var tangents = new Float32Array(num_vertices * 4);
+		
+		//temporary (shared)
+		var tan1 = new Float32Array(num_vertices*3*2);
+		var tan2 = tan1.subarray(num_vertices*3);
+
+		var a,l;
+		var sdir = vec3.create();
+		var tdir = vec3.create();
+		var temp = vec3.create();
+		var temp2 = vec3.create();
+
+		for (a = 0, l = triangles.length; a < l; a+=3)
 		{
 			var i1 = triangles[a];
 			var i2 = triangles[a+1];
@@ -2735,369 +2612,457 @@ Mesh.prototype.computeTextureCoordinates = function( stream_type )
 			var v2 = vertices.subarray(i2*3,i2*3+3);
 			var v3 = vertices.subarray(i3*3,i3*3+3);
 
-			var uv1 = uvs.subarray(i1*2,i1*2+2);
-			var uv2 = uvs.subarray(i2*2,i2*2+2);
-			var uv3 = uvs.subarray(i3*2,i3*2+2);
-		}
-		else
-		{
-			var v1 = vertices.subarray((a)*3,(a)*3+3);
-			var v2 = vertices.subarray((a+1)*3,(a+1)*3+3);
-			var v3 = vertices.subarray((a+2)*3,(a+2)*3+3);
+			var w1 = uvs.subarray(i1*2,i1*2+2);
+			var w2 = uvs.subarray(i2*2,i2*2+2);
+			var w3 = uvs.subarray(i3*2,i3*2+2);
 
-			var uv1 = uvs.subarray((a)*2,(a)*2+2);
-			var uv2 = uvs.subarray((a+1)*2,(a+1)*2+2);
-			var uv3 = uvs.subarray((a+2)*2,(a+2)*2+2);
+			var x1 = v2[0] - v1[0];
+			var x2 = v3[0] - v1[0];
+			var y1 = v2[1] - v1[1];
+			var y2 = v3[1] - v1[1];
+			var z1 = v2[2] - v1[2];
+			var z2 = v3[2] - v1[2];
+
+			var s1 = w2[0] - w1[0];
+			var s2 = w3[0] - w1[0];
+			var t1 = w2[1] - w1[1];
+			var t2 = w3[1] - w1[1];
+
+			var r;
+			var den = (s1 * t2 - s2 * t1);
+			if ( Math.abs(den) < 0.000000001 )
+			r = 0.0;
+			else
+			r = 1.0 / den;
+
+			vec3.copy(sdir, [(t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r] );
+			vec3.copy(tdir, [(s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r] );
+
+			vec3.add( tan1.subarray( i1*3, i1*3+3), tan1.subarray( i1*3, i1*3+3), sdir);
+			vec3.add( tan1.subarray( i2*3, i2*3+3), tan1.subarray( i2*3, i2*3+3), sdir);
+			vec3.add( tan1.subarray( i3*3, i3*3+3), tan1.subarray( i3*3, i3*3+3), sdir);
+
+			vec3.add( tan2.subarray( i1*3, i1*3+3), tan2.subarray( i1*3, i1*3+3), tdir);
+			vec3.add( tan2.subarray( i2*3, i2*3+3), tan2.subarray( i2*3, i2*3+3), tdir);
+			vec3.add( tan2.subarray( i3*3, i3*3+3), tan2.subarray( i3*3, i3*3+3), tdir);
 		}
 
-		vec3.sub(side1, v1, v2 );
-		vec3.sub(side2, v1, v3 );
-		vec3.cross( plane_normal, side1, side2 );
-		//vec3.normalize( plane_normal, plane_normal ); //not necessary
+		for (a = 0, l = vertices.length; a < l; a+=3)
+		{
+			var n = normals.subarray(a,a+3);
+			var t = tan1.subarray(a,a+3);
 
-		plane_normal[0] = Math.abs( plane_normal[0] );
-		plane_normal[1] = Math.abs( plane_normal[1] );
-		plane_normal[2] = Math.abs( plane_normal[2] );
+			// Gram-Schmidt orthogonalize
+			vec3.subtract(temp, t, vec3.scale(temp, n, vec3.dot(n, t) ) );
+			vec3.normalize(temp,temp);
 
-		if( plane_normal[0] > plane_normal[1] && plane_normal[0] > plane_normal[2])
-		{
-			//X
-			uv1[0] = (v1[2] - bboxcenter[2]) / bboxhs[2];
-			uv1[1] = (v1[1] - bboxcenter[1]) / bboxhs[1];
-			uv2[0] = (v2[2] - bboxcenter[2]) / bboxhs[2];
-			uv2[1] = (v2[1] - bboxcenter[1]) / bboxhs[1];
-			uv3[0] = (v3[2] - bboxcenter[2]) / bboxhs[2];
-			uv3[1] = (v3[1] - bboxcenter[1]) / bboxhs[1];
+			// Calculate handedness
+			var w = ( vec3.dot( vec3.cross(temp2, n, t), tan2.subarray(a,a+3) ) < 0.0) ? -1.0 : 1.0;
+			tangents.set([temp[0], temp[1], temp[2], w],(a/3)*4);
 		}
-		else if ( plane_normal[1] > plane_normal[2])
-		{
-			//Y
-			uv1[0] = (v1[0] - bboxcenter[0]) / bboxhs[0];
-			uv1[1] = (v1[2] - bboxcenter[2]) / bboxhs[2];
-			uv2[0] = (v2[0] - bboxcenter[0]) / bboxhs[0];
-			uv2[1] = (v2[2] - bboxcenter[2]) / bboxhs[2];
-			uv3[0] = (v3[0] - bboxcenter[0]) / bboxhs[0];
-			uv3[1] = (v3[2] - bboxcenter[2]) / bboxhs[2];
-		}
-		else
-		{
-			//Z
-			uv1[0] = (v1[0] - bboxcenter[0]) / bboxhs[0];
-			uv1[1] = (v1[1] - bboxcenter[1]) / bboxhs[1];
-			uv2[0] = (v2[0] - bboxcenter[0]) / bboxhs[0];
-			uv2[1] = (v2[1] - bboxcenter[1]) / bboxhs[1];
-			uv3[0] = (v3[0] - bboxcenter[0]) / bboxhs[0];
-			uv3[1] = (v3[1] - bboxcenter[1]) / bboxhs[1];
-		}
+
+		this.createVertexBuffer('tangents', Mesh.common_buffers["tangents"].attribute, 4, tangents );
 	}
 
-	if(uvs_buffer)
-	{
-		uvs_buffer.data = uvs;
-		uvs_buffer.upload( stream_type );
-	}
-	else
-		this.createVertexBuffer('coords', Mesh.common_buffers["coords"].attribute, 2, uvs );
-}
+	/**
+	* Creates texture coordinates using a triplanar aproximation
+	* @method computeTextureCoordinates
+	*/
+	computeTextureCoordinates( stream_type ) {
+		var vertices_buffer = this.vertexBuffers["vertices"];
+		if(!vertices_buffer)
+			return console.error("Cannot compute uvs of a mesh without vertices");
 
+		this.explodeIndices( "triangles" );
 
-/**
-* Computes the number of vertices
-* @method getVertexNumber
-*/
-Mesh.prototype.getNumVertices = function() {
-	var b = this.vertexBuffers["vertices"];
-	if(!b)
-		return 0;
-	return b.data.length / b.spacing;
-}
+		vertices_buffer = this.vertexBuffers["vertices"];
+		var vertices = vertices_buffer.data;
+		var num_vertices = vertices.length / 3;
 
-/**
-* Computes the number of triangles (takes into account indices)
-* @method getNumTriangles
-*/
-Mesh.prototype.getNumTriangles = function() {
-	var indices_buffer = this.getIndexBuffer("triangles");
-	if(!indices_buffer)
-		return this.getNumVertices() / 3;
-	return indices_buffer.data.length / 3;
-}
+		var uvs_buffer = this.vertexBuffers["coords"];
+		var uvs = new Float32Array( num_vertices * 2 );
 
+		var triangles_buffer = this.indexBuffers["triangles"];
+		var triangles = null;
+		if( triangles_buffer )
+			triangles = triangles_buffer.data;
 
-/**
-* Computes bounding information
-* @method Mesh.computeBoundingBox
-* @param {typed Array} vertices array containing all the vertices
-* @param {BBox} bb where to store the bounding box
-* @param {Array} mask [optional] to specify which vertices must be considered when creating the bbox, used to create BBox of a submesh
-*/
-Mesh.computeBoundingBox = function( vertices, bb, mask ) {
+		var plane_normal = vec3.create();
+		var side1 = vec3.create();
+		var side2 = vec3.create();
 
-	if(!vertices)
-		return;
+		var bbox = this.getBoundingBox();
+		var bboxcenter = BBox.getCenter( bbox );
+		var bboxhs = vec3.create();
+		bboxhs.set( BBox.getHalfsize( bbox ) ); //careful, this is a reference
+		vec3.scale( bboxhs, bboxhs, 2 );
 
-	var start = 0;
+		var num = triangles ? triangles.length : vertices.length/3;
 
-	if(mask)
-	{
-		for(var i = 0; i < mask.length; ++i)
-			if( mask[i] )
+		for (var a = 0; a < num; a+=3)
+		{
+			if(triangles)
 			{
-				start = i;
-				break;
+				var i1 = triangles[a];
+				var i2 = triangles[a+1];
+				var i3 = triangles[a+2];
+
+				var v1 = vertices.subarray(i1*3,i1*3+3);
+				var v2 = vertices.subarray(i2*3,i2*3+3);
+				var v3 = vertices.subarray(i3*3,i3*3+3);
+
+				var uv1 = uvs.subarray(i1*2,i1*2+2);
+				var uv2 = uvs.subarray(i2*2,i2*2+2);
+				var uv3 = uvs.subarray(i3*2,i3*2+2);
 			}
-		if(start == mask.length)
+			else
+			{
+				var v1 = vertices.subarray((a)*3,(a)*3+3);
+				var v2 = vertices.subarray((a+1)*3,(a+1)*3+3);
+				var v3 = vertices.subarray((a+2)*3,(a+2)*3+3);
+
+				var uv1 = uvs.subarray((a)*2,(a)*2+2);
+				var uv2 = uvs.subarray((a+1)*2,(a+1)*2+2);
+				var uv3 = uvs.subarray((a+2)*2,(a+2)*2+2);
+			}
+
+			vec3.sub(side1, v1, v2 );
+			vec3.sub(side2, v1, v3 );
+			vec3.cross( plane_normal, side1, side2 );
+			//vec3.normalize( plane_normal, plane_normal ); //not necessary
+
+			plane_normal[0] = Math.abs( plane_normal[0] );
+			plane_normal[1] = Math.abs( plane_normal[1] );
+			plane_normal[2] = Math.abs( plane_normal[2] );
+
+			if( plane_normal[0] > plane_normal[1] && plane_normal[0] > plane_normal[2])
+			{
+				//X
+				uv1[0] = (v1[2] - bboxcenter[2]) / bboxhs[2];
+				uv1[1] = (v1[1] - bboxcenter[1]) / bboxhs[1];
+				uv2[0] = (v2[2] - bboxcenter[2]) / bboxhs[2];
+				uv2[1] = (v2[1] - bboxcenter[1]) / bboxhs[1];
+				uv3[0] = (v3[2] - bboxcenter[2]) / bboxhs[2];
+				uv3[1] = (v3[1] - bboxcenter[1]) / bboxhs[1];
+			}
+			else if ( plane_normal[1] > plane_normal[2])
+			{
+				//Y
+				uv1[0] = (v1[0] - bboxcenter[0]) / bboxhs[0];
+				uv1[1] = (v1[2] - bboxcenter[2]) / bboxhs[2];
+				uv2[0] = (v2[0] - bboxcenter[0]) / bboxhs[0];
+				uv2[1] = (v2[2] - bboxcenter[2]) / bboxhs[2];
+				uv3[0] = (v3[0] - bboxcenter[0]) / bboxhs[0];
+				uv3[1] = (v3[2] - bboxcenter[2]) / bboxhs[2];
+			}
+			else
+			{
+				//Z
+				uv1[0] = (v1[0] - bboxcenter[0]) / bboxhs[0];
+				uv1[1] = (v1[1] - bboxcenter[1]) / bboxhs[1];
+				uv2[0] = (v2[0] - bboxcenter[0]) / bboxhs[0];
+				uv2[1] = (v2[1] - bboxcenter[1]) / bboxhs[1];
+				uv3[0] = (v3[0] - bboxcenter[0]) / bboxhs[0];
+				uv3[1] = (v3[1] - bboxcenter[1]) / bboxhs[1];
+			}
+		}
+
+		if(uvs_buffer)
 		{
-			console.warn("mask contains only zeros, no vertices marked");
+			uvs_buffer.data = uvs;
+			uvs_buffer.upload( stream_type );
+		}
+		else
+			this.createVertexBuffer('coords', Mesh.common_buffers["coords"].attribute, 2, uvs );
+	}
+
+	/**
+	* Computes the number of vertices
+	* @method getVertexNumber
+	*/
+	getNumVertices() {
+		var b = this.vertexBuffers["vertices"];
+		if(!b)
+			return 0;
+		return b.data.length / b.spacing;
+	}
+
+	/**
+	* Computes the number of triangles (takes into account indices)
+	* @method getNumTriangles
+	*/
+	getNumTriangles() {
+		var indices_buffer = this.getIndexBuffer("triangles");
+		if(!indices_buffer)
+			return this.getNumVertices() / 3;
+		return indices_buffer.data.length / 3;
+	}
+
+	/**
+	* Computes bounding information
+	* @method Mesh.computeBoundingBox
+	* @param {typed Array} vertices array containing all the vertices
+	* @param {BBox} bb where to store the bounding box
+	* @param {Array} mask [optional] to specify which vertices must be considered when creating the bbox, used to create BBox of a submesh
+	*/
+	static computeBoundingBox( vertices, bb, mask ) {
+
+		if(!vertices)
 			return;
-		}
-	}
 
-	var min = vec3.clone( vertices.subarray( start*3, start*3 + 3) );
-	var max = vec3.clone( vertices.subarray( start*3, start*3 + 3) );
-	var v;
+		var start = 0;
 
-	for(var i = start*3; i < vertices.length; i+=3)
-	{
-		if( mask && !mask[i/3] )
-			continue;
-		v = vertices.subarray(i,i+3);
-		vec3.min( min,v, min);
-		vec3.max( max,v, max);
-	}
-
-	if( isNaN(min[0]) || isNaN(min[1]) || isNaN(min[2]) ||
-		isNaN(max[0]) || isNaN(max[1]) || isNaN(max[2]) )
-	{
-		min[0] = min[1] = min[2] = 0;
-		max[0] = max[1] = max[2] = 0;
-		console.warn("Warning: GL.Mesh has NaN values in vertices");
-	}
-
-	var center = vec3.add( vec3.create(), min,max );
-	vec3.scale( center, center, 0.5);
-	var half_size = vec3.subtract( vec3.create(), max, center );
-
-	return BBox.setCenterHalfsize( bb || BBox.create(), center, half_size );
-}
-
-/**
-* returns the bounding box, if it is not computed, then computes it
-* @method getBoundingBox
-* @return {BBox} bounding box
-*/
-Mesh.prototype.getBoundingBox = function()
-{
-	if(this._bounding)
-		return this._bounding;
-
-	this.updateBoundingBox();
-	return this._bounding;
-}
-
-/**
-* Update bounding information of this mesh
-* @method updateBoundingBox
-*/
-Mesh.prototype.updateBoundingBox = function() {
-	var vertices = this.vertexBuffers["vertices"];
-	if(!vertices)
-		return;
-	GL.Mesh.computeBoundingBox( vertices.data, this._bounding );
-	if(this.info && this.info.groups && this.info.groups.length)
-		this.computeGroupsBoundingBoxes();
-}
-
-/**
-* Update bounding information for every group submesh
-* @method computeGroupsBoundingBoxes
-*/
-Mesh.prototype.computeGroupsBoundingBoxes = function()
-{
-	var indices = null;
-	var indices_buffer = this.getIndexBuffer("triangles");
-	if( indices_buffer )
-		indices = indices_buffer.data;
-
-	var vertices_buffer = this.getVertexBuffer("vertices");
-	if(!vertices_buffer)
-		return false;
-	var vertices = vertices_buffer.data;
-	if(!vertices.length)
-		return false;
-
-	var groups = this.info.groups;
-	for(var i = 0; i < groups.length; ++i)
-	{
-		var group = groups[i];
-		group.bounding = group.bounding || BBox.create();
-		var submesh_vertices = null;
-		if( indices )
+		if(mask)
 		{
-			var mask = new Uint8Array( vertices.length / 3 );
-			var s = group.start;
-			for( var j = 0, l = group.length; j < l; j += 3 )
+			for(var i = 0; i < mask.length; ++i)
+				if( mask[i] )
+				{
+					start = i;
+					break;
+				}
+			if(start == mask.length)
 			{
-				mask[ indices[s+j] ] = 1;
-				mask[ indices[s+j+1] ] = 1;
-				mask[ indices[s+j+2] ] = 1;
+				console.warn("mask contains only zeros, no vertices marked");
+				return;
 			}
-			GL.Mesh.computeBoundingBox( vertices, group.bounding, mask );
 		}
-		else
+
+		var min = vec3.clone( vertices.subarray( start*3, start*3 + 3) );
+		var max = vec3.clone( vertices.subarray( start*3, start*3 + 3) );
+		var v;
+
+		for(var i = start*3; i < vertices.length; i+=3)
 		{
-			submesh_vertices = vertices.subarray( group.start * 3, ( group.start + group.length) * 3 );
-			GL.Mesh.computeBoundingBox( submesh_vertices, group.bounding );
+			if( mask && !mask[i/3] )
+				continue;
+			v = vertices.subarray(i,i+3);
+			vec3.min( min,v, min);
+			vec3.max( max,v, max);
 		}
-	}
-	return true;
-}
 
-
-
-/**
-* forces a bounding box to be set
-* @method setBoundingBox
-* @param {vec3} center center of the bounding box
-* @param {vec3} half_size vector from the center to positive corner
-*/
-Mesh.prototype.setBoundingBox = function( center, half_size ) {
-	BBox.setCenterHalfsize( this._bounding, center, half_size );	
-}
-
-
-/**
-* Remove all local memory from the streams (leaving it only in the VRAM) to save RAM
-* @method freeData
-*/
-Mesh.prototype.freeData = function()
-{
-	for (var attribute in this.vertexBuffers)
-	{
-		this.vertexBuffers[attribute].data = null;
-		delete this[ this.vertexBuffers[attribute].name ]; //delete from the mesh itself
-	}
-	for (var name in this.indexBuffers)
-	{
-		this.indexBuffers[name].data = null;
-		delete this[ this.indexBuffers[name].name ]; //delete from the mesh itself
-	}
-}
-
-Mesh.prototype.configure = function( o, options = {} )
-{
-	var vertex_buffers = {};
-	var index_buffers = {};
-
-	for(var j in o)
-	{
-		if(!o[j])
-			continue;
-
-		if(j == "vertexBuffers" || j == "vertex_buffers") //HACK: legacy code
+		if( isNaN(min[0]) || isNaN(min[1]) || isNaN(min[2]) ||
+			isNaN(max[0]) || isNaN(max[1]) || isNaN(max[2]) )
 		{
-			for(i in o[j])
-				vertex_buffers[i] = o[j][i];
-			continue;
-		}
-		
-		if(j == "indexBuffers" || j == "index_buffers")
-		{
-			for(i in o[j])
-				index_buffers[i] = o[j][i];
-			continue;
+			min[0] = min[1] = min[2] = 0;
+			max[0] = max[1] = max[2] = 0;
+			console.warn("Warning: GL.Mesh has NaN values in vertices");
 		}
 
-		if(j == "indices" || j == "lines" ||  j == "wireframe" || j == "triangles")
-			index_buffers[j] = o[j];
-		else if( GL.Mesh.common_buffers[j])
-			vertex_buffers[j] = o[j];
-		else //global data like bounding, info of groups, etc
-		{
-			options[j] = o[j];
-		}
+		var center = vec3.add( vec3.create(), min,max );
+		vec3.scale( center, center, 0.5);
+		var half_size = vec3.subtract( vec3.create(), max, center );
+
+		return BBox.setCenterHalfsize( bb || BBox.create(), center, half_size );
 	}
 
-	this.addBuffers( vertex_buffers, index_buffers, options.stream_type );
+	/**
+	* returns the bounding box, if it is not computed, then computes it
+	* @method getBoundingBox
+	* @return {BBox} bounding box
+	*/
+	getBoundingBox() {
+		if(this._bounding)
+			return this._bounding;
 
-	for(var i in options)
-		this[i] = options[i];		
-
-	if(!options.bounding)
 		this.updateBoundingBox();
-}
-
-/**
-* Returns the amount of memory used by this mesh in bytes (sum of all buffers)
-* @method getMemory
-* @return {number} bytes
-*/
-Mesh.prototype.totalMemory = function()
-{
-	var num = 0|0;
-
-	for (var name in this.vertexBuffers)
-		num += this.vertexBuffers[name].data.buffer.byteLength;
-	for (var name in this.indexBuffers)
-		num += this.indexBuffers[name].data.buffer.byteLength;
-
-	return num;
-}
-
-Mesh.prototype.slice = function(start, length)
-{
-	var new_vertex_buffers = {};
-
-	var indices_buffer = this.indexBuffers["triangles"];
-	if(!indices_buffer)
-	{
-		console.warn("splice in not indexed not supported yet");
-		return null;
+		return this._bounding;
 	}
 
-	var indices = indices_buffer.data;
+	/**
+	* Update bounding information of this mesh
+	* @method updateBoundingBox
+	*/
+	updateBoundingBox() {
+		var vertices = this.vertexBuffers["vertices"];
+		if(!vertices)
+			return;
+		GL.Mesh.computeBoundingBox( vertices.data, this._bounding );
+		if(this.info && this.info.groups && this.info.groups.length)
+			this.computeGroupsBoundingBoxes();
+	}
 
-	var new_triangles = [];
-	var reindex = new Int32Array( indices.length );
-	reindex.fill(-1);
+	/**
+	* Update bounding information for every group submesh
+	* @method computeGroupsBoundingBoxes
+	*/
+	computeGroupsBoundingBoxes() {
+		var indices = null;
+		var indices_buffer = this.getIndexBuffer("triangles");
+		if( indices_buffer )
+			indices = indices_buffer.data;
 
-	var end = start + length;
-	if(end >= indices.length)
-		end = indices.length;
+		var vertices_buffer = this.getVertexBuffer("vertices");
+		if(!vertices_buffer)
+			return false;
+		var vertices = vertices_buffer.data;
+		if(!vertices.length)
+			return false;
 
-	var last_index = 0;
-	for(var j = start; j < end; ++j)
-	{
-		var index = indices[j];
-		if( reindex[index] != -1 )
+		var groups = this.info.groups;
+		for(var i = 0; i < groups.length; ++i)
 		{
-			new_triangles.push(reindex[index]);
-			continue;
+			var group = groups[i];
+			group.bounding = group.bounding || BBox.create();
+			var submesh_vertices = null;
+			if( indices )
+			{
+				var mask = new Uint8Array( vertices.length / 3 );
+				var s = group.start;
+				for( var j = 0, l = group.length; j < l; j += 3 )
+				{
+					mask[ indices[s+j] ] = 1;
+					mask[ indices[s+j+1] ] = 1;
+					mask[ indices[s+j+2] ] = 1;
+				}
+				GL.Mesh.computeBoundingBox( vertices, group.bounding, mask );
+			}
+			else
+			{
+				submesh_vertices = vertices.subarray( group.start * 3, ( group.start + group.length) * 3 );
+				GL.Mesh.computeBoundingBox( submesh_vertices, group.bounding );
+			}
 		}
+		return true;
+	}
 
-		//new vertex
-		var new_index = last_index++;
-		reindex[index] = new_index;
-		new_triangles.push(new_index);
+	/**
+	* forces a bounding box to be set
+	* @method setBoundingBox
+	* @param {vec3} center center of the bounding box
+	* @param {vec3} half_size vector from the center to positive corner
+	*/
+	setBoundingBox( center, half_size ) {
+		BBox.setCenterHalfsize( this._bounding, center, half_size );	
+	}
 
-		for( var i in this.vertexBuffers )
+	/**
+	* Remove all local memory from the streams (leaving it only in the VRAM) to save RAM
+	* @method freeData
+	*/
+	freeData() {
+		for (var attribute in this.vertexBuffers)
 		{
-			var buffer = this.vertexBuffers[i];
-			var data = buffer.data;
-			var spacing = buffer.spacing;
-			if(!new_vertex_buffers[i])
-				new_vertex_buffers[i] = [];
-			var new_buffer = new_vertex_buffers[i];
-			for(var k = 0; k < spacing; ++k)
-				new_buffer.push( data[k + index*spacing] );
+			this.vertexBuffers[attribute].data = null;
+			delete this[ this.vertexBuffers[attribute].name ]; //delete from the mesh itself
+		}
+		for (var name in this.indexBuffers)
+		{
+			this.indexBuffers[name].data = null;
+			delete this[ this.indexBuffers[name].name ]; //delete from the mesh itself
 		}
 	}
 
-	var new_mesh = new GL.Mesh( new_vertex_buffers, {triangles: new_triangles}, null,gl);
-	new_mesh.updateBoundingBox();
-	return new_mesh;
-}
+	configure( o, options = {} ) {
+		var vertex_buffers = {};
+		var index_buffers = {};
 
+		for(var j in o)
+		{
+			if(!o[j])
+				continue;
+
+			if(j == "vertexBuffers" || j == "vertex_buffers") //HACK: legacy code
+			{
+				for(i in o[j])
+					vertex_buffers[i] = o[j][i];
+				continue;
+			}
+			
+			if(j == "indexBuffers" || j == "index_buffers")
+			{
+				for(i in o[j])
+					index_buffers[i] = o[j][i];
+				continue;
+			}
+
+			if(j == "indices" || j == "lines" ||  j == "wireframe" || j == "triangles")
+				index_buffers[j] = o[j];
+			else if( GL.Mesh.common_buffers[j])
+				vertex_buffers[j] = o[j];
+			else //global data like bounding, info of groups, etc
+			{
+				options[j] = o[j];
+			}
+		}
+
+		this.addBuffers( vertex_buffers, index_buffers, options.stream_type );
+
+		for(var i in options)
+			this[i] = options[i];		
+
+		if(!options.bounding)
+			this.updateBoundingBox();
+	}
+
+	/**
+	* Returns the amount of memory used by this mesh in bytes (sum of all buffers)
+	* @method getMemory
+	* @return {number} bytes
+	*/
+	totalMemory() {
+		var num = 0|0;
+
+		for (var name in this.vertexBuffers)
+			num += this.vertexBuffers[name].data.buffer.byteLength;
+		for (var name in this.indexBuffers)
+			num += this.indexBuffers[name].data.buffer.byteLength;
+
+		return num;
+	}
+
+	slice(start, length) {
+		var new_vertex_buffers = {};
+
+		var indices_buffer = this.indexBuffers["triangles"];
+		if(!indices_buffer)
+		{
+			console.warn("splice in not indexed not supported yet");
+			return null;
+		}
+
+		var indices = indices_buffer.data;
+
+		var new_triangles = [];
+		var reindex = new Int32Array( indices.length );
+		reindex.fill(-1);
+
+		var end = start + length;
+		if(end >= indices.length)
+			end = indices.length;
+
+		var last_index = 0;
+		for(var j = start; j < end; ++j)
+		{
+			var index = indices[j];
+			if( reindex[index] != -1 )
+			{
+				new_triangles.push(reindex[index]);
+				continue;
+			}
+
+			//new vertex
+			var new_index = last_index++;
+			reindex[index] = new_index;
+			new_triangles.push(new_index);
+
+			for( var i in this.vertexBuffers )
+			{
+				var buffer = this.vertexBuffers[i];
+				var data = buffer.data;
+				var spacing = buffer.spacing;
+				if(!new_vertex_buffers[i])
+					new_vertex_buffers[i] = [];
+				var new_buffer = new_vertex_buffers[i];
+				for(var k = 0; k < spacing; ++k)
+					new_buffer.push( data[k + index*spacing] );
+			}
+		}
+
+		var new_mesh = new GL.Mesh( new_vertex_buffers, {triangles: new_triangles}, null,gl);
+		new_mesh.updateBoundingBox();
+		return new_mesh;
+	}
+}
 
 /**
 * returns a low poly version of the mesh that takes much less memory (but breaks tiling of uvs and smoothing groups)
@@ -3435,6 +3400,9 @@ function linearizeArray( array, typed_array_class )
 }
 
 GL.linearizeArray = linearizeArray;
+
+GL.Mesh = Mesh;
+Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
 
 /* BINARY MESHES */
 //Add some functions to the classes in LiteGL to allow store in binary
