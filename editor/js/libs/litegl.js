@@ -1,4 +1,9 @@
 import { DDS } from "./dds.js";
+import { gl as localGL } from "../code.js";
+
+// temporary shunt to patch things in this file.
+const global = {};
+global.gl = localGL;
 
 //litegl.js by Javi Agenjo 2014 @tamat (tamats.com)
 //forked from lightgl.js by Evan Wallace (madebyevan.com)
@@ -1623,395 +1628,380 @@ GL.Buffer.prototype.delete = function()
 * @param {WebGLContext} gl [Optional] gl context where to create the mesh
 * @constructor
 */
-GL.Mesh = function Mesh( vertexbuffers, indexbuffers, options, gl )
-{
-	if(GL.debug)
-		console.log("GL.Mesh created");
+class Mesh {
+	constructor( vertexbuffers, indexbuffers, options, gl ) {
+		if(GL.debug)
+			console.log("GL.Mesh created");
 
-	if( gl !== null )
-	{
-		gl = gl || global.gl;
-		this.gl = gl;
+		if( gl !== null )
+		{
+			gl = gl || global.gl;
+			this.gl = gl;
+		}
+
+		//used to avoid problems with resources moving between different webgl context
+		this._context_id = gl.context_id; 
+
+		this.vertexBuffers = {};
+		this.indexBuffers = {};
+
+		//here you can store extra info, like groups, which is an array of { name, start, length, material }
+		this.info = {
+			groups: []
+		}; 
+		this._bounding = BBox.create(); //here you can store a AABB in BBox format
+
+		if(vertexbuffers || indexbuffers)
+			this.addBuffers( vertexbuffers, indexbuffers, options ? options.stream_type : null );
+
+		if(options)
+			for(var i in options)
+				this[i] = options[i];
 	}
 
-	//used to avoid problems with resources moving between different webgl context
-	this._context_id = gl.context_id; 
+	static common_buffers = {
+		"vertices": { spacing:3, attribute: "a_vertex"},
+		"vertices2D": { spacing:2, attribute: "a_vertex2D"},
+		"normals": { spacing:3, attribute: "a_normal"},
+		"coords": { spacing:2, attribute: "a_coord"},
+		"coords1": { spacing:2, attribute: "a_coord1"},
+		"coords2": { spacing:2, attribute: "a_coord2"},
+		"colors": { spacing:4, attribute: "a_color"}, 
+		"tangents": { spacing:3, attribute: "a_tangent"},
+		"bone_indices": { spacing:4, attribute: "a_bone_indices", type: Uint8Array },
+		"weights": { spacing:4, attribute: "a_weights"},
+		"extra": { spacing:1, attribute: "a_extra"},
+		"extra2": { spacing:2, attribute: "a_extra2"},
+		"extra3": { spacing:3, attribute: "a_extra3"},
+		"extra4": { spacing:4, attribute: "a_extra4"}
+	};
 
-	this.vertexBuffers = {};
-	this.indexBuffers = {};
+	static default_datatype = Float32Array;
 
-	//here you can store extra info, like groups, which is an array of { name, start, length, material }
-	this.info = {
-		groups: []
-	}; 
-	this._bounding = BBox.create(); //here you can store a AABB in BBox format
-
-	if(vertexbuffers || indexbuffers)
-		this.addBuffers( vertexbuffers, indexbuffers, options ? options.stream_type : null );
-
-	if(options)
-		for(var i in options)
-			this[i] = options[i];
-};
-
-Mesh.common_buffers = {
-	"vertices": { spacing:3, attribute: "a_vertex"},
-	"vertices2D": { spacing:2, attribute: "a_vertex2D"},
-	"normals": { spacing:3, attribute: "a_normal"},
-	"coords": { spacing:2, attribute: "a_coord"},
-	"coords1": { spacing:2, attribute: "a_coord1"},
-	"coords2": { spacing:2, attribute: "a_coord2"},
-	"colors": { spacing:4, attribute: "a_color"}, 
-	"tangents": { spacing:3, attribute: "a_tangent"},
-	"bone_indices": { spacing:4, attribute: "a_bone_indices", type: Uint8Array },
-	"weights": { spacing:4, attribute: "a_weights"},
-	"extra": { spacing:1, attribute: "a_extra"},
-	"extra2": { spacing:2, attribute: "a_extra2"},
-	"extra3": { spacing:3, attribute: "a_extra3"},
-	"extra4": { spacing:4, attribute: "a_extra4"}
-};
-
-Mesh.default_datatype = Float32Array;
-
-Object.defineProperty( Mesh.prototype, "bounding", {
-	set: function(v)
-	{
+	set bounding(v) {
 		if(!v)
 			return;
 		if(v.length < 13)
 			throw("Bounding must use the BBox bounding format of 13 floats: center, halfsize, min, max, radius");
 		this._bounding.set(v);
-	},
-	get: function()
-	{
+	}
+	get bounding() {
 		return this._bounding;
 	}
-});
 
-/**
-* Adds buffer to mesh
-* @method addBuffer
-* @param {string} name
-* @param {Buffer} buffer 
-*/
-
-Mesh.prototype.addBuffer = function(name, buffer)
-{
-	if(buffer.target == gl.ARRAY_BUFFER)
-		this.vertexBuffers[name] = buffer;
-	else
-		this.indexBuffers[name] = buffer;
-
-	if(!buffer.attribute)
-	{
-		var info = GL.Mesh.common_buffers[name];
-		if(info)
-			buffer.attribute = info.attribute;
-	}
-}
-
-
-/**
-* Adds vertex and indices buffers to a mesh
-* @method addBuffers
-* @param {Object} vertexBuffers object with all the vertex streams
-* @param {Object} indexBuffers object with all the indices streams
-* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW )
-*/
-Mesh.prototype.addBuffers = function( vertexbuffers, indexbuffers, stream_type )
-{
-	var num_vertices = 0;
-
-	if(this.vertexBuffers["vertices"])
-		num_vertices = this.vertexBuffers["vertices"].data.length / 3;
-
-	for(var i in vertexbuffers)
-	{
-		var data = vertexbuffers[i];
-		if(!data) 
-			continue;
-		
-		if( data.constructor == GL.Buffer )
-		{
-			data = data.data;
-		}
-		else if( typeof(data[0]) != "number") //linearize: (transform Arrays in typed arrays)
-		{
-			var newdata = [];
-			for (var j = 0, chunk = 10000; j < data.length; j += chunk) {
-			  newdata = Array.prototype.concat.apply(newdata, data.slice(j, j + chunk));
-			}
-			data = newdata;
-		}
-
-		var stream_info = GL.Mesh.common_buffers[i];
-
-		//cast to typed float32 if no type is specified
-		if(data.constructor === Array)
-		{
-			var datatype = GL.Mesh.default_datatype;
-			if(stream_info && stream_info.type)
-				datatype = stream_info.type;
-			data = new datatype( data );
-		}
-
-		//compute spacing
-		if(i == "vertices")
-			num_vertices = data.length / 3;
-		var spacing = data.length / num_vertices;
-		if(stream_info && stream_info.spacing)
-			spacing = stream_info.spacing;
-
-		//add and upload
-		var attribute = "a_" + i;
-		if(stream_info && stream_info.attribute)
-			attribute = stream_info.attribute;
-	
-		if( this.vertexBuffers[i] )
-			this.updateVertexBuffer( i, attribute, spacing, data, stream_type );
+	/**
+	* Adds buffer to mesh
+	* @method addBuffer
+	* @param {string} name
+	* @param {Buffer} buffer 
+	*/
+	addBuffer(name, buffer)	{
+		if(buffer.target == gl.ARRAY_BUFFER)
+			this.vertexBuffers[name] = buffer;
 		else
-			this.createVertexBuffer( i, attribute, spacing, data, stream_type );
+			this.indexBuffers[name] = buffer;
+
+		if(!buffer.attribute)
+		{
+			var info = GL.Mesh.common_buffers[name];
+			if(info)
+				buffer.attribute = info.attribute;
+		}
 	}
 
-	if(indexbuffers)
-		for(var i in indexbuffers)
-		{
-			var data = indexbuffers[i];
-			if(!data) continue;
 
+	/**
+	* Adds vertex and indices buffers to a mesh
+	* @method addBuffers
+	* @param {Object} vertexBuffers object with all the vertex streams
+	* @param {Object} indexBuffers object with all the indices streams
+	* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW )
+	*/
+	addBuffers( vertexbuffers, indexbuffers, stream_type ) {
+		var num_vertices = 0;
+
+		if(this.vertexBuffers["vertices"])
+			num_vertices = this.vertexBuffers["vertices"].data.length / 3;
+
+		for(var i in vertexbuffers)
+		{
+			var data = vertexbuffers[i];
+			if(!data) 
+				continue;
+			
 			if( data.constructor == GL.Buffer )
 			{
 				data = data.data;
 			}
-			if( typeof(data[0]) != "number") //linearize
+			else if( typeof(data[0]) != "number") //linearize: (transform Arrays in typed arrays)
 			{
-				newdata = [];
-				for (var i = 0, chunk = 10000; i < data.length; i += chunk) {
-				  newdata = Array.prototype.concat.apply(newdata, data.slice(i, i + chunk));
+				var newdata = [];
+				for (var j = 0, chunk = 10000; j < data.length; j += chunk) {
+				newdata = Array.prototype.concat.apply(newdata, data.slice(j, j + chunk));
 				}
 				data = newdata;
 			}
 
-			//cast to typed
+			var stream_info = GL.Mesh.common_buffers[i];
+
+			//cast to typed float32 if no type is specified
 			if(data.constructor === Array)
 			{
-				var datatype = Uint16Array;
-				if(num_vertices > 256*256)
-					datatype = Uint32Array;
+				var datatype = GL.Mesh.default_datatype;
+				if(stream_info && stream_info.type)
+					datatype = stream_info.type;
 				data = new datatype( data );
 			}
 
-			this.createIndexBuffer( i, data );
+			//compute spacing
+			if(i == "vertices")
+				num_vertices = data.length / 3;
+			var spacing = data.length / num_vertices;
+			if(stream_info && stream_info.spacing)
+				spacing = stream_info.spacing;
+
+			//add and upload
+			var attribute = "a_" + i;
+			if(stream_info && stream_info.attribute)
+				attribute = stream_info.attribute;
+		
+			if( this.vertexBuffers[i] )
+				this.updateVertexBuffer( i, attribute, spacing, data, stream_type );
+			else
+				this.createVertexBuffer( i, attribute, spacing, data, stream_type );
 		}
-}
 
-/**
-* Creates a new empty buffer and attachs it to this mesh
-* @method createVertexBuffer
-* @param {String} name "vertices","normals"...
-* @param {String} attribute name of the stream in the shader "a_vertex","a_normal",... [optional, if omitted is used the common_buffers]
-* @param {number} spacing components per vertex [optional, if ommited is used the common_buffers, if not found then uses 3 ]
-* @param {ArrayBufferView} buffer_data the data in typed array format [optional, if ommited it created an empty array of getNumVertices() * spacing]
-* @param {enum} stream_type [optional, default = gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW ) ]
-*/
+		if(indexbuffers) {
+			for(var i in indexbuffers)
+			{
+				var data = indexbuffers[i];
+				if(!data) continue;
 
-Mesh.prototype.createVertexBuffer = function( name, attribute, buffer_spacing, buffer_data, stream_type ) {
+				if( data.constructor == GL.Buffer )
+				{
+					data = data.data;
+				}
+				if( typeof(data[0]) != "number") //linearize
+				{
+					newdata = [];
+					for (var i = 0, chunk = 10000; i < data.length; i += chunk) {
+					newdata = Array.prototype.concat.apply(newdata, data.slice(i, i + chunk));
+					}
+					data = newdata;
+				}
 
-	var common = GL.Mesh.common_buffers[name]; //generic info about a buffer with the same name
+				//cast to typed
+				if(data.constructor === Array)
+				{
+					var datatype = Uint16Array;
+					if(num_vertices > 256*256)
+						datatype = Uint32Array;
+					data = new datatype( data );
+				}
 
-	if (!attribute && common)
-		attribute = common.attribute;
-
-	if (!attribute)
-		throw("Buffer added to mesh without attribute name");
-
-	if (!buffer_spacing && common)
-	{
-		if(common && common.spacing)
-			buffer_spacing = common.spacing;
-		else
-			buffer_spacing = 3;
+				this.createIndexBuffer( i, data );
+			}
+		}
 	}
 
-	if(!buffer_data)
-	{
-		var num = this.getNumVertices();
-		if(!num)
-			throw("Cannot create an empty buffer in a mesh without vertices (vertices are needed to know the size)");
-		buffer_data = new (GL.Mesh.default_datatype)(num * buffer_spacing);
-	}
+	/**
+	* Creates a new empty buffer and attachs it to this mesh
+	* @method createVertexBuffer
+	* @param {String} name "vertices","normals"...
+	* @param {String} attribute name of the stream in the shader "a_vertex","a_normal",... [optional, if omitted is used the common_buffers]
+	* @param {number} spacing components per vertex [optional, if ommited is used the common_buffers, if not found then uses 3 ]
+	* @param {ArrayBufferView} buffer_data the data in typed array format [optional, if ommited it created an empty array of getNumVertices() * spacing]
+	* @param {enum} stream_type [optional, default = gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW ) ]
+	*/
+	createVertexBuffer( name, attribute, buffer_spacing, buffer_data, stream_type ) {
 
-	if(!buffer_data.buffer)
-		throw("Buffer data MUST be typed array");
+		var common = GL.Mesh.common_buffers[name]; //generic info about a buffer with the same name
 
-	//used to ensure the buffers are held in the same gl context as the mesh
-	var buffer = this.vertexBuffers[name] = new GL.Buffer( gl.ARRAY_BUFFER, buffer_data, buffer_spacing, stream_type, this.gl );
-	buffer.name = name;
-	buffer.attribute = attribute;
+		if (!attribute && common)
+			attribute = common.attribute;
 
-	return buffer;
-}
+		if (!attribute)
+			throw("Buffer added to mesh without attribute name");
 
-/**
-* Updates a vertex buffer 
-* @method updateVertexBuffer
-* @param {String} name the name of the buffer
-* @param {String} attribute the name of the attribute in the shader
-* @param {number} spacing number of numbers per component (3 per vertex, 2 per uvs...), default 3
-* @param {*} data the array with all the data
-* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW 
-*/
-Mesh.prototype.updateVertexBuffer = function( name, attribute, buffer_spacing, buffer_data, stream_type ) {
-	var buffer = this.vertexBuffers[name];
-	if(!buffer)
-	{
-		console.log("buffer not found: ",name);
-		return;
-	}
-
-	if(!buffer_data.length)
-		return;
-
-	buffer.attribute = attribute;
-	buffer.spacing = buffer_spacing;
-	buffer.data = buffer_data;
-	buffer.upload( stream_type );
-}
-
-
-/**
-* Removes a vertex buffer from the mesh
-* @method removeVertexBuffer
-* @param {String} name "vertices","normals"...
-* @param {Boolean} free if you want to remove the data from the GPU
-*/
-Mesh.prototype.removeVertexBuffer = function(name, free) {
-	var buffer = this.vertexBuffers[name];
-	if(!buffer)
-		return;
-	if(free)
-		buffer.delete();
-	delete this.vertexBuffers[name];
-}
-
-/**
-* Returns a vertex buffer
-* @method getVertexBuffer
-* @param {String} name of vertex buffer
-* @return {Buffer} the buffer
-*/
-Mesh.prototype.getVertexBuffer = function(name)
-{
-	return this.vertexBuffers[name];
-}
-
-
-/**
-* Creates a new empty index buffer and attachs it to this mesh
-* @method createIndexBuffer
-* @param {String} name 
-* @param {Typed array} data 
-* @param {enum} stream_type gl.STATIC_DRAW, gl.DYNAMIC_DRAW, gl.STREAM_DRAW
-*/
-Mesh.prototype.createIndexBuffer = function(name, buffer_data, stream_type) {
-	//(target, data, spacing, stream_type, gl)
-
-	//cast to typed
-	if(buffer_data.constructor === Array)
-	{
-		var datatype = Uint16Array;
-		var vertices = this.vertexBuffers["vertices"];
-		if(vertices)
+		if (!buffer_spacing && common)
 		{
-			var num_vertices = vertices.data.length / 3;
-			if(num_vertices > 256*256)
-				datatype = Uint32Array;
-			buffer_data = new datatype( buffer_data );
+			if(common && common.spacing)
+				buffer_spacing = common.spacing;
+			else
+				buffer_spacing = 3;
+		}
+
+		if(!buffer_data)
+		{
+			var num = this.getNumVertices();
+			if(!num)
+				throw("Cannot create an empty buffer in a mesh without vertices (vertices are needed to know the size)");
+			buffer_data = new (GL.Mesh.default_datatype)(num * buffer_spacing);
+		}
+
+		if(!buffer_data.buffer)
+			throw("Buffer data MUST be typed array");
+
+		//used to ensure the buffers are held in the same gl context as the mesh
+		var buffer = this.vertexBuffers[name] = new GL.Buffer( gl.ARRAY_BUFFER, buffer_data, buffer_spacing, stream_type, this.gl );
+		buffer.name = name;
+		buffer.attribute = attribute;
+
+		return buffer;
+	}
+
+	/**
+	* Updates a vertex buffer 
+	* @method updateVertexBuffer
+	* @param {String} name the name of the buffer
+	* @param {String} attribute the name of the attribute in the shader
+	* @param {number} spacing number of numbers per component (3 per vertex, 2 per uvs...), default 3
+	* @param {*} data the array with all the data
+	* @param {enum} stream_type default gl.STATIC_DRAW (other: gl.DYNAMIC_DRAW, gl.STREAM_DRAW 
+	*/
+	updateVertexBuffer( name, attribute, buffer_spacing, buffer_data, stream_type ) {
+		var buffer = this.vertexBuffers[name];
+		if(!buffer)
+		{
+			console.log("buffer not found: ",name);
+			return;
+		}
+
+		if(!buffer_data.length)
+			return;
+
+		buffer.attribute = attribute;
+		buffer.spacing = buffer_spacing;
+		buffer.data = buffer_data;
+		buffer.upload( stream_type );
+	}
+
+
+	/**
+	* Removes a vertex buffer from the mesh
+	* @method removeVertexBuffer
+	* @param {String} name "vertices","normals"...
+	* @param {Boolean} free if you want to remove the data from the GPU
+	*/
+	removeVertexBuffer(name, free) {
+		var buffer = this.vertexBuffers[name];
+		if(!buffer)
+			return;
+		if(free)
+			buffer.delete();
+		delete this.vertexBuffers[name];
+	}
+
+	/**
+	* Returns a vertex buffer
+	* @method getVertexBuffer
+	* @param {String} name of vertex buffer
+	* @return {Buffer} the buffer
+	*/
+	getVertexBuffer(name) {
+		return this.vertexBuffers[name];
+	}
+
+	/**
+	* Creates a new empty index buffer and attachs it to this mesh
+	* @method createIndexBuffer
+	* @param {String} name 
+	* @param {Typed array} data 
+	* @param {enum} stream_type gl.STATIC_DRAW, gl.DYNAMIC_DRAW, gl.STREAM_DRAW
+	*/
+	createIndexBuffer(name, buffer_data, stream_type) {
+		//(target, data, spacing, stream_type, gl)
+
+		//cast to typed
+		if(buffer_data.constructor === Array)
+		{
+			var datatype = Uint16Array;
+			var vertices = this.vertexBuffers["vertices"];
+			if(vertices)
+			{
+				var num_vertices = vertices.data.length / 3;
+				if(num_vertices > 256*256)
+					datatype = Uint32Array;
+				buffer_data = new datatype( buffer_data );
+			}
+		}
+
+		var buffer = this.indexBuffers[name] = new GL.Buffer(gl.ELEMENT_ARRAY_BUFFER, buffer_data, 0, stream_type, this.gl );
+		return buffer;
+	}
+
+	/**
+	* Returns a vertex buffer
+	* @method getBuffer
+	* @param {String} name of vertex buffer
+	* @return {Buffer} the buffer
+	*/
+	getBuffer = function(name) {
+		return this.vertexBuffers[name];
+	}
+
+	/**
+	* Returns a index buffer
+	* @method getIndexBuffer
+	* @param {String} name of index buffer
+	* @return {Buffer} the buffer
+	*/
+	getIndexBuffer(name) {
+		return this.indexBuffers[name];
+	}
+
+	/**
+	* Removes an index buffer from the mesh
+	* @method removeIndexBuffer
+	* @param {String} name "vertices","normals"...
+	* @param {Boolean} free if you want to remove the data from the GPU
+	*/
+	removeIndexBuffer(name, free) {
+		var buffer = this.indexBuffers[name];
+		if(!buffer)
+			return;
+		if(free)
+			buffer.delete();
+		delete this.indexBuffers[name];
+	}
+
+	/**
+	* Uploads data inside buffers to VRAM.
+	* @method upload
+	* @param {number} buffer_type gl.STATIC_DRAW, gl.DYNAMIC_DRAW, gl.STREAM_DRAW
+	*/
+	upload(buffer_type) {
+		for (var attribute in this.vertexBuffers) {
+			var buffer = this.vertexBuffers[attribute];
+			//buffer.data = this[buffer.name];
+			buffer.upload(buffer_type);
+		}
+
+		for (var name in this.indexBuffers) {
+			var buffer = this.indexBuffers[name];
+			//buffer.data = this[name];
+			buffer.upload();
 		}
 	}
 
-	var buffer = this.indexBuffers[name] = new GL.Buffer(gl.ELEMENT_ARRAY_BUFFER, buffer_data, 0, stream_type, this.gl );
-	return buffer;
-}
+	deleteBuffers()	{
+		for(var i in this.vertexBuffers)
+		{
+			var buffer = this.vertexBuffers[i];
+			buffer.delete();
+		}
+		this.vertexBuffers = {};
 
-/**
-* Returns a vertex buffer
-* @method getBuffer
-* @param {String} name of vertex buffer
-* @return {Buffer} the buffer
-*/
-Mesh.prototype.getBuffer = function(name)
-{
-	return this.vertexBuffers[name];
-}
-
-/**
-* Returns a index buffer
-* @method getIndexBuffer
-* @param {String} name of index buffer
-* @return {Buffer} the buffer
-*/
-Mesh.prototype.getIndexBuffer = function(name)
-{
-	return this.indexBuffers[name];
-}
-
-/**
-* Removes an index buffer from the mesh
-* @method removeIndexBuffer
-* @param {String} name "vertices","normals"...
-* @param {Boolean} free if you want to remove the data from the GPU
-*/
-Mesh.prototype.removeIndexBuffer = function(name, free) {
-	var buffer = this.indexBuffers[name];
-	if(!buffer)
-		return;
-	if(free)
-		buffer.delete();
-	delete this.indexBuffers[name];
-}
-
-
-/**
-* Uploads data inside buffers to VRAM.
-* @method upload
-* @param {number} buffer_type gl.STATIC_DRAW, gl.DYNAMIC_DRAW, gl.STREAM_DRAW
-*/
-Mesh.prototype.upload = function(buffer_type) {
-	for (var attribute in this.vertexBuffers) {
-		var buffer = this.vertexBuffers[attribute];
-		//buffer.data = this[buffer.name];
-		buffer.upload(buffer_type);
-	}
-
-	for (var name in this.indexBuffers) {
-		var buffer = this.indexBuffers[name];
-		//buffer.data = this[name];
-		buffer.upload();
+		for(var i in this.indexBuffers)
+		{
+			var buffer = this.indexBuffers[i];
+			buffer.delete();
+		}
+		this.indexBuffers = {};
 	}
 }
 
-//LEGACY, plz remove
-Mesh.prototype.compile = Mesh.prototype.upload;
-
-
-Mesh.prototype.deleteBuffers = function()
-{
-	for(var i in this.vertexBuffers)
-	{
-		var buffer = this.vertexBuffers[i];
-		buffer.delete();
-	}
-	this.vertexBuffers = {};
-
-	for(var i in this.indexBuffers)
-	{
-		var buffer = this.indexBuffers[i];
-		buffer.delete();
-	}
-	this.indexBuffers = {};
-}
-
+GL.Mesh = Mesh;
 Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
 
 Mesh.prototype.bindBuffers = function( shader )
@@ -12496,4 +12486,3 @@ Mesh.decompressors["bounding_compressed"] = function(o)
 		o.weights = new_weights;
 	}
 }
-

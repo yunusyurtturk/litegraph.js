@@ -37,6 +37,7 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * Removed LiteGraph.pointerAddListener in favor of addEventListener()
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
 * Removed some unused/blank methods
+* Removed Mesh.compile in favor of Mesh.upload
 
 # litegraph.js
 

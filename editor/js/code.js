@@ -2,6 +2,8 @@
 import { LiteGraph } from "../../src/litegraph.js";
 import { Editor } from "../../src/litegraph-editor.js";
 
+export var gl;
+
 var webgl_canvas = null;
 
 LiteGraph.node_images_path = "../nodes_data/";
@@ -173,7 +175,7 @@ function enableWebGL() {
 
 		var parent = document.querySelector(".editor-area");
 		parent.appendChild( webgl_canvas );
-		var gl = GL.create({ canvas: webgl_canvas });
+		gl = GL.create({ canvas: webgl_canvas });
 		if(!gl)
 			return;
 
