@@ -1623,7 +1623,7 @@ GL.Buffer.prototype.delete = function()
 * @param {WebGLContext} gl [Optional] gl context where to create the mesh
 * @constructor
 */
-global.Mesh = GL.Mesh = function Mesh( vertexbuffers, indexbuffers, options, gl )
+GL.Mesh = function Mesh( vertexbuffers, indexbuffers, options, gl )
 {
 	if(GL.debug)
 		console.log("GL.Mesh created");
@@ -2994,11 +2994,10 @@ Mesh.prototype.freeData = function()
 	}
 }
 
-Mesh.prototype.configure = function( o, options )
+Mesh.prototype.configure = function( o, options = {} )
 {
 	var vertex_buffers = {};
 	var index_buffers = {};
-	options = options || {};
 
 	for(var j in o)
 	{
@@ -3170,8 +3169,7 @@ Mesh.prototype.simplify = function()
 * @param {Mesh} output_mesh [optional] mesh to store the mesh, otherwise is created
 * @param {WebGLContext} gl [optional] if omitted, the global.gl is used
 */
-Mesh.load = function( buffers, options, output_mesh, gl ) {
-	options = options || {};
+Mesh.load = function( buffers, options = {}, output_mesh, gl ) {
 	if(options.no_gl)
 		gl = null;
 	var mesh = output_mesh || new GL.Mesh(null,null,null,gl);
@@ -3186,9 +3184,8 @@ Mesh.load = function( buffers, options, output_mesh, gl ) {
 * @param {Object} options { only_data: to get the mesh data without uploading it }
 * @return {GL.Mesh|Object} the mesh in GL.Mesh format or Object format (if options.only_data is true)
 */
-Mesh.mergeMeshes = function( meshes, options )
+Mesh.mergeMeshes = function( meshes, options = {} )
 {
-	options = options || {};
 
 	var vertex_buffers = {};
 	var index_buffers = {};
@@ -3351,9 +3348,8 @@ Mesh.decompressors = {}; //used to decompress binary meshes
 * @method Mesh.fromOBJ
 * @param {Array} meshes array containing all the meshes
 */
-Mesh.fromURL = function(url, on_complete, gl, options)
+Mesh.fromURL = function(url, on_complete, gl, options = {})
 {
-	options = options || {};
 	gl = gl || global.gl;
 	
 	var mesh = new GL.Mesh(undefined,undefined,undefined,gl);
@@ -3563,8 +3559,7 @@ GL.extendClass( DynamicMesh, Mesh );
 * @method Mesh.plane
 * @param {Object} options valid options: detail, detailX, detailY, size, width, heigth, xz (horizontal plane)
 */
-Mesh.plane = function(options, gl) {
-	options = options || {};
+Mesh.plane = function(options = {}, gl) {
 	options.triangles = [];
 	var mesh = {};
 	var detailX = options.detailX || options.detail || 1;
@@ -3646,8 +3641,7 @@ Mesh.point = function(options) {
 * @method Mesh.cube
 * @param {Object} options valid options: size 
 */
-Mesh.cube = function(options, gl) {
-	options = options || {};
+Mesh.cube = function(options = {}, gl) {
 	var halfsize = (options.size || 1) * 0.5;
 
 	var buffers = {};
@@ -3673,8 +3667,7 @@ Mesh.cube = function(options, gl) {
 * @method Mesh.cube
 * @param {Object} options valid options: size, sizex, sizey, sizez
 */
-Mesh.box = function(options, gl) {
-	options = options || {};
+Mesh.box = function(options = {}, gl) {
 	var sizex = options.sizex || 1;
 	var sizey = options.sizey || 1;
 	var sizez = options.sizez || 1;
@@ -3711,8 +3704,7 @@ Mesh.box = function(options, gl) {
 * @method Mesh.circle
 * @param {Object} options valid options: size,radius, xz = in xz plane, otherwise xy plane
 */
-Mesh.circle = function( options, gl ) {
-	options = options || {};
+Mesh.circle = function( options = {}, gl ) {
 	var size = options.size || options.radius || 1;
 	var slices = Math.ceil(options.slices || 24);
 	var xz = options.xz || false;
@@ -3821,8 +3813,7 @@ Mesh.circle = function( options, gl ) {
 * @method Mesh.cylinder
 * @param {Object} options valid options: radius, height, subdivisions 
 */
-Mesh.cylinder = function( options, gl ) {
-	options = options || {};
+Mesh.cylinder = function( options = {}, gl ) {
 	var radius = options.radius || options.size || 1;
 	var height = options.height || options.size || 2;
 	var subdivisions = options.subdivisions || 64;
@@ -3943,8 +3934,7 @@ Mesh.cylinder = function( options, gl ) {
 * @method Mesh.cone
 * @param {Object} options valid options: radius, height, subdivisions 
 */
-Mesh.cone = function( options, gl ) {
-	options = options || {};
+Mesh.cone = function( options = {}, gl ) {
 	var radius = options.radius || options.size || 1;
 	var height = options.height || options.size || 2;
 	var subdivisions = options.subdivisions || 64;
@@ -4025,8 +4015,7 @@ Mesh.cone = function( options, gl ) {
 * @method Mesh.sphere
 * @param {Object} options valid options: radius, lat, long, subdivisions, hemi
 */
-Mesh.sphere = function( options, gl ) {
-	options = options || {};
+Mesh.sphere = function( options = {}, gl ) {
 	var radius = options.radius || options.size || 1;
 	var latitudeBands = options.lat || options.subdivisions || 16;
 	var longitudeBands = options["long"] || options.subdivisions || 16;
@@ -4122,9 +4111,7 @@ Mesh.sphere = function( options, gl ) {
 * @method Mesh.grid
 * @param {Object} options valid options: size, lines
 */
-Mesh.grid = function( options, gl )
-{
-	options = options || {};
+Mesh.grid = function( options = {}, gl ) {
 	var num_lines = options.lines || 11;
 	if(num_lines < 0) 
 		num_lines = 1;
@@ -4161,8 +4148,7 @@ Mesh.grid = function( options, gl )
 * @method Mesh.icosahedron
 * @param {Object} options valid options: radius, subdivisions (max: 6)
 */
-Mesh.icosahedron = function( options, gl ) {
-	options = options || {};
+Mesh.icosahedron = function( options = {}, gl ) {
 	var radius = options.radius || options.size || 1;
 	var subdivisions = options.subdivisions === undefined ? 0 : options.subdivisions;
 	if(subdivisions > 6) //dangerous
@@ -4269,8 +4255,7 @@ Mesh.icosahedron = function( options, gl ) {
 * @constructor
 */
 
-global.Texture = GL.Texture = function Texture( width, height, options, gl ) {
-	options = options || {};
+global.Texture = GL.Texture = function Texture( width, height, options = {}, gl ) {
 
 	//used to avoid problems with resources moving between different webgl context
 	gl = gl || global.gl;
@@ -4675,9 +4660,7 @@ Texture.prototype.uploadImage = function( image, options )
 * @param {ArrayBuffer} data
 * @param {Object} options [optional] upload options (premultiply_alpha, no_flip, cubemap_face, mipmap_level)
 */
-Texture.prototype.uploadData = function( data, options, skip_mipmaps )
-{
-	options = options || {};
+Texture.prototype.uploadData = function( data, options = {}, skip_mipmaps ) {
 	if(!data)
 		throw("no data passed");
 	var gl = this.gl;
@@ -5418,10 +5401,9 @@ Texture.prototype.applyBlur = function( offsetx, offsety, intensity, output_text
 * @param {Function} on_complete
 * @return {Texture} the texture
 */
-Texture.fromURL = function( url, options, on_complete, gl ) {
+Texture.fromURL = function( url, options = {}, on_complete, gl ) {
 	gl = gl || global.gl;
 
-	options = options || {};
 	options = Object.create(options); //creates a new options using the old one as prototype
 
 	var texture = options.texture || new GL.Texture(1, 1, options, gl);
@@ -5555,9 +5537,7 @@ Texture.parseTGA = function(data)
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromImage = function( image, options ) {
-	options = options || {};
-
+Texture.fromImage = function( image, options = {} ) {
 	var texture = options.texture || new GL.Texture( image.width, image.height, options);
 	texture.uploadImage( image, options );
 
@@ -5598,9 +5578,7 @@ Texture.fromImage = function( image, options ) {
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromVideo = function(video, options) {
-	options = options || {};
-
+Texture.fromVideo = function(video, options = {}) {
 	var texture = options.texture || new GL.Texture(video.videoWidth, video.videoHeight, options);
 	texture.bind();
 	texture.uploadImage( video, options );
@@ -5621,8 +5599,7 @@ Texture.fromVideo = function(video, options) {
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromTexture = function( old_texture, options) {
-	options = options || {};
+Texture.fromTexture = function( old_texture, options = {}) {
 	var texture = new GL.Texture( old_texture.width, old_texture.height, options );
 	old_texture.copyTo( texture );
 	return texture;
@@ -5646,10 +5623,8 @@ Texture.prototype.clone = function( options )
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromMemory = function( width, height, pixels, options) //format in options as format
+Texture.fromMemory = function( width, height, pixels, options = {}) //format in options as format
 {
-	options = options || {};
-
 	var texture = options.texture || new GL.Texture(width, height, options);
 	Texture.setUploadOptions(options);
 	texture.bind();
@@ -5683,10 +5658,8 @@ Texture.fromMemory = function( width, height, pixels, options) //format in optio
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromDDSInMemory = function(data, options) //format in options as format
+Texture.fromDDSInMemory = function(data, options = {}) //format in options as format
 {
-	options = options || {};
-
 	var texture = options.texture || new GL.Texture(0, 0, options);
 	GL.Texture.setUploadOptions(options);
 	texture.bind();
@@ -5707,9 +5680,7 @@ Texture.fromDDSInMemory = function(data, options) //format in options as format
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.fromShader = function(width, height, shader, options) {
-	options = options || {};
-	
+Texture.fromShader = function(width, height, shader, options = {}) {	
 	var texture = new GL.Texture( width, height, options );
 	//copy content
 	texture.drawTo(function() {
@@ -5730,8 +5701,7 @@ Texture.fromShader = function(width, height, shader, options) {
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.cubemapFromImages = function(images, options) {
-	options = options || {};
+Texture.cubemapFromImages = function(images, options = {}) {
 	if(images.length != 6)
 		throw "missing images to create cubemap";
 
@@ -5784,11 +5754,8 @@ Texture.cubemapFromImages = function(images, options) {
 * @param {Object} options
 * @return {Texture} the texture
 */
-Texture.cubemapFromImage = function( image, options ) {
-	options = options || {};
-
-	if(image.width != (image.height / 6) && image.height % 6 != 0 && !options.faces && !options.is_polar )
-	{
+Texture.cubemapFromImage = function( image, options = {} ) {
+	if(image.width != (image.height / 6) && image.height % 6 != 0 && !options.faces && !options.is_polar ) {
 		console.error( "Cubemap image not valid, only 1x6 (vertical) or 6x3 (cross) formats. Check size:", image.width, image.height );
 		return null;
 	}
@@ -5899,8 +5866,7 @@ Texture.generateCubemapCrossFacesInfo = function(width, column)
 * @param {Function} on_complete callback
 * @return {Texture} the texture
 */
-Texture.cubemapFromURL = function( url, options, on_complete ) {
-	options = options || {};
+Texture.cubemapFromURL = function( url, options = {}, on_complete ) {
 	options = Object.create(options); //creates a new options using the old one as prototype
 	options.texture_type = gl.TEXTURE_CUBE_MAP;
 	var texture = options.texture || new GL.Texture(1, 1, options);
@@ -8402,8 +8368,7 @@ Shader.getFlatShader = function(gl)
 * - container (string or element)
 * @return {WebGLRenderingContext} webgl context with all the extra functions (check gl in the doc for more info)
 */
-GL.create = function(options) {
-	options = options || {};
+GL.create = function(options = {}) {
 	var canvas = null;
 	if(options.canvas)
 	{
@@ -11729,10 +11694,7 @@ Raytracer.hitTestTriangle = function(origin, ray, a, b, c) {
 * @return {Object} mesh information (vertices, coords, normals, indices)
 */
 
-Mesh.parseOBJ = function( text, options )
-{
-	options = options || {};
-
+Mesh.parseOBJ = function( text, options = {} ) {
 	//final arrays (packed, lineal [ax,ay,az, bx,by,bz ...])
 	var positionsArray = [ ];
 	var texcoordsArray = [ ];
@@ -12224,12 +12186,10 @@ if(global.WBin)
 
 Mesh.binary_file_formats["wbin"] = true;
 
-Mesh.parsers["wbin"] = Mesh.fromBinary = function( data_array, options )
+Mesh.parsers["wbin"] = Mesh.fromBinary = function( data_array, options = {} )
 {
 	if(!global.WBin)
 		throw("To use binary meshes you need to install WBin.js from https://github.com/jagenjo/litescene.js/blob/master/src/utils/wbin.js ");
-
-	options = options || {};
 
 	var o = null;
 	if( data_array.constructor == ArrayBuffer )

@@ -117,7 +117,6 @@ class LGraphPoints3D {
         this.version++;
     }
 
-    // global
     static generatePoints(radius, num_points, mode, points, normals, regular, obj) {
         var size = num_points * 3;
         if (!points || points.length != size) points = new Float32Array(size);
