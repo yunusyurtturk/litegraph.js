@@ -54,7 +54,8 @@ export class LGraphGroup {
         this.title = o.title;
         this._bounding.set(o.bounding);
         this.color = o.color;
-        this.font_size = o.font_size;
+        if(o.font_size)
+            this.font_size = o.font_size;
     }
 
     /**

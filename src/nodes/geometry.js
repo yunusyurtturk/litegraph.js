@@ -1,5 +1,7 @@
 import { LiteGraph } from "../litegraph.js";
-import { GL } from "../../editor/js/libs/litegl.js";
+
+// @BUG: Gotta finish cleaning the file up so this doesn't cause the whole thing to crash
+// import { GL } from "../../editor/js/libs/litegl.js";
 
 var view_matrix = new Float32Array(16);
 var projection_matrix = new Float32Array(16);

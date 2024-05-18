@@ -383,7 +383,6 @@ export class LGraphCanvas {
         canvas.addEventListener("wheel", this.processMouseWheel);
 
         // Keyboard
-        canvas.setAttribute("tabindex",1); // otherwise key events are ignored
         canvas.addEventListener("keydown", this.processKey);
         document.addEventListener("keyup", this.processKey); // in document, otherwise it doesn't fire keyup
 
