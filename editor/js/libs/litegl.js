@@ -24,7 +24,7 @@ if(typeof(glMatrix) == "undefined") {
 /* 
  * GL seems to be a scatter-built singleton object.  I'm going to convert it to a ES6 class. 
  */
-export var GL = new class {
+var GL = new class {
 	constructor() {
 		this.blockable_keys = {"Up":true,"Down":true,"Left":true,"Right":true};
 		this.reverse = null;
@@ -10029,7 +10029,6 @@ class Shader {
 	}
 }
 GL.Shader = Shader;
-export { Shader };
 
 // @TODO: Deal with this:
 //this two variables are a hack to avoid memory allocation on drawCalls
@@ -12287,3 +12286,5 @@ Raytracer.prototype.getRayForPixel = (function(){
 		return vec3.normalize( out, out );
 	}
 })();
+
+export { GL, Shader };

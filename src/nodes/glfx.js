@@ -1,5 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 import { LGraphTexture } from "./gltextures.js";
+import { GL } from "../../editor/js/libs/litegl.js";
 
 // Works with Litegl.js to create WebGL nodes
 
@@ -311,7 +312,7 @@ class LGraphFXBokeh {
         var first_shader = LGraphFXBokeh._first_shader;
         if (!first_shader) {
             first_shader = LGraphFXBokeh._first_shader = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
+                GL.Shader.SCREEN_VERTEX_SHADER,
                 LGraphFXBokeh._first_pixel_shader,
             );
         }
@@ -557,7 +558,7 @@ class LGraphFXGeneric {
             }
 
             shader = LGraphFXGeneric.shaders[fx] = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
+                GL.Shader.SCREEN_VERTEX_SHADER,
                 pixel_shader_code,
             );
         }
@@ -707,7 +708,7 @@ class LGraphFXVigneting {
 
         if (!LGraphFXVigneting._shader) {
             LGraphFXVigneting._shader = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
+                GL.Shader.SCREEN_VERTEX_SHADER,
                 LGraphFXVigneting.pixel_shader,
             );
         }
