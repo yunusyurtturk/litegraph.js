@@ -3354,17 +3354,17 @@ class Mesh {
 	*/
 	encode(format, options) {
 		format = format.toLowerCase();
-		var encoder = GL.Mesh.encoders[ format ];
+		var encoder = Mesh.encoders[ format ];
 		if(encoder)
 			return encoder.call(null, this, options );
-		throw("GL.Mesh.encode: no encoder found for format " + format );
+		throw("Mesh.encode: no encoder found for format " + format );
 	}
 
 	/**
 	* Returns a shared mesh containing a quad to be used when rendering to the screen
 	* Reusing the same quad helps not filling the memory
 	* @method getScreenQuad
-	* @return {GL.Mesh} the screen quad
+	* @return {Mesh} the screen quad
 	*/
 	static getScreenQuad(gl) {
 		gl = gl || global.gl;
@@ -3374,444 +3374,434 @@ class Mesh {
 
 		var vertices = new Float32Array([0,0,0, 1,1,0, 0,1,0,  0,0,0, 1,0,0, 1,1,0 ]);
 		var coords = new Float32Array([0,0, 1,1, 0,1,  0,0, 1,0, 1,1 ]);
-		mesh = new GL.Mesh({ vertices: vertices, coords: coords}, undefined, undefined, gl);
+		mesh = new Mesh({ vertices: vertices, coords: coords}, undefined, undefined, gl);
 		return gl.meshes[":screen_quad"] = mesh;
 	}
-}
-/* BINARY MESHES */
-//Add some functions to the classes in LiteGL to allow store in binary
-GL.Mesh.EXTENSION = "wbin";
-GL.Mesh.enable_wbin_compression = true;
-GL.Mesh = Mesh;
-Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
 
+	/**
+	* Returns a planar mesh (you can choose how many subdivisions)
+	* @method Mesh.plane
+	* @param {Object} options valid options: detail, detailX, detailY, size, width, heigth, xz (horizontal plane)
+	*/
+	plane(options = {}, gl) {
+		options.triangles = [];
+		var mesh = {};
+		var detailX = options.detailX || options.detail || 1;
+		var detailY = options.detailY || options.detail || 1;
+		var width = options.width || options.size || 1;
+		var height = options.height || options.size || 1;
+		var xz = options.xz;
+		width *= 0.5;
+		height *= 0.5;
 
-//this is used when a mesh is dynamic and constantly changes
-function DynamicMesh( size, normals, coords, colors, gl )
-{
-	size = size || 1024;
+		var triangles = [];
+		var vertices = [];
+		var coords = [];
+		var normals = [];
 
-	if(GL.debug)
-		console.log("GL.Mesh created");
+		var N = vec3.fromValues(0,0,1);
+		if(xz) 
+			N.set([0,1,0]);
 
-	if( gl !== null )
-	{
-		gl = gl || global.gl;
-		this.gl = gl;
-	}
-
-	//used to avoid problems with resources moving between different webgl context
-	this._context_id = gl.context_id; 
-
-	this.vertexBuffers = {};
-	this.indexBuffers = {};
-
-	//here you can store extra info, like groups, which is an array of { name, start, length, material }
-	this.info = {
-		groups: []
-	}; 
-	this._bounding = BBox.create(); //here you can store a AABB in BBox format
-
-	this.resize( size );
-}
-
-DynamicMesh.DEFAULT_NORMAL = vec3.fromValues(0,1,0);
-DynamicMesh.DEFAULT_COORD = vec2.fromValues(0.5,0.5);
-DynamicMesh.DEFAULT_COLOR = vec4.fromValues(1,1,1,1);
-
-DynamicMesh.prototype.resize = function( size )
-{
-	var buffers = {};
-
-	this._vertex_data = new Float32Array( size * 3 );
-	buffers.vertices = this._vertex_data;
-
-	if( normals )
-		buffers.normals = this._normal_data = new Float32Array( size * 3 );
-	if( coords )
-		buffers.coords = this._coord_data = new Float32Array( size * 2 );
-	if( colors )
-		buffers.colors = this._color_data = new Float32Array( size * 4 );
-
-	this.addBuffers( buffers );
-
-	this.current_pos = 0;
-	this.max_size = size;
-	this._must_update = true;
-}
-
-DynamicMesh.prototype.clear = function()
-{
-	this.current_pos = 0;
-}
-
-DynamicMesh.prototype.addPoint = function( vertex, normal, coord, color )
-{
-	if (pos >= this.max_size)
-	{
-		console.warn("DynamicMesh: not enough space, reserve more");
-		return false;
-	}
-	var pos = this.current_pos++;
-
-	this._vertex_data.set( vertex, pos*3 );
-
-	if(this._normal_data)
-		this._normal_data.set( normal || DynamicMesh.DEFAULT_NORMAL, pos*3 );
-	if(this._coord_data)
-		this._coord_data.set( coord || DynamicMesh.DEFAULT_COORD, pos*2 );
-	if(this._color_data)
-		this._color_data.set( color || DynamicMesh.DEFAULT_COLOR, pos*4 );
-
-	this._must_update = true;
-	return true;
-}
-
-DynamicMesh.prototype.update = function( force )
-{
-	if(!this._must_update && !force)
-		return this.current_pos;
-	this._must_update = false;
-
-	this.getBuffer("vertices").upload( gl.STREAM_DRAW );
-	if(this._normal_data)
-		this.getBuffer("normal").upload( gl.STREAM_DRAW );
-	if(this._coord_data)
-		this.getBuffer("coord").upload( gl.STREAM_DRAW );
-	if(this._color_data)
-		this.getBuffer("color").upload( gl.STREAM_DRAW );
-	return this.current_pos;
-}
-
-GL.extendClass( DynamicMesh, Mesh );
-
-/**
-* @class Mesh
-*/
-
-/**
-* Returns a planar mesh (you can choose how many subdivisions)
-* @method Mesh.plane
-* @param {Object} options valid options: detail, detailX, detailY, size, width, heigth, xz (horizontal plane)
-*/
-Mesh.plane = function(options = {}, gl) {
-	options.triangles = [];
-	var mesh = {};
-	var detailX = options.detailX || options.detail || 1;
-	var detailY = options.detailY || options.detail || 1;
-	var width = options.width || options.size || 1;
-	var height = options.height || options.size || 1;
-	var xz = options.xz;
-	width *= 0.5;
-	height *= 0.5;
-
-	var triangles = [];
-	var vertices = [];
-	var coords = [];
-	var normals = [];
-
-	var N = vec3.fromValues(0,0,1);
-	if(xz) 
-		N.set([0,1,0]);
-
-	for (var y = 0; y <= detailY; y++) {
-		var t = y / detailY;
-		for (var x = 0; x <= detailX; x++) {
-		  var s = x / detailX;
-		  if(xz)
-			  vertices.push((2 * s - 1) * width, 0, -(2 * t - 1) * height);
-		  else
-			  vertices.push((2 * s - 1) * width, (2 * t - 1) * height, 0);
-		  coords.push(s, t);
-		  normals.push(N[0],N[1],N[2]);
-		  if (x < detailX && y < detailY) {
-			var i = x + y * (detailX + 1);
-			if(xz) //horizontal
-			{
-				triangles.push(i + 1, i + detailX + 1, i);
-				triangles.push(i + 1, i + detailX + 2, i + detailX + 1);
+		for (var y = 0; y <= detailY; y++) {
+			var t = y / detailY;
+			for (var x = 0; x <= detailX; x++) {
+			var s = x / detailX;
+			if(xz)
+				vertices.push((2 * s - 1) * width, 0, -(2 * t - 1) * height);
+			else
+				vertices.push((2 * s - 1) * width, (2 * t - 1) * height, 0);
+			coords.push(s, t);
+			normals.push(N[0],N[1],N[2]);
+			if (x < detailX && y < detailY) {
+				var i = x + y * (detailX + 1);
+				if(xz) //horizontal
+				{
+					triangles.push(i + 1, i + detailX + 1, i);
+					triangles.push(i + 1, i + detailX + 2, i + detailX + 1);
+				}
+				else //vertical
+				{
+					triangles.push(i, i + 1, i + detailX + 1);
+					triangles.push(i + detailX + 1, i + 1, i + detailX + 2);
+				}
 			}
-			else //vertical
-			{
-				triangles.push(i, i + 1, i + detailX + 1);
-				triangles.push(i + detailX + 1, i + 1, i + detailX + 2);
 			}
-		  }
-		}
-	}
-
-	var bounding = BBox.fromCenterHalfsize( [0,0,0], xz ? [width,0,height] : [width,height,0] );
-	var mesh_info = {vertices:vertices, normals: normals, coords: coords, triangles: triangles };
-	return GL.Mesh.load( mesh_info, { bounding: bounding }, gl);
-};
-
-/**
-* Returns a 2D Mesh (be careful, stream is vertices2D, used for 2D engines )
-* @method Mesh.plane2D
-*/
-Mesh.plane2D = function(options, gl) {
-	var vertices = new Float32Array([-1,1, 1,-1, 1,1, -1,1, -1,-1, 1,-1]);
-	var coords = new Float32Array([0,1, 1,0, 1,1, 0,1, 0,0, 1,0]);
-
-	if(options && options.size)
-	{
-		var s = options.size * 0.5;
-		for(var i = 0; i < vertices.length; ++i)
-			vertices[i] *= s;
-	}
-	return new GL.Mesh( {vertices2D: vertices, coords: coords },null,gl );
-};
-
-/**
-* Returns a point mesh 
-* @method Mesh.point
-* @param {Object} options no options
-*/
-Mesh.point = function(options) {
-	return new GL.Mesh( {vertices: [0,0,0]} );
-}
-
-/**
-* Returns a cube mesh 
-* @method Mesh.cube
-* @param {Object} options valid options: size 
-*/
-Mesh.cube = function(options = {}, gl) {
-	var halfsize = (options.size || 1) * 0.5;
-
-	var buffers = {};
-	//[[-1,1,-1],[-1,-1,+1],[-1,1,1],[-1,1,-1],[-1,-1,-1],[-1,-1,+1],[1,1,-1],[1,1,1],[1,-1,+1],[1,1,-1],[1,-1,+1],[1,-1,-1],[-1,1,1],[1,-1,1],[1,1,1],[-1,1,1],[-1,-1,1],[1,-1,1],[-1,1,-1],[1,1,-1],[1,-1,-1],[-1,1,-1],[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,1],[1,1,-1],[-1,1,-1],[-1,1,1],[1,1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,-1],[1,-1,1],[-1,-1,1]]
-	buffers.vertices = new Float32Array([-1,1,-1,-1,-1,+1, -1,1,1,-1,1,-1, -1,-1,-1,-1,-1,+1, 1,1,-1,1,1,1,1,-1,+1,1,1,-1,1,-1,+1,1,-1,-1,-1,1,1,1,-1,1,1,1,1,-1,1,1,-1,-1,1,1,-1,1,-1,1,-1,1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,1]);
-	for(var i = 0, l = buffers.vertices.length; i < l; ++i)
-		buffers.vertices[i] *= halfsize;
-
-	//[[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0]]
-	//[[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0]];
-	buffers.normals = new Float32Array([-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0]);
-	buffers.coords = new Float32Array([0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0]);
-
-	if(options.wireframe)
-		buffers.wireframe = new Uint16Array([0,2, 2,5, 5,4, 4,0,   6,7, 7,10, 10,11, 11,6, 0,6, 2,7, 5,10, 4,11  ]);
-	options.bounding = BBox.fromCenterHalfsize( [0,0,0], [halfsize,halfsize,halfsize] );
-	return GL.Mesh.load(buffers, options, gl);
-}
-
-
-/**
-* Returns a cube mesh of a given size
-* @method Mesh.cube
-* @param {Object} options valid options: size, sizex, sizey, sizez
-*/
-Mesh.box = function(options = {}, gl) {
-	var sizex = options.sizex || 1;
-	var sizey = options.sizey || 1;
-	var sizez = options.sizez || 1;
-	sizex *= 0.5;
-	sizey *= 0.5;
-	sizez *= 0.5;
-
-	var buffers = {};
-	//[[-1,1,-1],[-1,-1,+1],[-1,1,1],[-1,1,-1],[-1,-1,-1],[-1,-1,+1],[1,1,-1],[1,1,1],[1,-1,+1],[1,1,-1],[1,-1,+1],[1,-1,-1],[-1,1,1],[1,-1,1],[1,1,1],[-1,1,1],[-1,-1,1],[1,-1,1],[-1,1,-1],[1,1,-1],[1,-1,-1],[-1,1,-1],[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,1],[1,1,-1],[-1,1,-1],[-1,1,1],[1,1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,-1],[1,-1,1],[-1,-1,1]]
-	buffers.vertices = new Float32Array([-1,1,-1,-1,-1,+1,-1,1,1,-1,1,-1,-1,-1,-1,-1,-1,+1,1,1,-1,1,1,1,1,-1,+1,1,1,-1,1,-1,+1,1,-1,-1,-1,1,1,1,-1,1,1,1,1,-1,1,1,-1,-1,1,1,-1,1,-1,1,-1,1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,1]);
-	//for(var i in options.vertices) for(var j in options.vertices[i]) options.vertices[i][j] *= size;
-	for(var i = 0, l = buffers.vertices.length; i < l; i+=3) 
-	{
-		buffers.vertices[i] *= sizex;
-		buffers.vertices[i+1] *= sizey;
-		buffers.vertices[i+2] *= sizez;
-	}
-
-	//[[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0]]
-	//[[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0]];
-	buffers.normals = new Float32Array([-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0]);
-	buffers.coords = new Float32Array([0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0]);
-
-	if(options.wireframe)
-		buffers.wireframe = new Uint16Array([0,2, 2,5, 5,4, 4,0,   6,7, 7,10, 10,11, 11,6, 0,6, 2,7, 5,10, 4,11  ]);
-
-	options.bounding = BBox.fromCenterHalfsize( [0,0,0], [sizex,sizey,sizez] );
-
-	return GL.Mesh.load(buffers, options, gl);
-}
-
-/**
-* Returns a circle mesh 
-* @method Mesh.circle
-* @param {Object} options valid options: size,radius, xz = in xz plane, otherwise xy plane
-*/
-Mesh.circle = function( options = {}, gl ) {
-	var size = options.size || options.radius || 1;
-	var slices = Math.ceil(options.slices || 24);
-	var xz = options.xz || false;
-	var empty = options.empty || false;
-	if(slices < 3) slices = 3;
-	var delta = (2 * Math.PI) / slices;
-
-	var center = vec3.create();
-	var A = vec3.create();
-	var N = vec3.fromValues(0,0,1);
-	var uv_center = vec2.fromValues(0.5,0.5);
-	var uv = vec2.create();
-
-	if(xz) N.set([0,1,0]);
-
-	var index = xz ? 2 : 1;
-
-	var vertices = new Float32Array(3 * (slices + 1));
-	var normals = new Float32Array(3 * (slices + 1));
-	var coords = new Float32Array(2 * (slices + 1));
-	var triangles = null;
-
-	//the center is always the same
-	vertices.set(center, 0);
-	normals.set(N, 0);
-	coords.set(uv_center, 0);
-
-	var sin = 0;
-	var cos = 0;
-
-	//compute vertices
-	for(var i = 0; i < slices; ++i )
-	{
-		sin = Math.sin( delta * i );
-		cos = Math.cos( delta * i );
-
-		A[0] = sin * size;
-		A[index] = cos * size;
-		uv[0] = sin * 0.5 + 0.5;
-		uv[1] = cos * 0.5 + 0.5;
-		vertices.set(A, i * 3 + 3);
-		normals.set(N, i * 3 + 3);
-		coords.set(uv, i * 2 + 2);
-	}
-
-	if(empty)
-	{
-		vertices = vertices.subarray(3);
-		normals = vertices.subarray(3);
-		coords = vertices.subarray(2);
-		triangles = null;
-	}
-	else
-	{
-		var triangles = new Uint16Array(3 * slices);
-		var offset = 2;
-		var offset2 = 1;
-		if(xz)
-		{
-			offset = 1;
-			offset2 = 2;
 		}
 
-		//compute indices
-		for(var i = 0; i < slices-1; ++i )
+		var bounding = BBox.fromCenterHalfsize( [0,0,0], xz ? [width,0,height] : [width,height,0] );
+		var mesh_info = {vertices:vertices, normals: normals, coords: coords, triangles: triangles };
+		return Mesh.load( mesh_info, { bounding: bounding }, gl);
+	};
+
+	/**
+	* Returns a 2D Mesh (be careful, stream is vertices2D, used for 2D engines )
+	* @method Mesh.plane2D
+	*/
+	plane2D(options, gl) {
+		var vertices = new Float32Array([-1,1, 1,-1, 1,1, -1,1, -1,-1, 1,-1]);
+		var coords = new Float32Array([0,1, 1,0, 1,1, 0,1, 0,0, 1,0]);
+
+		if(options && options.size)
 		{
-			triangles[i*3] = 0;
-			triangles[i*3+1] = i+offset;
-			triangles[i*3+2] = i+offset2;
+			var s = options.size * 0.5;
+			for(var i = 0; i < vertices.length; ++i)
+				vertices[i] *= s;
+		}
+		return new Mesh( {vertices2D: vertices, coords: coords },null,gl );
+	};
+
+	/**
+	* Returns a point mesh 
+	* @method Mesh.point
+	* @param {Object} options no options
+	*/
+	point(options) {
+		return new Mesh( {vertices: [0,0,0]} );
+	}
+
+	/**
+	* Returns a cube mesh 
+	* @method Mesh.cube
+	* @param {Object} options valid options: size 
+	*/
+	cube(options = {}, gl) {
+		var halfsize = (options.size || 1) * 0.5;
+
+		var buffers = {};
+		//[[-1,1,-1],[-1,-1,+1],[-1,1,1],[-1,1,-1],[-1,-1,-1],[-1,-1,+1],[1,1,-1],[1,1,1],[1,-1,+1],[1,1,-1],[1,-1,+1],[1,-1,-1],[-1,1,1],[1,-1,1],[1,1,1],[-1,1,1],[-1,-1,1],[1,-1,1],[-1,1,-1],[1,1,-1],[1,-1,-1],[-1,1,-1],[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,1],[1,1,-1],[-1,1,-1],[-1,1,1],[1,1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,-1],[1,-1,1],[-1,-1,1]]
+		buffers.vertices = new Float32Array([-1,1,-1,-1,-1,+1, -1,1,1,-1,1,-1, -1,-1,-1,-1,-1,+1, 1,1,-1,1,1,1,1,-1,+1,1,1,-1,1,-1,+1,1,-1,-1,-1,1,1,1,-1,1,1,1,1,-1,1,1,-1,-1,1,1,-1,1,-1,1,-1,1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,1]);
+		for(var i = 0, l = buffers.vertices.length; i < l; ++i)
+			buffers.vertices[i] *= halfsize;
+
+		//[[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0]]
+		//[[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0]];
+		buffers.normals = new Float32Array([-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0]);
+		buffers.coords = new Float32Array([0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0]);
+
+		if(options.wireframe)
+			buffers.wireframe = new Uint16Array([0,2, 2,5, 5,4, 4,0,   6,7, 7,10, 10,11, 11,6, 0,6, 2,7, 5,10, 4,11  ]);
+		options.bounding = BBox.fromCenterHalfsize( [0,0,0], [halfsize,halfsize,halfsize] );
+		return GL.Mesh.load(buffers, options, gl);
+	}
+
+
+	/**
+	* Returns a cube mesh of a given size
+	* @method Mesh.cube
+	* @param {Object} options valid options: size, sizex, sizey, sizez
+	*/
+	box(options = {}, gl) {
+		var sizex = options.sizex || 1;
+		var sizey = options.sizey || 1;
+		var sizez = options.sizez || 1;
+		sizex *= 0.5;
+		sizey *= 0.5;
+		sizez *= 0.5;
+
+		var buffers = {};
+		//[[-1,1,-1],[-1,-1,+1],[-1,1,1],[-1,1,-1],[-1,-1,-1],[-1,-1,+1],[1,1,-1],[1,1,1],[1,-1,+1],[1,1,-1],[1,-1,+1],[1,-1,-1],[-1,1,1],[1,-1,1],[1,1,1],[-1,1,1],[-1,-1,1],[1,-1,1],[-1,1,-1],[1,1,-1],[1,-1,-1],[-1,1,-1],[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,1],[1,1,-1],[-1,1,-1],[-1,1,1],[1,1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,-1],[1,-1,1],[-1,-1,1]]
+		buffers.vertices = new Float32Array([-1,1,-1,-1,-1,+1,-1,1,1,-1,1,-1,-1,-1,-1,-1,-1,+1,1,1,-1,1,1,1,1,-1,+1,1,1,-1,1,-1,+1,1,-1,-1,-1,1,1,1,-1,1,1,1,1,-1,1,1,-1,-1,1,1,-1,1,-1,1,-1,1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,1,1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,-1,1,-1,-1,1,-1,1,-1,-1,-1,1,-1,1,-1,-1,1]);
+		//for(var i in options.vertices) for(var j in options.vertices[i]) options.vertices[i][j] *= size;
+		for(var i = 0, l = buffers.vertices.length; i < l; i+=3) 
+		{
+			buffers.vertices[i] *= sizex;
+			buffers.vertices[i+1] *= sizey;
+			buffers.vertices[i+2] *= sizez;
 		}
 
-		triangles[i*3] = 0;
-		if(xz)
+		//[[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,0,-1],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0]]
+		//[[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0],[0,1],[1,0],[1,1],[0,1],[0,0],[1,0],[1,1],[0,1],[0,0],[1,1],[0,0],[1,0]];
+		buffers.normals = new Float32Array([-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0]);
+		buffers.coords = new Float32Array([0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,1,0,0,1,0]);
+
+		if(options.wireframe)
+			buffers.wireframe = new Uint16Array([0,2, 2,5, 5,4, 4,0,   6,7, 7,10, 10,11, 11,6, 0,6, 2,7, 5,10, 4,11  ]);
+
+		options.bounding = BBox.fromCenterHalfsize( [0,0,0], [sizex,sizey,sizez] );
+
+		return GL.Mesh.load(buffers, options, gl);
+	}
+
+	/**
+	* Returns a circle mesh 
+	* @method Mesh.circle
+	* @param {Object} options valid options: size,radius, xz = in xz plane, otherwise xy plane
+	*/
+	circle( options = {}, gl ) {
+		var size = options.size || options.radius || 1;
+		var slices = Math.ceil(options.slices || 24);
+		var xz = options.xz || false;
+		var empty = options.empty || false;
+		if(slices < 3) slices = 3;
+		var delta = (2 * Math.PI) / slices;
+
+		var center = vec3.create();
+		var A = vec3.create();
+		var N = vec3.fromValues(0,0,1);
+		var uv_center = vec2.fromValues(0.5,0.5);
+		var uv = vec2.create();
+
+		if(xz) N.set([0,1,0]);
+
+		var index = xz ? 2 : 1;
+
+		var vertices = new Float32Array(3 * (slices + 1));
+		var normals = new Float32Array(3 * (slices + 1));
+		var coords = new Float32Array(2 * (slices + 1));
+		var triangles = null;
+
+		//the center is always the same
+		vertices.set(center, 0);
+		normals.set(N, 0);
+		coords.set(uv_center, 0);
+
+		var sin = 0;
+		var cos = 0;
+
+		//compute vertices
+		for(var i = 0; i < slices; ++i )
 		{
-			triangles[i*3+1] = i+1;
-			triangles[i*3+2] = 1;
+			sin = Math.sin( delta * i );
+			cos = Math.cos( delta * i );
+
+			A[0] = sin * size;
+			A[index] = cos * size;
+			uv[0] = sin * 0.5 + 0.5;
+			uv[1] = cos * 0.5 + 0.5;
+			vertices.set(A, i * 3 + 3);
+			normals.set(N, i * 3 + 3);
+			coords.set(uv, i * 2 + 2);
+		}
+
+		if(empty)
+		{
+			vertices = vertices.subarray(3);
+			normals = vertices.subarray(3);
+			coords = vertices.subarray(2);
+			triangles = null;
 		}
 		else
 		{
-			triangles[i*3+1] = 1;
-			triangles[i*3+2] = i+1;
+			var triangles = new Uint16Array(3 * slices);
+			var offset = 2;
+			var offset2 = 1;
+			if(xz)
+			{
+				offset = 1;
+				offset2 = 2;
+			}
+
+			//compute indices
+			for(var i = 0; i < slices-1; ++i )
+			{
+				triangles[i*3] = 0;
+				triangles[i*3+1] = i+offset;
+				triangles[i*3+2] = i+offset2;
+			}
+
+			triangles[i*3] = 0;
+			if(xz)
+			{
+				triangles[i*3+1] = i+1;
+				triangles[i*3+2] = 1;
+			}
+			else
+			{
+				triangles[i*3+1] = 1;
+				triangles[i*3+2] = i+1;
+			}
 		}
-	}
 
-	options.bounding = BBox.fromCenterHalfsize( [0,0,0], xz ? [size,0,size] : [size,size,0] );
+		options.bounding = BBox.fromCenterHalfsize( [0,0,0], xz ? [size,0,size] : [size,size,0] );
 
-	var buffers = {vertices: vertices, normals: normals, coords: coords, triangles: triangles};
+		var buffers = {vertices: vertices, normals: normals, coords: coords, triangles: triangles};
 
-	if(options.wireframe)
-	{
-		var wireframe = new Uint16Array(slices*2);
-		for(var i = 0; i < slices; i++)
+		if(options.wireframe)
 		{
-			wireframe[i*2] = i;
-			wireframe[i*2+1] = i+1;
+			var wireframe = new Uint16Array(slices*2);
+			for(var i = 0; i < slices; i++)
+			{
+				wireframe[i*2] = i;
+				wireframe[i*2+1] = i+1;
+			}
+			wireframe[0] = slices;
+			buffers.wireframe = wireframe;
 		}
-		wireframe[0] = slices;
-		buffers.wireframe = wireframe;
+
+		return GL.Mesh.load( buffers, options, gl );
 	}
 
-	return GL.Mesh.load( buffers, options, gl );
-}
+	/**
+	* Returns a cube mesh 
+	* @method Mesh.cylinder
+	* @param {Object} options valid options: radius, height, subdivisions 
+	*/
+	cylinder( options = {}, gl ) {
+		var radius = options.radius || options.size || 1;
+		var height = options.height || options.size || 2;
+		var subdivisions = options.subdivisions || 64;
 
-/**
-* Returns a cube mesh 
-* @method Mesh.cylinder
-* @param {Object} options valid options: radius, height, subdivisions 
-*/
-Mesh.cylinder = function( options = {}, gl ) {
-	var radius = options.radius || options.size || 1;
-	var height = options.height || options.size || 2;
-	var subdivisions = options.subdivisions || 64;
+		var vertices = new Float32Array(subdivisions * 6 * 3 * 2 );
+		var normals = new Float32Array(subdivisions * 6 * 3 * 2 );
+		var coords = new Float32Array(subdivisions * 6 * 2 * 2 );
+		//not indexed because caps have different normals and uvs so...
 
-	var vertices = new Float32Array(subdivisions * 6 * 3 * 2 );
-	var normals = new Float32Array(subdivisions * 6 * 3 * 2 );
-	var coords = new Float32Array(subdivisions * 6 * 2 * 2 );
-	//not indexed because caps have different normals and uvs so...
+		var delta = 2*Math.PI / subdivisions;
+		var normal = null;
+		for(var i = 0; i < subdivisions; ++i)
+		{
+			var angle = i * delta;
 
-	var delta = 2*Math.PI / subdivisions;
-	var normal = null;
-	for(var i = 0; i < subdivisions; ++i)
-	{
-		var angle = i * delta;
+			normal = [ Math.sin(angle), 0, Math.cos(angle)];
+			vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3);
+			normals.set(normal, i*6*3 );
+			coords.set([i/subdivisions,1], i*6*2 );
 
-		normal = [ Math.sin(angle), 0, Math.cos(angle)];
-		vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3);
-		normals.set(normal, i*6*3 );
-		coords.set([i/subdivisions,1], i*6*2 );
+			normal = [ Math.sin(angle), 0, Math.cos(angle)];
+			vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 3);
+			normals.set(normal, i*6*3 + 3);
+			coords.set([i/subdivisions,0], i*6*2 + 2);
 
-		normal = [ Math.sin(angle), 0, Math.cos(angle)];
-		vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 3);
-		normals.set(normal, i*6*3 + 3);
-		coords.set([i/subdivisions,0], i*6*2 + 2);
+			normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
+			vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 6);
+			normals.set(normal, i*6*3 + 6);
+			coords.set([(i+1)/subdivisions,0], i*6*2 + 4);
 
-		normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
-		vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 6);
-		normals.set(normal, i*6*3 + 6);
-		coords.set([(i+1)/subdivisions,0], i*6*2 + 4);
+			normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
+			vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3 + 9);
+			normals.set(normal, i*6*3 + 9);
+			coords.set([(i+1)/subdivisions,1], i*6*2 + 6);
 
-		normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
-		vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3 + 9);
-		normals.set(normal, i*6*3 + 9);
-		coords.set([(i+1)/subdivisions,1], i*6*2 + 6);
+			normal = [ Math.sin(angle), 0, Math.cos(angle)];
+			vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3 + 12);
+			normals.set(normal, i*6*3 + 12);
+			coords.set([i/subdivisions,1], i*6*2 + 8);
 
-		normal = [ Math.sin(angle), 0, Math.cos(angle)];
-		vertices.set([ normal[0]*radius, height*0.5, normal[2]*radius], i*6*3 + 12);
-		normals.set(normal, i*6*3 + 12);
-		coords.set([i/subdivisions,1], i*6*2 + 8);
+			normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
+			vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 15);
+			normals.set(normal, i*6*3 + 15);
+			coords.set([(i+1)/subdivisions,0], i*6*2 + 10);
+		}
 
-		normal = [ Math.sin(angle+delta), 0, Math.cos(angle+delta)];
-		vertices.set([ normal[0]*radius, height*-0.5, normal[2]*radius], i*6*3 + 15);
-		normals.set(normal, i*6*3 + 15);
-		coords.set([(i+1)/subdivisions,0], i*6*2 + 10);
+		var pos = i*6*3;
+		var pos_uv = i*6*2;
+		var caps_start = pos;
+
+		//caps
+		if( options.caps === false )
+		{
+			//finalize arrays
+			vertices = vertices.subarray(0,pos);
+			normals = normals.subarray(0,pos);
+			coords = coords.subarray(0,pos_uv);
+		}
+		else
+		{
+			var top_center = vec3.fromValues(0,height*0.5,0);
+			var bottom_center = vec3.fromValues(0,height*-0.5,0);
+			var up = vec3.fromValues(0,1,0);
+			var down = vec3.fromValues(0,-1,0);
+			for(var i = 0; i < subdivisions; ++i)
+			{
+				var angle = i * delta;
+
+				var uv = vec3.fromValues( Math.sin(angle), 0, Math.cos(angle) );
+				var uv2 = vec3.fromValues( Math.sin(angle+delta), 0, Math.cos(angle+delta) );
+
+				vertices.set([ uv[0]*radius, height*0.5, uv[2]*radius], pos + i*6*3);
+				normals.set(up, pos + i*6*3 );
+				coords.set( [ -uv[0] * 0.5 + 0.5,uv[2] * 0.5 + 0.5], pos_uv + i*6*2 );
+
+				vertices.set([ uv2[0]*radius, height*0.5, uv2[2]*radius], pos + i*6*3 + 3);
+				normals.set(up, pos + i*6*3 + 3 );
+				coords.set( [ -uv2[0] * 0.5 + 0.5,uv2[2] * 0.5 + 0.5], pos_uv + i*6*2 + 2 );
+
+				vertices.set( top_center, pos + i*6*3 + 6 );
+				normals.set(up, pos + i*6*3 + 6);
+				coords.set([0.5,0.5], pos_uv + i*6*2 + 4);
+				
+				//bottom
+				vertices.set([ uv2[0]*radius, height*-0.5, uv2[2]*radius], pos + i*6*3 + 9);
+				normals.set(down, pos + i*6*3 + 9);
+				coords.set( [ uv2[0] * 0.5 + 0.5,uv2[2] * 0.5 + 0.5], pos_uv + i*6*2 + 6);
+
+				vertices.set([ uv[0]*radius, height*-0.5, uv[2]*radius], pos + i*6*3 + 12);
+				normals.set(down, pos + i*6*3 + 12 );
+				coords.set( [ uv[0] * 0.5 + 0.5,uv[2] * 0.5 + 0.5], pos_uv + i*6*2 + 8 );
+
+				vertices.set( bottom_center, pos + i*6*3 + 15 );
+				normals.set( down, pos + i*6*3 + 15);
+				coords.set( [0.5,0.5], pos_uv + i*6*2 + 10);
+			}
+		}
+
+		var buffers = {
+			vertices: vertices,
+			normals: normals,
+			coords: coords
+		}
+		options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,height*0.5,radius] );
+		options.info = { groups: [] };
+
+		if(options.caps !== false)
+		{
+			options.info.groups.push({ name:"side", start: 0, length: caps_start / 3});
+			options.info.groups.push({ name:"caps", start: caps_start / 3, length: (vertices.length - caps_start) / 3});
+		}
+
+		return Mesh.load( buffers, options, gl );
 	}
 
-	var pos = i*6*3;
-	var pos_uv = i*6*2;
-	var caps_start = pos;
+	/**
+	* Returns a cone mesh 
+	* @method Mesh.cone
+	* @param {Object} options valid options: radius, height, subdivisions 
+	*/
+	cone( options = {}, gl ) {
+		var radius = options.radius || options.size || 1;
+		var height = options.height || options.size || 2;
+		var subdivisions = options.subdivisions || 64;
 
-	//caps
-	if( options.caps === false )
-	{
-		//finalize arrays
-		vertices = vertices.subarray(0,pos);
-		normals = normals.subarray(0,pos);
-		coords = coords.subarray(0,pos_uv);
-	}
-	else
-	{
-		var top_center = vec3.fromValues(0,height*0.5,0);
-		var bottom_center = vec3.fromValues(0,height*-0.5,0);
-		var up = vec3.fromValues(0,1,0);
+		var vertices = new Float32Array(subdivisions * 3 * 3 * 2);
+		var normals = new Float32Array(subdivisions * 3 * 3 * 2);
+		var coords = new Float32Array(subdivisions * 2 * 3 * 2);
+		//not indexed because caps have different normals and uvs so...
+
+		var delta = 2*Math.PI / subdivisions;
+		var normal = null;
+		var normal_y = radius / height;
+		var up = [0,1,0];
+
+		for(var i = 0; i < subdivisions; ++i)
+		{
+			var angle = i * delta;
+
+			normal = [ Math.sin(angle+delta*0.5), normal_y, Math.cos(angle+delta*0.5)];
+			vec3.normalize(normal,normal);
+			//normal = up;
+			vertices.set([ 0, height, 0] , i*6*3);
+			normals.set(normal, i*6*3 );
+			coords.set([i/subdivisions,1], i*6*2 );
+
+			normal = [ Math.sin(angle), normal_y, Math.cos(angle)];
+			vertices.set([ normal[0]*radius, 0, normal[2]*radius], i*6*3 + 3);
+			vec3.normalize(normal,normal);
+			normals.set(normal, i*6*3 + 3);
+			coords.set([i/subdivisions,0], i*6*2 + 2);
+
+			normal = [ Math.sin(angle+delta), normal_y, Math.cos(angle+delta)];
+			vertices.set([ normal[0]*radius, 0, normal[2]*radius], i*6*3 + 6);
+			vec3.normalize(normal,normal);
+			normals.set(normal, i*6*3 + 6);
+			coords.set([(i+1)/subdivisions,0], i*6*2 + 4);
+		}
+
+		var pos = 0;//i*3*3;
+		var pos_uv = 0;//i*3*2;
+
+		//cap
+		var bottom_center = vec3.fromValues(0,0,0);
 		var down = vec3.fromValues(0,-1,0);
 		for(var i = 0; i < subdivisions; ++i)
 		{
@@ -3820,24 +3810,12 @@ Mesh.cylinder = function( options = {}, gl ) {
 			var uv = vec3.fromValues( Math.sin(angle), 0, Math.cos(angle) );
 			var uv2 = vec3.fromValues( Math.sin(angle+delta), 0, Math.cos(angle+delta) );
 
-			vertices.set([ uv[0]*radius, height*0.5, uv[2]*radius], pos + i*6*3);
-			normals.set(up, pos + i*6*3 );
-			coords.set( [ -uv[0] * 0.5 + 0.5,uv[2] * 0.5 + 0.5], pos_uv + i*6*2 );
-
-			vertices.set([ uv2[0]*radius, height*0.5, uv2[2]*radius], pos + i*6*3 + 3);
-			normals.set(up, pos + i*6*3 + 3 );
-			coords.set( [ -uv2[0] * 0.5 + 0.5,uv2[2] * 0.5 + 0.5], pos_uv + i*6*2 + 2 );
-
-			vertices.set( top_center, pos + i*6*3 + 6 );
-			normals.set(up, pos + i*6*3 + 6);
-			coords.set([0.5,0.5], pos_uv + i*6*2 + 4);
-			
 			//bottom
-			vertices.set([ uv2[0]*radius, height*-0.5, uv2[2]*radius], pos + i*6*3 + 9);
+			vertices.set([ uv2[0]*radius, 0, uv2[2]*radius], pos + i*6*3 + 9);
 			normals.set(down, pos + i*6*3 + 9);
 			coords.set( [ uv2[0] * 0.5 + 0.5,uv2[2] * 0.5 + 0.5], pos_uv + i*6*2 + 6);
 
-			vertices.set([ uv[0]*radius, height*-0.5, uv[2]*radius], pos + i*6*3 + 12);
+			vertices.set([ uv[0]*radius, 0, uv[2]*radius], pos + i*6*3 + 12);
 			normals.set(down, pos + i*6*3 + 12 );
 			coords.set( [ uv[0] * 0.5 + 0.5,uv[2] * 0.5 + 0.5], pos_uv + i*6*2 + 8 );
 
@@ -3845,322 +3823,834 @@ Mesh.cylinder = function( options = {}, gl ) {
 			normals.set( down, pos + i*6*3 + 15);
 			coords.set( [0.5,0.5], pos_uv + i*6*2 + 10);
 		}
-	}
 
-	var buffers = {
-		vertices: vertices,
-		normals: normals,
-		coords: coords
-	}
-	options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,height*0.5,radius] );
-	options.info = { groups: [] };
-
-	if(options.caps !== false)
-	{
-		options.info.groups.push({ name:"side", start: 0, length: caps_start / 3});
-		options.info.groups.push({ name:"caps", start: caps_start / 3, length: (vertices.length - caps_start) / 3});
-	}
-
-	return Mesh.load( buffers, options, gl );
-}
-
-/**
-* Returns a cone mesh 
-* @method Mesh.cone
-* @param {Object} options valid options: radius, height, subdivisions 
-*/
-Mesh.cone = function( options = {}, gl ) {
-	var radius = options.radius || options.size || 1;
-	var height = options.height || options.size || 2;
-	var subdivisions = options.subdivisions || 64;
-
-	var vertices = new Float32Array(subdivisions * 3 * 3 * 2);
-	var normals = new Float32Array(subdivisions * 3 * 3 * 2);
-	var coords = new Float32Array(subdivisions * 2 * 3 * 2);
-	//not indexed because caps have different normals and uvs so...
-
-	var delta = 2*Math.PI / subdivisions;
-	var normal = null;
-	var normal_y = radius / height;
-	var up = [0,1,0];
-
-	for(var i = 0; i < subdivisions; ++i)
-	{
-		var angle = i * delta;
-
-		normal = [ Math.sin(angle+delta*0.5), normal_y, Math.cos(angle+delta*0.5)];
-		vec3.normalize(normal,normal);
-		//normal = up;
-		vertices.set([ 0, height, 0] , i*6*3);
-		normals.set(normal, i*6*3 );
-		coords.set([i/subdivisions,1], i*6*2 );
-
-		normal = [ Math.sin(angle), normal_y, Math.cos(angle)];
-		vertices.set([ normal[0]*radius, 0, normal[2]*radius], i*6*3 + 3);
-		vec3.normalize(normal,normal);
-		normals.set(normal, i*6*3 + 3);
-		coords.set([i/subdivisions,0], i*6*2 + 2);
-
-		normal = [ Math.sin(angle+delta), normal_y, Math.cos(angle+delta)];
-		vertices.set([ normal[0]*radius, 0, normal[2]*radius], i*6*3 + 6);
-		vec3.normalize(normal,normal);
-		normals.set(normal, i*6*3 + 6);
-		coords.set([(i+1)/subdivisions,0], i*6*2 + 4);
-	}
-
-	var pos = 0;//i*3*3;
-	var pos_uv = 0;//i*3*2;
-
-	//cap
-	var bottom_center = vec3.fromValues(0,0,0);
-	var down = vec3.fromValues(0,-1,0);
-	for(var i = 0; i < subdivisions; ++i)
-	{
-		var angle = i * delta;
-
-		var uv = vec3.fromValues( Math.sin(angle), 0, Math.cos(angle) );
-		var uv2 = vec3.fromValues( Math.sin(angle+delta), 0, Math.cos(angle+delta) );
-
-		//bottom
-		vertices.set([ uv2[0]*radius, 0, uv2[2]*radius], pos + i*6*3 + 9);
-		normals.set(down, pos + i*6*3 + 9);
-		coords.set( [ uv2[0] * 0.5 + 0.5,uv2[2] * 0.5 + 0.5], pos_uv + i*6*2 + 6);
-
-		vertices.set([ uv[0]*radius, 0, uv[2]*radius], pos + i*6*3 + 12);
-		normals.set(down, pos + i*6*3 + 12 );
-		coords.set( [ uv[0] * 0.5 + 0.5,uv[2] * 0.5 + 0.5], pos_uv + i*6*2 + 8 );
-
-		vertices.set( bottom_center, pos + i*6*3 + 15 );
-		normals.set( down, pos + i*6*3 + 15);
-		coords.set( [0.5,0.5], pos_uv + i*6*2 + 10);
-	}
-
-	var buffers = {
-		vertices: vertices,
-		normals: normals,
-		coords: coords
-	}
-	options.bounding = BBox.fromCenterHalfsize( [0,height*0.5,0], [radius,height*0.5,radius] );
-
-	return Mesh.load( buffers, options, gl );
-}
-
-/**
-* Returns a sphere mesh 
-* @method Mesh.sphere
-* @param {Object} options valid options: radius, lat, long, subdivisions, hemi
-*/
-Mesh.sphere = function( options = {}, gl ) {
-	var radius = options.radius || options.size || 1;
-	var latitudeBands = options.lat || options.subdivisions || 16;
-	var longitudeBands = options["long"] || options.subdivisions || 16;
-
-	var vertexPositionData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*3 );
-	var normalData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*3 );
-	var textureCoordData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*2 );
-	var indexData = new Uint16Array( latitudeBands*longitudeBands*6 );
-	var latRange = options.hemi ? Math.PI * 0.5 : Math.PI;
-
-	var i = 0, iuv = 0;
-	for (var latNumber = 0; latNumber <= latitudeBands; latNumber++)
-	{
-		var theta = latNumber * latRange / latitudeBands;
-		var sinTheta = Math.sin(theta);
-		var cosTheta = Math.cos(theta);
-
-		for (var longNumber = 0; longNumber <= longitudeBands; longNumber++)
-		{
-			var phi = longNumber * 2 * Math.PI / longitudeBands;
-			var sinPhi = Math.sin(phi);
-			var cosPhi = Math.cos(phi);
-
-			var x = cosPhi * sinTheta;
-			var y = cosTheta;
-			var z = sinPhi * sinTheta;
-			var u = 1- (longNumber / longitudeBands);
-			var v = (1 - latNumber / latitudeBands);
-
-			vertexPositionData.set([radius * x,radius * y,radius * z],i);
-			normalData.set([x,y,z],i);
-			textureCoordData.set([u,v], iuv );
-			i += 3;
-			iuv += 2;
+		var buffers = {
+			vertices: vertices,
+			normals: normals,
+			coords: coords
 		}
+		options.bounding = BBox.fromCenterHalfsize( [0,height*0.5,0], [radius,height*0.5,radius] );
+
+		return Mesh.load( buffers, options, gl );
 	}
 
-	i=0;
-	for (var latNumber = 0; latNumber < latitudeBands; latNumber++)
-	{
-		for (var longNumber = 0; longNumber < longitudeBands; longNumber++)
+	/**
+	* Returns a sphere mesh 
+	* @method Mesh.sphere
+	* @param {Object} options valid options: radius, lat, long, subdivisions, hemi
+	*/
+	sphere(options = {}, gl) {
+		var radius = options.radius || options.size || 1;
+		var latitudeBands = options.lat || options.subdivisions || 16;
+		var longitudeBands = options["long"] || options.subdivisions || 16;
+
+		var vertexPositionData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*3 );
+		var normalData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*3 );
+		var textureCoordData = new Float32Array( (latitudeBands+1)*(longitudeBands+1)*2 );
+		var indexData = new Uint16Array( latitudeBands*longitudeBands*6 );
+		var latRange = options.hemi ? Math.PI * 0.5 : Math.PI;
+
+		var i = 0, iuv = 0;
+		for (var latNumber = 0; latNumber <= latitudeBands; latNumber++)
 		{
-			var first = (latNumber * (longitudeBands + 1)) + longNumber;
-			var second = first + longitudeBands + 1;
+			var theta = latNumber * latRange / latitudeBands;
+			var sinTheta = Math.sin(theta);
+			var cosTheta = Math.cos(theta);
 
-			indexData.set([second,first,first + 1], i);
-			indexData.set([second + 1,second,first + 1], i+3);
-			i += 6;
-		}
-	}
-
-	var buffers = {
-		vertices: vertexPositionData,
-		normals: normalData,
-		coords: textureCoordData,
-		triangles: indexData
-	};
-
-	if(options.wireframe)
-	{
-		var wireframe = new Uint16Array(longitudeBands*latitudeBands*4);
-		var pos = 0;
-		for(var i = 0; i < latitudeBands; i++)
-		{
-			for(var j = 0; j < longitudeBands; j++)
+			for (var longNumber = 0; longNumber <= longitudeBands; longNumber++)
 			{
-				wireframe[pos] = i*(longitudeBands+1) + j;
-				wireframe[pos + 1] = i*(longitudeBands+1) + j + 1;
+				var phi = longNumber * 2 * Math.PI / longitudeBands;
+				var sinPhi = Math.sin(phi);
+				var cosPhi = Math.cos(phi);
+
+				var x = cosPhi * sinTheta;
+				var y = cosTheta;
+				var z = sinPhi * sinTheta;
+				var u = 1- (longNumber / longitudeBands);
+				var v = (1 - latNumber / latitudeBands);
+
+				vertexPositionData.set([radius * x,radius * y,radius * z],i);
+				normalData.set([x,y,z],i);
+				textureCoordData.set([u,v], iuv );
+				i += 3;
+				iuv += 2;
+			}
+		}
+
+		i=0;
+		for (var latNumber = 0; latNumber < latitudeBands; latNumber++)
+		{
+			for (var longNumber = 0; longNumber < longitudeBands; longNumber++)
+			{
+				var first = (latNumber * (longitudeBands + 1)) + longNumber;
+				var second = first + longitudeBands + 1;
+
+				indexData.set([second,first,first + 1], i);
+				indexData.set([second + 1,second,first + 1], i+3);
+				i += 6;
+			}
+		}
+
+		var buffers = {
+			vertices: vertexPositionData,
+			normals: normalData,
+			coords: textureCoordData,
+			triangles: indexData
+		};
+
+		if(options.wireframe)
+		{
+			var wireframe = new Uint16Array(longitudeBands*latitudeBands*4);
+			var pos = 0;
+			for(var i = 0; i < latitudeBands; i++)
+			{
+				for(var j = 0; j < longitudeBands; j++)
+				{
+					wireframe[pos] = i*(longitudeBands+1) + j;
+					wireframe[pos + 1] = i*(longitudeBands+1) + j + 1;
+					pos += 2;
+				}
+				wireframe[pos - longitudeBands*2] = i*(longitudeBands+1) + j;
+			}
+
+			for(var i = 0; i < longitudeBands; i++)
+			for(var j = 0; j < latitudeBands; j++)
+			{
+				wireframe[pos] = j*(longitudeBands+1) + i;
+				wireframe[pos + 1] = (j+1)*(longitudeBands+1) + i;
 				pos += 2;
 			}
-			wireframe[pos - longitudeBands*2] = i*(longitudeBands+1) + j;
+			buffers.wireframe = wireframe;
 		}
 
-		for(var i = 0; i < longitudeBands; i++)
-		for(var j = 0; j < latitudeBands; j++)
+		if(options.hemi)
+			options.bounding = BBox.fromCenterHalfsize( [0,radius*0.5,0], [radius,radius*0.5,radius], radius );
+		else
+			options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,radius,radius], radius );
+		return GL.Mesh.load( buffers, options, gl );
+	}
+
+	/**
+	* Returns a grid mesh (must be rendered using gl.LINES)
+	* @method Mesh.grid
+	* @param {Object} options valid options: size, lines
+	*/
+	grid( options = {}, gl ) {
+		var num_lines = options.lines || 11;
+		if(num_lines < 0) 
+			num_lines = 1;
+		var size = options.size || 10;
+
+		var vertexPositionData = new Float32Array( num_lines*2*2*3 );
+		var hsize = size * 0.5;
+		var pos = 0;
+		var x = -hsize;
+		var delta = size / (num_lines-1);
+
+		for(var i = 0; i < num_lines; i++)
 		{
-			wireframe[pos] = j*(longitudeBands+1) + i;
-			wireframe[pos + 1] = (j+1)*(longitudeBands+1) + i;
-			pos += 2;
+			vertexPositionData[ pos ] = x;
+			vertexPositionData[ pos+2 ] = -hsize;
+			vertexPositionData[ pos+3 ] = x;
+			vertexPositionData[ pos+5 ] = hsize;
+
+			vertexPositionData[ pos+6 ] = hsize;
+			vertexPositionData[ pos+8 ] = x
+			vertexPositionData[ pos+9 ] = -hsize;
+			vertexPositionData[ pos+11 ] = x
+
+			x += delta;
+			pos += 12;
 		}
-		buffers.wireframe = wireframe;
+
+		return new GL.Mesh({vertices: vertexPositionData}, options, gl );
 	}
 
-	if(options.hemi)
-		options.bounding = BBox.fromCenterHalfsize( [0,radius*0.5,0], [radius,radius*0.5,radius], radius );
-	else
-		options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,radius,radius], radius );
-	return GL.Mesh.load( buffers, options, gl );
-}
 
-/**
-* Returns a grid mesh (must be rendered using gl.LINES)
-* @method Mesh.grid
-* @param {Object} options valid options: size, lines
-*/
-Mesh.grid = function( options = {}, gl ) {
-	var num_lines = options.lines || 11;
-	if(num_lines < 0) 
-		num_lines = 1;
-	var size = options.size || 10;
+	/**
+	* Returns a icosahedron mesh (useful to create spheres by subdivision)
+	* @method Mesh.icosahedron
+	* @param {Object} options valid options: radius, subdivisions (max: 6)
+	*/
+	icosahedron( options = {}, gl ) {
+		var radius = options.radius || options.size || 1;
+		var subdivisions = options.subdivisions === undefined ? 0 : options.subdivisions;
+		if(subdivisions > 6) //dangerous
+			subdivisions = 6;
 
-	var vertexPositionData = new Float32Array( num_lines*2*2*3 );
-	var hsize = size * 0.5;
-	var pos = 0;
-	var x = -hsize;
-	var delta = size / (num_lines-1);
+		var t = (1.0 + Math.sqrt(5)) / 2.0;
+		var vertices = [-1,t,0, 1,t,0, -1,-t,0, 1,-t,0,
+						0,-1,t, 0,1,t, 0,-1,-t, 0,1,-t,
+						t,0,-1, t,0,1, -t,0,-1, -t,0,1];
+		var normals = [];
+		var coords = [];
+		var indices = [0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8, 3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 ];
 
-	for(var i = 0; i < num_lines; i++)
-	{
-		vertexPositionData[ pos ] = x;
-		vertexPositionData[ pos+2 ] = -hsize;
-		vertexPositionData[ pos+3 ] = x;
-		vertexPositionData[ pos+5 ] = hsize;
-
-		vertexPositionData[ pos+6 ] = hsize;
-		vertexPositionData[ pos+8 ] = x
-		vertexPositionData[ pos+9 ] = -hsize;
-		vertexPositionData[ pos+11 ] = x
-
-		x += delta;
-		pos += 12;
-	}
-
-	return new GL.Mesh({vertices: vertexPositionData}, options, gl );
-}
-
-
-/**
-* Returns a icosahedron mesh (useful to create spheres by subdivision)
-* @method Mesh.icosahedron
-* @param {Object} options valid options: radius, subdivisions (max: 6)
-*/
-Mesh.icosahedron = function( options = {}, gl ) {
-	var radius = options.radius || options.size || 1;
-	var subdivisions = options.subdivisions === undefined ? 0 : options.subdivisions;
-	if(subdivisions > 6) //dangerous
-		subdivisions = 6;
-
-	var t = (1.0 + Math.sqrt(5)) / 2.0;
-	var vertices = [-1,t,0, 1,t,0, -1,-t,0, 1,-t,0,
-					0,-1,t, 0,1,t, 0,-1,-t, 0,1,-t,
-					t,0,-1, t,0,1, -t,0,-1, -t,0,1];
-	var normals = [];
-	var coords = [];
-	var indices = [0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8, 3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 ];
-
-	//normalize
-	var l = vertices.length;
-	for(var i = 0; i < l; i+=3)
-	{
-		var mod = Math.sqrt( vertices[i]*vertices[i] + vertices[i+1]*vertices[i+1] + vertices[i+2]*vertices[i+2] );
-		var normalx = vertices[i] / mod;
-		var normaly = vertices[i+1] / mod;
-		var normalz = vertices[i+2] / mod;
-		normals.push( normalx, normaly, normalz );
-		coords.push( Math.atan2( normalx, normalz ), Math.acos( normaly ) );
-		vertices[i] *= radius/mod;
-		vertices[i+1] *= radius/mod;
-		vertices[i+2] *= radius/mod;
-	}
-
-	var middles = {};
-
-	//A,B = index of vertex in vertex array
-	function middlePoint( A, B )
-	{
-		var key = indices[A] < indices[B] ? indices[A] + ":"+indices[B] : indices[B]+":"+indices[A];
-		var r = middles[key];
-		if(r)
-			return r;
-		var index = vertices.length / 3;
-		vertices.push(( vertices[ indices[A]*3] + vertices[ indices[B]*3   ]) * 0.5,
-					(vertices[ indices[A]*3+1] + vertices[ indices[B]*3+1 ]) * 0.5,
-					(vertices[ indices[A]*3+2] + vertices[ indices[B]*3+2 ]) * 0.5);
-
-		var mod = Math.sqrt( vertices[index*3]*vertices[index*3] + vertices[index*3+1]*vertices[index*3+1] + vertices[index*3+2]*vertices[index*3+2] );
-		var normalx = vertices[index*3] / mod;
-		var normaly = vertices[index*3+1] / mod;
-		var normalz = vertices[index*3+2] / mod;
-		normals.push( normalx, normaly, normalz );
-		coords.push( (Math.atan2( normalx, normalz ) / Math.PI) * 0.5, (Math.acos( normaly ) / Math.PI) );
-		vertices[index*3] *= radius/mod;
-		vertices[index*3+1] *= radius/mod;
-		vertices[index*3+2] *= radius/mod;
-
-		middles[key] = index;
-		return index;
-	}
-
-	for (var iR = 0; iR < subdivisions; ++iR )
-	{
-		var new_indices = [];
-		var l = indices.length;
+		//normalize
+		var l = vertices.length;
 		for(var i = 0; i < l; i+=3)
 		{
-			var MA = middlePoint( i, i+1 );
-			var MB = middlePoint( i+1, i+2);
-			var MC = middlePoint( i+2, i);
-			new_indices.push(indices[i], MA, MC);
-			new_indices.push(indices[i+1], MB, MA);
-			new_indices.push(indices[i+2], MC, MB);
-			new_indices.push(MA, MB, MC);
+			var mod = Math.sqrt( vertices[i]*vertices[i] + vertices[i+1]*vertices[i+1] + vertices[i+2]*vertices[i+2] );
+			var normalx = vertices[i] / mod;
+			var normaly = vertices[i+1] / mod;
+			var normalz = vertices[i+2] / mod;
+			normals.push( normalx, normaly, normalz );
+			coords.push( Math.atan2( normalx, normalz ), Math.acos( normaly ) );
+			vertices[i] *= radius/mod;
+			vertices[i+1] *= radius/mod;
+			vertices[i+2] *= radius/mod;
 		}
-		indices = new_indices;
+
+		var middles = {};
+
+		//A,B = index of vertex in vertex array
+		function middlePoint( A, B )
+		{
+			var key = indices[A] < indices[B] ? indices[A] + ":"+indices[B] : indices[B]+":"+indices[A];
+			var r = middles[key];
+			if(r)
+				return r;
+			var index = vertices.length / 3;
+			vertices.push(( vertices[ indices[A]*3] + vertices[ indices[B]*3   ]) * 0.5,
+						(vertices[ indices[A]*3+1] + vertices[ indices[B]*3+1 ]) * 0.5,
+						(vertices[ indices[A]*3+2] + vertices[ indices[B]*3+2 ]) * 0.5);
+
+			var mod = Math.sqrt( vertices[index*3]*vertices[index*3] + vertices[index*3+1]*vertices[index*3+1] + vertices[index*3+2]*vertices[index*3+2] );
+			var normalx = vertices[index*3] / mod;
+			var normaly = vertices[index*3+1] / mod;
+			var normalz = vertices[index*3+2] / mod;
+			normals.push( normalx, normaly, normalz );
+			coords.push( (Math.atan2( normalx, normalz ) / Math.PI) * 0.5, (Math.acos( normaly ) / Math.PI) );
+			vertices[index*3] *= radius/mod;
+			vertices[index*3+1] *= radius/mod;
+			vertices[index*3+2] *= radius/mod;
+
+			middles[key] = index;
+			return index;
+		}
+
+		for (var iR = 0; iR < subdivisions; ++iR )
+		{
+			var new_indices = [];
+			var l = indices.length;
+			for(var i = 0; i < l; i+=3)
+			{
+				var MA = middlePoint( i, i+1 );
+				var MB = middlePoint( i+1, i+2);
+				var MC = middlePoint( i+2, i);
+				new_indices.push(indices[i], MA, MC);
+				new_indices.push(indices[i+1], MB, MA);
+				new_indices.push(indices[i+2], MC, MB);
+				new_indices.push(MA, MB, MC);
+			}
+			indices = new_indices;
+		}
+
+		options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,radius,radius], radius );
+
+		// @BUG: (maybe) This seems like it could cause issues
+		return new GL.Mesh.load({vertices: vertices, coords: coords, normals: normals, triangles: indices},options,gl);
 	}
 
-	options.bounding = BBox.fromCenterHalfsize( [0,0,0], [radius,radius,radius], radius );
+	// OBJ parser adapted from SpiderGL implementation *
+	/**
+	* Parses a OBJ string and returns an object with the info ready to be passed to GL.Mesh.load
+	* @method Mesh.parseOBJ
+	* @param {String} data all the OBJ info to be parsed
+	* @param {Object} options
+	* @return {Object} mesh information (vertices, coords, normals, indices)
+	*/
+	static parseOBJ( text, options = {} ) {
+		//final arrays (packed, lineal [ax,ay,az, bx,by,bz ...])
+		var positionsArray = [ ];
+		var texcoordsArray = [ ];
+		var normalsArray   = [ ];
+		var indicesArray   = [ ];
 
-	return new GL.Mesh.load({vertices: vertices, coords: coords, normals: normals, triangles: indices},options,gl);
+		//unique arrays (not packed, lineal)
+		var positions = [ ];
+		var texcoords = [ ];
+		var normals   = [ ];
+		var facemap   = { };
+		var index     = 0;
+
+		var line = null;
+		var f   = null;
+		var pos = 0;
+		var tex = 0;
+		var nor = 0;
+		var x   = 0.0;
+		var y   = 0.0;
+		var z   = 0.0;
+		var tokens = null;
+
+		var hasPos = false;
+		var hasTex = false;
+		var hasNor = false;
+
+		var parsingFaces = false;
+		var indices_offset = 0;
+		var negative_offset = -1; //used for weird objs with negative indices
+		var max_index = 0;
+
+		var skip_indices = options.noindex ? options.noindex : (text.length > 10000000 ? true : false);
+		//trace("SKIP INDICES: " + skip_indices);
+		var flip_axis = options.flipAxis;
+		var flip_normals = (flip_axis || options.flipNormals);
+
+		//used for mesh groups (submeshes)
+		var group = null;
+		var groups = [];
+		var materials_found = {};
+
+		var V_CODE = 1;
+		var VT_CODE = 2;
+		var VN_CODE = 3;
+		var F_CODE = 4;
+		var G_CODE = 5;
+		var O_CODE = 6;
+		var codes = { v: V_CODE, vt: VT_CODE, vn: VN_CODE, f: F_CODE, g: G_CODE, o: O_CODE };
+
+
+		var lines = text.split("\n");
+		var length = lines.length;
+		for (var lineIndex = 0;  lineIndex < length; ++lineIndex) {
+			line = lines[lineIndex].replace(/[ \t]+/g, " ").replace(/\s\s*$/, ""); //trim
+
+			if (line[0] == "#") continue;
+			if(line == "") continue;
+
+			tokens = line.split(" ");
+			var code = codes[ tokens[0] ];
+
+			if(parsingFaces && code == V_CODE) //another mesh?
+			{
+				indices_offset = index;
+				parsingFaces = false;
+				//trace("multiple meshes: " + indices_offset);
+			}
+
+			//read and parse numbers
+			if( code <= VN_CODE ) //v,vt,vn
+			{
+				x = parseFloat(tokens[1]);
+				y = parseFloat(tokens[2]);
+				if( code != VT_CODE )
+				{
+					if(tokens[3] == '\\') //super weird case, OBJ allows to break lines with slashes...
+					{
+						//HACK! only works if the var is the thirth position...
+						++lineIndex;
+						line = lines[lineIndex].replace(/[ \t]+/g, " ").replace(/\s\s*$/, ""); //better than trim
+						z = parseFloat(line);
+					}
+					else
+						z = parseFloat(tokens[3]);
+				}
+			}
+
+			if (code == V_CODE) {
+				if(flip_axis) //maya and max notation style
+					positions.push(-1*x,z,y);
+				else
+					positions.push(x,y,z);
+			}
+			else if (code == VT_CODE) {
+				texcoords.push(x,y);
+			}
+			else if (code == VN_CODE) {
+
+				if(flip_normals)  //maya and max notation style
+					normals.push(-y,-z,x);
+				else
+					normals.push(x,y,z);
+			}
+			else if (code == F_CODE) {
+				parsingFaces = true;
+
+				if (tokens.length < 4) continue; //faces with less that 3 vertices? nevermind
+
+				//for every corner of this polygon
+				var polygon_indices = [];
+				for (var i=1; i < tokens.length; ++i) 
+				{
+					if (!(tokens[i] in facemap) || skip_indices) 
+					{
+						f = tokens[i].split("/");
+
+						if (f.length == 1) { //unpacked
+							pos = parseInt(f[0]) - 1;
+							tex = pos;
+							nor = pos;
+						}
+						else if (f.length == 2) { //no normals
+							pos = parseInt(f[0]) - 1;
+							tex = parseInt(f[1]) - 1;
+							nor = -1;
+						}
+						else if (f.length == 3) { //all three indexed
+							pos = parseInt(f[0]) - 1;
+							tex = parseInt(f[1]) - 1;
+							nor = parseInt(f[2]) - 1;
+						}
+						else {
+							console.err("Problem parsing: unknown number of values per face");
+							return false;
+						}
+
+						if(i > 3 && skip_indices) //break polygon in triangles
+						{
+							//first
+							var pl = positionsArray.length;
+							positionsArray.push( positionsArray[pl - (i-3)*9], positionsArray[pl - (i-3)*9 + 1], positionsArray[pl - (i-3)*9 + 2]);
+							positionsArray.push( positionsArray[pl - 3], positionsArray[pl - 2], positionsArray[pl - 1]);
+							pl = texcoordsArray.length;
+							texcoordsArray.push( texcoordsArray[pl - (i-3)*6], texcoordsArray[pl - (i-3)*6 + 1]);
+							texcoordsArray.push( texcoordsArray[pl - 2], texcoordsArray[pl - 1]);
+							pl = normalsArray.length;
+							normalsArray.push( normalsArray[pl - (i-3)*9], normalsArray[pl - (i-3)*9 + 1], normalsArray[pl - (i-3)*9 + 2]);
+							normalsArray.push( normalsArray[pl - 3], normalsArray[pl - 2], normalsArray[pl - 1]);
+						}
+
+						//add new vertex
+						x = 0.0;
+						y = 0.0;
+						z = 0.0;
+						if ((pos * 3 + 2) < positions.length) {
+							hasPos = true;
+							x = positions[pos*3+0];
+							y = positions[pos*3+1];
+							z = positions[pos*3+2];
+						}
+						positionsArray.push(x,y,z);
+
+						//add new texture coordinate
+						x = 0.0;
+						y = 0.0;
+						if ((tex * 2 + 1) < texcoords.length) {
+							hasTex = true;
+							x = texcoords[tex*2+0];
+							y = texcoords[tex*2+1];
+						}
+						texcoordsArray.push(x,y);
+
+						//add new normal
+						x = 0.0;
+						y = 0.0;
+						z = 1.0;
+						if(nor != -1)
+						{
+							if ((nor * 3 + 2) < normals.length) {
+								hasNor = true;
+								x = normals[nor*3+0];
+								y = normals[nor*3+1];
+								z = normals[nor*3+2];
+							}
+							
+							normalsArray.push(x,y,z);
+						}
+
+						//Save the string "10/10/10" and tells which index represents it in the arrays
+						if(!skip_indices)
+							facemap[tokens[i]] = index++;
+					}//end of 'if this token is new (store and index for later reuse)'
+
+					//store key for this triplet
+					if(!skip_indices)
+					{
+						var final_index = facemap[tokens[i]];
+						polygon_indices.push(final_index);
+						if(max_index < final_index)
+							max_index = final_index;
+					}
+				} //end of for every token on a 'f' line
+
+				//polygons (not just triangles)
+				if(!skip_indices)
+				{
+					for(var iP = 2; iP < polygon_indices.length; iP++)
+					{
+						indicesArray.push( polygon_indices[0], polygon_indices[iP-1], polygon_indices[iP] );
+						//indicesArray.push( [polygon_indices[0], polygon_indices[iP-1], polygon_indices[iP]] );
+					}
+				}
+			}
+			else if (code == G_CODE) { //tokens[0] == "usemtl"
+				negative_offset = positions.length / 3 - 1;
+
+				if(tokens.length > 1)
+				{
+					if(group != null)
+					{
+						group.length = indicesArray.length - group.start;
+						if(group.length > 0)
+							groups.push(group);
+					}
+
+					group = {
+						name: tokens[1],
+						start: indicesArray.length,
+						length: -1,
+						material: ""
+					};
+				}
+			}
+			else if (tokens[0] == "usemtl") {
+				if(group)
+					group.material = tokens[1];
+			}
+		}
+
+		if(!positions.length)
+		{
+			console.error("OBJ doesnt have vertices, maybe the file is not a OBJ");
+			return null;
+		}
+
+		if(group && (indicesArray.length - group.start) > 1)
+		{
+			group.length = indicesArray.length - group.start;
+			groups.push(group);
+		}
+
+		//deindex streams
+		if((max_index > 256*256 || skip_indices ) && indicesArray.length > 0)
+		{
+			console.log("Deindexing mesh...")
+			var finalVertices = new Float32Array(indicesArray.length * 3);
+			var finalNormals = normalsArray && normalsArray.length ? new Float32Array(indicesArray.length * 3) : null;
+			var finalTexCoords = texcoordsArray && texcoordsArray.length ? new Float32Array(indicesArray.length * 2) : null;
+			for(var i = 0; i < indicesArray.length; i += 1)
+			{
+				finalVertices.set( positionsArray.slice( indicesArray[i]*3,indicesArray[i]*3 + 3), i*3 );
+				if(finalNormals)
+					finalNormals.set( normalsArray.slice( indicesArray[i]*3,indicesArray[i]*3 + 3 ), i*3 );
+				if(finalTexCoords)
+					finalTexCoords.set( texcoordsArray.slice(indicesArray[i]*2,indicesArray[i]*2 + 2 ), i*2 );
+			}
+			positionsArray = finalVertices;
+			if(finalNormals)
+				normalsArray = finalNormals;
+			if(finalTexCoords)
+				texcoordsArray = finalTexCoords;
+			indicesArray = null;
+		}
+
+		//Create final mesh object
+		var mesh = {};
+
+		//create typed arrays
+		if (hasPos)
+			mesh.vertices = new Float32Array(positionsArray);
+		if (hasNor && normalsArray.length > 0)
+			mesh.normals = new Float32Array(normalsArray);
+		if (hasTex && texcoordsArray.length > 0)
+			mesh.coords = new Float32Array(texcoordsArray);
+		if (indicesArray && indicesArray.length > 0)
+			mesh.triangles = new Uint16Array(indicesArray);
+
+		var info = {};
+		if(groups.length > 1)
+			info.groups = groups;
+		mesh.info = info;
+
+		if(options.only_data)
+			return mesh;
+
+		//creates and returns a GL.Mesh
+		var final_mesh = null;
+		final_mesh = Mesh.load( mesh, null, options.mesh );
+		final_mesh.updateBoundingBox();
+		return final_mesh;
+	}
 }
+/* BINARY MESHES */
+//Add some functions to the classes in LiteGL to allow store in binary
+GL.Mesh = Mesh;
+GL.Mesh.EXTENSION = "wbin";
+GL.Mesh.enable_wbin_compression = true;
+Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
+
+
+Mesh.parsers["obj"] = Mesh.parseOBJ;
+
+Mesh.encoders["obj"] = function( mesh, options )
+{
+	//store vertices
+	var verticesBuffer = mesh.getBuffer("vertices");
+	if(!verticesBuffer)
+		return null;
+
+	var lines = [];
+	lines.push("# Generated with liteGL.js by Javi Agenjo\n");
+
+	var vertices = verticesBuffer.data;
+	for (var i = 0; i < vertices.length; i+=3)
+		lines.push("v " + vertices[i].toFixed(4) + " " + vertices[i+1].toFixed(4) + " " + vertices[i+2].toFixed(4));
+
+	//store normals
+	var normalsBuffer = mesh.getBuffer("normals");
+	if(normalsBuffer)
+	{
+		lines.push("");
+		var normals = normalsBuffer.data;
+		for (var i = 0; i < normals.length; i+=3)
+			lines.push("vn " + normals[i].toFixed(4) + " " + normals[i+1].toFixed(4) + " " + normals[i+2].toFixed(4) );
+	}
+	
+	//store uvs
+	var coordsBuffer = mesh.getBuffer("coords");
+	if(coordsBuffer)
+	{
+		lines.push("");
+		var coords = coordsBuffer.data;
+		for (var i = 0; i < coords.length; i+=2)
+			lines.push("vt " + coords[i].toFixed(4) + " " + coords[i+1].toFixed(4) + " " + " 0.0000");
+	}
+
+	var groups = mesh.info.groups;
+
+
+	//store faces
+	var indicesBuffer = mesh.getIndexBuffer("triangles");
+	if(indicesBuffer)
+	{
+		var indices = indicesBuffer.data;
+		if(!groups || !groups.length)
+			groups = [{start:0, length: indices.length, name:"mesh"}];
+		for(var j = 0; j < groups.length; ++j)
+		{
+			var group = groups[j];
+			lines.push("g " + group.name );
+			lines.push("usemtl " + (group.material || ("mat_"+j)));
+			var start = group.start;
+			var end = start + group.length;
+			for (var i = start; i < end; i+=3)
+				lines.push("f " + (indices[i]+1) + "/" + (indices[i]+1) + "/" + (indices[i]+1) + " " + (indices[i+1]+1) + "/" + (indices[i+1]+1) + "/" + (indices[i+1]+1) + " " + (indices[i+2]+1) + "/" + (indices[i+2]+1) + "/" + (indices[i+2]+1) );
+		}
+	}
+	else //no indices
+	{
+		if(!groups || !groups.length)
+			groups = [{start:0, length: (vertices.length / 3), name:"mesh"}];
+		for(var j = 0; j < groups.length; ++j)
+		{
+			var group = groups[j];
+			lines.push("g " + group.name);
+			lines.push("usemtl " + (group.material || ("mat_"+j)));
+			var start = group.start;
+			var end = start + group.length;
+			for (var i = start; i < end; i+=3)
+				lines.push( "f " + (i+1) + "/" + (i+1) + "/" + (i+1) + " " + (i+2) + "/" + (i+2) + "/" + (i+2) + " " + (i+3) + "/" + (i+3) + "/" + (i+3) );
+		}
+	}
+	
+	return lines.join("\n");
+}
+
+//simple format to output meshes in ASCII
+Mesh.parsers["mesh"] = function( text, options )
+{
+	var mesh = {};
+
+	var lines = text.split("\n");
+	for(var i = 0; i < lines.length; ++i)
+	{
+		var line = lines[i];
+		var type = line[0];
+		var t = line.substr(1).split(",");
+		var name = t[0];
+
+		if(type == "-") //buffer
+		{
+			var data = new Float32Array( Number(t[1]) );
+			for(var j = 0; j < data.length; ++j)
+				data[j] = Number(t[j+2]);
+			mesh[name] = data;
+		}
+		else if(type == "*") //index
+		{
+			var data = Number(t[1]) > 256*256 ? new Uint32Array( Number(t[1]) ) : new Uint16Array( Number(t[1]) );
+			for(var j = 0; j < data.length; ++j)
+				data[j] = Number(t[j+2]);
+			mesh[name] = data;
+		}
+		else if(type == "@") //info
+		{
+			if(name == "bones")
+			{
+				var bones = [];
+				var num_bones = Number(t[1]);
+				for(var j = 0; j < num_bones; ++j)
+				{
+					var m = (t.slice(3 + j*17, 3 + (j+1)*17 - 1)).map(Number);
+					bones.push( [ t[2 + j*17], m ] );
+				}
+				mesh.bones = bones;
+			}
+			else if(name == "bind_matrix")
+				mesh.bind_matrix = t.slice(1,17).map(Number);
+			else if(name == "groups")
+			{
+				mesh.info = { groups: [] };
+				var num_groups = Number(t[1]);
+				for(var j = 0; j < num_groups; ++j)
+				{
+					var group = { name: t[2+j*4], material: t[2+j*4+1], start: Number(t[2+j*4+2]), length: Number(t[2+j*4+3]) };
+					mesh.info.groups.push(group);
+				}
+			}
+		}
+		else
+			console.warn("type unknown: " + t[0] );
+	}
+
+	if(options.only_data)
+		return mesh;
+
+	//creates and returns a GL.Mesh
+	var final_mesh = null;
+	final_mesh = Mesh.load( mesh, null, options.mesh );
+	final_mesh.updateBoundingBox();
+	return final_mesh;
+}
+
+Mesh.encoders["mesh"] = function( mesh, options )
+{
+	var lines = [];
+	for(var i in mesh.vertexBuffers )
+	{
+		var buffer = mesh.vertexBuffers[i];
+		var line = ["-"+i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
+		lines.push(line.join(","));
+	}
+
+	for(var i in mesh.indexBuffers )
+	{
+		var buffer = mesh.indexBuffers[i];
+		var line = [ "*" + i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
+		lines.push(line.join(","));
+	}
+
+	if(mesh.bounding)
+		lines.push( ["@bounding", Array.from(mesh.bounding.subarray(0,6))].join(",") );
+	if(mesh.info && mesh.info.groups)
+	{
+		var groups_info = [];
+		for(var j = 0; j < mesh.info.groups.length; ++j)
+		{
+			var group = mesh.info.groups[j];
+			groups_info.push( group.name, group.material, group.start, group.length );
+		}
+		lines.push( ["@groups", mesh.info.groups.length ].concat( groups_info ).join(",")  );
+	}
+
+	if(mesh.bones)
+		lines.push( ["@bones", mesh.bones.length, mesh.bones.flat()].join(",") );
+	if(mesh.bind_matrix)
+		lines.push( ["@bind_matrix", Array.from(mesh.bind_matrix) ].join(",") );
+
+	return lines.join("\n");
+}
+
+
+
+//this is used when a mesh is dynamic and constantly changes
+class DynamicMesh {
+	constructor( size, normals, coords, colors, gl ) {
+		size = size || 1024;
+
+		if(GL.debug)
+			console.log("GL.Mesh created");
+
+		if( gl !== null )
+		{
+			gl = gl || global.gl;
+			this.gl = gl;
+		}
+
+		//used to avoid problems with resources moving between different webgl context
+		this._context_id = gl.context_id; 
+
+		this.vertexBuffers = {};
+		this.indexBuffers = {};
+
+		//here you can store extra info, like groups, which is an array of { name, start, length, material }
+		this.info = {
+			groups: []
+		}; 
+		this._bounding = BBox.create(); //here you can store a AABB in BBox format
+
+		this.resize( size );
+	}
+
+	static DEFAULT_NORMAL = vec3.fromValues(0,1,0);
+	static DEFAULT_COORD = vec2.fromValues(0.5,0.5);
+	static DEFAULT_COLOR = vec4.fromValues(1,1,1,1);
+
+	resize(size) {
+		var buffers = {};
+
+		this._vertex_data = new Float32Array( size * 3 );
+		buffers.vertices = this._vertex_data;
+
+		if( normals )
+			buffers.normals = this._normal_data = new Float32Array( size * 3 );
+		if( coords )
+			buffers.coords = this._coord_data = new Float32Array( size * 2 );
+		if( colors )
+			buffers.colors = this._color_data = new Float32Array( size * 4 );
+
+		this.addBuffers( buffers );
+
+		this.current_pos = 0;
+		this.max_size = size;
+		this._must_update = true;
+	}
+
+	clear()	{
+		this.current_pos = 0;
+	}
+
+	addPoint( vertex, normal, coord, color ) {
+		if (pos >= this.max_size)
+		{
+			console.warn("DynamicMesh: not enough space, reserve more");
+			return false;
+		}
+		var pos = this.current_pos++;
+
+		this._vertex_data.set( vertex, pos*3 );
+
+		if(this._normal_data)
+			this._normal_data.set( normal || DynamicMesh.DEFAULT_NORMAL, pos*3 );
+		if(this._coord_data)
+			this._coord_data.set( coord || DynamicMesh.DEFAULT_COORD, pos*2 );
+		if(this._color_data)
+			this._color_data.set( color || DynamicMesh.DEFAULT_COLOR, pos*4 );
+
+		this._must_update = true;
+		return true;
+	}
+
+	update( force )	{
+		if(!this._must_update && !force)
+			return this.current_pos;
+		this._must_update = false;
+
+		this.getBuffer("vertices").upload( gl.STREAM_DRAW );
+		if(this._normal_data)
+			this.getBuffer("normal").upload( gl.STREAM_DRAW );
+		if(this._coord_data)
+			this.getBuffer("coord").upload( gl.STREAM_DRAW );
+		if(this._color_data)
+			this.getBuffer("color").upload( gl.STREAM_DRAW );
+		return this.current_pos;
+	}
+}
+// @TODO: This makes DynamicMesh extend Mesh.  Try doing it properly later
+GL.extendClass( DynamicMesh, Mesh );
+
 /**
 * @namespace GL
 */
@@ -4189,464 +4679,457 @@ Mesh.icosahedron = function( options = {}, gl ) {
 * @param {Object} options Check the list in the description
 * @constructor
 */
+class Texture {
+	constructor( width, height, options = {}, gl ) {
 
-global.Texture = GL.Texture = function Texture( width, height, options = {}, gl ) {
+		//used to avoid problems with resources moving between different webgl context
+		gl = gl || global.gl;
+		this.gl = gl;
+		this._context_id = gl.context_id; 
 
-	//used to avoid problems with resources moving between different webgl context
-	gl = gl || global.gl;
-	this.gl = gl;
-	this._context_id = gl.context_id; 
+		//round sizes
+		width = parseInt(width); 
+		height = parseInt(height);
 
-	//round sizes
-	width = parseInt(width); 
-	height = parseInt(height);
+		if(GL.debug)
+			console.log("GL.Texture created: ",width,height);
 
-	if(GL.debug)
-		console.log("GL.Texture created: ",width,height);
+		//create texture handler
+		this.handler = gl.createTexture();
 
-	//create texture handler
-	this.handler = gl.createTexture();
+		//set settings
+		this.width = width;
+		this.height = height;
+		if(options.depth) //for texture_3d
+			this.depth = options.depth; 
+		this.texture_type = options.texture_type || gl.TEXTURE_2D; //or gl.TEXTURE_CUBE_MAP
+		this.format = options.format || Texture.DEFAULT_FORMAT; //gl.RGBA (if gl.DEPTH_COMPONENT remember type: gl.UNSIGNED_SHORT)
+		this.internalFormat = options.internalFormat; //LUMINANCE, and weird formats with bits
+		this.type = options.type || Texture.DEFAULT_TYPE; //gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT or gl.HALF_FLOAT_OES (or gl.HIGH_PRECISION_FORMAT which could be half or float)
+		this.magFilter = options.magFilter || options.filter || Texture.DEFAULT_MAG_FILTER;
+		this.minFilter = options.minFilter || options.filter || Texture.DEFAULT_MIN_FILTER;
+		this.wrapS = options.wrap || options.wrapS || Texture.DEFAULT_WRAP_S; 
+		this.wrapT = options.wrap || options.wrapT || Texture.DEFAULT_WRAP_T;
+		this.data = null; //where the data came from
 
-	//set settings
-	this.width = width;
-	this.height = height;
-	if(options.depth) //for texture_3d
-		this.depth = options.depth; 
-	this.texture_type = options.texture_type || gl.TEXTURE_2D; //or gl.TEXTURE_CUBE_MAP
-	this.format = options.format || Texture.DEFAULT_FORMAT; //gl.RGBA (if gl.DEPTH_COMPONENT remember type: gl.UNSIGNED_SHORT)
-	this.internalFormat = options.internalFormat; //LUMINANCE, and weird formats with bits
-	this.type = options.type || Texture.DEFAULT_TYPE; //gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT or gl.HALF_FLOAT_OES (or gl.HIGH_PRECISION_FORMAT which could be half or float)
-	this.magFilter = options.magFilter || options.filter || Texture.DEFAULT_MAG_FILTER;
-	this.minFilter = options.minFilter || options.filter || Texture.DEFAULT_MIN_FILTER;
-	this.wrapS = options.wrap || options.wrapS || Texture.DEFAULT_WRAP_S; 
-	this.wrapT = options.wrap || options.wrapT || Texture.DEFAULT_WRAP_T;
-	this.data = null; //where the data came from
+		//precompute the max amount of texture units
+		if(!Texture.MAX_TEXTURE_IMAGE_UNITS)
+			Texture.MAX_TEXTURE_IMAGE_UNITS = gl.getParameter( gl.MAX_TEXTURE_IMAGE_UNITS );
 
-	//precompute the max amount of texture units
-	if(!Texture.MAX_TEXTURE_IMAGE_UNITS)
-		Texture.MAX_TEXTURE_IMAGE_UNITS = gl.getParameter( gl.MAX_TEXTURE_IMAGE_UNITS );
+		this.has_mipmaps = false;
 
-	this.has_mipmaps = false;
-
-	if( this.format == gl.DEPTH_COMPONENT && gl.webgl_version == 1 && !gl.extensions["WEBGL_depth_texture"] )
-		throw("Depth Texture not supported");
-	if( this.type == gl.FLOAT && !gl.extensions["OES_texture_float"] && gl.webgl_version == 1 )
-		throw("Float Texture not supported");
-	if( this.type == gl.HALF_FLOAT_OES)
-	{
-		if( !gl.extensions["OES_texture_half_float"] && gl.webgl_version == 1 )
-			throw("Half Float Texture extension not supported.");
-		else if( gl.webgl_version > 1 )
+		if( this.format == gl.DEPTH_COMPONENT && gl.webgl_version == 1 && !gl.extensions["WEBGL_depth_texture"] )
+			throw("Depth Texture not supported");
+		if( this.type == gl.FLOAT && !gl.extensions["OES_texture_float"] && gl.webgl_version == 1 )
+			throw("Float Texture not supported");
+		if( this.type == gl.HALF_FLOAT_OES)
 		{
-			console.warn("using HALF_FLOAT_OES in WebGL2 is deprecated, suing HALF_FLOAT instead");
-			this.type = this.format == gl.RGB ? gl.RGB16F : gl.RGBA16F;
-		}
-	}
-	if( (!isPowerOfTwo(this.width) || !isPowerOfTwo(this.height)) && //non power of two
-		( (this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) || //uses mipmaps
-		(this.wrapS != gl.CLAMP_TO_EDGE || this.wrapT != gl.CLAMP_TO_EDGE) ) ) //uses wrap
-	{
-		if(!options.ignore_pot)
-			throw("Cannot use texture-wrap or mipmaps in Non-Power-of-Two textures");
-		else
-		{
-			this.minFilter = this.magFilter = gl.LINEAR;
-			this.wrapS = this.wrapT = gl.CLAMP_TO_EDGE;
-		}
-	}
-
-	//empty textures are allowed to be created
-	if(!width || !height)
-		return;
-
-	//because sometimes the internal format is not so obvious
-	if(!this.internalFormat)
-		this.computeInternalFormat();
-
-	//this is done because in some cases the user binds a texture to slot 0 and then creates a new one, which overrides slot 0
-	gl.activeTexture( gl.TEXTURE0 + Texture.MAX_TEXTURE_IMAGE_UNITS - 1);
-	//I use an invalid gl enum to say this texture is a depth texture, ugly, I know...
-	gl.bindTexture( this.texture_type, this.handler);
-	gl.texParameteri( this.texture_type, gl.TEXTURE_MAG_FILTER, this.magFilter );
-	gl.texParameteri( this.texture_type, gl.TEXTURE_MIN_FILTER, this.minFilter );
-	gl.texParameteri( this.texture_type, gl.TEXTURE_WRAP_S, this.wrapS );
-	gl.texParameteri( this.texture_type, gl.TEXTURE_WRAP_T, this.wrapT );
-
-	if(options.anisotropic && gl.extensions["EXT_texture_filter_anisotropic"])
-		gl.texParameterf( GL.TEXTURE_2D, gl.extensions["EXT_texture_filter_anisotropic"].TEXTURE_MAX_ANISOTROPY_EXT, options.anisotropic);
-
-	var type = this.type;
-	var pixel_data = options.pixel_data;
-	if(pixel_data && !pixel_data.buffer)
-	{
-		if( this.texture_type == GL.TEXTURE_CUBE_MAP )
-		{
-			if(pixel_data[0].constructor === Number) //special case, specify just one face and copy it
+			if( !gl.extensions["OES_texture_half_float"] && gl.webgl_version == 1 )
+				throw("Half Float Texture extension not supported.");
+			else if( gl.webgl_version > 1 )
 			{
-				pixel_data = toTypedArray( pixel_data );
-				pixel_data = [pixel_data,pixel_data,pixel_data,pixel_data,pixel_data,pixel_data]; 
+				console.warn("using HALF_FLOAT_OES in WebGL2 is deprecated, suing HALF_FLOAT instead");
+				this.type = this.format == gl.RGB ? gl.RGB16F : gl.RGBA16F;
+			}
+		}
+		if( (!isPowerOfTwo(this.width) || !isPowerOfTwo(this.height)) && //non power of two
+			( (this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) || //uses mipmaps
+			(this.wrapS != gl.CLAMP_TO_EDGE || this.wrapT != gl.CLAMP_TO_EDGE) ) ) //uses wrap
+		{
+			if(!options.ignore_pot)
+				throw("Cannot use texture-wrap or mipmaps in Non-Power-of-Two textures");
+			else
+			{
+				this.minFilter = this.magFilter = gl.LINEAR;
+				this.wrapS = this.wrapT = gl.CLAMP_TO_EDGE;
+			}
+		}
+
+		//empty textures are allowed to be created
+		if(!width || !height)
+			return;
+
+		//because sometimes the internal format is not so obvious
+		if(!this.internalFormat)
+			this.computeInternalFormat();
+
+		//this is done because in some cases the user binds a texture to slot 0 and then creates a new one, which overrides slot 0
+		gl.activeTexture( gl.TEXTURE0 + Texture.MAX_TEXTURE_IMAGE_UNITS - 1);
+		//I use an invalid gl enum to say this texture is a depth texture, ugly, I know...
+		gl.bindTexture( this.texture_type, this.handler);
+		gl.texParameteri( this.texture_type, gl.TEXTURE_MAG_FILTER, this.magFilter );
+		gl.texParameteri( this.texture_type, gl.TEXTURE_MIN_FILTER, this.minFilter );
+		gl.texParameteri( this.texture_type, gl.TEXTURE_WRAP_S, this.wrapS );
+		gl.texParameteri( this.texture_type, gl.TEXTURE_WRAP_T, this.wrapT );
+
+		if(options.anisotropic && gl.extensions["EXT_texture_filter_anisotropic"])
+			gl.texParameterf( GL.TEXTURE_2D, gl.extensions["EXT_texture_filter_anisotropic"].TEXTURE_MAX_ANISOTROPY_EXT, options.anisotropic);
+
+		var type = this.type;
+		var pixel_data = options.pixel_data;
+		if(pixel_data && !pixel_data.buffer)
+		{
+			if( this.texture_type == GL.TEXTURE_CUBE_MAP )
+			{
+				if(pixel_data[0].constructor === Number) //special case, specify just one face and copy it
+				{
+					pixel_data = toTypedArray( pixel_data );
+					pixel_data = [pixel_data,pixel_data,pixel_data,pixel_data,pixel_data,pixel_data]; 
+				}
+				else
+					for(var i = 0; i < pixel_data.length; ++i)
+						pixel_data[i] = toTypedArray( pixel_data[i] );
 			}
 			else
-				for(var i = 0; i < pixel_data.length; ++i)
-					pixel_data[i] = toTypedArray( pixel_data[i] );
+				pixel_data = toTypedArray( pixel_data );
+			this.data = pixel_data;
+		}
+
+		function toTypedArray( data )
+		{
+			if(data.constructor !== Array)
+				return data;
+			if( type == GL.FLOAT)
+				return new Float32Array( data );
+			if( type == GL.HALF_FLOAT_OES)
+				return new Uint16Array( data );
+			return new Uint8Array( data );
+		}
+
+		//gl.TEXTURE_1D is not supported by WebGL...
+
+		//here we create all **********************************
+		if(this.texture_type == GL.TEXTURE_2D)
+		{
+			//create the texture
+			gl.texImage2D( GL.TEXTURE_2D, 0, this.internalFormat, width, height, 0, this.format, this.type, pixel_data || null );
+
+			//generate empty mipmaps (necessary?)
+			if ( GL.isPowerOfTwo(width) && GL.isPowerOfTwo(height) && options.minFilter && options.minFilter != gl.NEAREST && options.minFilter != gl.LINEAR)
+			{
+				gl.generateMipmap( this.texture_type );
+				this.has_mipmaps = true;
+			}
+		}
+		else if(this.texture_type == GL.TEXTURE_CUBE_MAP)
+		{
+			for(var i = 0; i < 6; ++i)
+				gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.internalFormat, this.width, this.height, 0, this.format, this.type, pixel_data ? pixel_data[i] : null );
+		}
+		else if(this.texture_type == GL.TEXTURE_3D)
+		{
+			if(this.gl.webgl_version == 1)
+				throw("TEXTURE_3D not supported in WebGL 1. Enable WebGL 2 in the context by passing webgl2:true to the context");
+			if(!options.depth)
+				throw("3d texture depth must be set in the options.depth");
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false ); //standard does not allow this flags for 3D textures
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false );
+			gl.texImage3D( GL.TEXTURE_3D, 0, this.internalFormat, width, height, options.depth, 0, this.format, this.type, pixel_data || null );
+		}
+		gl.bindTexture(this.texture_type, null); //disable
+		gl.activeTexture(gl.TEXTURE0);
+	}
+
+	static DEFAULT_TYPE = GL.UNSIGNED_BYTE;
+	static DEFAULT_FORMAT = GL.RGBA;
+	static DEFAULT_MAG_FILTER = GL.LINEAR;
+	static DEFAULT_MIN_FILTER = GL.LINEAR;
+	static DEFAULT_WRAP_S = GL.CLAMP_TO_EDGE;
+	static DEFAULT_WRAP_T = GL.CLAMP_TO_EDGE;
+	static EXTENSION = "png"; //used when saving it to file
+
+	//used for render to FBOs
+	static framebuffer = null;
+	static renderbuffer = null;
+	static loading_color = new Uint8Array([0,0,0,0]);
+	static use_renderbuffer_pool = true; //should improve performance
+
+	//because usually you dont want to specify the internalFormat, this tries to guess it from its format
+	//check https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html for more info
+	computeInternalFormat()	{
+		this.internalFormat = this.format; //default
+
+		//automatic selection of internal format for depth textures to avoid problems between webgl1 and 2
+		if( this.format == GL.DEPTH_COMPONENT )
+		{
+			this.minFilter = this.magFilter = GL.NEAREST;
+
+			if( gl.webgl_version == 2 ) 
+			{
+				if( this.type == GL.UNSIGNED_SHORT )
+					this.internalFormat = GL.DEPTH_COMPONENT16;
+				else if( this.type == GL.UNSIGNED_INT )
+					this.internalFormat = GL.DEPTH_COMPONENT24;
+				else if( this.type == GL.FLOAT )
+					this.internalFormat = GL.DEPTH_COMPONENT32F;
+				else 
+					throw("unsupported type for a depth texture");
+			}
+			else if( gl.webgl_version == 1 )
+			{
+				if( this.type == GL.FLOAT )
+					throw("WebGL 1.0 does not support float depth textures");
+				this.internalFormat = GL.DEPTH_COMPONENT;
+			}
+		}
+		else if( this.format == gl.RGBA )
+		{
+			if( gl.webgl_version == 2 ) 
+			{
+				if( this.type == GL.FLOAT )
+					this.internalFormat = GL.RGBA32F;
+				else if( this.type == GL.HALF_FLOAT )
+					this.internalFormat = GL.RGBA16F;
+				else if( this.type == GL.HALF_FLOAT_OES )
+				{
+					console.warn("webgl 2 does not use HALF_FLOAT_OES, converting to HALF_FLOAT")
+					this.type = GL.HALF_FLOAT;
+					this.internalFormat = GL.RGBA16F;
+				}
+				/*
+				else if( this.type == GL.UNSIGNED_SHORT )
+				{
+					this.internalFormat = GL.RGBA16UI;
+					this.format = gl.RGBA_INTEGER;
+				}
+				else if( this.type == GL.UNSIGNED_INT )
+				{
+					this.internalFormat = GL.RGBA32UI;
+					this.format = gl.RGBA_INTEGER;
+				}
+				*/
+			}
+			else if( gl.webgl_version == 1 )
+			{
+				if( this.type == GL.HALF_FLOAT )
+				{
+					console.warn("webgl 1 does not use HALF_FLOAT, converting to HALF_FLOAT_OES")
+					this.type = GL.HALF_FLOAT_OES;
+				}
+			}
+		}
+	}
+
+	/**
+	* Free the texture memory from the GPU, sets the texture handler to null
+	* @method delete
+	*/
+	delete() {
+		gl.deleteTexture( this.handler );
+		this.handler = null;
+	}
+
+	getProperties()	{
+		return {
+			width: this.width,
+			height: this.height,
+			type: this.type,
+			format: this.format,
+			texture_type: this.texture_type,
+			magFilter: this.magFilter,
+			minFilter: this.minFilter,
+			wrapS: this.wrapS,
+			wrapT: this.wrapT
+		};
+	}
+
+	hasSameProperties(t) {
+		if(!t)
+			return false;
+		return t.width == this.width && 
+			t.height == this.height &&
+			t.type == this.type &&
+			t.format == this.format &&
+			t.texture_type == this.texture_type;
+	}
+
+	hasSameSize(t) {
+		if(!t)
+			return false;
+		return t.width == this.width && t.height == this.height;
+	}
+
+	//textures cannot be stored in JSON
+	toJSON() {
+		return "";
+	}
+
+	/**
+	* Returns if depth texture is supported by the GPU
+	* @method isDepthSupported
+	* @return {Boolean} true if supported
+	*/
+	static isDepthSupported() {
+		return gl.extensions["WEBGL_depth_texture"] != null;
+	}
+
+	/**
+	* Binds the texture to one texture unit
+	* @method bind
+	* @param {number} unit texture unit
+	* @return {number} returns the texture unit
+	*/
+	bind( unit ) {
+		if(unit == undefined)
+			unit = 0;
+		var gl = this.gl;
+
+		//TODO: if the texture is not uploaded, must be upload now
+
+		//bind
+		gl.activeTexture(gl.TEXTURE0 + unit);
+		gl.bindTexture( this.texture_type, this.handler );
+		return unit;
+	}
+
+	/**
+	* Unbinds the texture 
+	* @method unbind
+	* @param {number} unit texture unit
+	* @return {number} returns the texture unit
+	*/
+	unbind(unit) {
+		if(unit === undefined)
+			unit = 0;
+		var gl = this.gl;
+		gl.activeTexture(gl.TEXTURE0 + unit );
+		gl.bindTexture(this.texture_type, null);
+	}
+
+	setParameter(param,value) {
+		this.bind(0);
+		this.gl.texParameteri( this.texture_type, param, value );
+		switch(param)
+		{
+			case this.gl.TEXTURE_MAG_FILTER: this.magFilter = value; break;
+			case this.gl.TEXTURE_MIN_FILTER: this.minFilter = value; break;
+			case this.gl.TEXTURE_WRAP_S: this.wrapS = value; break;
+			case this.gl.TEXTURE_WRAP_T: this.wrapT = value; break;
+		}
+	}
+
+	/**
+	* Unbinds the texture 
+	* @method Texture.setUploadOptions
+	* @param {Object} options a list of options to upload the texture
+	* - premultiply_alpha : multiply the color by the alpha value, default FALSE
+	* - no_flip : do not flip in Y, default TRUE
+	*/
+	static setUploadOptions(options, gl) {
+		gl = gl || global.gl;
+
+		if(options) //options that are not stored in the texture should be passed again to avoid reusing unknown state
+		{
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !!(options.premultiply_alpha) );
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !(options.no_flip) );
 		}
 		else
-			pixel_data = toTypedArray( pixel_data );
-		this.data = pixel_data;
-	}
-
-	function toTypedArray( data )
-	{
-		if(data.constructor !== Array)
-			return data;
-		if( type == GL.FLOAT)
-			return new Float32Array( data );
-		if( type == GL.HALF_FLOAT_OES)
-			return new Uint16Array( data );
-		return new Uint8Array( data );
-	}
-
-	//gl.TEXTURE_1D is not supported by WebGL...
-
-	//here we create all **********************************
-	if(this.texture_type == GL.TEXTURE_2D)
-	{
-		//create the texture
-		gl.texImage2D( GL.TEXTURE_2D, 0, this.internalFormat, width, height, 0, this.format, this.type, pixel_data || null );
-
-		//generate empty mipmaps (necessary?)
-		if ( GL.isPowerOfTwo(width) && GL.isPowerOfTwo(height) && options.minFilter && options.minFilter != gl.NEAREST && options.minFilter != gl.LINEAR)
 		{
-			gl.generateMipmap( this.texture_type );
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true );
+		}
+		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+	}
+
+	/**
+	* Given an Image/Canvas/Video it uploads it to the GPU
+	* @method uploadImage
+	* @param {Image} img
+	* @param {Object} options [optional] upload options (premultiply_alpha, no_flip)
+	*/
+	uploadImage( image, options ) {
+		this.bind();
+		var gl = this.gl;
+		if(!image)
+			throw("uploadImage parameter must be Image");
+
+		Texture.setUploadOptions(options, gl);
+
+		try {
+			gl.texImage2D( gl.TEXTURE_2D, 0, this.format, this.format, this.type, image );
+			this.width = image.videoWidth || image.width;
+			this.height = image.videoHeight || image.height;
+			this.data = image;
+		} catch (e) {
+			if (location.protocol == 'file:') {
+				throw 'image not loaded for security reasons (serve this page over "http://" instead)';
+			} else {
+				throw 'image not loaded for security reasons (image must originate from the same ' +
+				'domain as this page or use Cross-Origin Resource Sharing)';
+			}
+		}
+
+		//TODO: add expand transparent pixels option
+
+		//generate mipmaps
+		if (this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
+			gl.generateMipmap(this.texture_type);
 			this.has_mipmaps = true;
 		}
+		gl.bindTexture(this.texture_type, null); //disable
 	}
-	else if(this.texture_type == GL.TEXTURE_CUBE_MAP)
-	{
-		for(var i = 0; i < 6; ++i)
-			gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.internalFormat, this.width, this.height, 0, this.format, this.type, pixel_data ? pixel_data[i] : null );
-	}
-	else if(this.texture_type == GL.TEXTURE_3D)
-	{
-		if(this.gl.webgl_version == 1)
-			throw("TEXTURE_3D not supported in WebGL 1. Enable WebGL 2 in the context by passing webgl2:true to the context");
-		if(!options.depth)
-			throw("3d texture depth must be set in the options.depth");
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false ); //standard does not allow this flags for 3D textures
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false );
-		gl.texImage3D( GL.TEXTURE_3D, 0, this.internalFormat, width, height, options.depth, 0, this.format, this.type, pixel_data || null );
-	}
-	gl.bindTexture(this.texture_type, null); //disable
-	gl.activeTexture(gl.TEXTURE0);
-}
 
-Texture.DEFAULT_TYPE = GL.UNSIGNED_BYTE;
-Texture.DEFAULT_FORMAT = GL.RGBA;
-Texture.DEFAULT_MAG_FILTER = GL.LINEAR;
-Texture.DEFAULT_MIN_FILTER = GL.LINEAR;
-Texture.DEFAULT_WRAP_S = GL.CLAMP_TO_EDGE;
-Texture.DEFAULT_WRAP_T = GL.CLAMP_TO_EDGE;
-Texture.EXTENSION = "png"; //used when saving it to file
+	/**
+	* Uploads data to the GPU (data must have the appropiate size)
+	* @method uploadData
+	* @param {ArrayBuffer} data
+	* @param {Object} options [optional] upload options (premultiply_alpha, no_flip, cubemap_face, mipmap_level)
+	*/
+	uploadData( data, options = {}, skip_mipmaps ) {
+		if(!data)
+			throw("no data passed");
+		var gl = this.gl;
+		this.bind();
+		Texture.setUploadOptions(options, gl);
+		var mipmap_level = options.mipmap_level || 0;
+		var width = this.width;
+		var height = this.height;
+		width = width >> mipmap_level; 
+		height = height >> mipmap_level;
+		var internal_format = this.internalFormat || this.format;
 
-//used for render to FBOs
-Texture.framebuffer = null;
-Texture.renderbuffer = null;
-Texture.loading_color = new Uint8Array([0,0,0,0]);
-Texture.use_renderbuffer_pool = true; //should improve performance
+		if( this.type == GL.HALF_FLOAT_OES && data.constructor === Float32Array )
+			console.warn("cannot uploadData to a HALF_FLOAT texture from a Float32Array, must be Uint16Array. To upload it we recomment to create a FLOAT texture, upload data there and copy to your HALF_FLOAT.");
 
-//because usually you dont want to specify the internalFormat, this tries to guess it from its format
-//check https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html for more info
-Texture.prototype.computeInternalFormat = function()
-{
-	this.internalFormat = this.format; //default
-
-	//automatic selection of internal format for depth textures to avoid problems between webgl1 and 2
-	if( this.format == GL.DEPTH_COMPONENT )
-	{
-		this.minFilter = this.magFilter = GL.NEAREST;
-
-		if( gl.webgl_version == 2 ) 
+		if( this.texture_type == GL.TEXTURE_2D )
 		{
-			if( this.type == GL.UNSIGNED_SHORT )
-				this.internalFormat = GL.DEPTH_COMPONENT16;
-			else if( this.type == GL.UNSIGNED_INT )
-				this.internalFormat = GL.DEPTH_COMPONENT24;
-			else if( this.type == GL.FLOAT )
-				this.internalFormat = GL.DEPTH_COMPONENT32F;
-			else 
-				throw("unsupported type for a depth texture");
-		}
-		else if( gl.webgl_version == 1 )
-		{
-			if( this.type == GL.FLOAT )
-				throw("WebGL 1.0 does not support float depth textures");
-			this.internalFormat = GL.DEPTH_COMPONENT;
-		}
-	}
-	else if( this.format == gl.RGBA )
-	{
-		if( gl.webgl_version == 2 ) 
-		{
-			if( this.type == GL.FLOAT )
-				this.internalFormat = GL.RGBA32F;
-			else if( this.type == GL.HALF_FLOAT )
-				this.internalFormat = GL.RGBA16F;
-			else if( this.type == GL.HALF_FLOAT_OES )
+			if(gl.webgl_version == 1)
 			{
-				console.warn("webgl 2 does not use HALF_FLOAT_OES, converting to HALF_FLOAT")
-				this.type = GL.HALF_FLOAT;
-				this.internalFormat = GL.RGBA16F;
+				if(data.buffer && data.buffer.constructor == ArrayBuffer)
+					gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
+				else
+					gl.texImage2D(this.texture_type, mipmap_level, internal_format, this.format, this.type, data);
 			}
-			/*
-			else if( this.type == GL.UNSIGNED_SHORT )
+			else if(gl.webgl_version == 2) //webgl forces to use width and height
 			{
-				this.internalFormat = GL.RGBA16UI;
-				this.format = gl.RGBA_INTEGER;
-			}
-			else if( this.type == GL.UNSIGNED_INT )
-			{
-				this.internalFormat = GL.RGBA32UI;
-				this.format = gl.RGBA_INTEGER;
-			}
-			*/
-		}
-		else if( gl.webgl_version == 1 )
-		{
-			if( this.type == GL.HALF_FLOAT )
-			{
-				console.warn("webgl 1 does not use HALF_FLOAT, converting to HALF_FLOAT_OES")
-				this.type = GL.HALF_FLOAT_OES;
+				if(data.buffer && data.buffer.constructor == ArrayBuffer)
+					gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
+				else
+					gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
 			}
 		}
-	}
-}
-
-/**
-* Free the texture memory from the GPU, sets the texture handler to null
-* @method delete
-*/
-Texture.prototype.delete = function()
-{
-	gl.deleteTexture( this.handler );
-	this.handler = null;
-}
-
-Texture.prototype.getProperties = function()
-{
-	return {
-		width: this.width,
-		height: this.height,
-		type: this.type,
-		format: this.format,
-		texture_type: this.texture_type,
-		magFilter: this.magFilter,
-		minFilter: this.minFilter,
-		wrapS: this.wrapS,
-		wrapT: this.wrapT
-	};
-}
-
-Texture.prototype.hasSameProperties = function(t)
-{
-	if(!t)
-		return false;
-	return t.width == this.width && 
-		t.height == this.height &&
-		t.type == this.type &&
-		t.format == this.format &&
-		t.texture_type == this.texture_type;
-}
-
-Texture.prototype.hasSameSize = function(t)
-{
-	if(!t)
-		return false;
-	return t.width == this.width && t.height == this.height;
-}
-//textures cannot be stored in JSON
-Texture.prototype.toJSON = function()
-{
-	return "";
-}
-
-
-/**
-* Returns if depth texture is supported by the GPU
-* @method isDepthSupported
-* @return {Boolean} true if supported
-*/
-Texture.isDepthSupported = function()
-{
-	return gl.extensions["WEBGL_depth_texture"] != null;
-}
-
-/**
-* Binds the texture to one texture unit
-* @method bind
-* @param {number} unit texture unit
-* @return {number} returns the texture unit
-*/
-Texture.prototype.bind = function( unit ) {
-	if(unit == undefined)
-		unit = 0;
-	var gl = this.gl;
-
-	//TODO: if the texture is not uploaded, must be upload now
-
-	//bind
-	gl.activeTexture(gl.TEXTURE0 + unit);
-	gl.bindTexture( this.texture_type, this.handler );
-	return unit;
-}
-
-/**
-* Unbinds the texture 
-* @method unbind
-* @param {number} unit texture unit
-* @return {number} returns the texture unit
-*/
-Texture.prototype.unbind = function(unit) {
-	if(unit === undefined)
-		unit = 0;
-	var gl = this.gl;
-	gl.activeTexture(gl.TEXTURE0 + unit );
-	gl.bindTexture(this.texture_type, null);
-}
-
-
-Texture.prototype.setParameter = function(param,value) {
-	this.bind(0);
-	this.gl.texParameteri( this.texture_type, param, value );
-	switch(param)
-	{
-		case this.gl.TEXTURE_MAG_FILTER: this.magFilter = value; break;
-		case this.gl.TEXTURE_MIN_FILTER: this.minFilter = value; break;
-		case this.gl.TEXTURE_WRAP_S: this.wrapS = value; break;
-		case this.gl.TEXTURE_WRAP_T: this.wrapT = value; break;
-	}
-}
-
-/**
-* Unbinds the texture 
-* @method Texture.setUploadOptions
-* @param {Object} options a list of options to upload the texture
-* - premultiply_alpha : multiply the color by the alpha value, default FALSE
-* - no_flip : do not flip in Y, default TRUE
-*/
-Texture.setUploadOptions = function(options, gl)
-{
-	gl = gl || global.gl;
-
-	if(options) //options that are not stored in the texture should be passed again to avoid reusing unknown state
-	{
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !!(options.premultiply_alpha) );
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !(options.no_flip) );
-	}
-	else
-	{
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false );
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true );
-	}
-	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-}
-
-/**
-* Given an Image/Canvas/Video it uploads it to the GPU
-* @method uploadImage
-* @param {Image} img
-* @param {Object} options [optional] upload options (premultiply_alpha, no_flip)
-*/
-Texture.prototype.uploadImage = function( image, options )
-{
-	this.bind();
-	var gl = this.gl;
-	if(!image)
-		throw("uploadImage parameter must be Image");
-
-	Texture.setUploadOptions(options, gl);
-
-	try {
-		gl.texImage2D( gl.TEXTURE_2D, 0, this.format, this.format, this.type, image );
-		this.width = image.videoWidth || image.width;
-		this.height = image.videoHeight || image.height;
-		this.data = image;
-	} catch (e) {
-		if (location.protocol == 'file:') {
-			throw 'image not loaded for security reasons (serve this page over "http://" instead)';
-		} else {
-			throw 'image not loaded for security reasons (image must originate from the same ' +
-			'domain as this page or use Cross-Origin Resource Sharing)';
-		}
-	}
-
-	//TODO: add expand transparent pixels option
-
-	//generate mipmaps
-	if (this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
-		gl.generateMipmap(this.texture_type);
-		this.has_mipmaps = true;
-	}
-	gl.bindTexture(this.texture_type, null); //disable
-}
-
-/**
-* Uploads data to the GPU (data must have the appropiate size)
-* @method uploadData
-* @param {ArrayBuffer} data
-* @param {Object} options [optional] upload options (premultiply_alpha, no_flip, cubemap_face, mipmap_level)
-*/
-Texture.prototype.uploadData = function( data, options = {}, skip_mipmaps ) {
-	if(!data)
-		throw("no data passed");
-	var gl = this.gl;
-	this.bind();
-	Texture.setUploadOptions(options, gl);
-	var mipmap_level = options.mipmap_level || 0;
-	var width = this.width;
-	var height = this.height;
-	width = width >> mipmap_level; 
-	height = height >> mipmap_level;
-	var internal_format = this.internalFormat || this.format;
-
-	if( this.type == GL.HALF_FLOAT_OES && data.constructor === Float32Array )
-		console.warn("cannot uploadData to a HALF_FLOAT texture from a Float32Array, must be Uint16Array. To upload it we recomment to create a FLOAT texture, upload data there and copy to your HALF_FLOAT.");
-
-	if( this.texture_type == GL.TEXTURE_2D )
-	{
-		if(gl.webgl_version == 1)
+		else if( this.texture_type == GL.TEXTURE_3D )
 		{
-			if(data.buffer && data.buffer.constructor == ArrayBuffer)
-				gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
-			else
-				gl.texImage2D(this.texture_type, mipmap_level, internal_format, this.format, this.type, data);
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false ); //standard does not allow this flags for 3D textures
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false );
+			gl.texImage3D( this.texture_type, mipmap_level, internal_format, width, height, this.depth >> mipmap_level, 0, this.format, this.type, data);
 		}
-		else if(gl.webgl_version == 2) //webgl forces to use width and height
-		{
-			if(data.buffer && data.buffer.constructor == ArrayBuffer)
-				gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
-			else
-				gl.texImage2D(this.texture_type, mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
+		else if( this.texture_type == GL.TEXTURE_CUBE_MAP )
+			gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + (options.cubemap_face || 0), mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
+		else
+			throw("cannot uploadData for this texture type");
+
+		this.data = data; //should I clone it?
+
+		if (!skip_mipmaps && this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
+			gl.generateMipmap(this.texture_type);
+			this.has_mipmaps = true;
 		}
+		gl.bindTexture(this.texture_type, null); //disable
 	}
-	else if( this.texture_type == GL.TEXTURE_3D )
-	{
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false ); //standard does not allow this flags for 3D textures
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false );
-		gl.texImage3D( this.texture_type, mipmap_level, internal_format, width, height, this.depth >> mipmap_level, 0, this.format, this.type, data);
-	}
-	else if( this.texture_type == GL.TEXTURE_CUBE_MAP )
-		gl.texImage2D( gl.TEXTURE_CUBE_MAP_POSITIVE_X + (options.cubemap_face || 0), mipmap_level, internal_format, width, height, 0, this.format, this.type, data);
-	else
-		throw("cannot uploadData for this texture type");
-
-	this.data = data; //should I clone it?
-
-	if (!skip_mipmaps && this.minFilter && this.minFilter != gl.NEAREST && this.minFilter != gl.LINEAR) {
-		gl.generateMipmap(this.texture_type);
-		this.has_mipmaps = true;
-	}
-	gl.bindTexture(this.texture_type, null); //disable
 }
+
+
 
 //When creating cubemaps this is helpful
 
@@ -11616,499 +12099,6 @@ Raytracer.hitTestTriangle = function(origin, ray, a, b, c) {
 
   return null;
 };
-//***** OBJ parser adapted from SpiderGL implementation *****************
-/**
-* Parses a OBJ string and returns an object with the info ready to be passed to GL.Mesh.load
-* @method Mesh.parseOBJ
-* @param {String} data all the OBJ info to be parsed
-* @param {Object} options
-* @return {Object} mesh information (vertices, coords, normals, indices)
-*/
-
-Mesh.parseOBJ = function( text, options = {} ) {
-	//final arrays (packed, lineal [ax,ay,az, bx,by,bz ...])
-	var positionsArray = [ ];
-	var texcoordsArray = [ ];
-	var normalsArray   = [ ];
-	var indicesArray   = [ ];
-
-	//unique arrays (not packed, lineal)
-	var positions = [ ];
-	var texcoords = [ ];
-	var normals   = [ ];
-	var facemap   = { };
-	var index     = 0;
-
-	var line = null;
-	var f   = null;
-	var pos = 0;
-	var tex = 0;
-	var nor = 0;
-	var x   = 0.0;
-	var y   = 0.0;
-	var z   = 0.0;
-	var tokens = null;
-
-	var hasPos = false;
-	var hasTex = false;
-	var hasNor = false;
-
-	var parsingFaces = false;
-	var indices_offset = 0;
-	var negative_offset = -1; //used for weird objs with negative indices
-	var max_index = 0;
-
-	var skip_indices = options.noindex ? options.noindex : (text.length > 10000000 ? true : false);
-	//trace("SKIP INDICES: " + skip_indices);
-	var flip_axis = options.flipAxis;
-	var flip_normals = (flip_axis || options.flipNormals);
-
-	//used for mesh groups (submeshes)
-	var group = null;
-	var groups = [];
-	var materials_found = {};
-
-	var V_CODE = 1;
-	var VT_CODE = 2;
-	var VN_CODE = 3;
-	var F_CODE = 4;
-	var G_CODE = 5;
-	var O_CODE = 6;
-	var codes = { v: V_CODE, vt: VT_CODE, vn: VN_CODE, f: F_CODE, g: G_CODE, o: O_CODE };
-
-
-	var lines = text.split("\n");
-	var length = lines.length;
-	for (var lineIndex = 0;  lineIndex < length; ++lineIndex) {
-		line = lines[lineIndex].replace(/[ \t]+/g, " ").replace(/\s\s*$/, ""); //trim
-
-		if (line[0] == "#") continue;
-		if(line == "") continue;
-
-		tokens = line.split(" ");
-		var code = codes[ tokens[0] ];
-
-		if(parsingFaces && code == V_CODE) //another mesh?
-		{
-			indices_offset = index;
-			parsingFaces = false;
-			//trace("multiple meshes: " + indices_offset);
-		}
-
-		//read and parse numbers
-		if( code <= VN_CODE ) //v,vt,vn
-		{
-			x = parseFloat(tokens[1]);
-			y = parseFloat(tokens[2]);
-			if( code != VT_CODE )
-			{
-				if(tokens[3] == '\\') //super weird case, OBJ allows to break lines with slashes...
-				{
-					//HACK! only works if the var is the thirth position...
-					++lineIndex;
-					line = lines[lineIndex].replace(/[ \t]+/g, " ").replace(/\s\s*$/, ""); //better than trim
-					z = parseFloat(line);
-				}
-				else
-					z = parseFloat(tokens[3]);
-			}
-		}
-
-		if (code == V_CODE) {
-			if(flip_axis) //maya and max notation style
-				positions.push(-1*x,z,y);
-			else
-				positions.push(x,y,z);
-		}
-		else if (code == VT_CODE) {
-			texcoords.push(x,y);
-		}
-		else if (code == VN_CODE) {
-
-			if(flip_normals)  //maya and max notation style
-				normals.push(-y,-z,x);
-			else
-				normals.push(x,y,z);
-		}
-		else if (code == F_CODE) {
-			parsingFaces = true;
-
-			if (tokens.length < 4) continue; //faces with less that 3 vertices? nevermind
-
-			//for every corner of this polygon
-			var polygon_indices = [];
-			for (var i=1; i < tokens.length; ++i) 
-			{
-				if (!(tokens[i] in facemap) || skip_indices) 
-				{
-					f = tokens[i].split("/");
-
-					if (f.length == 1) { //unpacked
-						pos = parseInt(f[0]) - 1;
-						tex = pos;
-						nor = pos;
-					}
-					else if (f.length == 2) { //no normals
-						pos = parseInt(f[0]) - 1;
-						tex = parseInt(f[1]) - 1;
-						nor = -1;
-					}
-					else if (f.length == 3) { //all three indexed
-						pos = parseInt(f[0]) - 1;
-						tex = parseInt(f[1]) - 1;
-						nor = parseInt(f[2]) - 1;
-					}
-					else {
-						console.err("Problem parsing: unknown number of values per face");
-						return false;
-					}
-
-					if(i > 3 && skip_indices) //break polygon in triangles
-					{
-						//first
-						var pl = positionsArray.length;
-						positionsArray.push( positionsArray[pl - (i-3)*9], positionsArray[pl - (i-3)*9 + 1], positionsArray[pl - (i-3)*9 + 2]);
-						positionsArray.push( positionsArray[pl - 3], positionsArray[pl - 2], positionsArray[pl - 1]);
-						pl = texcoordsArray.length;
-						texcoordsArray.push( texcoordsArray[pl - (i-3)*6], texcoordsArray[pl - (i-3)*6 + 1]);
-						texcoordsArray.push( texcoordsArray[pl - 2], texcoordsArray[pl - 1]);
-						pl = normalsArray.length;
-						normalsArray.push( normalsArray[pl - (i-3)*9], normalsArray[pl - (i-3)*9 + 1], normalsArray[pl - (i-3)*9 + 2]);
-						normalsArray.push( normalsArray[pl - 3], normalsArray[pl - 2], normalsArray[pl - 1]);
-					}
-
-					//add new vertex
-					x = 0.0;
-					y = 0.0;
-					z = 0.0;
-					if ((pos * 3 + 2) < positions.length) {
-						hasPos = true;
-						x = positions[pos*3+0];
-						y = positions[pos*3+1];
-						z = positions[pos*3+2];
-					}
-					positionsArray.push(x,y,z);
-
-					//add new texture coordinate
-					x = 0.0;
-					y = 0.0;
-					if ((tex * 2 + 1) < texcoords.length) {
-						hasTex = true;
-						x = texcoords[tex*2+0];
-						y = texcoords[tex*2+1];
-					}
-					texcoordsArray.push(x,y);
-
-					//add new normal
-					x = 0.0;
-					y = 0.0;
-					z = 1.0;
-					if(nor != -1)
-					{
-						if ((nor * 3 + 2) < normals.length) {
-							hasNor = true;
-							x = normals[nor*3+0];
-							y = normals[nor*3+1];
-							z = normals[nor*3+2];
-						}
-						
-						normalsArray.push(x,y,z);
-					}
-
-					//Save the string "10/10/10" and tells which index represents it in the arrays
-					if(!skip_indices)
-						facemap[tokens[i]] = index++;
-				}//end of 'if this token is new (store and index for later reuse)'
-
-				//store key for this triplet
-				if(!skip_indices)
-				{
-					var final_index = facemap[tokens[i]];
-					polygon_indices.push(final_index);
-					if(max_index < final_index)
-						max_index = final_index;
-				}
-			} //end of for every token on a 'f' line
-
-			//polygons (not just triangles)
-			if(!skip_indices)
-			{
-				for(var iP = 2; iP < polygon_indices.length; iP++)
-				{
-					indicesArray.push( polygon_indices[0], polygon_indices[iP-1], polygon_indices[iP] );
-					//indicesArray.push( [polygon_indices[0], polygon_indices[iP-1], polygon_indices[iP]] );
-				}
-			}
-		}
-		else if (code == G_CODE) { //tokens[0] == "usemtl"
-			negative_offset = positions.length / 3 - 1;
-
-			if(tokens.length > 1)
-			{
-				if(group != null)
-				{
-					group.length = indicesArray.length - group.start;
-					if(group.length > 0)
-						groups.push(group);
-				}
-
-				group = {
-					name: tokens[1],
-					start: indicesArray.length,
-					length: -1,
-					material: ""
-				};
-			}
-		}
-		else if (tokens[0] == "usemtl") {
-			if(group)
-				group.material = tokens[1];
-		}
-	}
-
-	if(!positions.length)
-	{
-		console.error("OBJ doesnt have vertices, maybe the file is not a OBJ");
-		return null;
-	}
-
-	if(group && (indicesArray.length - group.start) > 1)
-	{
-		group.length = indicesArray.length - group.start;
-		groups.push(group);
-	}
-
-	//deindex streams
-	if((max_index > 256*256 || skip_indices ) && indicesArray.length > 0)
-	{
-		console.log("Deindexing mesh...")
-		var finalVertices = new Float32Array(indicesArray.length * 3);
-		var finalNormals = normalsArray && normalsArray.length ? new Float32Array(indicesArray.length * 3) : null;
-		var finalTexCoords = texcoordsArray && texcoordsArray.length ? new Float32Array(indicesArray.length * 2) : null;
-		for(var i = 0; i < indicesArray.length; i += 1)
-		{
-			finalVertices.set( positionsArray.slice( indicesArray[i]*3,indicesArray[i]*3 + 3), i*3 );
-			if(finalNormals)
-				finalNormals.set( normalsArray.slice( indicesArray[i]*3,indicesArray[i]*3 + 3 ), i*3 );
-			if(finalTexCoords)
-				finalTexCoords.set( texcoordsArray.slice(indicesArray[i]*2,indicesArray[i]*2 + 2 ), i*2 );
-		}
-		positionsArray = finalVertices;
-		if(finalNormals)
-			normalsArray = finalNormals;
-		if(finalTexCoords)
-			texcoordsArray = finalTexCoords;
-		indicesArray = null;
-	}
-
-	//Create final mesh object
-	var mesh = {};
-
-	//create typed arrays
-	if (hasPos)
-		mesh.vertices = new Float32Array(positionsArray);
-	if (hasNor && normalsArray.length > 0)
-		mesh.normals = new Float32Array(normalsArray);
-	if (hasTex && texcoordsArray.length > 0)
-		mesh.coords = new Float32Array(texcoordsArray);
-	if (indicesArray && indicesArray.length > 0)
-		mesh.triangles = new Uint16Array(indicesArray);
-
-	var info = {};
-	if(groups.length > 1)
-		info.groups = groups;
-	mesh.info = info;
-
-	if(options.only_data)
-		return mesh;
-
-	//creates and returns a GL.Mesh
-	var final_mesh = null;
-	final_mesh = Mesh.load( mesh, null, options.mesh );
-	final_mesh.updateBoundingBox();
-	return final_mesh;
-}
-
-Mesh.parsers["obj"] = Mesh.parseOBJ;
-
-Mesh.encoders["obj"] = function( mesh, options )
-{
-	//store vertices
-	var verticesBuffer = mesh.getBuffer("vertices");
-	if(!verticesBuffer)
-		return null;
-
-	var lines = [];
-	lines.push("# Generated with liteGL.js by Javi Agenjo\n");
-
-	var vertices = verticesBuffer.data;
-	for (var i = 0; i < vertices.length; i+=3)
-		lines.push("v " + vertices[i].toFixed(4) + " " + vertices[i+1].toFixed(4) + " " + vertices[i+2].toFixed(4));
-
-	//store normals
-	var normalsBuffer = mesh.getBuffer("normals");
-	if(normalsBuffer)
-	{
-		lines.push("");
-		var normals = normalsBuffer.data;
-		for (var i = 0; i < normals.length; i+=3)
-			lines.push("vn " + normals[i].toFixed(4) + " " + normals[i+1].toFixed(4) + " " + normals[i+2].toFixed(4) );
-	}
-	
-	//store uvs
-	var coordsBuffer = mesh.getBuffer("coords");
-	if(coordsBuffer)
-	{
-		lines.push("");
-		var coords = coordsBuffer.data;
-		for (var i = 0; i < coords.length; i+=2)
-			lines.push("vt " + coords[i].toFixed(4) + " " + coords[i+1].toFixed(4) + " " + " 0.0000");
-	}
-
-	var groups = mesh.info.groups;
-
-
-	//store faces
-	var indicesBuffer = mesh.getIndexBuffer("triangles");
-	if(indicesBuffer)
-	{
-		var indices = indicesBuffer.data;
-		if(!groups || !groups.length)
-			groups = [{start:0, length: indices.length, name:"mesh"}];
-		for(var j = 0; j < groups.length; ++j)
-		{
-			var group = groups[j];
-			lines.push("g " + group.name );
-			lines.push("usemtl " + (group.material || ("mat_"+j)));
-			var start = group.start;
-			var end = start + group.length;
-			for (var i = start; i < end; i+=3)
-				lines.push("f " + (indices[i]+1) + "/" + (indices[i]+1) + "/" + (indices[i]+1) + " " + (indices[i+1]+1) + "/" + (indices[i+1]+1) + "/" + (indices[i+1]+1) + " " + (indices[i+2]+1) + "/" + (indices[i+2]+1) + "/" + (indices[i+2]+1) );
-		}
-	}
-	else //no indices
-	{
-		if(!groups || !groups.length)
-			groups = [{start:0, length: (vertices.length / 3), name:"mesh"}];
-		for(var j = 0; j < groups.length; ++j)
-		{
-			var group = groups[j];
-			lines.push("g " + group.name);
-			lines.push("usemtl " + (group.material || ("mat_"+j)));
-			var start = group.start;
-			var end = start + group.length;
-			for (var i = start; i < end; i+=3)
-				lines.push( "f " + (i+1) + "/" + (i+1) + "/" + (i+1) + " " + (i+2) + "/" + (i+2) + "/" + (i+2) + " " + (i+3) + "/" + (i+3) + "/" + (i+3) );
-		}
-	}
-	
-	return lines.join("\n");
-}
-
-//simple format to output meshes in ASCII
-Mesh.parsers["mesh"] = function( text, options )
-{
-	var mesh = {};
-
-	var lines = text.split("\n");
-	for(var i = 0; i < lines.length; ++i)
-	{
-		var line = lines[i];
-		var type = line[0];
-		var t = line.substr(1).split(",");
-		var name = t[0];
-
-		if(type == "-") //buffer
-		{
-			var data = new Float32Array( Number(t[1]) );
-			for(var j = 0; j < data.length; ++j)
-				data[j] = Number(t[j+2]);
-			mesh[name] = data;
-		}
-		else if(type == "*") //index
-		{
-			var data = Number(t[1]) > 256*256 ? new Uint32Array( Number(t[1]) ) : new Uint16Array( Number(t[1]) );
-			for(var j = 0; j < data.length; ++j)
-				data[j] = Number(t[j+2]);
-			mesh[name] = data;
-		}
-		else if(type == "@") //info
-		{
-			if(name == "bones")
-			{
-				var bones = [];
-				var num_bones = Number(t[1]);
-				for(var j = 0; j < num_bones; ++j)
-				{
-					var m = (t.slice(3 + j*17, 3 + (j+1)*17 - 1)).map(Number);
-					bones.push( [ t[2 + j*17], m ] );
-				}
-				mesh.bones = bones;
-			}
-			else if(name == "bind_matrix")
-				mesh.bind_matrix = t.slice(1,17).map(Number);
-			else if(name == "groups")
-			{
-				mesh.info = { groups: [] };
-				var num_groups = Number(t[1]);
-				for(var j = 0; j < num_groups; ++j)
-				{
-					var group = { name: t[2+j*4], material: t[2+j*4+1], start: Number(t[2+j*4+2]), length: Number(t[2+j*4+3]) };
-					mesh.info.groups.push(group);
-				}
-			}
-		}
-		else
-			console.warn("type unknown: " + t[0] );
-	}
-
-	if(options.only_data)
-		return mesh;
-
-	//creates and returns a GL.Mesh
-	var final_mesh = null;
-	final_mesh = Mesh.load( mesh, null, options.mesh );
-	final_mesh.updateBoundingBox();
-	return final_mesh;
-}
-
-Mesh.encoders["mesh"] = function( mesh, options )
-{
-	var lines = [];
-	for(var i in mesh.vertexBuffers )
-	{
-		var buffer = mesh.vertexBuffers[i];
-		var line = ["-"+i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
-		lines.push(line.join(","));
-	}
-
-	for(var i in mesh.indexBuffers )
-	{
-		var buffer = mesh.indexBuffers[i];
-		var line = [ "*" + i, buffer.data.length, buffer.data, Array.from( buffer.data ) ];
-		lines.push(line.join(","));
-	}
-
-	if(mesh.bounding)
-		lines.push( ["@bounding", Array.from(mesh.bounding.subarray(0,6))].join(",") );
-	if(mesh.info && mesh.info.groups)
-	{
-		var groups_info = [];
-		for(var j = 0; j < mesh.info.groups.length; ++j)
-		{
-			var group = mesh.info.groups[j];
-			groups_info.push( group.name, group.material, group.start, group.length );
-		}
-		lines.push( ["@groups", mesh.info.groups.length ].concat( groups_info ).join(",")  );
-	}
-
-	if(mesh.bones)
-		lines.push( ["@bones", mesh.bones.length, mesh.bones.flat()].join(",") );
-	if(mesh.bind_matrix)
-		lines.push( ["@bind_matrix", Array.from(mesh.bind_matrix) ].join(",") );
-
-	return lines.join("\n");
-}
 
 /* BINARY FORMAT ************************************/
 
