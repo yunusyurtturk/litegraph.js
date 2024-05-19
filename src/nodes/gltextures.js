@@ -2973,993 +2973,995 @@ class LGraphTextureGradient {
 LiteGraph.registerNodeType("texture/gradient", LGraphTextureGradient);
 
 
-function LGraphTextureMix() {
-    this.addInput("A", "Texture");
-    this.addInput("B", "Texture");
-    this.addInput("Mixer", "Texture");
+class LGraphTextureMix {
+    constructor() {
+        this.addInput("A", "Texture");
+        this.addInput("B", "Texture");
+        this.addInput("Mixer", "Texture");
 
-    this.addOutput("Texture", "Texture");
-    this.properties = {
-        factor: 0.5,
-        size_from_biggest: true,
-        invert: false,
-        precision: LGraphTexture.DEFAULT,
+        this.addOutput("Texture", "Texture");
+        this.properties = {
+            factor: 0.5,
+            size_from_biggest: true,
+            invert: false,
+            precision: LGraphTexture.DEFAULT,
+        };
+        this._uniforms = {
+            u_textureA: 0,
+            u_textureB: 1,
+            u_textureMix: 2,
+            u_mix: vec4.create(),
+        };
+    }
+
+    static title = "Mix";
+    static desc = "Generates a texture mixing two textures";
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
     };
-    this._uniforms = {
-        u_textureA: 0,
-        u_textureB: 1,
-        u_textureMix: 2,
-        u_mix: vec4.create(),
-    };
-}
 
-LGraphTextureMix.title = "Mix";
-LGraphTextureMix.desc = "Generates a texture mixing two textures";
+    onExecute() {
+        var texA = this.getInputData(0);
 
-LGraphTextureMix.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-LGraphTextureMix.prototype.onExecute = function () {
-    var texA = this.getInputData(0);
-
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
-        this.setOutputData(0, texA);
-        return;
-    }
-
-    var texB = this.getInputData(1);
-    if (!texA || !texB) {
-        return;
-    }
-
-    var texMix = this.getInputData(2);
-
-    var factor = this.getInputData(3);
-
-    this._tex = LGraphTexture.getTargetTexture(
-        this.properties.size_from_biggest && texB.width > texA.width
-            ? texB
-            : texA,
-        this._tex,
-        this.properties.precision,
-    );
-
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DEPTH_TEST);
-
-    var mesh = Mesh.getScreenQuad();
-    var shader = null;
-    var uniforms = this._uniforms;
-    if (texMix) {
-        shader = LGraphTextureMix._shader_tex;
-        if (!shader) {
-            shader = LGraphTextureMix._shader_tex = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
-                LGraphTextureMix.pixel_shader,
-                { MIX_TEX: "" },
-            );
+        if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
+            this.setOutputData(0, texA);
+            return;
         }
-    } else {
-        shader = LGraphTextureMix._shader_factor;
-        if (!shader) {
-            shader = LGraphTextureMix._shader_factor = new GL.Shader(
-                Shader.SCREEN_VERTEX_SHADER,
-                LGraphTextureMix.pixel_shader,
-            );
+
+        var texB = this.getInputData(1);
+        if (!texA || !texB) {
+            return;
         }
-        var f = factor == null ? this.properties.factor : factor;
-        uniforms.u_mix.set([f, f, f, f]);
-    }
 
-    var invert = this.properties.invert;
+        var texMix = this.getInputData(2);
 
-    this._tex.drawTo(function () {
-        texA.bind(invert ? 1 : 0);
-        texB.bind(invert ? 0 : 1);
+        var factor = this.getInputData(3);
+
+        this._tex = LGraphTexture.getTargetTexture(
+            this.properties.size_from_biggest && texB.width > texA.width
+                ? texB
+                : texA,
+            this._tex,
+            this.properties.precision,
+        );
+
+        gl.disable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+
+        var mesh = Mesh.getScreenQuad();
+        var shader = null;
+        var uniforms = this._uniforms;
         if (texMix) {
-            texMix.bind(2);
+            shader = LGraphTextureMix._shader_tex;
+            if (!shader) {
+                shader = LGraphTextureMix._shader_tex = new GL.Shader(
+                    Shader.SCREEN_VERTEX_SHADER,
+                    LGraphTextureMix.pixel_shader,
+                    { MIX_TEX: "" },
+                );
+            }
+        } else {
+            shader = LGraphTextureMix._shader_factor;
+            if (!shader) {
+                shader = LGraphTextureMix._shader_factor = new GL.Shader(
+                    Shader.SCREEN_VERTEX_SHADER,
+                    LGraphTextureMix.pixel_shader,
+                );
+            }
+            var f = factor == null ? this.properties.factor : factor;
+            uniforms.u_mix.set([f, f, f, f]);
         }
-        shader.uniforms(uniforms).draw(mesh);
-    });
 
-    this.setOutputData(0, this._tex);
-};
+        var invert = this.properties.invert;
 
-LGraphTextureMix.prototype.onGetInputs = function () {
-    return [["factor", "number"]];
-};
+        this._tex.drawTo(function () {
+            texA.bind(invert ? 1 : 0);
+            texB.bind(invert ? 0 : 1);
+            if (texMix) {
+                texMix.bind(2);
+            }
+            shader.uniforms(uniforms).draw(mesh);
+        });
 
-LGraphTextureMix.pixel_shader =
-    "precision highp float;\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_textureA;\n\
-    uniform sampler2D u_textureB;\n\
-    #ifdef MIX_TEX\n\
-        uniform sampler2D u_textureMix;\n\
-    #else\n\
-        uniform vec4 u_mix;\n\
-    #endif\n\
-    \n\
-    void main() {\n\
+        this.setOutputData(0, this._tex);
+    }
+
+    onGetInputs() {
+        return [["factor", "number"]];
+    }
+
+    static pixel_shader =
+        "precision highp float;\n\
+        precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_textureA;\n\
+        uniform sampler2D u_textureB;\n\
         #ifdef MIX_TEX\n\
-            vec4 f = texture2D(u_textureMix, v_coord);\n\
+            uniform sampler2D u_textureMix;\n\
         #else\n\
-            vec4 f = u_mix;\n\
+            uniform vec4 u_mix;\n\
         #endif\n\
-        gl_FragColor = mix( texture2D(u_textureA, v_coord), texture2D(u_textureB, v_coord), f );\n\
-    }\n\
-    ";
-
+        \n\
+        void main() {\n\
+            #ifdef MIX_TEX\n\
+                vec4 f = texture2D(u_textureMix, v_coord);\n\
+            #else\n\
+                vec4 f = u_mix;\n\
+            #endif\n\
+            gl_FragColor = mix( texture2D(u_textureA, v_coord), texture2D(u_textureB, v_coord), f );\n\
+        }\n\
+        ";
+}
 LiteGraph.registerNodeType("texture/mix", LGraphTextureMix);
 
-// Texture Edges detection *****************************************
-function LGraphTextureEdges() {
-    this.addInput("Tex.", "Texture");
 
-    this.addOutput("Edges", "Texture");
-    this.properties = {
-        invert: true,
-        threshold: false,
-        factor: 1,
-        precision: LGraphTexture.DEFAULT,
+class LGraphTextureEdges {
+    constructor() {
+        this.addInput("Tex.", "Texture");
+
+        this.addOutput("Edges", "Texture");
+        this.properties = {
+            invert: true,
+            threshold: false,
+            factor: 1,
+            precision: LGraphTexture.DEFAULT,
+        };
+
+        if (!LGraphTextureEdges._shader) {
+            LGraphTextureEdges._shader = new GL.Shader(
+                Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureEdges.pixel_shader,
+            );
+        }
+    }
+
+    static title = "Edges";
+    static desc = "Detects edges";
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
     };
 
-    if (!LGraphTextureEdges._shader) {
-        LGraphTextureEdges._shader = new GL.Shader(
-            Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureEdges.pixel_shader,
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var tex = this.getInputData(0);
+
+        if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
+            this.setOutputData(0, tex);
+            return;
+        }
+
+        if (!tex) {
+            return;
+        }
+
+        this._tex = LGraphTexture.getTargetTexture(
+            tex,
+            this._tex,
+            this.properties.precision,
         );
+
+        gl.disable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+
+        var mesh = Mesh.getScreenQuad();
+        var shader = LGraphTextureEdges._shader;
+        var invert = this.properties.invert;
+        var factor = this.properties.factor;
+        var threshold = this.properties.threshold ? 1 : 0;
+
+        this._tex.drawTo(function () {
+            tex.bind(0);
+            shader
+                .uniforms({
+                    u_texture: 0,
+                    u_isize: [1 / tex.width, 1 / tex.height],
+                    u_factor: factor,
+                    u_threshold: threshold,
+                    u_invert: invert ? 1 : 0,
+                })
+                .draw(mesh);
+        });
+
+        this.setOutputData(0, this._tex);
     }
+
+    static pixel_shader =
+        "precision highp float;\n\
+        precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform vec2 u_isize;\n\
+        uniform int u_invert;\n\
+        uniform float u_factor;\n\
+        uniform float u_threshold;\n\
+        \n\
+        void main() {\n\
+            vec4 center = texture2D(u_texture, v_coord);\n\
+            vec4 up = texture2D(u_texture, v_coord + u_isize * vec2(0.0,1.0) );\n\
+            vec4 down = texture2D(u_texture, v_coord + u_isize * vec2(0.0,-1.0) );\n\
+            vec4 left = texture2D(u_texture, v_coord + u_isize * vec2(1.0,0.0) );\n\
+            vec4 right = texture2D(u_texture, v_coord + u_isize * vec2(-1.0,0.0) );\n\
+            vec4 diff = abs(center - up) + abs(center - down) + abs(center - left) + abs(center - right);\n\
+            diff *= u_factor;\n\
+            if(u_invert == 1)\n\
+                diff.xyz = vec3(1.0) - diff.xyz;\n\
+            if( u_threshold == 0.0 )\n\
+                gl_FragColor = vec4( diff.xyz, center.a );\n\
+            else\n\
+                gl_FragColor = vec4( diff.x > 0.5 ? 1.0 : 0.0, diff.y > 0.5 ? 1.0 : 0.0, diff.z > 0.5 ? 1.0 : 0.0, center.a );\n\
+        }\n\
+        ";
 }
-
-LGraphTextureEdges.title = "Edges";
-LGraphTextureEdges.desc = "Detects edges";
-
-LGraphTextureEdges.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
-
-LGraphTextureEdges.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var tex = this.getInputData(0);
-
-    if (this.properties.precision === LGraphTexture.PASS_THROUGH) {
-        this.setOutputData(0, tex);
-        return;
-    }
-
-    if (!tex) {
-        return;
-    }
-
-    this._tex = LGraphTexture.getTargetTexture(
-        tex,
-        this._tex,
-        this.properties.precision,
-    );
-
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DEPTH_TEST);
-
-    var mesh = Mesh.getScreenQuad();
-    var shader = LGraphTextureEdges._shader;
-    var invert = this.properties.invert;
-    var factor = this.properties.factor;
-    var threshold = this.properties.threshold ? 1 : 0;
-
-    this._tex.drawTo(function () {
-        tex.bind(0);
-        shader
-            .uniforms({
-                u_texture: 0,
-                u_isize: [1 / tex.width, 1 / tex.height],
-                u_factor: factor,
-                u_threshold: threshold,
-                u_invert: invert ? 1 : 0,
-            })
-            .draw(mesh);
-    });
-
-    this.setOutputData(0, this._tex);
-};
-
-LGraphTextureEdges.pixel_shader =
-    "precision highp float;\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform vec2 u_isize;\n\
-    uniform int u_invert;\n\
-    uniform float u_factor;\n\
-    uniform float u_threshold;\n\
-    \n\
-    void main() {\n\
-        vec4 center = texture2D(u_texture, v_coord);\n\
-        vec4 up = texture2D(u_texture, v_coord + u_isize * vec2(0.0,1.0) );\n\
-        vec4 down = texture2D(u_texture, v_coord + u_isize * vec2(0.0,-1.0) );\n\
-        vec4 left = texture2D(u_texture, v_coord + u_isize * vec2(1.0,0.0) );\n\
-        vec4 right = texture2D(u_texture, v_coord + u_isize * vec2(-1.0,0.0) );\n\
-        vec4 diff = abs(center - up) + abs(center - down) + abs(center - left) + abs(center - right);\n\
-        diff *= u_factor;\n\
-        if(u_invert == 1)\n\
-            diff.xyz = vec3(1.0) - diff.xyz;\n\
-        if( u_threshold == 0.0 )\n\
-            gl_FragColor = vec4( diff.xyz, center.a );\n\
-        else\n\
-            gl_FragColor = vec4( diff.x > 0.5 ? 1.0 : 0.0, diff.y > 0.5 ? 1.0 : 0.0, diff.z > 0.5 ? 1.0 : 0.0, center.a );\n\
-    }\n\
-    ";
-
 LiteGraph.registerNodeType("texture/edges", LGraphTextureEdges);
 
-// Texture Depth *****************************************
-function LGraphTextureDepthRange() {
-    this.addInput("Texture", "Texture");
-    this.addInput("Distance", "number");
-    this.addInput("Range", "number");
-    this.addOutput("Texture", "Texture");
-    this.properties = {
-        distance: 100,
-        range: 50,
-        only_depth: false,
-        high_precision: false,
-    };
-    this._uniforms = {
-        u_texture: 0,
-        u_distance: 100,
-        u_range: 50,
-        u_camera_planes: null,
-    };
-}
 
-LGraphTextureDepthRange.title = "Depth Range";
-LGraphTextureDepthRange.desc = "Generates a texture with a depth range";
-
-LGraphTextureDepthRange.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+class LGraphTextureDepthRange {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addInput("Distance", "number");
+        this.addInput("Range", "number");
+        this.addOutput("Texture", "Texture");
+        this.properties = {
+            distance: 100,
+            range: 50,
+            only_depth: false,
+            high_precision: false,
+        };
+        this._uniforms = {
+            u_texture: 0,
+            u_distance: 100,
+            u_range: 50,
+            u_camera_planes: null,
+        };
     }
 
-    var precision = gl.UNSIGNED_BYTE;
-    if (this.properties.high_precision) {
-        precision = gl.half_float_ext ? gl.HALF_FLOAT_OES : gl.FLOAT;
-    }
+    static title = "Depth Range";
+    static desc = "Generates a texture with a depth range";
 
-    if (
-        !this._temp_texture ||
-        this._temp_texture.type != precision ||
-        this._temp_texture.width != tex.width ||
-        this._temp_texture.height != tex.height
-    ) {
-        this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: precision,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
-        });
-    }
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-    var uniforms = this._uniforms;
-
-    // iterations
-    var distance = this.properties.distance;
-    if (this.isInputConnected(1)) {
-        distance = this.getInputData(1);
-        this.properties.distance = distance;
-    }
-
-    var range = this.properties.range;
-    if (this.isInputConnected(2)) {
-        range = this.getInputData(2);
-        this.properties.range = range;
-    }
-
-    uniforms.u_distance = distance;
-    uniforms.u_range = range;
-
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DEPTH_TEST);
-    var mesh = Mesh.getScreenQuad();
-    if (!LGraphTextureDepthRange._shader) {
-        LGraphTextureDepthRange._shader = new GL.Shader(
-            Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureDepthRange.pixel_shader,
-        );
-        LGraphTextureDepthRange._shader_onlydepth = new GL.Shader(
-            Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureDepthRange.pixel_shader,
-            { ONLY_DEPTH: "" },
-        );
-    }
-    var shader = this.properties.only_depth
-        ? LGraphTextureDepthRange._shader_onlydepth
-        : LGraphTextureDepthRange._shader;
-
-    // NEAR AND FAR PLANES
-    var planes = null;
-    if (tex.near_far_planes) {
-        planes = tex.near_far_planes;
-    } else if (window.LS && LS.Renderer._main_camera) {
-        planes = LS.Renderer._main_camera._uniforms.u_camera_planes;
-    } else {
-        planes = [0.1, 1000];
-    } // hardcoded
-    uniforms.u_camera_planes = planes;
-
-    this._temp_texture.drawTo(function () {
-        tex.bind(0);
-        shader.uniforms(uniforms).draw(mesh);
-    });
-
-    this._temp_texture.near_far_planes = planes;
-    this.setOutputData(0, this._temp_texture);
-};
-
-LGraphTextureDepthRange.pixel_shader =
-    "precision highp float;\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform vec2 u_camera_planes;\n\
-    uniform float u_distance;\n\
-    uniform float u_range;\n\
-    \n\
-    float LinearDepth()\n\
-    {\n\
-        float zNear = u_camera_planes.x;\n\
-        float zFar = u_camera_planes.y;\n\
-        float depth = texture2D(u_texture, v_coord).x;\n\
-        depth = depth * 2.0 - 1.0;\n\
-        return zNear * (depth + 1.0) / (zFar + zNear - depth * (zFar - zNear));\n\
-    }\n\
-    \n\
-    void main() {\n\
-        float depth = LinearDepth();\n\
-        #ifdef ONLY_DEPTH\n\
-            gl_FragColor = vec4(depth);\n\
-        #else\n\
-            float diff = abs(depth * u_camera_planes.y - u_distance);\n\
-            float dof = 1.0;\n\
-            if(diff <= u_range)\n\
-                dof = diff / u_range;\n\
-            gl_FragColor = vec4(dof);\n\
-        #endif\n\
-    }\n\
-    ";
-
-LiteGraph.registerNodeType("texture/depth_range", LGraphTextureDepthRange);
-
-// Texture Depth *****************************************
-function LGraphTextureLinearDepth() {
-    this.addInput("Texture", "Texture");
-    this.addOutput("Texture", "Texture");
-    this.properties = {
-        precision: LGraphTexture.DEFAULT,
-        invert: false,
-    };
-    this._uniforms = {
-        u_texture: 0,
-        u_camera_planes: null, // filled later
-        u_ires: vec2.create(),
-    };
-}
-
-LGraphTextureLinearDepth.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
-
-LGraphTextureLinearDepth.title = "Linear Depth";
-LGraphTextureLinearDepth.desc = "Creates a color texture with linear depth";
-
-LGraphTextureLinearDepth.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var tex = this.getInputData(0);
-    if (
-        !tex ||
-        (tex.format != gl.DEPTH_COMPONENT && tex.format != gl.DEPTH_STENCIL)
-    ) {
-        return;
-    }
-
-    var precision =
-        this.properties.precision == LGraphTexture.HIGH
-            ? gl.HIGH_PRECISION_FORMAT
-            : gl.UNSIGNED_BYTE;
-
-    if (
-        !this._temp_texture ||
-        this._temp_texture.type != precision ||
-        this._temp_texture.width != tex.width ||
-        this._temp_texture.height != tex.height
-    ) {
-        this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: precision,
-            format: gl.RGB,
-            filter: gl.LINEAR,
-        });
-    }
-
-    var uniforms = this._uniforms;
-    uniforms.u_invert = this.properties.invert ? 1 : 0;
-
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DEPTH_TEST);
-    var mesh = Mesh.getScreenQuad();
-    if (!LGraphTextureLinearDepth._shader)
-        LGraphTextureLinearDepth._shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureLinearDepth.pixel_shader,
-        );
-    var shader = LGraphTextureLinearDepth._shader;
-
-    // NEAR AND FAR PLANES
-    var planes = null;
-    if (tex.near_far_planes) {
-        planes = tex.near_far_planes;
-    } else if (window.LS && LS.Renderer._main_camera) {
-        planes = LS.Renderer._main_camera._uniforms.u_camera_planes;
-    } else {
-        planes = [0.1, 1000];
-    } // hardcoded
-    uniforms.u_camera_planes = planes;
-    // uniforms.u_ires.set([1/tex.width, 1/tex.height]);
-    uniforms.u_ires.set([0, 0]);
-
-    this._temp_texture.drawTo(function () {
-        tex.bind(0);
-        shader.uniforms(uniforms).draw(mesh);
-    });
-
-    this._temp_texture.near_far_planes = planes;
-    this.setOutputData(0, this._temp_texture);
-};
-
-LGraphTextureLinearDepth.pixel_shader =
-    "precision highp float;\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform vec2 u_camera_planes;\n\
-    uniform int u_invert;\n\
-    uniform vec2 u_ires;\n\
-    \n\
-    void main() {\n\
-        float zNear = u_camera_planes.x;\n\
-        float zFar = u_camera_planes.y;\n\
-        float depth = texture2D(u_texture, v_coord + u_ires*0.5).x * 2.0 - 1.0;\n\
-        float f = zNear * (depth + 1.0) / (zFar + zNear - depth * (zFar - zNear));\n\
-        if( u_invert == 1 )\n\
-            f = 1.0 - f;\n\
-        gl_FragColor = vec4(vec3(f),1.0);\n\
-    }\n\
-    ";
-
-LiteGraph.registerNodeType(
-    "texture/linear_depth",
-    LGraphTextureLinearDepth,
-);
-
-// Texture Blur *****************************************
-function LGraphTextureBlur() {
-    this.addInput("Texture", "Texture");
-    this.addInput("Iterations", "number");
-    this.addInput("Intensity", "number");
-    this.addOutput("Blurred", "Texture");
-    this.properties = {
-        intensity: 1,
-        iterations: 1,
-        preserve_aspect: false,
-        scale: [1, 1],
-        precision: LGraphTexture.DEFAULT,
-    };
-}
-
-LGraphTextureBlur.title = "Blur";
-LGraphTextureBlur.desc = "Blur a texture";
-
-LGraphTextureBlur.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
-
-LGraphTextureBlur.max_iterations = 20;
-
-LGraphTextureBlur.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
-    }
-
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var temp = this._final_texture;
-
-    if (
-        !temp ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.type != tex.type
-    ) {
-        // we need two textures to do the blurring
-        // this._temp_texture = new GL.Texture( tex.width, tex.height, { type: tex.type, format: gl.RGBA, filter: gl.LINEAR });
-        temp = this._final_texture = new GL.Texture(tex.width, tex.height, {
-            type: tex.type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
-        });
-    }
-
-    // iterations
-    var iterations = this.properties.iterations;
-    if (this.isInputConnected(1)) {
-        iterations = this.getInputData(1);
-        this.properties.iterations = iterations;
-    }
-    iterations = Math.min(
-        Math.floor(iterations),
-        LGraphTextureBlur.max_iterations,
-    );
-    if (iterations == 0) {
-        // skip blurring
-        this.setOutputData(0, tex);
-        return;
-    }
-
-    var intensity = this.properties.intensity;
-    if (this.isInputConnected(2)) {
-        intensity = this.getInputData(2);
-        this.properties.intensity = intensity;
-    }
-
-    // blur sometimes needs an aspect correction
-    var aspect = LiteGraph.camera_aspect;
-    if (!aspect && window.gl !== undefined) {
-        aspect = gl.canvas.height / gl.canvas.width;
-    }
-    if (!aspect) {
-        aspect = 1;
-    }
-    aspect = this.properties.preserve_aspect ? aspect : 1;
-
-    var scale = this.properties.scale || [1, 1];
-    tex.applyBlur(aspect * scale[0], scale[1], intensity, temp);
-    for (var i = 1; i < iterations; ++i) {
-        temp.applyBlur(
-            aspect * scale[0] * (i + 1),
-            scale[1] * (i + 1),
-            intensity,
-        );
-    }
-
-    this.setOutputData(0, temp);
-};
-
-/*
-LGraphTextureBlur.pixel_shader = "precision highp float;\n\
-    precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform vec2 u_offset;\n\
-    uniform float u_intensity;\n\
-    void main() {\n\
-        vec4 sum = vec4(0.0);\n\
-        vec4 center = texture2D(u_texture, v_coord);\n\
-        sum += texture2D(u_texture, v_coord + u_offset * -4.0) * 0.05/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * -3.0) * 0.09/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * -2.0) * 0.12/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * -1.0) * 0.15/0.98;\n\
-        sum += center * 0.16/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * 4.0) * 0.05/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * 3.0) * 0.09/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * 2.0) * 0.12/0.98;\n\
-        sum += texture2D(u_texture, v_coord + u_offset * 1.0) * 0.15/0.98;\n\
-        gl_FragColor = u_intensity * sum;\n\
-    }\n\
-    ";
-*/
-
-LiteGraph.registerNodeType("texture/blur", LGraphTextureBlur);
-
-// Independent glow FX
-// based on https://catlikecoding.com/unity/tutorials/advanced-rendering/bloom/
-function FXGlow() {
-    this.intensity = 0.5;
-    this.persistence = 0.6;
-    this.iterations = 8;
-    this.threshold = 0.8;
-    this.scale = 1;
-
-    this.dirt_texture = null;
-    this.dirt_factor = 0.5;
-
-    this._textures = [];
-    this._uniforms = {
-        u_intensity: 1,
-        u_texture: 0,
-        u_glow_texture: 1,
-        u_threshold: 0,
-        u_texel_size: vec2.create(),
-    };
-}
-
-FXGlow.prototype.applyFX = function (
-    tex,
-    output_texture,
-    glow_texture,
-    average_texture,
-) {
-    var width = tex.width;
-    var height = tex.height;
-
-    var texture_info = {
-        format: tex.format,
-        type: tex.type,
-        minFilter: GL.LINEAR,
-        magFilter: GL.LINEAR,
-        wrap: gl.CLAMP_TO_EDGE,
-    };
-
-    var uniforms = this._uniforms;
-    var textures = this._textures;
-
-    // cut
-    var shader = FXGlow._cut_shader;
-    if (!shader) {
-        shader = FXGlow._cut_shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            FXGlow.cut_pixel_shader,
-        );
-    }
-
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.BLEND);
-
-    uniforms.u_threshold = this.threshold;
-    var currentDestination = (textures[0] = GL.Texture.getTemporary(
-        width,
-        height,
-        texture_info,
-    ));
-    tex.blit(currentDestination, shader.uniforms(uniforms));
-    var currentSource = currentDestination;
-
-    var iterations = this.iterations;
-    iterations = clamp(iterations, 1, 16) | 0;
-    var texel_size = uniforms.u_texel_size;
-    var intensity = this.intensity;
-
-    uniforms.u_intensity = 1;
-    uniforms.u_delta = this.scale; // 1
-
-    // downscale/upscale shader
-    shader = FXGlow._shader;
-    if (!shader) {
-        shader = FXGlow._shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            FXGlow.scale_pixel_shader,
-        );
-    }
-
-    var i = 1;
-    // downscale
-    for (; i < iterations; i++) {
-        width = width >> 1;
-        if ((height | 0) > 1) {
-            height = height >> 1;
-        }
-        if (width < 2) {
-            break;
-        }
-        currentDestination = textures[i] = GL.Texture.getTemporary(
-            width,
-            height,
-            texture_info,
-        );
-        texel_size[0] = 1 / currentSource.width;
-        texel_size[1] = 1 / currentSource.height;
-        currentSource.blit(currentDestination, shader.uniforms(uniforms));
-        currentSource = currentDestination;
-    }
-
-    // average
-    if (average_texture) {
-        texel_size[0] = 1 / currentSource.width;
-        texel_size[1] = 1 / currentSource.height;
-        uniforms.u_intensity = intensity;
-        uniforms.u_delta = 1;
-        currentSource.blit(average_texture, shader.uniforms(uniforms));
-    }
-
-    // upscale and blend
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE);
-    uniforms.u_intensity = this.persistence;
-    uniforms.u_delta = 0.5;
-
-    // i-=2 => -1 to point to last element in array, -1 to go to texture above
-    for (i -= 2; i >= 0; i--) {
-        currentDestination = textures[i];
-        textures[i] = null;
-        texel_size[0] = 1 / currentSource.width;
-        texel_size[1] = 1 / currentSource.height;
-        currentSource.blit(currentDestination, shader.uniforms(uniforms));
-        GL.Texture.releaseTemporary(currentSource);
-        currentSource = currentDestination;
-    }
-    gl.disable(gl.BLEND);
-
-    // glow
-    if (glow_texture) {
-        currentSource.blit(glow_texture);
-    }
-
-    // final composition
-    if (output_texture) {
-        var final_texture = output_texture;
-        var dirt_texture = this.dirt_texture;
-        var dirt_factor = this.dirt_factor;
-        uniforms.u_intensity = intensity;
-
-        shader = dirt_texture
-            ? FXGlow._dirt_final_shader
-            : FXGlow._final_shader;
-        if (!shader) {
-            if (dirt_texture) {
-                shader = FXGlow._dirt_final_shader = new GL.Shader(
-                    GL.Shader.SCREEN_VERTEX_SHADER,
-                    FXGlow.final_pixel_shader,
-                    { USE_DIRT: "" },
-                );
-            } else {
-                shader = FXGlow._final_shader = new GL.Shader(
-                    GL.Shader.SCREEN_VERTEX_SHADER,
-                    FXGlow.final_pixel_shader,
-                );
-            }
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
         }
 
-        final_texture.drawTo(function () {
-            tex.bind(0);
-            currentSource.bind(1);
-            if (dirt_texture) {
-                shader.setUniform("u_dirt_factor", dirt_factor);
-                shader.setUniform("u_dirt_texture", dirt_texture.bind(2));
-            }
-            shader.toViewport(uniforms);
-        });
-    }
+        var precision = gl.UNSIGNED_BYTE;
+        if (this.properties.high_precision) {
+            precision = gl.half_float_ext ? gl.HALF_FLOAT_OES : gl.FLOAT;
+        }
 
-    GL.Texture.releaseTemporary(currentSource);
-};
-
-FXGlow.cut_pixel_shader =
-    "precision highp float;\n\
-varying vec2 v_coord;\n\
-uniform sampler2D u_texture;\n\
-uniform float u_threshold;\n\
-void main() {\n\
-    gl_FragColor = max( texture2D( u_texture, v_coord ) - vec4( u_threshold ), vec4(0.0) );\n\
-}";
-
-FXGlow.scale_pixel_shader =
-    "precision highp float;\n\
-varying vec2 v_coord;\n\
-uniform sampler2D u_texture;\n\
-uniform vec2 u_texel_size;\n\
-uniform float u_delta;\n\
-uniform float u_intensity;\n\
-\n\
-vec4 sampleBox(vec2 uv) {\n\
-    vec4 o = u_texel_size.xyxy * vec2(-u_delta, u_delta).xxyy;\n\
-    vec4 s = texture2D( u_texture, uv + o.xy ) + texture2D( u_texture, uv + o.zy) + texture2D( u_texture, uv + o.xw) + texture2D( u_texture, uv + o.zw);\n\
-    return s * 0.25;\n\
-}\n\
-void main() {\n\
-    gl_FragColor = u_intensity * sampleBox( v_coord );\n\
-}";
-
-FXGlow.final_pixel_shader =
-    "precision highp float;\n\
-varying vec2 v_coord;\n\
-uniform sampler2D u_texture;\n\
-uniform sampler2D u_glow_texture;\n\
-#ifdef USE_DIRT\n\
-    uniform sampler2D u_dirt_texture;\n\
-#endif\n\
-uniform vec2 u_texel_size;\n\
-uniform float u_delta;\n\
-uniform float u_intensity;\n\
-uniform float u_dirt_factor;\n\
-\n\
-vec4 sampleBox(vec2 uv) {\n\
-    vec4 o = u_texel_size.xyxy * vec2(-u_delta, u_delta).xxyy;\n\
-    vec4 s = texture2D( u_glow_texture, uv + o.xy ) + texture2D( u_glow_texture, uv + o.zy) + texture2D( u_glow_texture, uv + o.xw) + texture2D( u_glow_texture, uv + o.zw);\n\
-    return s * 0.25;\n\
-}\n\
-void main() {\n\
-    vec4 glow = sampleBox( v_coord );\n\
-    #ifdef USE_DIRT\n\
-        glow = mix( glow, glow * texture2D( u_dirt_texture, v_coord ), u_dirt_factor );\n\
-    #endif\n\
-    gl_FragColor = texture2D( u_texture, v_coord ) + u_intensity * glow;\n\
-}";
-
-// Texture Glow *****************************************
-function LGraphTextureGlow() {
-    this.addInput("in", "Texture");
-    this.addInput("dirt", "Texture");
-    this.addOutput("out", "Texture");
-    this.addOutput("glow", "Texture");
-    this.properties = {
-        enabled: true,
-        intensity: 1,
-        persistence: 0.99,
-        iterations: 16,
-        threshold: 0,
-        scale: 1,
-        dirt_factor: 0.5,
-        precision: LGraphTexture.DEFAULT,
-    };
-
-    this.fx = new FXGlow();
-}
-
-LGraphTextureGlow.title = "Glow";
-LGraphTextureGlow.desc = "Filters a texture giving it a glow effect";
-
-LGraphTextureGlow.widgets_info = {
-    iterations: {
-        type: "number",
-        min: 0,
-        max: 16,
-        step: 1,
-        precision: 0,
-    },
-    threshold: {
-        type: "number",
-        min: 0,
-        max: 10,
-        step: 0.01,
-        precision: 2,
-    },
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
-
-LGraphTextureGlow.prototype.onGetInputs = function () {
-    return [
-        ["enabled", "boolean"],
-        ["threshold", "number"],
-        ["intensity", "number"],
-        ["persistence", "number"],
-        ["iterations", "number"],
-        ["dirt_factor", "number"],
-    ];
-};
-
-LGraphTextureGlow.prototype.onGetOutputs = function () {
-    return [["average", "Texture"]];
-};
-
-LGraphTextureGlow.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
-    }
-
-    if (!this.isAnyOutputConnected()) {
-        return;
-    } // saves work
-
-    if (
-        this.properties.precision === LGraphTexture.PASS_THROUGH ||
-        this.getInputOrProperty("enabled") === false
-    ) {
-        this.setOutputData(0, tex);
-        return;
-    }
-
-    var fx = this.fx;
-    fx.threshold = this.getInputOrProperty("threshold");
-    fx.iterations = this.getInputOrProperty("iterations");
-    fx.intensity = this.getInputOrProperty("intensity");
-    fx.persistence = this.getInputOrProperty("persistence");
-    fx.dirt_texture = this.getInputData(1);
-    fx.dirt_factor = this.getInputOrProperty("dirt_factor");
-    fx.scale = this.properties.scale;
-
-    var type = LGraphTexture.getTextureType(this.properties.precision, tex);
-
-    var average_texture = null;
-    if (this.isOutputConnected(2)) {
-        average_texture = this._average_texture;
         if (
-            !average_texture ||
-            average_texture.type != tex.type ||
-            average_texture.format != tex.format
+            !this._temp_texture ||
+            this._temp_texture.type != precision ||
+            this._temp_texture.width != tex.width ||
+            this._temp_texture.height != tex.height
         ) {
-            average_texture = this._average_texture = new GL.Texture(1, 1, {
-                type: tex.type,
-                format: tex.format,
+            this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: precision,
+                format: gl.RGBA,
                 filter: gl.LINEAR,
             });
         }
-    }
 
-    var glow_texture = null;
-    if (this.isOutputConnected(1)) {
-        glow_texture = this._glow_texture;
-        if (
-            !glow_texture ||
-            glow_texture.width != tex.width ||
-            glow_texture.height != tex.height ||
-            glow_texture.type != type ||
-            glow_texture.format != tex.format
-        ) {
-            glow_texture = this._glow_texture = new GL.Texture(
-                tex.width,
-                tex.height,
-                { type: type, format: tex.format, filter: gl.LINEAR },
+        var uniforms = this._uniforms;
+
+        // iterations
+        var distance = this.properties.distance;
+        if (this.isInputConnected(1)) {
+            distance = this.getInputData(1);
+            this.properties.distance = distance;
+        }
+
+        var range = this.properties.range;
+        if (this.isInputConnected(2)) {
+            range = this.getInputData(2);
+            this.properties.range = range;
+        }
+
+        uniforms.u_distance = distance;
+        uniforms.u_range = range;
+
+        gl.disable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+        var mesh = Mesh.getScreenQuad();
+        if (!LGraphTextureDepthRange._shader) {
+            LGraphTextureDepthRange._shader = new GL.Shader(
+                Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureDepthRange.pixel_shader,
+            );
+            LGraphTextureDepthRange._shader_onlydepth = new GL.Shader(
+                Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureDepthRange.pixel_shader,
+                { ONLY_DEPTH: "" },
             );
         }
+        var shader = this.properties.only_depth
+            ? LGraphTextureDepthRange._shader_onlydepth
+            : LGraphTextureDepthRange._shader;
+
+        // NEAR AND FAR PLANES
+        var planes = null;
+        if (tex.near_far_planes) {
+            planes = tex.near_far_planes;
+        } else if (window.LS && LS.Renderer._main_camera) {
+            planes = LS.Renderer._main_camera._uniforms.u_camera_planes;
+        } else {
+            planes = [0.1, 1000];
+        } // hardcoded
+        uniforms.u_camera_planes = planes;
+
+        this._temp_texture.drawTo(function () {
+            tex.bind(0);
+            shader.uniforms(uniforms).draw(mesh);
+        });
+
+        this._temp_texture.near_far_planes = planes;
+        this.setOutputData(0, this._temp_texture);
     }
 
-    var final_texture = null;
-    if (this.isOutputConnected(0)) {
-        final_texture = this._final_texture;
+    static pixel_shader =
+        "precision highp float;\n\
+        precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform vec2 u_camera_planes;\n\
+        uniform float u_distance;\n\
+        uniform float u_range;\n\
+        \n\
+        float LinearDepth()\n\
+        {\n\
+            float zNear = u_camera_planes.x;\n\
+            float zFar = u_camera_planes.y;\n\
+            float depth = texture2D(u_texture, v_coord).x;\n\
+            depth = depth * 2.0 - 1.0;\n\
+            return zNear * (depth + 1.0) / (zFar + zNear - depth * (zFar - zNear));\n\
+        }\n\
+        \n\
+        void main() {\n\
+            float depth = LinearDepth();\n\
+            #ifdef ONLY_DEPTH\n\
+                gl_FragColor = vec4(depth);\n\
+            #else\n\
+                float diff = abs(depth * u_camera_planes.y - u_distance);\n\
+                float dof = 1.0;\n\
+                if(diff <= u_range)\n\
+                    dof = diff / u_range;\n\
+                gl_FragColor = vec4(dof);\n\
+            #endif\n\
+        }\n\
+    ";
+}
+LiteGraph.registerNodeType("texture/depth_range", LGraphTextureDepthRange);
+
+
+class LGraphTextureLinearDepth {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addOutput("Texture", "Texture");
+        this.properties = {
+            precision: LGraphTexture.DEFAULT,
+            invert: false,
+        };
+        this._uniforms = {
+            u_texture: 0,
+            u_camera_planes: null, // filled later
+            u_ires: vec2.create(),
+        };
+    }
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
+    };
+
+    static title = "Linear Depth";
+    static desc = "Creates a color texture with linear depth";
+
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var tex = this.getInputData(0);
         if (
-            !final_texture ||
-            final_texture.width != tex.width ||
-            final_texture.height != tex.height ||
-            final_texture.type != type ||
-            final_texture.format != tex.format
+            !tex ||
+            (tex.format != gl.DEPTH_COMPONENT && tex.format != gl.DEPTH_STENCIL)
         ) {
-            final_texture = this._final_texture = new GL.Texture(
-                tex.width,
-                tex.height,
-                { type: type, format: tex.format, filter: gl.LINEAR },
+            return;
+        }
+
+        var precision =
+            this.properties.precision == LGraphTexture.HIGH
+                ? gl.HIGH_PRECISION_FORMAT
+                : gl.UNSIGNED_BYTE;
+
+        if (
+            !this._temp_texture ||
+            this._temp_texture.type != precision ||
+            this._temp_texture.width != tex.width ||
+            this._temp_texture.height != tex.height
+        ) {
+            this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: precision,
+                format: gl.RGB,
+                filter: gl.LINEAR,
+            });
+        }
+
+        var uniforms = this._uniforms;
+        uniforms.u_invert = this.properties.invert ? 1 : 0;
+
+        gl.disable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+        var mesh = Mesh.getScreenQuad();
+        if (!LGraphTextureLinearDepth._shader)
+            LGraphTextureLinearDepth._shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureLinearDepth.pixel_shader,
+            );
+        var shader = LGraphTextureLinearDepth._shader;
+
+        // NEAR AND FAR PLANES
+        var planes = null;
+        if (tex.near_far_planes) {
+            planes = tex.near_far_planes;
+        } else if (window.LS && LS.Renderer._main_camera) {
+            planes = LS.Renderer._main_camera._uniforms.u_camera_planes;
+        } else {
+            planes = [0.1, 1000];
+        } // hardcoded
+        uniforms.u_camera_planes = planes;
+        // uniforms.u_ires.set([1/tex.width, 1/tex.height]);
+        uniforms.u_ires.set([0, 0]);
+
+        this._temp_texture.drawTo(function () {
+            tex.bind(0);
+            shader.uniforms(uniforms).draw(mesh);
+        });
+
+        this._temp_texture.near_far_planes = planes;
+        this.setOutputData(0, this._temp_texture);
+    }
+
+    static pixel_shader =
+        "precision highp float;\n\
+        precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform vec2 u_camera_planes;\n\
+        uniform int u_invert;\n\
+        uniform vec2 u_ires;\n\
+        \n\
+        void main() {\n\
+            float zNear = u_camera_planes.x;\n\
+            float zFar = u_camera_planes.y;\n\
+            float depth = texture2D(u_texture, v_coord + u_ires*0.5).x * 2.0 - 1.0;\n\
+            float f = zNear * (depth + 1.0) / (zFar + zNear - depth * (zFar - zNear));\n\
+            if( u_invert == 1 )\n\
+                f = 1.0 - f;\n\
+            gl_FragColor = vec4(vec3(f),1.0);\n\
+        }\n\
+        ";
+}
+LiteGraph.registerNodeType("texture/linear_depth", LGraphTextureLinearDepth);
+
+
+class LGraphTextureBlur {
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addInput("Iterations", "number");
+        this.addInput("Intensity", "number");
+        this.addOutput("Blurred", "Texture");
+        this.properties = {
+            intensity: 1,
+            iterations: 1,
+            preserve_aspect: false,
+            scale: [1, 1],
+            precision: LGraphTexture.DEFAULT,
+        };
+    }
+
+    static title = "Blur";
+    static desc = "Blur a texture";
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
+    };
+
+    static max_iterations = 20;
+
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var temp = this._final_texture;
+
+        if (
+            !temp ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.type != tex.type
+        ) {
+            // we need two textures to do the blurring
+            // this._temp_texture = new GL.Texture( tex.width, tex.height, { type: tex.type, format: gl.RGBA, filter: gl.LINEAR });
+            temp = this._final_texture = new GL.Texture(tex.width, tex.height, {
+                type: tex.type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
+
+        // iterations
+        var iterations = this.properties.iterations;
+        if (this.isInputConnected(1)) {
+            iterations = this.getInputData(1);
+            this.properties.iterations = iterations;
+        }
+        iterations = Math.min(
+            Math.floor(iterations),
+            LGraphTextureBlur.max_iterations,
+        );
+        if (iterations == 0) {
+            // skip blurring
+            this.setOutputData(0, tex);
+            return;
+        }
+
+        var intensity = this.properties.intensity;
+        if (this.isInputConnected(2)) {
+            intensity = this.getInputData(2);
+            this.properties.intensity = intensity;
+        }
+
+        // blur sometimes needs an aspect correction
+        var aspect = LiteGraph.camera_aspect;
+        if (!aspect && window.gl !== undefined) {
+            aspect = gl.canvas.height / gl.canvas.width;
+        }
+        if (!aspect) {
+            aspect = 1;
+        }
+        aspect = this.properties.preserve_aspect ? aspect : 1;
+
+        var scale = this.properties.scale || [1, 1];
+        tex.applyBlur(aspect * scale[0], scale[1], intensity, temp);
+        for (var i = 1; i < iterations; ++i) {
+            temp.applyBlur(
+                aspect * scale[0] * (i + 1),
+                scale[1] * (i + 1),
+                intensity,
             );
         }
+
+        this.setOutputData(0, temp);
     }
 
-    // apply FX
-    fx.applyFX(tex, final_texture, glow_texture, average_texture);
+    /*
+    LGraphTextureBlur.pixel_shader = "precision highp float;\n\
+        precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform vec2 u_offset;\n\
+        uniform float u_intensity;\n\
+        void main() {\n\
+            vec4 sum = vec4(0.0);\n\
+            vec4 center = texture2D(u_texture, v_coord);\n\
+            sum += texture2D(u_texture, v_coord + u_offset * -4.0) * 0.05/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * -3.0) * 0.09/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * -2.0) * 0.12/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * -1.0) * 0.15/0.98;\n\
+            sum += center * 0.16/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * 4.0) * 0.05/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * 3.0) * 0.09/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * 2.0) * 0.12/0.98;\n\
+            sum += texture2D(u_texture, v_coord + u_offset * 1.0) * 0.15/0.98;\n\
+            gl_FragColor = u_intensity * sum;\n\
+        }\n\
+        ";
+    */
+}
+LiteGraph.registerNodeType("texture/blur", LGraphTextureBlur);
 
-    if (this.isOutputConnected(0)) this.setOutputData(0, final_texture);
 
-    if (this.isOutputConnected(1)) this.setOutputData(1, average_texture);
+// Independent glow FX
+// based on https://catlikecoding.com/unity/tutorials/advanced-rendering/bloom/
+class FXGlow {
+    constructor() {
+        this.intensity = 0.5;
+        this.persistence = 0.6;
+        this.iterations = 8;
+        this.threshold = 0.8;
+        this.scale = 1;
 
-    if (this.isOutputConnected(2)) this.setOutputData(2, glow_texture);
-};
+        this.dirt_texture = null;
+        this.dirt_factor = 0.5;
 
+        this._textures = [];
+        this._uniforms = {
+            u_intensity: 1,
+            u_texture: 0,
+            u_glow_texture: 1,
+            u_threshold: 0,
+            u_texel_size: vec2.create(),
+        };
+    }
+
+    applyFX(tex, output_texture, glow_texture, average_texture) {
+        var width = tex.width;
+        var height = tex.height;
+
+        var texture_info = {
+            format: tex.format,
+            type: tex.type,
+            minFilter: GL.LINEAR,
+            magFilter: GL.LINEAR,
+            wrap: gl.CLAMP_TO_EDGE,
+        };
+
+        var uniforms = this._uniforms;
+        var textures = this._textures;
+
+        // cut
+        var shader = FXGlow._cut_shader;
+        if (!shader) {
+            shader = FXGlow._cut_shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                FXGlow.cut_pixel_shader,
+            );
+        }
+
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
+
+        uniforms.u_threshold = this.threshold;
+        var currentDestination = (textures[0] = GL.Texture.getTemporary(
+            width,
+            height,
+            texture_info,
+        ));
+        tex.blit(currentDestination, shader.uniforms(uniforms));
+        var currentSource = currentDestination;
+
+        var iterations = this.iterations;
+        iterations = clamp(iterations, 1, 16) | 0;
+        var texel_size = uniforms.u_texel_size;
+        var intensity = this.intensity;
+
+        uniforms.u_intensity = 1;
+        uniforms.u_delta = this.scale; // 1
+
+        // downscale/upscale shader
+        shader = FXGlow._shader;
+        if (!shader) {
+            shader = FXGlow._shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                FXGlow.scale_pixel_shader,
+            );
+        }
+
+        var i = 1;
+        // downscale
+        for (; i < iterations; i++) {
+            width = width >> 1;
+            if ((height | 0) > 1) {
+                height = height >> 1;
+            }
+            if (width < 2) {
+                break;
+            }
+            currentDestination = textures[i] = GL.Texture.getTemporary(
+                width,
+                height,
+                texture_info,
+            );
+            texel_size[0] = 1 / currentSource.width;
+            texel_size[1] = 1 / currentSource.height;
+            currentSource.blit(currentDestination, shader.uniforms(uniforms));
+            currentSource = currentDestination;
+        }
+
+        // average
+        if (average_texture) {
+            texel_size[0] = 1 / currentSource.width;
+            texel_size[1] = 1 / currentSource.height;
+            uniforms.u_intensity = intensity;
+            uniforms.u_delta = 1;
+            currentSource.blit(average_texture, shader.uniforms(uniforms));
+        }
+
+        // upscale and blend
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        uniforms.u_intensity = this.persistence;
+        uniforms.u_delta = 0.5;
+
+        // i-=2 => -1 to point to last element in array, -1 to go to texture above
+        for (i -= 2; i >= 0; i--) {
+            currentDestination = textures[i];
+            textures[i] = null;
+            texel_size[0] = 1 / currentSource.width;
+            texel_size[1] = 1 / currentSource.height;
+            currentSource.blit(currentDestination, shader.uniforms(uniforms));
+            GL.Texture.releaseTemporary(currentSource);
+            currentSource = currentDestination;
+        }
+        gl.disable(gl.BLEND);
+
+        // glow
+        if (glow_texture) {
+            currentSource.blit(glow_texture);
+        }
+
+        // final composition
+        if (output_texture) {
+            var final_texture = output_texture;
+            var dirt_texture = this.dirt_texture;
+            var dirt_factor = this.dirt_factor;
+            uniforms.u_intensity = intensity;
+
+            shader = dirt_texture
+                ? FXGlow._dirt_final_shader
+                : FXGlow._final_shader;
+            if (!shader) {
+                if (dirt_texture) {
+                    shader = FXGlow._dirt_final_shader = new GL.Shader(
+                        GL.Shader.SCREEN_VERTEX_SHADER,
+                        FXGlow.final_pixel_shader,
+                        { USE_DIRT: "" },
+                    );
+                } else {
+                    shader = FXGlow._final_shader = new GL.Shader(
+                        GL.Shader.SCREEN_VERTEX_SHADER,
+                        FXGlow.final_pixel_shader,
+                    );
+                }
+            }
+
+            final_texture.drawTo(function () {
+                tex.bind(0);
+                currentSource.bind(1);
+                if (dirt_texture) {
+                    shader.setUniform("u_dirt_factor", dirt_factor);
+                    shader.setUniform("u_dirt_texture", dirt_texture.bind(2));
+                }
+                shader.toViewport(uniforms);
+            });
+        }
+
+        GL.Texture.releaseTemporary(currentSource);
+    }
+
+    static cut_pixel_shader =
+            "precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform float u_threshold;\n\
+        void main() {\n\
+            gl_FragColor = max( texture2D( u_texture, v_coord ) - vec4( u_threshold ), vec4(0.0) );\n\
+        }";
+
+    static scale_pixel_shader =
+            "precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform vec2 u_texel_size;\n\
+        uniform float u_delta;\n\
+        uniform float u_intensity;\n\
+        \n\
+        vec4 sampleBox(vec2 uv) {\n\
+            vec4 o = u_texel_size.xyxy * vec2(-u_delta, u_delta).xxyy;\n\
+            vec4 s = texture2D( u_texture, uv + o.xy ) + texture2D( u_texture, uv + o.zy) + texture2D( u_texture, uv + o.xw) + texture2D( u_texture, uv + o.zw);\n\
+            return s * 0.25;\n\
+        }\n\
+        void main() {\n\
+            gl_FragColor = u_intensity * sampleBox( v_coord );\n\
+        }";
+
+    static final_pixel_shader =
+            "precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform sampler2D u_glow_texture;\n\
+        #ifdef USE_DIRT\n\
+            uniform sampler2D u_dirt_texture;\n\
+        #endif\n\
+        uniform vec2 u_texel_size;\n\
+        uniform float u_delta;\n\
+        uniform float u_intensity;\n\
+        uniform float u_dirt_factor;\n\
+        \n\
+        vec4 sampleBox(vec2 uv) {\n\
+            vec4 o = u_texel_size.xyxy * vec2(-u_delta, u_delta).xxyy;\n\
+            vec4 s = texture2D( u_glow_texture, uv + o.xy ) + texture2D( u_glow_texture, uv + o.zy) + texture2D( u_glow_texture, uv + o.xw) + texture2D( u_glow_texture, uv + o.zw);\n\
+            return s * 0.25;\n\
+        }\n\
+        void main() {\n\
+            vec4 glow = sampleBox( v_coord );\n\
+            #ifdef USE_DIRT\n\
+                glow = mix( glow, glow * texture2D( u_dirt_texture, v_coord ), u_dirt_factor );\n\
+            #endif\n\
+            gl_FragColor = texture2D( u_texture, v_coord ) + u_intensity * glow;\n\
+        }";
+}
+
+
+// Texture Glow *****************************************
+class LGraphTextureGlow {
+    constructor() {
+        this.addInput("in", "Texture");
+        this.addInput("dirt", "Texture");
+        this.addOutput("out", "Texture");
+        this.addOutput("glow", "Texture");
+        this.properties = {
+            enabled: true,
+            intensity: 1,
+            persistence: 0.99,
+            iterations: 16,
+            threshold: 0,
+            scale: 1,
+            dirt_factor: 0.5,
+            precision: LGraphTexture.DEFAULT,
+        };
+
+        this.fx = new FXGlow();
+    }
+
+    static title = "Glow";
+    static desc = "Filters a texture giving it a glow effect";
+
+    static widgets_info = {
+        iterations: {
+            type: "number",
+            min: 0,
+            max: 16,
+            step: 1,
+            precision: 0,
+        },
+        threshold: {
+            type: "number",
+            min: 0,
+            max: 10,
+            step: 0.01,
+            precision: 2,
+        },
+        precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    };
+
+    onGetInputs() {
+        return [
+            ["enabled", "boolean"],
+            ["threshold", "number"],
+            ["intensity", "number"],
+            ["persistence", "number"],
+            ["iterations", "number"],
+            ["dirt_factor", "number"],
+        ];
+    }
+
+    onGetOutputs() {
+        return [["average", "Texture"]];
+    }
+
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        if (!this.isAnyOutputConnected()) {
+            return;
+        } // saves work
+
+        if (
+            this.properties.precision === LGraphTexture.PASS_THROUGH ||
+            this.getInputOrProperty("enabled") === false
+        ) {
+            this.setOutputData(0, tex);
+            return;
+        }
+
+        var fx = this.fx;
+        fx.threshold = this.getInputOrProperty("threshold");
+        fx.iterations = this.getInputOrProperty("iterations");
+        fx.intensity = this.getInputOrProperty("intensity");
+        fx.persistence = this.getInputOrProperty("persistence");
+        fx.dirt_texture = this.getInputData(1);
+        fx.dirt_factor = this.getInputOrProperty("dirt_factor");
+        fx.scale = this.properties.scale;
+
+        var type = LGraphTexture.getTextureType(this.properties.precision, tex);
+
+        var average_texture = null;
+        if (this.isOutputConnected(2)) {
+            average_texture = this._average_texture;
+            if (
+                !average_texture ||
+                average_texture.type != tex.type ||
+                average_texture.format != tex.format
+            ) {
+                average_texture = this._average_texture = new GL.Texture(1, 1, {
+                    type: tex.type,
+                    format: tex.format,
+                    filter: gl.LINEAR,
+                });
+            }
+        }
+
+        var glow_texture = null;
+        if (this.isOutputConnected(1)) {
+            glow_texture = this._glow_texture;
+            if (
+                !glow_texture ||
+                glow_texture.width != tex.width ||
+                glow_texture.height != tex.height ||
+                glow_texture.type != type ||
+                glow_texture.format != tex.format
+            ) {
+                glow_texture = this._glow_texture = new GL.Texture(
+                    tex.width,
+                    tex.height,
+                    { type: type, format: tex.format, filter: gl.LINEAR },
+                );
+            }
+        }
+
+        var final_texture = null;
+        if (this.isOutputConnected(0)) {
+            final_texture = this._final_texture;
+            if (
+                !final_texture ||
+                final_texture.width != tex.width ||
+                final_texture.height != tex.height ||
+                final_texture.type != type ||
+                final_texture.format != tex.format
+            ) {
+                final_texture = this._final_texture = new GL.Texture(
+                    tex.width,
+                    tex.height,
+                    { type: type, format: tex.format, filter: gl.LINEAR },
+                );
+            }
+        }
+
+        // apply FX
+        fx.applyFX(tex, final_texture, glow_texture, average_texture);
+
+        if (this.isOutputConnected(0)) this.setOutputData(0, final_texture);
+
+        if (this.isOutputConnected(1)) this.setOutputData(1, average_texture);
+
+        if (this.isOutputConnected(2)) this.setOutputData(2, glow_texture);
+    }
+}
 LiteGraph.registerNodeType("texture/glow", LGraphTextureGlow);
 
 // Texture Filter *****************************************

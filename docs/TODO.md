@@ -1,7 +1,7 @@
 
 # 1. Unit Testing and Debugging
 
-Done up to L1995, gltextures.js
+Done up to L3967, gltextures.js
 Need to fix up litegl.js
 24 problems in lint
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
@@ -14,10 +14,10 @@ Set up JSDocs comments for LGraphNode, LLink, LGraphCanvas even if their program
 
 Removed ones for context menu.  Others likely on lgraphcanvas, editor, code, etc.
 
-# Examine Issues in old repo
+# Examine Issues in old repo, changes from Atlasan
 
 https://github.com/jagenjo/litegraph.js/issues
-* There may be other forks that I should also learn from
+https://github.com/atlasan/litegraph.js
 
 # Extend classes with a *Canvas class
 
