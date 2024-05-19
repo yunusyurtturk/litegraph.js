@@ -1,8 +1,8 @@
 
 # 1. Unit Testing and Debugging
 
+GL is getting close?
 Done up to L3967, gltextures.js
-Need to fix up litegl.js
 24 problems in lint
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 

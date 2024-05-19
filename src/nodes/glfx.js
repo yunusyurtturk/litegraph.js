@@ -1,6 +1,7 @@
 import { LiteGraph } from "../litegraph.js";
 import { LGraphTexture } from "./gltextures.js";
 import { GL } from "../../editor/js/libs/litegl.js";
+import { gl } from "../../editor/js/code.js";
 
 // Works with Litegl.js to create WebGL nodes
 
