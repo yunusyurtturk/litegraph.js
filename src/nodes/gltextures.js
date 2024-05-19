@@ -3762,7 +3762,7 @@ class FXGlow {
     }
 
     static cut_pixel_shader =
-            "precision highp float;\n\
+        "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform float u_threshold;\n\
@@ -3771,7 +3771,7 @@ class FXGlow {
         }";
 
     static scale_pixel_shader =
-            "precision highp float;\n\
+        "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform vec2 u_texel_size;\n\
@@ -3788,7 +3788,7 @@ class FXGlow {
         }";
 
     static final_pixel_shader =
-            "precision highp float;\n\
+        "precision highp float;\n\
         varying vec2 v_coord;\n\
         uniform sampler2D u_texture;\n\
         uniform sampler2D u_glow_texture;\n\
