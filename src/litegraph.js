@@ -239,11 +239,9 @@ export var LiteGraph = new class {
         if (base_class.constructor.name) {
             this.Nodes[classname] = base_class;
         }
-        if (LiteGraph.onNodeTypeRegistered) {
-            LiteGraph.onNodeTypeRegistered(type, base_class);
-        }
-        if (prev && LiteGraph.onNodeTypeReplaced) {
-            LiteGraph.onNodeTypeReplaced(type, base_class, prev);
+        LiteGraph.onNodeTypeRegistered?.(type, base_class);
+        if (prev) {
+            LiteGraph.onNodeTypeReplaced?.(type, base_class, prev);
         }
 
         // warnings

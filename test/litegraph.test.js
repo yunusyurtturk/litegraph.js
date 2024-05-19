@@ -2,11 +2,35 @@ import { jest } from "@jest/globals";
 import { LiteGraph } from "../src/litegraph.js";
 import { LGraphNode } from "../src/lgraphnode.js";
 
+// just for the Jest version number
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 describe("register node types", () => {
     let Sum;
 
+    beforeAll(async () => {
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // Resolve the path to the Jest package.json file
+        const jestPackagePath = path.resolve(__dirname, '../node_modules/@jest/core/package.json');
+        const jestPackage = await import(`file://${jestPackagePath}`);
+        const jestVersion = jestPackage.default.version;
+        console.info(`Jest version:${jestVersion}`);
+    });
+
     beforeEach(() => {
+        jest.clearAllMocks();
         jest.resetModules();
+
+        // attempt at resetting LiteGraph each time, because Jest can't just do that
+        // and neither can I.
+        LiteGraph.registered_node_types = {};
+        LiteGraph.registered_slot_in_types = {};
+        LiteGraph.registered_slot_in_types = {};
+
         Sum = function Sum() {
             this.addInput("a", "number");
             this.addInput("b", "number");
@@ -15,10 +39,6 @@ describe("register node types", () => {
         Sum.prototype.onExecute = function (a, b) {
             this.setOutputData(0, a + b);
         };
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     test("normal case", () => {
@@ -76,6 +96,7 @@ describe("register node types", () => {
         node_type.prototype.shape = "default";
         expect(new node_type().shape).toBe(undefined);
         node_type.prototype.shape = "box";
+        console.log(LiteGraph.BOX_SHAPE);
         expect(new node_type().shape).toBe(LiteGraph.BOX_SHAPE);
         node_type.prototype.shape = "round";
         expect(new node_type().shape).toBe(LiteGraph.ROUND_SHAPE);
