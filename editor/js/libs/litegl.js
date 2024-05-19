@@ -2377,11 +2377,11 @@ class Mesh {
 		this.vertexBuffers = {}; //erase all
 
 		//new buffers
-		this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, linearizeArray( new_vertices ) );	
+		this.createVertexBuffer( 'vertices', GL.Mesh.common_buffers["vertices"].attribute, 3, GL.linearizeArray( new_vertices ) );	
 		if(old_normals_data)
-			this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, linearizeArray( new_normals ) );	
+			this.createVertexBuffer( 'normals', GL.Mesh.common_buffers["normals"].attribute, 3, GL.linearizeArray( new_normals ) );	
 		if(old_coords_data)
-			this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, linearizeArray( new_coords ) );	
+			this.createVertexBuffer( 'coords', GL.Mesh.common_buffers["coords"].attribute, 2, GL.linearizeArray( new_coords ) );	
 
 		this.createIndexBuffer( "triangles", indices );
 	}
@@ -3062,324 +3062,307 @@ class Mesh {
 		new_mesh.updateBoundingBox();
 		return new_mesh;
 	}
-}
 
-/**
-* returns a low poly version of the mesh that takes much less memory (but breaks tiling of uvs and smoothing groups)
-* @method simplify
-* @return {Mesh} simplified mesh
-*/
-Mesh.prototype.simplify = function()
-{
-	//compute bounding box
-	var bb = this.getBoundingBox();
-	var min = BBox.getMin( bb );
-	var halfsize = BBox.getHalfsize( bb );
-	var range = vec3.scale( vec3.create(), halfsize, 2 );
-
-	var newmesh = new GL.Mesh();
-	var temp = vec3.create();
-
-	for(var i in this.vertexBuffers)
-	{
-		//take every vertex and normalize it to the bounding box
-		var buffer = this.vertexBuffers[i];
-		var data = buffer.data;
-
-		var new_data = new Float32Array( data.length );
-
-		if(i == "vertices")
-		{
-			for(var j = 0, l = data.length; j < l; j+=3 )
-			{
-				var v = data.subarray(j,j+3);
-				vec3.sub( temp, v, min );
-				vec3.div( temp, temp, range );
-				temp[0] = Math.round(temp[0] * 256) / 256;
-				temp[1] = Math.round(temp[1] * 256) / 256;
-				temp[2] = Math.round(temp[2] * 256) / 256;
-				vec3.mul( temp, temp, range );
-				vec3.add( temp, temp, min );
-				new_data.set( temp, j );
-			}
-		}
-		else
-		{
-		}
-
-		newmesh.addBuffer();
-	}
-
-	//search for repeated vertices
-		//compute the average normal and coord
-	//reindex the triangles
-	//return simplified mesh	
-}
-
-/**
-* Static method for the class Mesh to create a mesh from a list of common streams
-* @method Mesh.load
-* @param {Object} buffers object will all the buffers
-* @param {Object} options [optional]
-* @param {Mesh} output_mesh [optional] mesh to store the mesh, otherwise is created
-* @param {WebGLContext} gl [optional] if omitted, the global.gl is used
-*/
-Mesh.load = function( buffers, options = {}, output_mesh, gl ) {
-	if(options.no_gl)
-		gl = null;
-	var mesh = output_mesh || new GL.Mesh(null,null,null,gl);
-	mesh.configure( buffers, options );
-	return mesh;
-}
-
-/**
-* Returns a mesh with all the meshes merged (you can apply transforms individually to every buffer)
-* @method Mesh.mergeMeshes
-* @param {Array} meshes array containing object like { mesh:, matrix:, texture_matrix: }
-* @param {Object} options { only_data: to get the mesh data without uploading it }
-* @return {GL.Mesh|Object} the mesh in GL.Mesh format or Object format (if options.only_data is true)
-*/
-Mesh.mergeMeshes = function( meshes, options = {} )
-{
-
-	var vertex_buffers = {};
-	var index_buffers = {};
-	var offsets = {}; //tells how many positions indices must be offseted
-	var vertex_offsets = [];
-	var current_vertex_offset = 0;
-	var groups = [];
-
-	//vertex buffers
-	//compute size
-	for(var i = 0; i < meshes.length; ++i)
-	{
-		var mesh_info = meshes[i];
-		var mesh = mesh_info.mesh;
-		var offset = current_vertex_offset;
-		vertex_offsets.push( offset );
-		var length = mesh.vertexBuffers["vertices"].data.length / 3;
-		current_vertex_offset += length;
-
-		for(var j in mesh.vertexBuffers)
-		{
-			if(!vertex_buffers[j])
-				vertex_buffers[j] = mesh.vertexBuffers[j].data.length;
-			else
-				vertex_buffers[j] += mesh.vertexBuffers[j].data.length;
-		}
-
-		for(var j in mesh.indexBuffers)
-		{
-			if(!index_buffers[j])
-				index_buffers[j] = mesh.indexBuffers[j].data.length;
-			else
-				index_buffers[j] += mesh.indexBuffers[j].data.length;
-		}
-
-		//groups
-		var group = {
-			name: "mesh_" + i,
-			start: offset,
-			length: length,
-			material: ""
-		};
-
-		groups.push( group );
-	}
-
-	//allocate
-	for(var j in vertex_buffers)
-	{
-		var datatype = options[j];
-		if(datatype === null)
-		{
-			delete vertex_buffers[j];
-			continue;
-		}
-
-		if(!datatype)
-			datatype = Float32Array;
-
-		vertex_buffers[j] = new datatype( vertex_buffers[j] );
-		offsets[j] = 0;
-	}
-
-	for(var j in index_buffers)
-	{
-		index_buffers[j] = new Uint32Array( index_buffers[j] );
-		offsets[j] = 0;
-	}
-
-	//store
-	for(var i = 0; i < meshes.length; ++i)
-	{
-		var mesh_info = meshes[i];
-		var mesh = mesh_info.mesh;
-		var offset = 0;
-		var length = 0;
-
-		for(var j in mesh.vertexBuffers)
-		{
-			if(!vertex_buffers[j])
-				continue;
-
-			if(j == "vertices")
-				length = mesh.vertexBuffers[j].data.length / 3;
-
-			vertex_buffers[j].set( mesh.vertexBuffers[j].data, offsets[j] );
-
-			//apply transform
-			if(mesh_info[ j + "_matrix"] )
-			{
-				var matrix = mesh_info[ j + "_matrix" ];
-				if(matrix.length == 16)
-					apply_transform( vertex_buffers[j], offsets[j], mesh.vertexBuffers[j].data.length, matrix )
-				else if(matrix.length == 9)
-					apply_transform2D( vertex_buffers[j], offsets[j], mesh.vertexBuffers[j].data.length, matrix )
-			}
-
-			offsets[j] += mesh.vertexBuffers[j].data.length;
-		}
-
-		for(var j in mesh.indexBuffers)
-		{
-			index_buffers[j].set( mesh.indexBuffers[j].data, offsets[j] );
-			apply_offset( index_buffers[j], offsets[j], mesh.indexBuffers[j].data.length, vertex_offsets[i] );
-			offsets[j] += mesh.indexBuffers[j].data.length;
-		}
-	}
-
-	//useful functions
-	function apply_transform( array, start, length, matrix )
-	{
-		var l = start + length;
-		for(var i = start; i < l; i+=3)
-		{
-			var v = array.subarray(i,i+3);
-			vec3.transformMat4( v, v, matrix );
-		}
-	}
-
-	function apply_transform2D( array, start, length, matrix )
-	{
-		var l = start + length;
-		for(var i = start; i < l; i+=2)
-		{
-			var v = array.subarray(i,i+2);
-			vec2.transformMat3( v, v, matrix );
-		}
-	}
-
-	function apply_offset( array, start, length, offset )
-	{
-		var l = start + length;
-		for(var i = start; i < l; ++i)
-			array[i] += offset;
-	}
-
-	var extra = { info: { groups: groups } };
-
-	//return
-	if( typeof(gl) != "undefined" || options.only_data )
-		return new GL.Mesh( vertex_buffers,index_buffers, extra );
-	return { 
-		vertexBuffers: vertex_buffers, 
-		indexBuffers: index_buffers, 
-		info: { groups: groups } 
-	};
-}
-
-
-
-//Here we store all basic mesh parsers (OBJ, STL) and encoders
-Mesh.parsers = {};
-Mesh.encoders = {};
-Mesh.binary_file_formats = {}; //extensions that must be downloaded in binary
-Mesh.compressors = {}; //used to compress binary meshes
-Mesh.decompressors = {}; //used to decompress binary meshes
-
-/**
-* Returns am empty mesh and loads a mesh and parses it using the Mesh.parsers, by default only OBJ is supported
-* @method Mesh.fromOBJ
-* @param {Array} meshes array containing all the meshes
-*/
-Mesh.fromURL = function(url, on_complete, gl, options = {})
-{
-	gl = gl || global.gl;
 	
-	var mesh = new GL.Mesh(undefined,undefined,undefined,gl);
-	mesh.ready = false;
+	/**
+	* returns a low poly version of the mesh that takes much less memory (but breaks tiling of uvs and smoothing groups)
+	* @method simplify
+	* @return {Mesh} simplified mesh
+	*/
+	simplify() {
+		//compute bounding box
+		var bb = this.getBoundingBox();
+		var min = BBox.getMin( bb );
+		var halfsize = BBox.getHalfsize( bb );
+		var range = vec3.scale( vec3.create(), halfsize, 2 );
 
-	var pos = url.lastIndexOf(".");
-	var extension = url.substr(pos+1).toLowerCase();
-	options.binary = Mesh.binary_file_formats[ extension ];
+		var newmesh = new GL.Mesh();
+		var temp = vec3.create();
 
-	HttpRequest( url, null, function(data) {
-		mesh.parse( data, extension );
-		delete mesh["ready"];
-		if(on_complete)
-			on_complete.call(mesh,mesh, url);
-	}, function(err){
-		if(on_complete)
-			on_complete(null);
-	}, options );
-	return mesh;
-}
+		for(var i in this.vertexBuffers)
+		{
+			//take every vertex and normalize it to the bounding box
+			var buffer = this.vertexBuffers[i];
+			var data = buffer.data;
 
-/**
-* given some data an information about the format, it search for a parser in Mesh.parsers and tries to extract the mesh information
-* Only obj supported now
-* @method parse
-* @param {*} data could be string or ArrayBuffer
-* @param {String} format parser file format name (p.e. "obj")
-* @return {?} depending on the parser
-*/
-Mesh.prototype.parse = function( data, format )
-{
-	format = format.toLowerCase();
-	var parser = GL.Mesh.parsers[ format ];
-	if(parser)
-		return parser.call(null, data, {mesh: this});
-	throw("GL.Mesh.parse: no parser found for format " + format );
-}
+			var new_data = new Float32Array( data.length );
 
-/**
-* It returns the mesh data encoded in the format specified
-* Only obj supported now
-* @method encode
-* @param {String} format to encode the data to (p.e. "obj")
-* @return {?} String with the info
-*/
-Mesh.prototype.encode = function( format, options )
-{
-	format = format.toLowerCase();
-	var encoder = GL.Mesh.encoders[ format ];
-	if(encoder)
-		return encoder.call(null, this, options );
-	throw("GL.Mesh.encode: no encoder found for format " + format );
-}
+			if(i == "vertices")
+			{
+				for(var j = 0, l = data.length; j < l; j+=3 )
+				{
+					var v = data.subarray(j,j+3);
+					vec3.sub( temp, v, min );
+					vec3.div( temp, temp, range );
+					temp[0] = Math.round(temp[0] * 256) / 256;
+					temp[1] = Math.round(temp[1] * 256) / 256;
+					temp[2] = Math.round(temp[2] * 256) / 256;
+					vec3.mul( temp, temp, range );
+					vec3.add( temp, temp, min );
+					new_data.set( temp, j );
+				}
+			}
+			else
+			{
+			}
 
-/**
-* Returns a shared mesh containing a quad to be used when rendering to the screen
-* Reusing the same quad helps not filling the memory
-* @method getScreenQuad
-* @return {GL.Mesh} the screen quad
-*/
-Mesh.getScreenQuad = function(gl)
-{
-	gl = gl || global.gl;
-	var mesh = gl.meshes[":screen_quad"];
-	if(mesh)
+			newmesh.addBuffer();
+		}
+
+		//search for repeated vertices
+		//compute the average normal and coord
+		//reindex the triangles
+		//return simplified mesh	
+	}
+
+	/**
+	* Static method for the class Mesh to create a mesh from a list of common streams
+	* @method Mesh.load
+	* @param {Object} buffers object will all the buffers
+	* @param {Object} options [optional]
+	* @param {Mesh} output_mesh [optional] mesh to store the mesh, otherwise is created
+	* @param {WebGLContext} gl [optional] if omitted, the global.gl is used
+	*/
+	static load( buffers, options = {}, output_mesh, gl ) {
+		if(options.no_gl)
+			gl = null;
+		var mesh = output_mesh || new GL.Mesh(null,null,null,gl);
+		mesh.configure( buffers, options );
 		return mesh;
+	}
 
-	var vertices = new Float32Array([0,0,0, 1,1,0, 0,1,0,  0,0,0, 1,0,0, 1,1,0 ]);
-	var coords = new Float32Array([0,0, 1,1, 0,1,  0,0, 1,0, 1,1 ]);
-	mesh = new GL.Mesh({ vertices: vertices, coords: coords}, undefined, undefined, gl);
-	return gl.meshes[":screen_quad"] = mesh;
+	/**
+	* Returns a mesh with all the meshes merged (you can apply transforms individually to every buffer)
+	* @method Mesh.mergeMeshes
+	* @param {Array} meshes array containing object like { mesh:, matrix:, texture_matrix: }
+	* @param {Object} options { only_data: to get the mesh data without uploading it }
+	* @return {GL.Mesh|Object} the mesh in GL.Mesh format or Object format (if options.only_data is true)
+	*/
+	static mergeMeshes(meshes, options = {}) {
+
+		var vertex_buffers = {};
+		var index_buffers = {};
+		var offsets = {}; //tells how many positions indices must be offseted
+		var vertex_offsets = [];
+		var current_vertex_offset = 0;
+		var groups = [];
+
+		//vertex buffers
+		//compute size
+		for(var i = 0; i < meshes.length; ++i)
+		{
+			var mesh_info = meshes[i];
+			var mesh = mesh_info.mesh;
+			var offset = current_vertex_offset;
+			vertex_offsets.push( offset );
+			var length = mesh.vertexBuffers["vertices"].data.length / 3;
+			current_vertex_offset += length;
+
+			for(var j in mesh.vertexBuffers)
+			{
+				if(!vertex_buffers[j])
+					vertex_buffers[j] = mesh.vertexBuffers[j].data.length;
+				else
+					vertex_buffers[j] += mesh.vertexBuffers[j].data.length;
+			}
+
+			for(var j in mesh.indexBuffers)
+			{
+				if(!index_buffers[j])
+					index_buffers[j] = mesh.indexBuffers[j].data.length;
+				else
+					index_buffers[j] += mesh.indexBuffers[j].data.length;
+			}
+
+			//groups
+			var group = {
+				name: "mesh_" + i,
+				start: offset,
+				length: length,
+				material: ""
+			};
+
+			groups.push( group );
+		}
+
+		//allocate
+		for(var j in vertex_buffers)
+		{
+			var datatype = options[j];
+			if(datatype === null)
+			{
+				delete vertex_buffers[j];
+				continue;
+			}
+
+			if(!datatype)
+				datatype = Float32Array;
+
+			vertex_buffers[j] = new datatype( vertex_buffers[j] );
+			offsets[j] = 0;
+		}
+
+		for(var j in index_buffers)
+		{
+			index_buffers[j] = new Uint32Array( index_buffers[j] );
+			offsets[j] = 0;
+		}
+
+		//store
+		for(var i = 0; i < meshes.length; ++i)
+		{
+			var mesh_info = meshes[i];
+			var mesh = mesh_info.mesh;
+			var offset = 0;
+			var length = 0;
+
+			for(var j in mesh.vertexBuffers)
+			{
+				if(!vertex_buffers[j])
+					continue;
+
+				if(j == "vertices")
+					length = mesh.vertexBuffers[j].data.length / 3;
+
+				vertex_buffers[j].set( mesh.vertexBuffers[j].data, offsets[j] );
+
+				//apply transform
+				if(mesh_info[ j + "_matrix"] )
+				{
+					var matrix = mesh_info[ j + "_matrix" ];
+					if(matrix.length == 16)
+						apply_transform( vertex_buffers[j], offsets[j], mesh.vertexBuffers[j].data.length, matrix )
+					else if(matrix.length == 9)
+						apply_transform2D( vertex_buffers[j], offsets[j], mesh.vertexBuffers[j].data.length, matrix )
+				}
+
+				offsets[j] += mesh.vertexBuffers[j].data.length;
+			}
+
+			for(var j in mesh.indexBuffers)
+			{
+				index_buffers[j].set( mesh.indexBuffers[j].data, offsets[j] );
+				apply_offset( index_buffers[j], offsets[j], mesh.indexBuffers[j].data.length, vertex_offsets[i] );
+				offsets[j] += mesh.indexBuffers[j].data.length;
+			}
+		}
+
+		//useful functions
+		function apply_transform( array, start, length, matrix )
+		{
+			var l = start + length;
+			for(var i = start; i < l; i+=3)
+			{
+				var v = array.subarray(i,i+3);
+				vec3.transformMat4( v, v, matrix );
+			}
+		}
+
+		function apply_transform2D( array, start, length, matrix )
+		{
+			var l = start + length;
+			for(var i = start; i < l; i+=2)
+			{
+				var v = array.subarray(i,i+2);
+				vec2.transformMat3( v, v, matrix );
+			}
+		}
+
+		function apply_offset( array, start, length, offset )
+		{
+			var l = start + length;
+			for(var i = start; i < l; ++i)
+				array[i] += offset;
+		}
+
+		var extra = { info: { groups: groups } };
+
+		//return
+		if( typeof(gl) != "undefined" || options.only_data )
+			return new GL.Mesh( vertex_buffers,index_buffers, extra );
+		return { 
+			vertexBuffers: vertex_buffers, 
+			indexBuffers: index_buffers, 
+			info: { groups: groups } 
+		};
+	}
+
+	//Here we store all basic mesh parsers (OBJ, STL) and encoders
+	static parsers = {};
+	static encoders = {};
+	static binary_file_formats = {}; //extensions that must be downloaded in binary
+	static compressors = {}; //used to compress binary meshes
+	static decompressors = {}; //used to decompress binary meshes
+
+	/**
+	* Returns am empty mesh and loads a mesh and parses it using the Mesh.parsers, by default only OBJ is supported
+	* @method Mesh.fromOBJ
+	* @param {Array} meshes array containing all the meshes
+	*/
+	static fromURL = function(url, on_complete, gl, options = {}) {
+		gl = gl || global.gl;
+		
+		var mesh = new GL.Mesh(undefined,undefined,undefined,gl);
+		mesh.ready = false;
+
+		var pos = url.lastIndexOf(".");
+		var extension = url.substr(pos+1).toLowerCase();
+		options.binary = Mesh.binary_file_formats[ extension ];
+
+		HttpRequest( url, null, function(data) {
+			mesh.parse( data, extension );
+			delete mesh["ready"];
+			if(on_complete)
+				on_complete.call(mesh,mesh, url);
+		}, function(err){
+			if(on_complete)
+				on_complete(null);
+		}, options );
+		return mesh;
+	}
+
+	/**
+	* It returns the mesh data encoded in the format specified
+	* Only obj supported now
+	* @method encode
+	* @param {String} format to encode the data to (p.e. "obj")
+	* @return {?} String with the info
+	*/
+	encode(format, options) {
+		format = format.toLowerCase();
+		var encoder = GL.Mesh.encoders[ format ];
+		if(encoder)
+			return encoder.call(null, this, options );
+		throw("GL.Mesh.encode: no encoder found for format " + format );
+	}
+
+	/**
+	* Returns a shared mesh containing a quad to be used when rendering to the screen
+	* Reusing the same quad helps not filling the memory
+	* @method getScreenQuad
+	* @return {GL.Mesh} the screen quad
+	*/
+	static getScreenQuad(gl) {
+		gl = gl || global.gl;
+		var mesh = gl.meshes[":screen_quad"];
+		if(mesh)
+			return mesh;
+
+		var vertices = new Float32Array([0,0,0, 1,1,0, 0,1,0,  0,0,0, 1,0,0, 1,1,0 ]);
+		var coords = new Float32Array([0,0, 1,1, 0,1,  0,0, 1,0, 1,1 ]);
+		mesh = new GL.Mesh({ vertices: vertices, coords: coords}, undefined, undefined, gl);
+		return gl.meshes[":screen_quad"] = mesh;
+	}
 }
+/* BINARY MESHES */
+//Add some functions to the classes in LiteGL to allow store in binary
+GL.Mesh.EXTENSION = "wbin";
+GL.Mesh.enable_wbin_compression = true;
+GL.Mesh = Mesh;
+Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
 
-function linearizeArray( array, typed_array_class )
-{
+
+GL.linearizeArray = function( array, typed_array_class ) {
 	if(array.constructor === typed_array_class)
 		return array;
 	if(array.constructor !== Array)
@@ -3397,17 +3380,8 @@ function linearizeArray( array, typed_array_class )
 		for(var j=0; j < components; ++j)
 			buffer[i*components + j] = array[i][j];
 	return buffer;
-}
+};
 
-GL.linearizeArray = linearizeArray;
-
-GL.Mesh = Mesh;
-Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
-
-/* BINARY MESHES */
-//Add some functions to the classes in LiteGL to allow store in binary
-GL.Mesh.EXTENSION = "wbin";
-GL.Mesh.enable_wbin_compression = true;
 
 //this is used when a mesh is dynamic and constantly changes
 function DynamicMesh( size, normals, coords, colors, gl )
