@@ -325,9 +325,7 @@ export class LGraphCanvas {
 
         if (canvas.getContext == null) {
             if (canvas.localName != "canvas") {
-                throw new Error(
-                    "Element supplied for LGraphCanvas must be a <canvas> element, you passed a "+canvas.localName
-                );
+                throw new Error("Element supplied for LGraphCanvas must be a <canvas> element, you passed a "+canvas.localName);
             }
             throw new Error("This browser doesn't support Canvas");
         }
