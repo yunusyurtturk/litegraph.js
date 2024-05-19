@@ -1,274 +1,446 @@
 import { DDS } from "./dds.js";
 import { gl as localGL } from "../code.js";
 
+/*
+ * File history
+ * litegl.js by Javi Agenjo 2014 @tamat (tamats.com)
+ * forked from lightgl.js by Evan Wallace (madebyevan.com)
+ * seems to have been re-integrated into LiteGraph with a "free to use" license
+ * Updated to ES6 and reorganized by Daniel Lewis (daniel.lewis.ab@gmail.com) in 2024
+ */
+
 // temporary shunt to patch things in this file.
 const global = {};
 global.gl = localGL;
-
-//litegl.js by Javi Agenjo 2014 @tamat (tamats.com)
-//forked from lightgl.js by Evan Wallace (madebyevan.com)
-
-export const GL = {};
-
-if(typeof(glMatrix) == "undefined") {
-	throw new Error("litegl.js requires gl-matrix to work. It must be included before litegl.");
-}
 
 //polyfill
 window.requestAnimationFrame ??= window.mozRequestAnimationFrame ?? 
 	window.webkitRequestAnimationFrame ??
 	function(callback) { setTimeout(callback, 1000 / 60); };
 
-GL.blockable_keys = {"Up":true,"Down":true,"Left":true,"Right":true};
+if(typeof(glMatrix) == "undefined") {
+	throw new Error("litegl.js requires gl-matrix to work. It must be included before litegl.");
+}
+/* 
+ * GL seems to be a scatter-built singleton object.  I'm going to convert it to a ES6 class. 
+ */
+export var GL = new class {
+	constructor() {
+		this.blockable_keys = {"Up":true,"Down":true,"Left":true,"Right":true};
+		this.reverse = null;
+		
+		//some consts
+		//https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
+		this.LEFT_MOUSE_BUTTON = 0;
+		this.MIDDLE_MOUSE_BUTTON = 1;
+		this.RIGHT_MOUSE_BUTTON = 2;
 
-GL.reverse = null;
+		this.LEFT_MOUSE_BUTTON_MASK = 1;
+		this.RIGHT_MOUSE_BUTTON_MASK = 2;
+		this.MIDDLE_MOUSE_BUTTON_MASK = 4;
 
-//some consts
-//https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
-GL.LEFT_MOUSE_BUTTON = 0;
-GL.MIDDLE_MOUSE_BUTTON = 1;
-GL.RIGHT_MOUSE_BUTTON = 2;
-
-GL.LEFT_MOUSE_BUTTON_MASK = 1;
-GL.RIGHT_MOUSE_BUTTON_MASK = 2;
-GL.MIDDLE_MOUSE_BUTTON_MASK = 4;
-
-GL.last_context_id = 0;
-
-
-//Define WEBGL ENUMS as statics (more to come in WebGL 2)
-//sometimes we need some gl enums before having the gl context, solution: define them globally because the specs says they are constant)
-
-GL.COLOR_BUFFER_BIT = 16384;
-GL.DEPTH_BUFFER_BIT = 256;
-GL.STENCIL_BUFFER_BIT = 1024;
-
-GL.TEXTURE_2D = 3553;
-GL.TEXTURE_CUBE_MAP = 34067;
-GL.TEXTURE_3D = 32879;
-
-GL.TEXTURE_MAG_FILTER = 10240;
-GL.TEXTURE_MIN_FILTER = 10241;
-GL.TEXTURE_WRAP_S = 10242;
-GL.TEXTURE_WRAP_T = 10243;
-
-GL.BYTE = 5120;
-GL.UNSIGNED_BYTE = 5121;
-GL.SHORT = 5122;
-GL.UNSIGNED_SHORT = 5123;
-GL.INT = 5124;
-GL.UNSIGNED_INT = 5125;
-GL.FLOAT = 5126;
-GL.HALF_FLOAT_OES = 36193; //webgl 1.0 only
-
-//webgl2 formats
-GL.HALF_FLOAT = 5131; 
-GL.DEPTH_COMPONENT16 = 33189;
-GL.DEPTH_COMPONENT24 = 33190;
-GL.DEPTH_COMPONENT32F = 36012;
-
-GL.FLOAT_VEC2 = 35664;
-GL.FLOAT_VEC3 = 35665;
-GL.FLOAT_VEC4 = 35666;
-GL.INT_VEC2 = 35667;
-GL.INT_VEC3 = 35668;
-GL.INT_VEC4 = 35669;
-GL.BOOL = 35670;
-GL.BOOL_VEC2 = 35671;
-GL.BOOL_VEC3 = 35672;
-GL.BOOL_VEC4 = 35673;
-GL.FLOAT_MAT2 = 35674;
-GL.FLOAT_MAT3 = 35675;
-GL.FLOAT_MAT4 = 35676;
-
-//used to know the amount of data to reserve per uniform
-GL.TYPE_LENGTH = {};
-GL.TYPE_LENGTH[ GL.FLOAT ] = GL.TYPE_LENGTH[ GL.INT ] = GL.TYPE_LENGTH[ GL.BYTE ] = GL.TYPE_LENGTH[ GL.BOOL ] = 1;
-GL.TYPE_LENGTH[ GL.FLOAT_VEC2 ] = GL.TYPE_LENGTH[ GL.INT_VEC2 ] = GL.TYPE_LENGTH[ GL.BOOL_VEC2 ] = 2;
-GL.TYPE_LENGTH[ GL.FLOAT_VEC3 ] = GL.TYPE_LENGTH[ GL.INT_VEC3 ] = GL.TYPE_LENGTH[ GL.BOOL_VEC3 ] = 3;
-GL.TYPE_LENGTH[ GL.FLOAT_VEC4 ] = GL.TYPE_LENGTH[ GL.INT_VEC4 ] = GL.TYPE_LENGTH[ GL.BOOL_VEC4 ] = 4;
-GL.TYPE_LENGTH[ GL.FLOAT_MAT3 ] = 9;
-GL.TYPE_LENGTH[ GL.FLOAT_MAT4 ] = 16;
+		this.last_context_id = 0;
 
 
-GL.SAMPLER_2D = 35678;
-GL.SAMPLER_3D = 35679;
-GL.SAMPLER_CUBE = 35680;
+		//Define WEBGL ENUMS as statics (more to come in WebGL 2)
+		//sometimes we need some gl enums before having the gl context, solution: define them globally because the specs says they are constant)
 
-GL.DEPTH_COMPONENT = 6402;
-GL.ALPHA = 6406;
-GL.RGB = 6407;
-GL.RGBA = 6408;
-GL.LUMINANCE = 6409;
-GL.LUMINANCE_ALPHA = 6410;
-GL.DEPTH_STENCIL = 34041;
-GL.UNSIGNED_INT_24_8_WEBGL = 34042;
+		this.COLOR_BUFFER_BIT = 16384;
+		this.DEPTH_BUFFER_BIT = 256;
+		this.STENCIL_BUFFER_BIT = 1024;
 
-//webgl2 formats
-GL.R8 = 33321;
-GL.R16F = 33325;
-GL.R32F = 33326;
-GL.R8UI = 33330;
-GL.RG8 = 33323;
-GL.RG16F = 33327;
-GL.RG32F = 33328;
-GL.RGB8 = 32849;
-GL.SRGB8 = 35905;
-GL.RGB565 = 36194;
-GL.R11F_G11F_B10F = 35898;
-GL.RGB9_E5 = 35901;
-GL.RGB16F = 34843;
-GL.RGB32F = 34837;
-GL.RGB8UI = 36221;
-GL.RGBA8 = 32856;
-GL.RGB5_A1 = 32855;
-GL.RGBA16F = 34842;
-GL.RGBA32F = 34836;
-GL.RGBA8UI = 36220;
-GL.RGBA16I = 36232;
-GL.RGBA16UI = 36214;
-GL.RGBA32I = 36226;
-GL.RGBA32UI = 36208;
+		this.TEXTURE_2D = 3553;
+		this.TEXTURE_CUBE_MAP = 34067;
+		this.TEXTURE_3D = 32879;
 
-GL.NEAREST = 9728;
-GL.LINEAR = 9729;
-GL.NEAREST_MIPMAP_NEAREST = 9984;
-GL.LINEAR_MIPMAP_NEAREST = 9985;
-GL.NEAREST_MIPMAP_LINEAR = 9986;
-GL.LINEAR_MIPMAP_LINEAR = 9987;
+		this.TEXTURE_MAG_FILTER = 10240;
+		this.TEXTURE_MIN_FILTER = 10241;
+		this.TEXTURE_WRAP_S = 10242;
+		this.TEXTURE_WRAP_T = 10243;
 
-GL.REPEAT = 10497;
-GL.CLAMP_TO_EDGE = 33071;
-GL.MIRRORED_REPEAT = 33648;
+		this.BYTE = 5120;
+		this.UNSIGNED_BYTE = 5121;
+		this.SHORT = 5122;
+		this.UNSIGNED_SHORT = 5123;
+		this.INT = 5124;
+		this.UNSIGNED_INT = 5125;
+		this.FLOAT = 5126;
+		this.HALF_FLOAT_OES = 36193; //webgl 1.0 only
 
-GL.ZERO = 0;
-GL.ONE = 1;
-GL.SRC_COLOR = 768;
-GL.ONE_MINUS_SRC_COLOR = 769;
-GL.SRC_ALPHA = 770;
-GL.ONE_MINUS_SRC_ALPHA = 771;
-GL.DST_ALPHA = 772;
-GL.ONE_MINUS_DST_ALPHA = 773;
-GL.DST_COLOR = 774;
-GL.ONE_MINUS_DST_COLOR = 775;
-GL.SRC_ALPHA_SATURATE = 776;
-GL.CONSTANT_COLOR = 32769;
-GL.ONE_MINUS_CONSTANT_COLOR = 32770;
-GL.CONSTANT_ALPHA = 32771;
-GL.ONE_MINUS_CONSTANT_ALPHA = 32772;
+		//webgl2 formats
+		this.HALF_FLOAT = 5131; 
+		this.DEPTH_COMPONENT16 = 33189;
+		this.DEPTH_COMPONENT24 = 33190;
+		this.DEPTH_COMPONENT32F = 36012;
 
-GL.VERTEX_SHADER = 35633;
-GL.FRAGMENT_SHADER = 35632;
+		this.FLOAT_VEC2 = 35664;
+		this.FLOAT_VEC3 = 35665;
+		this.FLOAT_VEC4 = 35666;
+		this.INT_VEC2 = 35667;
+		this.INT_VEC3 = 35668;
+		this.INT_VEC4 = 35669;
+		this.BOOL = 35670;
+		this.BOOL_VEC2 = 35671;
+		this.BOOL_VEC3 = 35672;
+		this.BOOL_VEC4 = 35673;
+		this.FLOAT_MAT2 = 35674;
+		this.FLOAT_MAT3 = 35675;
+		this.FLOAT_MAT4 = 35676;
 
-GL.FRONT = 1028;
-GL.BACK = 1029;
-GL.FRONT_AND_BACK = 1032;
+		//used to know the amount of data to reserve per uniform
+		this.TYPE_LENGTH = {};
+		this.TYPE_LENGTH[ this.FLOAT ] = this.TYPE_LENGTH[ this.INT ] = this.TYPE_LENGTH[ this.BYTE ] = this.TYPE_LENGTH[ this.BOOL ] = 1;
+		this.TYPE_LENGTH[ this.FLOAT_VEC2 ] = this.TYPE_LENGTH[ this.INT_VEC2 ] = this.TYPE_LENGTH[ this.BOOL_VEC2 ] = 2;
+		this.TYPE_LENGTH[ this.FLOAT_VEC3 ] = this.TYPE_LENGTH[ this.INT_VEC3 ] = this.TYPE_LENGTH[ this.BOOL_VEC3 ] = 3;
+		this.TYPE_LENGTH[ this.FLOAT_VEC4 ] = this.TYPE_LENGTH[ this.INT_VEC4 ] = this.TYPE_LENGTH[ this.BOOL_VEC4 ] = 4;
+		this.TYPE_LENGTH[ this.FLOAT_MAT3 ] = 9;
+		this.TYPE_LENGTH[ this.FLOAT_MAT4 ] = 16;
 
-GL.NEVER = 512;
-GL.LESS = 513;
-GL.EQUAL = 514;
-GL.LEQUAL = 515;
-GL.GREATER = 516;
-GL.NOTEQUAL = 517;
-GL.GEQUAL = 518;
-GL.ALWAYS = 519;
 
-GL.KEEP = 7680;
-GL.REPLACE = 7681;
-GL.INCR = 7682;
-GL.DECR = 7683;
-GL.INCR_WRAP = 34055;
-GL.DECR_WRAP = 34056;
-GL.INVERT = 5386;
+		this.SAMPLER_2D = 35678;
+		this.SAMPLER_3D = 35679;
+		this.SAMPLER_CUBE = 35680;
 
-GL.STREAM_DRAW = 35040;
-GL.STATIC_DRAW = 35044;
-GL.DYNAMIC_DRAW = 35048;
+		this.DEPTH_COMPONENT = 6402;
+		this.ALPHA = 6406;
+		this.RGB = 6407;
+		this.RGBA = 6408;
+		this.LUMINANCE = 6409;
+		this.LUMINANCE_ALPHA = 6410;
+		this.DEPTH_STENCIL = 34041;
+		this.UNSIGNED_INT_24_8_WEBGL = 34042;
 
-GL.ARRAY_BUFFER = 34962;
-GL.ELEMENT_ARRAY_BUFFER = 34963;
+		//webgl2 formats
+		this.R8 = 33321;
+		this.R16F = 33325;
+		this.R32F = 33326;
+		this.R8UI = 33330;
+		this.RG8 = 33323;
+		this.RG16F = 33327;
+		this.RG32F = 33328;
+		this.RGB8 = 32849;
+		this.SRGB8 = 35905;
+		this.RGB565 = 36194;
+		this.R11F_G11F_B10F = 35898;
+		this.RGB9_E5 = 35901;
+		this.RGB16F = 34843;
+		this.RGB32F = 34837;
+		this.RGB8UI = 36221;
+		this.RGBA8 = 32856;
+		this.RGB5_A1 = 32855;
+		this.RGBA16F = 34842;
+		this.RGBA32F = 34836;
+		this.RGBA8UI = 36220;
+		this.RGBA16I = 36232;
+		this.RGBA16UI = 36214;
+		this.RGBA32I = 36226;
+		this.RGBA32UI = 36208;
 
-GL.POINTS = 0;
-GL.LINES = 1;
-GL.LINE_LOOP = 2;
-GL.LINE_STRIP = 3;
-GL.TRIANGLES = 4;
-GL.TRIANGLE_STRIP = 5;
-GL.TRIANGLE_FAN = 6;
+		this.NEAREST = 9728;
+		this.LINEAR = 9729;
+		this.NEAREST_MIPMAP_NEAREST = 9984;
+		this.LINEAR_MIPMAP_NEAREST = 9985;
+		this.NEAREST_MIPMAP_LINEAR = 9986;
+		this.LINEAR_MIPMAP_LINEAR = 9987;
 
-GL.CW = 2304;
-GL.CCW = 2305;
+		this.REPEAT = 10497;
+		this.CLAMP_TO_EDGE = 33071;
+		this.MIRRORED_REPEAT = 33648;
 
-GL.CULL_FACE = 2884;
-GL.DEPTH_TEST = 2929;
-GL.BLEND = 3042;
+		this.ZERO = 0;
+		this.ONE = 1;
+		this.SRC_COLOR = 768;
+		this.ONE_MINUS_SRC_COLOR = 769;
+		this.SRC_ALPHA = 770;
+		this.ONE_MINUS_SRC_ALPHA = 771;
+		this.DST_ALPHA = 772;
+		this.ONE_MINUS_DST_ALPHA = 773;
+		this.DST_COLOR = 774;
+		this.ONE_MINUS_DST_COLOR = 775;
+		this.SRC_ALPHA_SATURATE = 776;
+		this.CONSTANT_COLOR = 32769;
+		this.ONE_MINUS_CONSTANT_COLOR = 32770;
+		this.CONSTANT_ALPHA = 32771;
+		this.ONE_MINUS_CONSTANT_ALPHA = 32772;
 
-GL.temp_vec3 = vec3.create();
-GL.temp2_vec3 = vec3.create();
-GL.temp_vec4 = vec4.create();
-GL.temp_quat = quat.create();
-GL.temp_mat3 = mat3.create();
-GL.temp_mat4 = mat4.create();
+		this.VERTEX_SHADER = 35633;
+		this.FRAGMENT_SHADER = 35632;
+
+		this.FRONT = 1028;
+		this.BACK = 1029;
+		this.FRONT_AND_BACK = 1032;
+
+		this.NEVER = 512;
+		this.LESS = 513;
+		this.EQUAL = 514;
+		this.LEQUAL = 515;
+		this.GREATER = 516;
+		this.NOTEQUAL = 517;
+		this.GEQUAL = 518;
+		this.ALWAYS = 519;
+
+		this.KEEP = 7680;
+		this.REPLACE = 7681;
+		this.INCR = 7682;
+		this.DECR = 7683;
+		this.INCR_WRAP = 34055;
+		this.DECR_WRAP = 34056;
+		this.INVERT = 5386;
+
+		this.STREAM_DRAW = 35040;
+		this.STATIC_DRAW = 35044;
+		this.DYNAMIC_DRAW = 35048;
+
+		this.ARRAY_BUFFER = 34962;
+		this.ELEMENT_ARRAY_BUFFER = 34963;
+
+		this.POINTS = 0;
+		this.LINES = 1;
+		this.LINE_LOOP = 2;
+		this.LINE_STRIP = 3;
+		this.TRIANGLES = 4;
+		this.TRIANGLE_STRIP = 5;
+		this.TRIANGLE_FAN = 6;
+
+		this.CW = 2304;
+		this.CCW = 2305;
+
+		this.CULL_FACE = 2884;
+		this.DEPTH_TEST = 2929;
+		this.BLEND = 3042;
+
+		this.temp_vec3 = vec3.create();
+		this.temp2_vec3 = vec3.create();
+		this.temp_vec4 = vec4.create();
+		this.temp_quat = quat.create();
+		this.temp_mat3 = mat3.create();
+		this.temp_mat4 = mat4.create();
+	}
+
+	
+	/**
+	* Tells if one number is power of two (used for textures)
+	* @method isPowerOfTwo
+	* @param {v} number
+	* @return {boolean}
+	*/
+	isPowerOfTwo(v) {
+		return ((Math.log(v) / Math.log(2)) % 1) == 0;
+	}
+
+	/**
+	* Tells if one number is power of two (used for textures)
+	* @method isPowerOfTwo
+	* @param {v} number
+	* @return {boolean}
+	*/
+	nearestPowerOfTwo(v) {
+		return Math.pow(2, Math.round( Math.log( v ) / Math.log(2) ) )
+	}
+
+	/**
+	* converts from polar to cartesian
+	* @method polarToCartesian
+	* @param {vec3} out
+	* @param {number} azimuth orientation from 0 to 2PI
+	* @param {number} inclianation from -PI to PI
+	* @param {number} radius
+	* @return {vec3} returns out
+	*/
+	polarToCartesian( out, azimuth, inclination, radius ) {
+		out = out || vec3.create();
+		out[0] = radius * Math.sin(inclination) * Math.cos(azimuth);
+		out[1] = radius * Math.cos(inclination);
+		out[2] = radius * Math.sin(inclination) * Math.sin(azimuth);
+		return out;
+	}
+
+	/**
+	* converts from cartesian to polar
+	* @method cartesianToPolar
+	* @param {vec3} out
+	* @param {number} x
+	* @param {number} y
+	* @param {number} z
+	* @return {vec3} returns [azimuth,inclination,radius]
+	*/
+	cartesianToPolar( out, x,y,z ) {
+		out = out || vec3.create();
+		out[2] = Math.sqrt(x*x+y*y+z*z);
+		out[0] = Math.atan2(x,z);
+		out[1] = Math.acos(z/out[2]);
+		return out;
+	}
+
+	/**
+	* clone one object recursively, only allows objects containing number,strings,typed-arrays or other objects
+	* @method cloneObject
+	* @param {Object} object 
+	* @param {Object} target if omited an empty object is created
+	* @return {Object}
+	*/
+	cloneObject(o, t) {
+		if(o.constructor !== Object)
+			throw("cloneObject only can clone pure javascript objects, not classes");
+
+		t = t || {};
+
+		for(var i in o)
+		{
+			var v = o[i];
+			if(v === null)
+			{
+				t[i] = null;
+				continue;
+			}
+
+			switch(v.constructor)
+			{
+				case Int8Array:
+				case Uint8Array:
+				case Int16Array:
+				case Uint16Array:
+				case Int32Array:
+				case Uint32Array:
+				case Float32Array:
+				case Float64Array:
+					t[i] = new v.constructor(v);
+					break;
+				case Boolean:
+				case Number:
+				case String:
+					t[i] = v;
+					break;
+				case Array:
+					t[i] = v.concat(); //content is not cloned
+					break;
+				case Object:
+					t[i] = GL.cloneObject(v);
+					break;
+			}
+		}
+
+		return t;
+	}
+		
+	createCanvas(width, height) {
+		var canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+		return canvas;
+	}
+
+	cloneCanvas(c) {
+		var canvas = document.createElement('canvas');
+		canvas.width = c.width;
+		canvas.height = c.height;
+		var ctx = canvas.getContext("2d");
+		ctx.drawImage(c,0,0);
+		return canvas;
+	}
+
+	//copy methods from origin to target
+	extendClass( target, origin ) {
+		for(var i in origin) //copy class properties
+		{
+			if(target.hasOwnProperty(i))
+				continue;
+			target[i] = origin[i];
+		}
+
+		if(origin.prototype) //copy prototype properties
+		{
+			var prop_names = Object.getOwnPropertyNames( origin.prototype );
+			for(var i = 0; i < prop_names.length; ++i) //only enumerables
+			{
+				var name = prop_names[i];
+				//if(!origin.prototype.hasOwnProperty(name)) 
+				//	continue;
+
+				if(target.prototype.hasOwnProperty(name)) //avoid overwritting existing ones
+					continue;
+
+				//copy getters 
+				if(origin.prototype.__lookupGetter__(name))
+					target.prototype.__defineGetter__(name, origin.prototype.__lookupGetter__(name));
+				else 
+					target.prototype[name] = origin.prototype[name];
+
+				//and setters
+				if(origin.prototype.__lookupSetter__(name))
+					target.prototype.__defineSetter__(name, origin.prototype.__lookupSetter__(name));
+			}
+		}
+
+		if(!target.hasOwnProperty("superclass")) 
+			Object.defineProperty(target, "superclass", {
+				get: function() { return origin },
+				enumerable: false
+			});	
+	}
+
+	// unused but cool
+	RGBToHex(r, g, b) { 
+		r = Math.min(255, r*255)|0;
+		g = Math.min(255, g*255)|0;
+		b = Math.min(255, b*255)|0;
+		return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+	}
+
+	// unused but cool
+	HUEToRGB( p, q, t ) {
+		if(t < 0) t += 1;
+		if(t > 1) t -= 1;
+		if(t < 1/6) return p + (q - p) * 6 * t;
+		if(t < 1/2) return q;
+		if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+		return p;
+	}
+
+	// unused but cool
+	HSLToRGB( h, s, l, out ) {
+		var r, g, b;
+		out = out || vec3.create();
+		if(s == 0){
+			r = g = b = l; // achromatic
+		}else{
+			var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			var p = 2 * l - q;
+			r = HUEToRGB(p, q, h + 1/3);
+			g = HUEToRGB(p, q, h);
+			b = HUEToRGB(p, q, h - 1/3);
+		}
+		out[0] = r;
+		out[1] = g;
+		out[2] = b;
+		return out;
+	}
+
+	linearizeArray( array, typed_array_class ) {
+		if(array.constructor === typed_array_class)
+			return array;
+		if(array.constructor !== Array)
+		{
+			typed_array_class = typed_array_class || Float32Array;
+			return new typed_array_class(array);
+		}
+	
+		typed_array_class = typed_array_class || Float32Array;
+		var components = array[0].length;
+		var size = array.length * components;
+		var buffer = new typed_array_class(size);
+	
+		for (var i=0; i < array.length;++i)
+			for(var j=0; j < components; ++j)
+				buffer[i*components + j] = array[i][j];
+		return buffer;
+	}
+}
+
 
 const DEG2RAD = 0.0174532925;
 const RAD2DEG = 57.295779578552306;
 const EPSILON = 0.000001;
-
-/**
-* Tells if one number is power of two (used for textures)
-* @method isPowerOfTwo
-* @param {v} number
-* @return {boolean}
-*/
-GL.isPowerOfTwo = (v) => {
-	return ((Math.log(v) / Math.log(2)) % 1) == 0;
-};
-
-/**
-* Tells if one number is power of two (used for textures)
-* @method isPowerOfTwo
-* @param {v} number
-* @return {boolean}
-*/
-GL.nearestPowerOfTwo = (v) => {
-	return Math.pow(2, Math.round( Math.log( v ) / Math.log(2) ) )
-};
-
-
-/**
-* converts from polar to cartesian
-* @method polarToCartesian
-* @param {vec3} out
-* @param {number} azimuth orientation from 0 to 2PI
-* @param {number} inclianation from -PI to PI
-* @param {number} radius
-* @return {vec3} returns out
-*/
-GL.polarToCartesian = function( out, azimuth, inclination, radius ) {
-	out = out || vec3.create();
-	out[0] = radius * Math.sin(inclination) * Math.cos(azimuth);
-	out[1] = radius * Math.cos(inclination);
-	out[2] = radius * Math.sin(inclination) * Math.sin(azimuth);
-	return out;
-};
-
-/**
-* converts from cartesian to polar
-* @method cartesianToPolar
-* @param {vec3} out
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @return {vec3} returns [azimuth,inclination,radius]
-*/
-GL.cartesianToPolar = function( out, x,y,z )
-{
-	out = out || vec3.create();
-	out[2] = Math.sqrt(x*x+y*y+z*z);
-	out[0] = Math.atan2(x,z);
-	out[1] = Math.acos(z/out[2]);
-	return out;
-};
 
 //Global Scope
 //better array conversion to string for serializing
@@ -284,8 +456,6 @@ typed_arrays.forEach( function(v) {
 		});
 });
 
-
-
 /**
 * Get current time in milliseconds
 * @method getTime
@@ -299,81 +469,12 @@ else
   global.getTime = Date.now.bind( Date );
 GL.getTime = global.getTime;
 
-
-/**
-* clone one object recursively, only allows objects containing number,strings,typed-arrays or other objects
-* @method cloneObject
-* @param {Object} object 
-* @param {Object} target if omited an empty object is created
-* @return {Object}
-*/
-GL.cloneObject = function(o, t) {
-	if(o.constructor !== Object)
-		throw("cloneObject only can clone pure javascript objects, not classes");
-
-	t = t || {};
-
-	for(var i in o)
-	{
-		var v = o[i];
-		if(v === null)
-		{
-			t[i] = null;
-			continue;
-		}
-
-		switch(v.constructor)
-		{
-			case Int8Array:
-			case Uint8Array:
-			case Int16Array:
-			case Uint16Array:
-			case Int32Array:
-			case Uint32Array:
-			case Float32Array:
-			case Float64Array:
-				t[i] = new v.constructor(v);
-				break;
-			case Boolean:
-			case Number:
-			case String:
-				t[i] = v;
-				break;
-			case Array:
-				t[i] = v.concat(); //content is not cloned
-				break;
-			case Object:
-				t[i] = GL.cloneObject(v);
-				break;
-		}
-	}
-
-	return t;
-}
-
-
 /* SLOW because accepts booleans
 function isNumber(obj) {
   var str = Object.prototype.toString.call(obj);
   return str == '[object Number]' || str == '[object Boolean]';
 }
 */
-
-GL.createCanvas = function(width, height) {
-    var canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    return canvas;
-}
-
-GL.cloneCanvas = function(c) {
-    var canvas = document.createElement('canvas');
-    canvas.width = c.width;
-    canvas.height = c.height;
-    var ctx = canvas.getContext("2d");
-    ctx.drawImage(c,0,0);
-    return canvas;
-}
 
 if(typeof(Image) != "undefined") //not existing inside workers
 {
@@ -435,46 +536,6 @@ if(!Array.prototype.hasOwnProperty("clone"))
 if(!Float32Array.prototype.hasOwnProperty("clone"))
 	Object.defineProperty(Float32Array.prototype, "clone", { value: function() { return new Float32Array(this); }, enumerable: false });
 
-
-//copy methods from origin to target
-GL.extendClass = function( target, origin ) {
-	for(var i in origin) //copy class properties
-	{
-		if(target.hasOwnProperty(i))
-			continue;
-		target[i] = origin[i];
-	}
-
-	if(origin.prototype) //copy prototype properties
-	{
-		var prop_names = Object.getOwnPropertyNames( origin.prototype );
-		for(var i = 0; i < prop_names.length; ++i) //only enumerables
-		{
-			var name = prop_names[i];
-			//if(!origin.prototype.hasOwnProperty(name)) 
-			//	continue;
-
-			if(target.prototype.hasOwnProperty(name)) //avoid overwritting existing ones
-				continue;
-
-			//copy getters 
-			if(origin.prototype.__lookupGetter__(name))
-				target.prototype.__defineGetter__(name, origin.prototype.__lookupGetter__(name));
-			else 
-				target.prototype[name] = origin.prototype[name];
-
-			//and setters
-			if(origin.prototype.__lookupSetter__(name))
-				target.prototype.__defineSetter__(name, origin.prototype.__lookupSetter__(name));
-		}
-	}
-
-	if(!target.hasOwnProperty("superclass")) 
-		Object.defineProperty(target, "superclass", {
-			get: function() { return origin },
-			enumerable: false
-		});	
-}
 
 // @TODO: Why is this in a GL library!?
 //simple http request
@@ -548,43 +609,6 @@ if( global.XMLHttpRequest )
 		  LEvent.bind(this,"fail", function(e,err) { callback(err); } );
 		  return this;
 		}});
-}
-
-// unused but cool
-GL.RGBToHex = function(r, g, b) { 
-	r = Math.min(255, r*255)|0;
-	g = Math.min(255, g*255)|0;
-	b = Math.min(255, b*255)|0;
-	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-}
-
-// unused but cool
-GL.HUEToRGB = function ( p, q, t ){
-	if(t < 0) t += 1;
-	if(t > 1) t -= 1;
-	if(t < 1/6) return p + (q - p) * 6 * t;
-	if(t < 1/2) return q;
-	if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-	return p;
-}
-
-// unused but cool
-GL.HSLToRGB = function( h, s, l, out ){
-	var r, g, b;
-	out = out || vec3.create();
-	if(s == 0){
-		r = g = b = l; // achromatic
-	}else{
-		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-		var p = 2 * l - q;
-		r = HUEToRGB(p, q, h + 1/3);
-		g = HUEToRGB(p, q, h);
-		b = HUEToRGB(p, q, h - 1/3);
-	}
-	out[0] = r;
-	out[1] = g;
-	out[2] = b;
-	return out;
 }
 
 
@@ -3360,27 +3384,6 @@ GL.Mesh.EXTENSION = "wbin";
 GL.Mesh.enable_wbin_compression = true;
 GL.Mesh = Mesh;
 Mesh.prototype.delete = Mesh.prototype.deleteBuffers;
-
-
-GL.linearizeArray = function( array, typed_array_class ) {
-	if(array.constructor === typed_array_class)
-		return array;
-	if(array.constructor !== Array)
-	{
-		typed_array_class = typed_array_class || Float32Array;
-		return new typed_array_class(array);
-	}
-
-	typed_array_class = typed_array_class || Float32Array;
-	var components = array[0].length;
-	var size = array.length * components;
-	var buffer = new typed_array_class(size);
-
-	for (var i=0; i < array.length;++i)
-		for(var j=0; j < components; ++j)
-			buffer[i*components + j] = array[i][j];
-	return buffer;
-};
 
 
 //this is used when a mesh is dynamic and constantly changes
