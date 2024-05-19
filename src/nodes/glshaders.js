@@ -1,6 +1,7 @@
 import { LiteGraph } from "../litegraph.js";
 import { LGraph } from "../lgraph.js";
 import { GL } from "../../editor/js/libs/litegl.js";
+import { LGraphTexture } from "./gltextures.js";
 
 var SHADERNODES_COLOR = "#345";
 

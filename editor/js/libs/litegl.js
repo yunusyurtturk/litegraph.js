@@ -215,6 +215,10 @@ export var GL = new class {
 		this.temp_quat = quat.create();
 		this.temp_mat3 = mat3.create();
 		this.temp_mat4 = mat4.create();
+
+		//add useful info to the event
+		this.dragging = false;
+		this.last_pos = [0,0];
 	}
 
 	
@@ -435,8 +439,1062 @@ export var GL = new class {
 				buffer[i*components + j] = array[i][j];
 		return buffer;
 	}
-}
 
+	/**
+	* creates a new WebGL context (it can create the canvas or use an existing one)
+	* @method create
+	* @param {Object} options supported are: 
+	* - width
+	* - height
+	* - canvas
+	* - container (string or element)
+	* @return {WebGLRenderingContext} webgl context with all the extra functions (check gl in the doc for more info)
+	*/
+	create(options = {}) {
+		var canvas = null;
+		if(options.canvas)
+		{
+			if(typeof(options.canvas) == "string")
+			{
+				canvas = document.getElementById( options.canvas );
+				if(!canvas) throw("Canvas element not found: " + options.canvas );
+			}
+			else 
+				canvas = options.canvas;
+		}
+		else
+		{
+			var root = null;
+			if(options.container)
+				root = options.container.constructor === String ? document.querySelector( options.container ) : options.container;
+			if(root && !options.width)
+			{
+				var rect = root.getBoundingClientRect();
+				options.width = rect.width;
+				options.height = rect.height;
+			}
+
+			canvas = GL.createCanvas(  options.width || 800, options.height || 600 );
+			if(root)
+				root.appendChild(canvas);
+		}
+
+		if (!('alpha' in options)) options.alpha = false;
+
+
+		/**
+		* the webgl context returned by GL.create, its a WebGLRenderingContext with some extra methods added
+		* @class gl
+		*/
+		var gl = null;
+
+		var seq = null;
+		if(options.version == 2)	
+			seq = ['webgl2','experimental-webgl2'];
+		else if(options.version == 1 || options.version === undefined) //default
+			seq = ['webgl','experimental-webgl'];
+		else if(options.version === 0) //latest
+			seq = ['webgl2','experimental-webgl2','webgl','experimental-webgl'];
+
+		if(!seq)
+			throw 'Incorrect WebGL version, must be 1 or 2';
+
+		var context_options = {
+			alpha: options.alpha === undefined ? true : options.alpha,
+			depth: options.depth === undefined ? true : options.depth,
+			stencil: options.stencil === undefined ? true : options.stencil,
+			antialias: options.antialias === undefined ? true : options.antialias,
+			premultipliedAlpha: options.premultipliedAlpha === undefined ? true : options.premultipliedAlpha,
+			preserveDrawingBuffer: options.preserveDrawingBuffer === undefined ? true : options.preserveDrawingBuffer
+		};
+
+		for(var i = 0; i < seq.length; ++i)
+		{
+			try { gl = canvas.getContext( seq[i], context_options ); } catch (e) {}
+			if(gl)
+				break;
+		}
+
+		if (!gl)
+		{
+			if( canvas.getContext( "webgl" ) )
+				throw 'WebGL supported but not with those parameters';
+			throw 'WebGL not supported';
+		}
+
+		//context globals
+		gl.webgl_version = gl.constructor.name === "WebGL2RenderingContext" ? 2 : 1;
+		global.gl = gl;
+		canvas.is_webgl = true;
+		canvas.gl = gl;
+		gl.context_id = this.last_context_id++;
+
+		//get all supported extensions
+		var supported_extensions = gl.getSupportedExtensions();
+		gl.extensions = {};
+		for(var i in supported_extensions)
+			gl.extensions[ supported_extensions[i] ] = gl.getExtension( supported_extensions[i] );
+		gl.derivatives_supported = gl.extensions['OES_standard_derivatives'] != null || gl.webgl_version > 1;
+
+		/*
+		gl.extensions["OES_standard_derivatives"] = gl.derivatives_supported = gl.getExtension('OES_standard_derivatives') || false;
+		gl.extensions["WEBGL_depth_texture"] = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture") || gl.getExtension("MOZ_WEBGL_depth_texture");
+		gl.extensions["OES_element_index_uint"] = gl.getExtension("OES_element_index_uint");
+		gl.extensions["WEBGL_draw_buffers"] = gl.getExtension("WEBGL_draw_buffers");
+		gl.extensions["EXT_shader_texture_lod"] = gl.getExtension("EXT_shader_texture_lod");
+		gl.extensions["EXT_sRGB"] = gl.getExtension("EXT_sRGB");
+		gl.extensions["EXT_texture_filter_anisotropic"] = gl.getExtension("EXT_texture_filter_anisotropic") || gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic") || gl.getExtension("MOZ_EXT_texture_filter_anisotropic");
+		gl.extensions["EXT_frag_depth"] = gl.getExtension("EXT_frag_depth") || gl.getExtension("WEBKIT_EXT_frag_depth") || gl.getExtension("MOZ_EXT_frag_depth");
+		gl.extensions["WEBGL_lose_context"] = gl.getExtension("WEBGL_lose_context") || gl.getExtension("WEBKIT_WEBGL_lose_context") || gl.getExtension("MOZ_WEBGL_lose_context");
+		gl.extensions["ANGLE_instanced_arrays"] = gl.getExtension("ANGLE_instanced_arrays");
+		gl.extensions["disjoint_timer_query"] = gl.getExtension("EXT_disjoint_timer_query");
+
+		//for float textures
+		gl.extensions["OES_texture_float_linear"] = gl.getExtension("OES_texture_float_linear");
+		if(gl.extensions["OES_texture_float_linear"])
+			gl.extensions["OES_texture_float"] = gl.getExtension("OES_texture_float");
+		gl.extensions["EXT_color_buffer_float"] = gl.getExtension("EXT_color_buffer_float");
+
+		//for half float textures in webgl 1 require extension
+		gl.extensions["OES_texture_half_float_linear"] = gl.getExtension("OES_texture_half_float_linear");
+		if(gl.extensions["OES_texture_half_float_linear"])
+			gl.extensions["OES_texture_half_float"] = gl.getExtension("OES_texture_half_float");
+		*/
+
+		if( gl.webgl_version == 1 )
+			gl.HIGH_PRECISION_FORMAT = gl.extensions["OES_texture_half_float"] ? GL.HALF_FLOAT_OES : (gl.extensions["OES_texture_float"] ? GL.FLOAT : GL.UNSIGNED_BYTE); //because Firefox dont support half float
+		else
+			gl.HIGH_PRECISION_FORMAT = GL.HALF_FLOAT_OES;
+
+		gl.max_texture_units = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+
+		//viewport hack to retrieve it without using getParameter (which is slow and generates garbage)
+		if(!gl._viewport_func)
+		{
+			gl._viewport_func = gl.viewport;
+			gl.viewport_data = new Float32Array([0,0,gl.canvas.width,gl.canvas.height]); //32000 max viewport, I guess its fine
+			gl.viewport = function(a,b,c,d) { var v = this.viewport_data; v[0] = a|0; v[1] = b|0; v[2] = c|0; v[3] = d|0; this._viewport_func(a,b,c,d); }
+			gl.getViewport = function(v) { 
+				if(v) { v[0] = gl.viewport_data[0]; v[1] = gl.viewport_data[1]; v[2] = gl.viewport_data[2]; v[3] = gl.viewport_data[3]; return v; }
+				return new Float32Array( gl.viewport_data );
+			};
+			gl.setViewport = function( v, flip_y ) {
+				gl.viewport_data.set(v);
+				if(flip_y)
+					gl.viewport_data[1] = this.drawingBufferHeight-v[1]-v[3];
+				this._viewport_func(v[0],gl.viewport_data[1],v[2],v[3]);
+			};
+		}
+		else
+			console.warn("Creating LiteGL context over the same canvas twice");
+
+		//reverse names helper (assuming no names repeated)
+		if(!GL.reverse)
+		{
+			GL.reverse = {}; 
+			for(var i in gl)
+				if( gl[i] && gl[i].constructor === Number )
+					GL.reverse[ gl[i] ] = i;
+		}
+		
+		//just some checks
+		if(typeof(glMatrix) == "undefined")
+			throw("glMatrix not found, LiteGL requires glMatrix to be included");
+
+		var last_click_time = 0;
+
+		//some global containers, use them to reuse assets
+		gl.shaders = {};
+		gl.textures = {};
+		gl.meshes = {};
+
+		/**
+		* sets this context as the current global gl context (in case you have more than one)
+		* @method makeCurrent
+		*/
+		gl.makeCurrent = function()
+		{
+			global.gl = this;
+		}
+
+		/**
+		* executes callback inside this webgl context
+		* @method execute
+		* @param {Function} callback
+		*/
+		gl.execute = function(callback)
+		{
+			var old_gl = global.gl;
+			global.gl = this;
+			callback();
+			global.gl = old_gl;
+		}
+
+
+		/**
+		* Launch animation loop (calls gl.onupdate and gl.ondraw every frame)
+		* example: gl.ondraw = function(){ ... }   or  gl.onupdate = function(dt) { ... }
+		* @method animate
+		*/
+		gl.animate = function(v) {
+			if(v === false)
+			{
+				global.cancelAnimationFrame( this._requestFrame_id );
+				this._requestFrame_id = null;
+				return;
+			}
+
+			var post = global.requestAnimationFrame;
+			var time = getTime();
+			var context = this;
+
+			//loop only if browser tab visible
+			function loop() {
+				if(gl.destroyed) //to stop rendering once it is destroyed
+					return;
+
+				context._requestFrame_id = post(loop); //do it first, in case it crashes
+
+				var now = getTime();
+				var dt = (now - time) * 0.001;
+				if(context.mouse)
+					context.mouse.last_buttons = context.mouse.buttons;
+				if (context.onupdate) 
+					context.onupdate(dt);
+				LEvent.trigger( context, "update", dt);
+				if (context.ondraw)
+				{
+					//make sure the ondraw is called using this gl context (in case there is more than one)
+					var old_gl = global.gl;
+					global.gl = context;
+					//call ondraw
+					context.ondraw();
+					LEvent.trigger(context,"draw");
+					//restore old context
+					global.gl = old_gl;
+				}
+				time = now;
+			}
+			this._requestFrame_id = post(loop); //launch main loop
+		}	
+
+		//store binded to be able to remove them if destroyed
+		/*
+		var _binded_events = [];
+		function addEvent(object, type, callback)
+		{
+			_binded_events.push(object,type,callback);
+		}
+		*/
+
+		/**
+		* Destroy this WebGL context (removes also the Canvas from the DOM)
+		* @method destroy
+		*/
+		gl.destroy = function() {
+			//unbind global events
+			if(onkey_handler)
+			{
+				document.removeEventListener("keydown", onkey_handler );
+				document.removeEventListener("keyup", onkey_handler );
+			}
+
+			if(this.canvas.parentNode)
+				this.canvas.parentNode.removeChild(this.canvas);
+			this.destroyed = true;
+			if(global.gl == this)
+				global.gl = null;
+		}
+
+		var mouse = gl.mouse = {
+			buttons: 0, //this should always be up-to-date with mouse state
+			last_buttons: 0, //button state in the previous frame
+			left_button: false,
+			middle_button: false,
+			right_button: false,
+			position: new Float32Array(2),
+			x:0, //in canvas coordinates
+			y:0,
+			deltax: 0,
+			deltay: 0,
+			clientx:0, //in client coordinates
+			clienty:0,
+			isInsideRect: function(x,y,w,h, flip_y )
+			{
+				var mouse_y = this.y;
+				if(flip_y)
+					mouse_y = gl.canvas.height - mouse_y;
+				if( this.x > x && this.x < x + w &&
+					mouse_y > y && mouse_y < y + h)
+					return true;
+				return false;
+			},
+
+			/**
+			* returns true if button num is pressed (where num could be GL.LEFT_MOUSE_BUTTON, GL.RIGHT_MOUSE_BUTTON, GL.MIDDLE_MOUSE_BUTTON
+			* @method captureMouse
+			* @param {boolean} capture_wheel capture also the mouse wheel
+			*/
+			isButtonPressed: function(num)
+			{
+				if(num == GL.LEFT_MOUSE_BUTTON)
+					return this.buttons & GL.LEFT_MOUSE_BUTTON_MASK;
+				if(num == GL.MIDDLE_MOUSE_BUTTON)
+					return this.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK;
+				if(num == GL.RIGHT_MOUSE_BUTTON)
+					return this.buttons & GL.RIGHT_MOUSE_BUTTON_MASK;
+			},
+
+			wasButtonPressed: function(num)
+			{
+				var mask = 0;
+				if(num == GL.LEFT_MOUSE_BUTTON)
+					mask = GL.LEFT_MOUSE_BUTTON_MASK;
+				else if(num == GL.MIDDLE_MOUSE_BUTTON)
+					mask = GL.MIDDLE_MOUSE_BUTTON_MASK;
+				else if(num == GL.RIGHT_MOUSE_BUTTON)
+					mask = GL.RIGHT_MOUSE_BUTTON_MASK;
+				return (this.buttons & mask) && !(this.last_buttons & mask);
+			}
+		};
+
+		/**
+		* Tells the system to capture mouse events on the canvas. 
+		* This will trigger onmousedown, onmousemove, onmouseup, onmousewheel callbacks assigned in the gl context
+		* example: gl.onmousedown = function(e){ ... }
+		* The event is a regular MouseEvent with some extra parameters
+		* @method captureMouse
+		* @param {boolean} capture_wheel capture also the mouse wheel
+		*/
+		gl.captureMouse = function(capture_wheel, translate_touchs ) {
+
+			canvas.addEventListener("pointerdown", onmouse);
+			canvas.addEventListener("pointermove", onmouse);
+			canvas.addEventListener("dragstart", onmouse);
+			//canvas.addEventListener("pointerup", onmouse); ??
+			if(capture_wheel)
+				canvas.addEventListener("wheel", onmouse, false);
+
+			//prevent right click context menu
+			canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); return false; });
+
+			if( translate_touchs )
+				this.captureTouch( true );
+		}
+
+		function onmouse(e) {
+
+			if(gl.ignore_events)
+				return;
+			//console.log(e.type); //debug
+			var old_mouse_mask = gl.mouse.buttons;
+			GL.augmentEvent(e, canvas);
+			e.eventType = e.eventType || e.type; //type cannot be overwritten, so I make a clone to allow me to overwrite
+			var now = getTime();
+
+			//gl.mouse info
+			mouse.dragging = e.dragging;
+			mouse.position[0] = e.canvasx;
+			mouse.position[1] = e.canvasy;
+			mouse.x = e.canvasx;
+			mouse.y = e.canvasy;
+			mouse.mousex = e.mousex;
+			mouse.mousey = e.mousey;
+			mouse.canvasx = e.canvasx;
+			mouse.canvasy = e.canvasy;
+			mouse.clientx = e.mousex;
+			mouse.clienty = e.mousey;
+			mouse.buttons = e.buttons;
+			mouse.left_button = !!(mouse.buttons & GL.LEFT_MOUSE_BUTTON_MASK);
+			mouse.middle_button = !!(mouse.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK);
+			mouse.right_button = !!(mouse.buttons & GL.RIGHT_MOUSE_BUTTON_MASK);
+
+			if(e.eventType == "pointerdown")
+			{
+				if(old_mouse_mask == 0) //no mouse button was pressed till now
+				{
+					canvas.removeEventListener("pointermove", onmouse);
+					var doc = canvas.ownerDocument;
+					doc.addEventListener("pointermove", onmouse);
+					doc.addEventListener("pointerup", onmouse);
+				}
+				last_click_time = now;
+
+				if(gl.onmousedown)
+					gl.onmousedown(e);
+				LEvent.trigger(gl,"pointerdown");
+			}
+			else if(e.eventType == "pointermove")
+			{ 
+				if(gl.onmousemove)
+					gl.onmousemove(e); 
+				LEvent.trigger(gl,"pointermove",e);
+			} 
+			else if(e.eventType == "pointerup")
+			{
+				//console.log("pointerup");
+				if(gl.mouse.buttons == 0) //no more buttons pressed
+				{
+					canvas.addEventListener("pointermove", onmouse);
+					var doc = canvas.ownerDocument;
+					doc.removeEventListener("pointermove", onmouse);
+					doc.removeEventListener("pointerup", onmouse);
+				}
+				e.click_time = now - last_click_time;
+				//last_click_time = now; //commented to avoid reseting click time when unclicking two mouse buttons
+
+				if(gl.onmouseup)
+					gl.onmouseup(e);
+				LEvent.trigger(gl,"pointerup",e);
+			}
+			else if(e.eventType == "wheel")
+			{ 
+				if(e.type == "wheel")
+					e.wheel = -e.deltaY; //in firefox deltaY is 1 while in Chrome is 120
+				else
+					e.wheel = (e.wheelDeltaY != null ? e.wheelDeltaY : e.detail * -60);
+
+				//from stack overflow
+				//firefox doesnt have wheelDelta
+				e.delta = e.wheelDelta !== undefined ? (e.wheelDelta/40) : (e.deltaY ? -e.deltaY/3 : 0);
+				//console.log(e.delta);
+				if(gl.onmousewheel)
+					gl.onmousewheel(e);
+
+				LEvent.trigger(gl, "wheel", e);
+			}
+			else if(e.eventType == "dragstart")
+			{
+				if(gl.ondragstart)
+					gl.ondragstart(e);
+				LEvent.trigger(gl, "dragstart", e);
+			}
+
+			if(gl.onmouse)
+				gl.onmouse(e);
+
+			if(!e.skip_preventDefault)
+			{
+				if(e.eventType != "pointermove")
+					e.stopPropagation();
+				e.preventDefault();
+				return false;
+			}
+		}
+
+		var translate_touches = false;
+
+		gl.captureTouch = function( translate_to_mouse_events )
+		{
+			translate_touches = translate_to_mouse_events;
+
+			canvas.addEventListener("touchstart", ontouch, true);
+			canvas.addEventListener("touchmove", ontouch, true);
+			canvas.addEventListener("touchend", ontouch, true);
+			canvas.addEventListener("touchcancel", ontouch, true);   
+
+			canvas.addEventListener('gesturestart', ongesture );
+			canvas.addEventListener('gesturechange', ongesture );
+			canvas.addEventListener('gestureend', ongesture );
+		}
+
+		//translates touch events in mouseevents
+		function ontouch( e )
+		{
+			var touches = e.changedTouches,
+				first = touches[0],
+				type = "";
+
+			if( gl.ontouch && gl.ontouch(e) === true )
+				return;
+
+			if( LEvent.trigger( gl, e.type, e ) === true )
+				return;
+
+			if(!translate_touches)
+				return;
+
+			//ignore secondary touches
+			if(e.touches.length && e.changedTouches[0].identifier !== e.touches[0].identifier)
+				return;
+				
+			if(touches > 1)
+				return;
+
+			switch(e.type)
+			{
+				case "touchstart": type = "pointerdown"; break;
+				case "touchmove":  type = "pointermove"; break;        
+				case "touchend":   type = "pointerup"; break;
+				default: return;
+			}
+
+			var simulatedEvent = document.createEvent("MouseEvent");
+			simulatedEvent.initMouseEvent(type, true, true, window, 1,
+									first.screenX, first.screenY,
+									first.clientX, first.clientY, false,
+									false, false, false, 0/*left*/, null);
+			simulatedEvent.originalEvent = simulatedEvent;
+			simulatedEvent.is_touch = true;
+			first.target.dispatchEvent( simulatedEvent );
+			e.preventDefault();
+		}
+
+		function ongesture(e)
+		{
+			e.eventType = e.type;
+
+			if(gl.ongesture && gl.ongesture(e) === false )
+				return;
+
+			if( LEvent.trigger( gl, e.type, e ) === false )
+				return;
+
+			e.preventDefault();
+		}
+
+		var keys = gl.keys = {};
+
+		/**
+		* Tells the system to capture key events on the canvas. This will trigger onkey
+		* @method captureKeys
+		* @param {boolean} prevent_default prevent default behaviour (like scroll on the web, etc)
+		* @param {boolean} only_canvas only caches keyboard events if they happen when the canvas is in focus
+		*/
+		var onkey_handler = null;
+		gl.captureKeys = function( prevent_default, only_canvas ) {
+			if(onkey_handler) 
+				return;
+			gl.keys = {};
+
+			var target = only_canvas ? gl.canvas : document;
+
+			document.addEventListener("keydown", inner );
+			document.addEventListener("keyup", inner );
+			function inner(e) { onkey(e, prevent_default); }
+			onkey_handler = inner;
+		}
+
+
+
+		function onkey(e, prevent_default)
+		{
+			e.eventType = e.type; //type cannot be overwritten, so I make a clone to allow me to overwrite
+
+			var target_element = e.target.nodeName.toLowerCase();
+			if(target_element === "input" || target_element === "textarea" || target_element === "select")
+				return;
+
+			e.character = String.fromCharCode(e.keyCode).toLowerCase();
+			var prev_state = false;
+			var key = GL.mapKeyCode(e.keyCode);
+			if(!key) //this key doesnt look like an special key
+				key = e.character;
+
+			//regular key
+			if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+				if (key) 
+					gl.keys[key] = e.type == "keydown";
+				prev_state = gl.keys[e.keyCode];
+				gl.keys[e.keyCode] = e.type == "keydown";
+			}
+
+			//avoid repetition if key stays pressed
+			if(prev_state != gl.keys[e.keyCode])
+			{
+				if(e.type == "keydown" && gl.onkeydown) 
+					gl.onkeydown(e);
+				else if(e.type == "keyup" && gl.onkeyup) 
+					gl.onkeyup(e);
+				LEvent.trigger(gl, e.type, e);
+			}
+
+			if(gl.onkey)
+				gl.onkey(e);
+
+			if(prevent_default && (e.isChar || GL.blockable_keys[e.keyIdentifier || e.key ]) )
+				e.preventDefault();
+		}
+
+		//gamepads
+		gl.gamepads = null;
+		/*
+		function onButton(e, pressed)
+		{
+			console.log(e);
+			if(pressed && gl.onbuttondown)
+				gl.onbuttondown(e);
+			else if(!pressed && gl.onbuttonup)
+				gl.onbuttonup(e);
+			if(gl.onbutton)
+				gl.onbutton(e);
+			LEvent.trigger(gl, pressed ? "buttondown" : "buttonup", e );
+		}
+		function onGamepad(e)
+		{
+			console.log(e);
+			if(gl.ongamepad) 
+				gl.ongamepad(e);
+		}
+		*/
+
+		/**
+		* Tells the system to capture gamepad events on the canvas. 
+		* @method captureGamepads
+		*/
+		gl.captureGamepads = function()
+		{
+			var getGamepads = navigator.getGamepads || navigator.webkitGetGamepads || navigator.mozGetGamepads; 
+			if(!getGamepads) return;
+			this.gamepads = getGamepads.call(navigator);
+
+			//only in firefox, so I cannot rely on this
+			/*
+			window.addEventListener("gamepadButtonDown", function(e) { onButton(e, true); }, false);
+			window.addEventListener("MozGamepadButtonDown", function(e) { onButton(e, true); }, false);
+			window.addEventListener("WebkitGamepadButtonDown", function(e) { onButton(e, true); }, false);
+			window.addEventListener("gamepadButtonUp", function(e) { onButton(e, false); }, false);
+			window.addEventListener("MozGamepadButtonUp", function(e) { onButton(e, false); }, false);
+			window.addEventListener("WebkitGamepadButtonUp", function(e) { onButton(e, false); }, false);
+			window.addEventListener("gamepadconnected", onGamepad, false);
+			window.addEventListener("gamepaddisconnected", onGamepad, false);
+			*/
+
+		}
+
+		/**
+		* returns the detected gamepads on the system
+		* @method getGamepads
+		* @param {bool} skip_mapping if set to true it returns the basic gamepad, otherwise it returns a class with mapping info to XBOX controller
+		*/
+		gl.getGamepads = function(skip_mapping)
+		{
+			//gamepads
+			var getGamepads = navigator.getGamepads || navigator.webkitGetGamepads || navigator.mozGetGamepads; 
+			if(!getGamepads)
+				return;
+			var gamepads = getGamepads.call(navigator);
+			if(!this.gamepads)
+				this.gamepads = [];
+
+			//iterate to generate events
+			for(var i = 0; i < 4; i++)
+			{
+				var gamepad = gamepads[i]; //current state
+
+				if(gamepad && !skip_mapping)
+					addGamepadXBOXmapping(gamepad);
+
+				//launch connected gamepads events
+				if(gamepad && !gamepad.prev_buttons)
+				{
+					gamepad.prev_buttons = new Uint8Array(32);
+					var event = new CustomEvent("gamepadconnected");
+					event.eventType = event.type;
+					event.gamepad = gamepad;
+					if(this.ongamepadconnected)
+						this.ongamepadconnected(event);
+					LEvent.trigger(gl,"gamepadconnected",event);
+				}
+				/*
+				else if(old_gamepad && !gamepad)
+				{
+					var event = new CustomEvent("gamepaddisconnected");
+					event.eventType = event.type;
+					event.gamepad = old_gamepad;
+					if(this.ongamepaddisconnected)
+						this.ongamepaddisconnected(event);
+					LEvent.trigger(gl,"gamepaddisconnected",event);
+				}
+				*/
+
+				//seek buttons changes to trigger events
+				if(gamepad)
+				{
+					for(var j = 0; j < gamepad.buttons.length; ++j)
+					{
+						var button = gamepad.buttons[j];
+						button.was_pressed = false;
+						if( button.pressed && !gamepad.prev_buttons[j] )
+						{
+							button.was_pressed = true;
+							var event = new CustomEvent("gamepadButtonDown");
+							event.eventType = event.type;
+							event.button = button;
+							event.which = j;
+							event.gamepad = gamepad;
+							if(gl.onbuttondown)
+								gl.onbuttondown(event);
+							LEvent.trigger(gl,"buttondown",event);
+						}
+						else if( !button.pressed && gamepad.prev_buttons[j] )
+						{
+							var event = new CustomEvent("gamepadButtonUp");
+							event.eventType = event.type;
+							event.button = button;
+							event.which = j;
+							event.gamepad = gamepad;
+							if(gl.onbuttondown)
+								gl.onbuttondown(event);
+							LEvent.trigger(gl,"buttonup",event);
+						}
+
+						gamepad.prev_buttons[j] = button.pressed ? 1 : 0;
+					}
+				}
+			}
+			this.gamepads = gamepads;
+			return gamepads;
+		}
+
+		function addGamepadXBOXmapping(gamepad)
+		{
+			//xbox controller mapping
+			var xbox = gamepad.xbox || { axes:[], buttons:{}, hat: ""};
+			xbox.axes["lx"] = gamepad.axes[0];
+			xbox.axes["ly"] = gamepad.axes[1];
+			xbox.axes["rx"] = gamepad.axes[2];
+			xbox.axes["ry"] = gamepad.axes[3];
+			xbox.axes["triggers"] = gamepad.axes[4];
+
+			for(var i = 0; i < gamepad.buttons.length; i++)
+			{
+				switch(i) //I use a switch to ensure that a player with another gamepad could play
+				{
+					case 0: xbox.buttons["a"] = gamepad.buttons[i].pressed; break;
+					case 1: xbox.buttons["b"] = gamepad.buttons[i].pressed; break;
+					case 2: xbox.buttons["x"] = gamepad.buttons[i].pressed; break;
+					case 3: xbox.buttons["y"] = gamepad.buttons[i].pressed; break;
+					case 4: xbox.buttons["lb"] = gamepad.buttons[i].pressed; break;
+					case 5: xbox.buttons["rb"] = gamepad.buttons[i].pressed; break;
+					case 6: xbox.buttons["lt"] = gamepad.buttons[i].pressed; break;
+					case 7: xbox.buttons["rt"] = gamepad.buttons[i].pressed; break;
+					case 8: xbox.buttons["back"] = gamepad.buttons[i].pressed; break;
+					case 9: xbox.buttons["start"] = gamepad.buttons[i].pressed; break;
+					case 10: xbox.buttons["ls"] = gamepad.buttons[i].pressed; break;
+					case 11: xbox.buttons["rs"] = gamepad.buttons[i].pressed; break;
+					case 12: if( gamepad.buttons[i].pressed) xbox.hat += "up"; break;
+					case 13: if( gamepad.buttons[i].pressed) xbox.hat += "down"; break;
+					case 14: if( gamepad.buttons[i].pressed) xbox.hat += "left"; break;
+					case 15: if( gamepad.buttons[i].pressed) xbox.hat += "right"; break;
+					case 16: xbox.buttons["home"] = gamepad.buttons[i].pressed; break;
+					default:
+				}
+			}
+			gamepad.xbox = xbox;
+		}
+
+		/**
+		* launches de canvas in fullscreen mode
+		* @method fullscreen
+		*/
+		gl.fullscreen = function()
+		{
+			var canvas = this.canvas;
+			if(canvas.requestFullScreen)
+				canvas.requestFullScreen();
+			else if(canvas.webkitRequestFullScreen)
+				canvas.webkitRequestFullScreen();
+			else if(canvas.mozRequestFullScreen)
+				canvas.mozRequestFullScreen();
+			else
+				console.error("Fullscreen not supported");
+		}
+
+		/**
+		* returns a canvas with a snapshot of an area
+		* this is safer than using the canvas itself due to internals of webgl
+		* @method snapshot
+		* @param {Number} startx viewport x coordinate
+		* @param {Number} starty viewport y coordinate from bottom
+		* @param {Number} areax viewport area width
+		* @param {Number} areay viewport area height
+		* @return {Canvas} canvas
+		*/
+		gl.snapshot = function(startx, starty, areax, areay, skip_reverse)
+		{
+			var canvas = GL.createCanvas(areax,areay);
+			var ctx = canvas.getContext("2d");
+			var pixels = ctx.getImageData(0,0,canvas.width,canvas.height);
+
+			var buffer = new Uint8Array(areax * areay * 4);
+			gl.readPixels(startx, starty, canvas.width, canvas.height, gl.RGBA,gl.UNSIGNED_BYTE, buffer);
+
+			pixels.data.set( buffer );
+			ctx.putImageData(pixels,0,0);
+
+			if(skip_reverse)
+				return canvas;
+
+			//flip image 
+			var final_canvas = GL.createCanvas(areax,areay);
+			var ctx = final_canvas.getContext("2d");
+			ctx.translate(0,areay);
+			ctx.scale(1,-1);
+			ctx.drawImage(canvas,0,0);
+
+			return final_canvas;
+		}
+
+		//from https://webgl2fundamentals.org/webgl/lessons/webgl1-to-webgl2.html
+		function getAndApplyExtension( gl, name ) {
+			var ext = gl.getExtension(name);
+			if (!ext) {
+				return false;
+			}
+			var suffix = name.split("_")[0];
+			var prefix = suffix = '_';
+			var suffixRE = new RegExp(suffix + '$');
+			var prefixRE = new RegExp('^' + prefix);
+			for (var key in ext) {
+				var val = ext[key];
+				if (typeof(val) === 'function') {
+					// remove suffix (eg: bindVertexArrayOES -> bindVertexArray)
+					var unsuffixedKey = key.replace(suffixRE, '');
+					if (key.substing)
+						gl[unprefixedKey] = ext[key].bind(ext);
+				} else {
+					var unprefixedKey = key.replace(prefixRE, '');
+					gl[unprefixedKey] = ext[key];
+				}
+			}
+		}
+
+
+		//mini textures manager
+		var loading_textures = {};
+		/**
+		* returns a texture and caches it inside gl.textures[]
+		* @method loadTexture
+		* @param {String} url
+		* @param {Object} options (same options as when creating a texture)
+		* @param {Function} callback function called once the texture is loaded
+		* @return {Texture} texture
+		*/
+		gl.loadTexture = function(url, options, on_load)
+		{
+			if(this.textures[ url ])
+				return this.textures[url];
+
+			if( loading_textures[url] )
+				return null;
+
+			var img = new Image();
+			img.url = url;
+			img.onload = function()
+			{
+				var texture = GL.Texture.fromImage(this, options);
+				texture.img = this;
+				gl.textures[this.url] = texture;
+				delete loading_textures[this.url];
+				if(on_load)
+					on_load(texture);
+			} 
+			img.src = url;
+			loading_textures[url] = true;
+			return null;
+		}
+
+		/**
+		* draws a texture to the viewport
+		* @method drawTexture
+		* @param {Texture} texture
+		* @param {number} x in viewport coordinates 
+		* @param {number} y in viewport coordinates 
+		* @param {number} w in viewport coordinates 
+		* @param {number} h in viewport coordinates 
+		* @param {number} tx texture x in texture coordinates
+		* @param {number} ty texture y in texture coordinates
+		* @param {number} tw texture width in texture coordinates
+		* @param {number} th texture height in texture coordinates
+		*/
+		gl.drawTexture = (function() {
+			//static variables: less garbage
+			var identity = mat3.create();
+			var pos = vec2.create();
+			var size = vec2.create();
+			var area = vec4.create();
+			var white = vec4.fromValues(1,1,1,1);
+			var viewport = vec2.create();
+			var _uniforms = {u_texture: 0, u_position: pos, u_color: white, u_size: size, u_texture_area: area, u_viewport: viewport, u_transform: identity };
+
+			return (function(texture, x,y, w,h, tx,ty, tw,th, shader, uniforms)
+			{
+				pos[0] = x;	pos[1] = y;
+				if(w === undefined)
+					w = texture.width;
+				if(h === undefined)
+					h = texture.height;
+				size[0] = w;
+				size[1] = h;
+
+				if(tx === undefined) tx = 0;
+				if(ty === undefined) ty = 0;
+				if(tw === undefined) tw = texture.width;
+				if(th === undefined) th = texture.height;
+
+				area[0] = tx / texture.width;
+				area[1] = ty / texture.height;
+				area[2] = (tx + tw) / texture.width;
+				area[3] = (ty + th) / texture.height;
+
+				viewport[0] = this.viewport_data[2];
+				viewport[1] = this.viewport_data[3];
+
+				shader = shader || Shader.getPartialQuadShader(this);
+				var mesh = Mesh.getScreenQuad(this);
+				texture.bind(0);
+				shader.uniforms( _uniforms );
+				if( uniforms )
+					shader.uniforms( uniforms );
+				shader.draw( mesh, gl.TRIANGLES );
+			});
+		})();
+
+		gl.canvas.addEventListener("webglcontextlost", function(e) {
+			e.preventDefault();
+			gl.context_lost = true;
+			if(gl.onlosecontext)
+				gl.onlosecontext(e);
+		}, false);
+
+		/**
+		* use it to reset the the initial gl state
+		* @method gl.reset
+		*/
+		gl.reset = function()
+		{
+			//viewport
+			gl.viewport(0,0, this.canvas.width, this.canvas.height );
+
+			//flags
+			gl.disable( gl.BLEND );
+			gl.disable( gl.CULL_FACE );
+			gl.disable( gl.DEPTH_TEST );
+			gl.frontFace( gl.CCW );
+
+			//texture
+			gl._current_texture_drawto = null;
+			gl._current_fbo_color = null;
+			gl._current_fbo_depth = null;
+		}
+
+		gl.dump = function()
+		{
+			console.log("userAgent: ", navigator.userAgent );
+			console.log("Supported extensions:");
+			var extensions = gl.getSupportedExtensions();
+			console.log( extensions.join(",") );
+			var info = [ "VENDOR", "VERSION", "MAX_VERTEX_ATTRIBS", "MAX_VARYING_VECTORS", "MAX_VERTEX_UNIFORM_VECTORS", "MAX_VERTEX_TEXTURE_IMAGE_UNITS", "MAX_FRAGMENT_UNIFORM_VECTORS", "MAX_TEXTURE_SIZE", "MAX_TEXTURE_IMAGE_UNITS" ];
+			console.log("WebGL info:");
+			for(var i in info)
+				console.log(" * " + info[i] + ": " + gl.getParameter( gl[info[i]] ));
+			console.log("*************************************************")
+		}
+
+		//Reset state
+		gl.reset();
+
+		//Return
+		return gl;
+	}
+
+	mapKeyCode(code) {
+		var named = {
+			8: 'BACKSPACE',
+			9: 'TAB',
+			13: 'ENTER',
+			16: 'SHIFT',
+			17: 'CTRL',
+			27: 'ESCAPE',
+			32: 'SPACE',
+			37: 'LEFT',
+			38: 'UP',
+			39: 'RIGHT',
+			40: 'DOWN'
+		};
+		return named[code] || (code >= 65 && code <= 90 ? String.fromCharCode(code) : null);
+	}
+
+	//adds extra info to the MouseEvent (coordinates in canvas axis, deltas and button state)
+	augmentEvent(e, root_element) {
+		var offset_left = 0;
+		var offset_top = 0;
+		var b = null;
+
+		root_element = root_element || e.target || gl.canvas;
+		b = root_element.getBoundingClientRect();
+			
+		e.mousex = e.clientX - b.left;
+		e.mousey = e.clientY - b.top;
+		e.canvasx = e.mousex;
+		e.canvasy = b.height - e.mousey;
+		e.deltax = 0;
+		e.deltay = 0;
+		
+		if(e.type == "pointerdown")
+		{
+			this.dragging = true;
+			//gl.mouse.buttons |= (1 << e.which); //enable
+		}
+		else if (e.type == "pointermove")
+		{
+		}
+		else if (e.type == "pointerup")
+		{
+			//gl.mouse.buttons = gl.mouse.buttons & ~(1 << e.which);
+			if(e.buttons == 0)
+				this.dragging = false;
+		}
+
+		if( e.movementX !== undefined && !GL.isMobile() ) //pointer lock (mobile gives always zero)
+		{
+			//console.log( e.movementX )
+			e.deltax = e.movementX;
+			e.deltay = e.movementY;
+		}
+		else
+		{
+			e.deltax = e.mousex - this.last_pos[0];
+			e.deltay = e.mousey - this.last_pos[1];
+		}
+		this.last_pos[0] = e.mousex;
+		this.last_pos[1] = e.mousey;
+
+		//insert info in event
+		e.dragging = this.dragging;
+		e.leftButton = !!(gl.mouse.buttons & GL.LEFT_MOUSE_BUTTON_MASK);
+		e.middleButton = !!(gl.mouse.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK);
+		e.rightButton = !!(gl.mouse.buttons & GL.RIGHT_MOUSE_BUTTON_MASK);
+		//shitty non-coherent API, e.buttons use 1:left,2:right,4:middle) but e.button uses (0:left,1:middle,2:right)
+		e.buttons_mask = 0;
+		if( e.leftButton ) e.buttons_mask = 1;
+		if( e.middleButton ) e.buttons_mask |= 2;
+		if( e.rightButton ) e.buttons_mask |= 4;
+		e.isButtonPressed = function(num) { return this.buttons_mask & (1<<num); }
+	}
+
+	/**
+	* Tells you if the app is running on a mobile device (iOS or Android)
+	* @method isMobile
+	* @return {boolean} true if is running on a iOS or Android device
+	*/
+	isMobile() {
+		if(this.mobile !== undefined)
+			return this.mobile;
+
+		if(!global.navigator) //server side js?
+			return this.mobile = false;
+
+		if( (navigator.userAgent.match(/iPhone/i)) || 
+			(navigator.userAgent.match(/iPod/i)) || 
+			(navigator.userAgent.match(/iPad/i)) || 
+			(navigator.userAgent.match(/Android/i))) {
+			return this.mobile = true;
+		}
+		return this.mobile = false;
+	}
+}
 
 const DEG2RAD = 0.0174532925;
 const RAD2DEG = 57.295779578552306;
@@ -4553,6 +5611,322 @@ Mesh.encoders["mesh"] = function( mesh, options )
 	return lines.join("\n");
 }
 
+if(global.WBin)
+	global.WBin.classes["Mesh"] = Mesh;
+
+Mesh.binary_file_formats["wbin"] = true;
+
+Mesh.parsers["wbin"] = Mesh.fromBinary = function( data_array, options = {} )
+{
+	if(!global.WBin)
+		throw("To use binary meshes you need to install WBin.js from https://github.com/jagenjo/litescene.js/blob/master/src/utils/wbin.js ");
+
+	var o = null;
+	if( data_array.constructor == ArrayBuffer )
+		o = WBin.load( data_array, true );
+	else
+		o = data_array;
+
+	if(!o.info)
+		console.warn("This WBin doesn't seem to contain a mesh. Classname: ", o["@classname"] );
+
+	if( o.format )
+		GL.Mesh.decompress( o );
+
+	var vertex_buffers = {};
+	if(o.vertex_buffers)
+	{
+		for(var i in o.vertex_buffers)
+			vertex_buffers[ o.vertex_buffers[i] ] = o[ o.vertex_buffers[i] ];
+	}
+	else
+	{
+		if(o.vertices) vertex_buffers.vertices = o.vertices;
+		if(o.normals) vertex_buffers.normals = o.normals;
+		if(o.coords) vertex_buffers.coords = o.coords;
+		if(o.weights) vertex_buffers.weights = o.weights;
+		if(o.bone_indices) vertex_buffers.bone_indices = o.bone_indices;
+	}
+
+	var index_buffers = {};
+	if( o.index_buffers )
+	{
+		for(var i in o.index_buffers)
+			index_buffers[ o.index_buffers[i] ] = o[ o.index_buffers[i] ];
+	}
+	else
+	{
+		if(o.triangles) index_buffers.triangles = o.triangles;
+		if(o.wireframe) index_buffers.wireframe = o.wireframe;
+	}
+
+	var mesh = { 
+		vertex_buffers: vertex_buffers,
+		index_buffers: index_buffers,
+		bounding: o.bounding,
+		info: o.info
+	};
+
+	if(o.bones)
+	{
+		mesh.bones = o.bones;
+		//restore Float32array
+		for(var i = 0; i < mesh.bones.length; ++i)
+			mesh.bones[i][1] = mat4.clone(mesh.bones[i][1]);
+		if(o.bind_matrix)
+			mesh.bind_matrix = mat4.clone( o.bind_matrix );		
+	}
+
+	if(o.morph_targets)
+		mesh.morph_targets = o.morph_targets;
+
+	if(options.only_data)
+		return mesh;
+
+	//build mesh object
+	var final_mesh = options.mesh || new GL.Mesh();
+	final_mesh.configure( mesh );
+	return final_mesh;
+}
+
+Mesh.encoders["wbin"] = function( mesh, options )
+{
+	return mesh.toBinary( options );
+}
+
+Mesh.prototype.toBinary = function( options )
+{
+	if(!global.WBin)
+		throw("to use Mesh.toBinary you need to have WBin included. Check the repository for wbin.js");
+
+	if(!this.info)
+		this.info = {};
+
+	//clean data
+	var o = {
+		object_class: "Mesh",
+		info: this.info,
+		groups: this.groups
+	};
+
+	if(this.bones)
+	{
+		var bones = [];
+		//convert to array
+		for(var i = 0; i < this.bones.length; ++i)
+			bones.push([ this.bones[i][0], mat4.toArray( this.bones[i][1] ) ]);
+		o.bones = bones;
+		if(this.bind_matrix)
+			o.bind_matrix = this.bind_matrix;
+	}
+
+	//bounding box
+	if(!this.bounding)	
+		this.updateBoundingBox();
+	o.bounding = this.bounding;
+
+	var vertex_buffers = [];
+	var index_buffers = [];
+
+	for(var i in this.vertexBuffers)
+	{
+		var stream = this.vertexBuffers[i];
+		o[ stream.name ] = stream.data;
+		vertex_buffers.push( stream.name );
+
+		if(stream.name == "vertices")
+			o.info.num_vertices = stream.data.length / 3;
+	}
+
+	for(var i in this.indexBuffers)
+	{
+		var stream = this.indexBuffers[i];
+		o[i] = stream.data;
+		index_buffers.push( i );
+	}
+
+	o.vertex_buffers = vertex_buffers;
+	o.index_buffers = index_buffers;
+
+	//compress wbin using the bounding
+	if( GL.Mesh.enable_wbin_compression ) //apply compression
+		GL.Mesh.compress( o );
+
+	//create pack file
+	var bin = WBin.create( o, "Mesh" ); 
+	return bin;
+}
+
+Mesh.compress = function( o, format )
+{
+	format = format || "bounding_compressed";
+	o.format = {
+		type: format
+	};
+
+	var func = Mesh.compressors[ format ];
+	if(!func)
+		throw("compression format not supported:" + format );
+	return func( o );
+}
+
+Mesh.decompress = function( o )
+{
+	if(!o.format)
+		return;
+	var func = Mesh.decompressors[ o.format.type ];
+	if(!func)
+		throw("decompression format not supported:" + o.format.type );
+	return func( o );
+}
+
+Mesh.compressors["bounding_compressed"] = function(o)
+{
+	if(!o.vertex_buffers)
+		throw("buffers not found");
+
+	var min = BBox.getMin( o.bounding );
+	var max = BBox.getMax( o.bounding );
+	var range = vec3.sub( vec3.create(), max, min );
+
+	var vertices = o.vertices;
+	var new_vertices = new Uint16Array( vertices.length );
+	for(var i = 0; i < vertices.length; i+=3)
+	{
+		new_vertices[i] = ((vertices[i] - min[0]) / range[0]) * 65535;
+		new_vertices[i+1] = ((vertices[i+1] - min[1]) / range[1]) * 65535;
+		new_vertices[i+2] = ((vertices[i+2] - min[2]) / range[2]) * 65535;
+	}
+	o.vertices = new_vertices;		
+
+	if( o.normals )
+	{
+		var normals = o.normals;
+		var new_normals = new Uint8Array( normals.length );
+		var normals_range = new_normals.constructor == Uint8Array ? 255 : 65535;
+		for(var i = 0; i < normals.length; i+=3)
+		{
+			new_normals[i] = (normals[i] * 0.5 + 0.5) * normals_range;
+			new_normals[i+1] = (normals[i+1] * 0.5 + 0.5) * normals_range;
+			new_normals[i+2] = (normals[i+2] * 0.5 + 0.5) * normals_range;
+		}
+		o.normals = new_normals;
+	}
+
+	if( o.coords )
+	{
+		//compute uv bounding: [minu,minv,maxu,maxv]
+		var coords = o.coords;
+		var uvs_bounding = [10000,10000,-10000,-10000];
+		for(var i = 0; i < coords.length; i+=2)
+		{
+			var u = coords[i];
+			if( uvs_bounding[0] > u ) uvs_bounding[0] = u;
+			else if( uvs_bounding[2] < u ) uvs_bounding[2] = u;
+			var v = coords[i+1];
+			if( uvs_bounding[1] > v ) uvs_bounding[1] = v;
+			else if( uvs_bounding[3] < v ) uvs_bounding[3] = v;
+		}
+		o.format.uvs_bounding = uvs_bounding;
+
+		var new_coords = new Uint16Array( coords.length );
+		var range = [ uvs_bounding[2] - uvs_bounding[0], uvs_bounding[3] - uvs_bounding[1] ];
+		for(var i = 0; i < coords.length; i+=2)
+		{
+			new_coords[i] = ((coords[i] - uvs_bounding[0]) / range[0]) * 65535;
+			new_coords[i+1] = ((coords[i+1] - uvs_bounding[1]) / range[1]) * 65535;
+		}
+		o.coords = new_coords;
+	}
+
+	if( o.weights )
+	{
+		var weights = o.weights;
+		var new_weights = new Uint16Array( weights.length ); //using only one byte distorts the meshes a lot
+		var weights_range = new_weights.constructor == Uint8Array ? 255 : 65535;
+		for(var i = 0; i < weights.length; i+=4)
+		{
+			new_weights[i] = weights[i] * weights_range;
+			new_weights[i+1] = weights[i+1] * weights_range;
+			new_weights[i+2] = weights[i+2] * weights_range;
+			new_weights[i+3] = weights[i+3] * weights_range;
+		}
+		o.weights = new_weights;
+	}
+}
+
+
+Mesh.decompressors["bounding_compressed"] = function(o)
+{
+	var bounding = o.bounding;
+	if(!bounding)
+		throw("error in mesh decompressing data: bounding not found, cannot use the bounding decompression.");
+
+	var min = BBox.getMin( bounding );
+	var max = BBox.getMax( bounding );
+	var range = vec3.sub( vec3.create(), max, min );
+
+	var format = o.format;
+
+	var inv8 = 1 / 255;
+	var inv16 = 1 / 65535;
+	var vertices = o.vertices;
+	var new_vertices = new Float32Array( vertices.length );
+	for( var i = 0, l = vertices.length; i < l; i += 3 )
+	{
+		new_vertices[i] = ((vertices[i] * inv16) * range[0]) + min[0];
+		new_vertices[i+1] = ((vertices[i+1] * inv16) * range[1]) + min[1];
+		new_vertices[i+2] = ((vertices[i+2] * inv16) * range[2]) + min[2];
+	}
+	o.vertices = new_vertices;		
+
+	if( o.normals && o.normals.constructor != Float32Array )
+	{
+		var normals = o.normals;
+		var new_normals = new Float32Array( normals.length );
+		var inormals_range = normals.constructor == Uint8Array ? inv8 : inv16;
+		for( var i = 0, l = normals.length; i < l; i += 3 )
+		{
+			new_normals[i] = (normals[i] * inormals_range) * 2.0 - 1.0;
+			new_normals[i+1] = (normals[i+1] * inormals_range) * 2.0 - 1.0;
+			new_normals[i+2] = (normals[i+2] * inormals_range) * 2.0 - 1.0;
+			var N = new_normals.subarray(i,i+3);
+			vec3.normalize(N,N);
+		}
+		o.normals = new_normals;
+	}
+
+	if( o.coords && format.uvs_bounding && o.coords.constructor != Float32Array )
+	{
+		var coords = o.coords;
+		var uvs_bounding = format.uvs_bounding;
+		var range = [ uvs_bounding[2] - uvs_bounding[0], uvs_bounding[3] - uvs_bounding[1] ];
+		var new_coords = new Float32Array( coords.length );
+		for( var i = 0, l = coords.length; i < l; i += 2 )
+		{
+			new_coords[i] = (coords[i] * inv16) * range[0] + uvs_bounding[0];
+			new_coords[i+1] = (coords[i+1] * inv16) * range[1] + uvs_bounding[1];
+		}
+		o.coords = new_coords;
+	}
+
+	//bones are already in Uint8 format so dont need to compress them further, but weights yes
+	if( o.weights && o.weights.constructor != Float32Array ) //do we really need to unpack them? what if we use them like this?
+	{
+		var weights = o.weights;
+		var new_weights = new Float32Array( weights.length );
+		var iweights_range = weights.constructor == Uint8Array ? inv8 : inv16;
+		for(var i = 0, l = weights.length; i < l; i += 4 )
+		{
+			new_weights[i] = weights[i] * iweights_range;
+			new_weights[i+1] = weights[i+1] * iweights_range;
+			new_weights[i+2] = weights[i+2] * iweights_range;
+			new_weights[i+3] = weights[i+3] * iweights_range;
+		}
+		o.weights = new_weights;
+	}
+}
+
 
 
 //this is used when a mesh is dynamic and constantly changes
@@ -8655,1082 +10029,13 @@ class Shader {
 	}
 }
 GL.Shader = Shader;
+export { Shader };
 
 // @TODO: Deal with this:
 //this two variables are a hack to avoid memory allocation on drawCalls
 var temp_attribs_array = new Uint8Array(16);
 var temp_attribs_array_zero = new Uint8Array(16); //should be filled with zeros always
 
-
-/**
-* The global scope that contains all the classes from LiteGL and also all the enums of WebGL so you dont need to create a context to use the values.
-* @class GL
-*/
-
-/**
-* creates a new WebGL context (it can create the canvas or use an existing one)
-* @method create
-* @param {Object} options supported are: 
-* - width
-* - height
-* - canvas
-* - container (string or element)
-* @return {WebGLRenderingContext} webgl context with all the extra functions (check gl in the doc for more info)
-*/
-GL.create = function(options = {}) {
-	var canvas = null;
-	if(options.canvas)
-	{
-		if(typeof(options.canvas) == "string")
-		{
-			canvas = document.getElementById( options.canvas );
-			if(!canvas) throw("Canvas element not found: " + options.canvas );
-		}
-		else 
-			canvas = options.canvas;
-	}
-	else
-	{
-		var root = null;
-		if(options.container)
-			root = options.container.constructor === String ? document.querySelector( options.container ) : options.container;
-		if(root && !options.width)
-		{
-			var rect = root.getBoundingClientRect();
-			options.width = rect.width;
-			options.height = rect.height;
-		}
-
-		canvas = GL.createCanvas(  options.width || 800, options.height || 600 );
-		if(root)
-			root.appendChild(canvas);
-	}
-
-	if (!('alpha' in options)) options.alpha = false;
-
-
-	/**
-	* the webgl context returned by GL.create, its a WebGLRenderingContext with some extra methods added
-	* @class gl
-	*/
-	var gl = null;
-
-	var seq = null;
-	if(options.version == 2)	
-		seq = ['webgl2','experimental-webgl2'];
-	else if(options.version == 1 || options.version === undefined) //default
-		seq = ['webgl','experimental-webgl'];
-	else if(options.version === 0) //latest
-		seq = ['webgl2','experimental-webgl2','webgl','experimental-webgl'];
-
-	if(!seq)
-		throw 'Incorrect WebGL version, must be 1 or 2';
-
-	var context_options = {
-		alpha: options.alpha === undefined ? true : options.alpha,
-		depth: options.depth === undefined ? true : options.depth,
-		stencil: options.stencil === undefined ? true : options.stencil,
-		antialias: options.antialias === undefined ? true : options.antialias,
-		premultipliedAlpha: options.premultipliedAlpha === undefined ? true : options.premultipliedAlpha,
-		preserveDrawingBuffer: options.preserveDrawingBuffer === undefined ? true : options.preserveDrawingBuffer
-	};
-
-	for(var i = 0; i < seq.length; ++i)
-	{
-		try { gl = canvas.getContext( seq[i], context_options ); } catch (e) {}
-		if(gl)
-			break;
-	}
-
-	if (!gl)
-	{
-		if( canvas.getContext( "webgl" ) )
-			throw 'WebGL supported but not with those parameters';
-		throw 'WebGL not supported';
-	}
-
-	//context globals
-	gl.webgl_version = gl.constructor.name === "WebGL2RenderingContext" ? 2 : 1;
-	global.gl = gl;
-	canvas.is_webgl = true;
-	canvas.gl = gl;
-	gl.context_id = this.last_context_id++;
-
-	//get all supported extensions
-	var supported_extensions = gl.getSupportedExtensions();
-	gl.extensions = {};
-	for(var i in supported_extensions)
-		gl.extensions[ supported_extensions[i] ] = gl.getExtension( supported_extensions[i] );
-	gl.derivatives_supported = gl.extensions['OES_standard_derivatives'] != null || gl.webgl_version > 1;
-
-	/*
-	gl.extensions["OES_standard_derivatives"] = gl.derivatives_supported = gl.getExtension('OES_standard_derivatives') || false;
-	gl.extensions["WEBGL_depth_texture"] = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture") || gl.getExtension("MOZ_WEBGL_depth_texture");
-	gl.extensions["OES_element_index_uint"] = gl.getExtension("OES_element_index_uint");
-	gl.extensions["WEBGL_draw_buffers"] = gl.getExtension("WEBGL_draw_buffers");
-	gl.extensions["EXT_shader_texture_lod"] = gl.getExtension("EXT_shader_texture_lod");
-	gl.extensions["EXT_sRGB"] = gl.getExtension("EXT_sRGB");
-	gl.extensions["EXT_texture_filter_anisotropic"] = gl.getExtension("EXT_texture_filter_anisotropic") || gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic") || gl.getExtension("MOZ_EXT_texture_filter_anisotropic");
-	gl.extensions["EXT_frag_depth"] = gl.getExtension("EXT_frag_depth") || gl.getExtension("WEBKIT_EXT_frag_depth") || gl.getExtension("MOZ_EXT_frag_depth");
-	gl.extensions["WEBGL_lose_context"] = gl.getExtension("WEBGL_lose_context") || gl.getExtension("WEBKIT_WEBGL_lose_context") || gl.getExtension("MOZ_WEBGL_lose_context");
-	gl.extensions["ANGLE_instanced_arrays"] = gl.getExtension("ANGLE_instanced_arrays");
-	gl.extensions["disjoint_timer_query"] = gl.getExtension("EXT_disjoint_timer_query");
-
-	//for float textures
-	gl.extensions["OES_texture_float_linear"] = gl.getExtension("OES_texture_float_linear");
-	if(gl.extensions["OES_texture_float_linear"])
-		gl.extensions["OES_texture_float"] = gl.getExtension("OES_texture_float");
-	gl.extensions["EXT_color_buffer_float"] = gl.getExtension("EXT_color_buffer_float");
-
-	//for half float textures in webgl 1 require extension
-	gl.extensions["OES_texture_half_float_linear"] = gl.getExtension("OES_texture_half_float_linear");
-	if(gl.extensions["OES_texture_half_float_linear"])
-		gl.extensions["OES_texture_half_float"] = gl.getExtension("OES_texture_half_float");
-	*/
-
-	if( gl.webgl_version == 1 )
-		gl.HIGH_PRECISION_FORMAT = gl.extensions["OES_texture_half_float"] ? GL.HALF_FLOAT_OES : (gl.extensions["OES_texture_float"] ? GL.FLOAT : GL.UNSIGNED_BYTE); //because Firefox dont support half float
-	else
-		gl.HIGH_PRECISION_FORMAT = GL.HALF_FLOAT_OES;
-
-	gl.max_texture_units = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-
-	//viewport hack to retrieve it without using getParameter (which is slow and generates garbage)
-	if(!gl._viewport_func)
-	{
-		gl._viewport_func = gl.viewport;
-		gl.viewport_data = new Float32Array([0,0,gl.canvas.width,gl.canvas.height]); //32000 max viewport, I guess its fine
-		gl.viewport = function(a,b,c,d) { var v = this.viewport_data; v[0] = a|0; v[1] = b|0; v[2] = c|0; v[3] = d|0; this._viewport_func(a,b,c,d); }
-		gl.getViewport = function(v) { 
-			if(v) { v[0] = gl.viewport_data[0]; v[1] = gl.viewport_data[1]; v[2] = gl.viewport_data[2]; v[3] = gl.viewport_data[3]; return v; }
-			return new Float32Array( gl.viewport_data );
-		};
-		gl.setViewport = function( v, flip_y ) {
-			gl.viewport_data.set(v);
-			if(flip_y)
-				gl.viewport_data[1] = this.drawingBufferHeight-v[1]-v[3];
-			this._viewport_func(v[0],gl.viewport_data[1],v[2],v[3]);
-		};
-	}
-	else
-		console.warn("Creating LiteGL context over the same canvas twice");
-
-	//reverse names helper (assuming no names repeated)
-	if(!GL.reverse)
-	{
-		GL.reverse = {}; 
-		for(var i in gl)
-			if( gl[i] && gl[i].constructor === Number )
-				GL.reverse[ gl[i] ] = i;
-	}
-	
-	//just some checks
-	if(typeof(glMatrix) == "undefined")
-		throw("glMatrix not found, LiteGL requires glMatrix to be included");
-
-	var last_click_time = 0;
-
-	//some global containers, use them to reuse assets
-	gl.shaders = {};
-	gl.textures = {};
-	gl.meshes = {};
-
-	/**
-	* sets this context as the current global gl context (in case you have more than one)
-	* @method makeCurrent
-	*/
-	gl.makeCurrent = function()
-	{
-		global.gl = this;
-	}
-
-	/**
-	* executes callback inside this webgl context
-	* @method execute
-	* @param {Function} callback
-	*/
-	gl.execute = function(callback)
-	{
-		var old_gl = global.gl;
-		global.gl = this;
-		callback();
-		global.gl = old_gl;
-	}
-
-
-	/**
-	* Launch animation loop (calls gl.onupdate and gl.ondraw every frame)
-	* example: gl.ondraw = function(){ ... }   or  gl.onupdate = function(dt) { ... }
-	* @method animate
-	*/
-	gl.animate = function(v) {
-		if(v === false)
-		{
-			global.cancelAnimationFrame( this._requestFrame_id );
-			this._requestFrame_id = null;
-			return;
-		}
-
-		var post = global.requestAnimationFrame;
-		var time = getTime();
-		var context = this;
-
-		//loop only if browser tab visible
-		function loop() {
-			if(gl.destroyed) //to stop rendering once it is destroyed
-				return;
-
-			context._requestFrame_id = post(loop); //do it first, in case it crashes
-
-			var now = getTime();
-			var dt = (now - time) * 0.001;
-			if(context.mouse)
-				context.mouse.last_buttons = context.mouse.buttons;
-			if (context.onupdate) 
-				context.onupdate(dt);
-			LEvent.trigger( context, "update", dt);
-			if (context.ondraw)
-			{
-				//make sure the ondraw is called using this gl context (in case there is more than one)
-				var old_gl = global.gl;
-				global.gl = context;
-				//call ondraw
-				context.ondraw();
-				LEvent.trigger(context,"draw");
-				//restore old context
-				global.gl = old_gl;
-			}
-			time = now;
-		}
-		this._requestFrame_id = post(loop); //launch main loop
-	}	
-
-	//store binded to be able to remove them if destroyed
-	/*
-	var _binded_events = [];
-	function addEvent(object, type, callback)
-	{
-		_binded_events.push(object,type,callback);
-	}
-	*/
-
-	/**
-	* Destroy this WebGL context (removes also the Canvas from the DOM)
-	* @method destroy
-	*/
-	gl.destroy = function() {
-		//unbind global events
-		if(onkey_handler)
-		{
-			document.removeEventListener("keydown", onkey_handler );
-			document.removeEventListener("keyup", onkey_handler );
-		}
-
-		if(this.canvas.parentNode)
-			this.canvas.parentNode.removeChild(this.canvas);
-		this.destroyed = true;
-		if(global.gl == this)
-			global.gl = null;
-	}
-
-	var mouse = gl.mouse = {
-		buttons: 0, //this should always be up-to-date with mouse state
-		last_buttons: 0, //button state in the previous frame
-		left_button: false,
-		middle_button: false,
-		right_button: false,
-		position: new Float32Array(2),
-		x:0, //in canvas coordinates
-		y:0,
-		deltax: 0,
-		deltay: 0,
-		clientx:0, //in client coordinates
-		clienty:0,
-		isInsideRect: function(x,y,w,h, flip_y )
-		{
-			var mouse_y = this.y;
-			if(flip_y)
-				mouse_y = gl.canvas.height - mouse_y;
-			if( this.x > x && this.x < x + w &&
-				mouse_y > y && mouse_y < y + h)
-				return true;
-			return false;
-		},
-
-		/**
-		* returns true if button num is pressed (where num could be GL.LEFT_MOUSE_BUTTON, GL.RIGHT_MOUSE_BUTTON, GL.MIDDLE_MOUSE_BUTTON
-		* @method captureMouse
-		* @param {boolean} capture_wheel capture also the mouse wheel
-		*/
-		isButtonPressed: function(num)
-		{
-			if(num == GL.LEFT_MOUSE_BUTTON)
-				return this.buttons & GL.LEFT_MOUSE_BUTTON_MASK;
-			if(num == GL.MIDDLE_MOUSE_BUTTON)
-				return this.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK;
-			if(num == GL.RIGHT_MOUSE_BUTTON)
-				return this.buttons & GL.RIGHT_MOUSE_BUTTON_MASK;
-		},
-
-		wasButtonPressed: function(num)
-		{
-			var mask = 0;
-			if(num == GL.LEFT_MOUSE_BUTTON)
-				mask = GL.LEFT_MOUSE_BUTTON_MASK;
-			else if(num == GL.MIDDLE_MOUSE_BUTTON)
-				mask = GL.MIDDLE_MOUSE_BUTTON_MASK;
-			else if(num == GL.RIGHT_MOUSE_BUTTON)
-				mask = GL.RIGHT_MOUSE_BUTTON_MASK;
-			return (this.buttons & mask) && !(this.last_buttons & mask);
-		}
-	};
-
-	/**
-	* Tells the system to capture mouse events on the canvas. 
-	* This will trigger onmousedown, onmousemove, onmouseup, onmousewheel callbacks assigned in the gl context
-	* example: gl.onmousedown = function(e){ ... }
-	* The event is a regular MouseEvent with some extra parameters
-	* @method captureMouse
-	* @param {boolean} capture_wheel capture also the mouse wheel
-	*/
-	gl.captureMouse = function(capture_wheel, translate_touchs ) {
-
-		canvas.addEventListener("pointerdown", onmouse);
-		canvas.addEventListener("pointermove", onmouse);
-		canvas.addEventListener("dragstart", onmouse);
-		//canvas.addEventListener("pointerup", onmouse); ??
-		if(capture_wheel)
-			canvas.addEventListener("wheel", onmouse, false);
-
-		//prevent right click context menu
-		canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); return false; });
-
-		if( translate_touchs )
-			this.captureTouch( true );
-	}
-
-	function onmouse(e) {
-
-		if(gl.ignore_events)
-			return;
-		//console.log(e.type); //debug
-		var old_mouse_mask = gl.mouse.buttons;
-		GL.augmentEvent(e, canvas);
-		e.eventType = e.eventType || e.type; //type cannot be overwritten, so I make a clone to allow me to overwrite
-		var now = getTime();
-
-		//gl.mouse info
-		mouse.dragging = e.dragging;
-		mouse.position[0] = e.canvasx;
-		mouse.position[1] = e.canvasy;
-		mouse.x = e.canvasx;
-		mouse.y = e.canvasy;
-		mouse.mousex = e.mousex;
-		mouse.mousey = e.mousey;
-		mouse.canvasx = e.canvasx;
-		mouse.canvasy = e.canvasy;
-		mouse.clientx = e.mousex;
-		mouse.clienty = e.mousey;
-		mouse.buttons = e.buttons;
-		mouse.left_button = !!(mouse.buttons & GL.LEFT_MOUSE_BUTTON_MASK);
-		mouse.middle_button = !!(mouse.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK);
-		mouse.right_button = !!(mouse.buttons & GL.RIGHT_MOUSE_BUTTON_MASK);
-
-		if(e.eventType == "pointerdown")
-		{
-			if(old_mouse_mask == 0) //no mouse button was pressed till now
-			{
-				canvas.removeEventListener("pointermove", onmouse);
-				var doc = canvas.ownerDocument;
-				doc.addEventListener("pointermove", onmouse);
-				doc.addEventListener("pointerup", onmouse);
-			}
-			last_click_time = now;
-
-			if(gl.onmousedown)
-				gl.onmousedown(e);
-			LEvent.trigger(gl,"pointerdown");
-		}
-		else if(e.eventType == "pointermove")
-		{ 
-			if(gl.onmousemove)
-				gl.onmousemove(e); 
-			LEvent.trigger(gl,"pointermove",e);
-		} 
-		else if(e.eventType == "pointerup")
-		{
-			//console.log("pointerup");
-			if(gl.mouse.buttons == 0) //no more buttons pressed
-			{
-				canvas.addEventListener("pointermove", onmouse);
-				var doc = canvas.ownerDocument;
-				doc.removeEventListener("pointermove", onmouse);
-				doc.removeEventListener("pointerup", onmouse);
-			}
-			e.click_time = now - last_click_time;
-			//last_click_time = now; //commented to avoid reseting click time when unclicking two mouse buttons
-
-			if(gl.onmouseup)
-				gl.onmouseup(e);
-			LEvent.trigger(gl,"pointerup",e);
-		}
-		else if(e.eventType == "wheel")
-		{ 
-			if(e.type == "wheel")
-				e.wheel = -e.deltaY; //in firefox deltaY is 1 while in Chrome is 120
-			else
-				e.wheel = (e.wheelDeltaY != null ? e.wheelDeltaY : e.detail * -60);
-
-			//from stack overflow
-			//firefox doesnt have wheelDelta
-			e.delta = e.wheelDelta !== undefined ? (e.wheelDelta/40) : (e.deltaY ? -e.deltaY/3 : 0);
-			//console.log(e.delta);
-			if(gl.onmousewheel)
-				gl.onmousewheel(e);
-
-			LEvent.trigger(gl, "wheel", e);
-		}
-		else if(e.eventType == "dragstart")
-		{
-			if(gl.ondragstart)
-				gl.ondragstart(e);
-			LEvent.trigger(gl, "dragstart", e);
-		}
-
-		if(gl.onmouse)
-			gl.onmouse(e);
-
-		if(!e.skip_preventDefault)
-		{
-			if(e.eventType != "pointermove")
-				e.stopPropagation();
-			e.preventDefault();
-			return false;
-		}
-	}
-
-	var translate_touches = false;
-
-	gl.captureTouch = function( translate_to_mouse_events )
-	{
-		translate_touches = translate_to_mouse_events;
-
-		canvas.addEventListener("touchstart", ontouch, true);
-		canvas.addEventListener("touchmove", ontouch, true);
-		canvas.addEventListener("touchend", ontouch, true);
-		canvas.addEventListener("touchcancel", ontouch, true);   
-
-		canvas.addEventListener('gesturestart', ongesture );
-		canvas.addEventListener('gesturechange', ongesture );
-		canvas.addEventListener('gestureend', ongesture );
-	}
-
-	//translates touch events in mouseevents
-	function ontouch( e )
-	{
-		var touches = e.changedTouches,
-			first = touches[0],
-			type = "";
-
-		if( gl.ontouch && gl.ontouch(e) === true )
-			return;
-
-		if( LEvent.trigger( gl, e.type, e ) === true )
-			return;
-
-		if(!translate_touches)
-			return;
-
-		//ignore secondary touches
-        if(e.touches.length && e.changedTouches[0].identifier !== e.touches[0].identifier)
-        	return;
-        	
-		if(touches > 1)
-			return;
-
-		 switch(e.type)
-		{
-			case "touchstart": type = "pointerdown"; break;
-			case "touchmove":  type = "pointermove"; break;        
-			case "touchend":   type = "pointerup"; break;
-			default: return;
-		}
-
-		var simulatedEvent = document.createEvent("MouseEvent");
-		simulatedEvent.initMouseEvent(type, true, true, window, 1,
-								  first.screenX, first.screenY,
-								  first.clientX, first.clientY, false,
-								  false, false, false, 0/*left*/, null);
-		simulatedEvent.originalEvent = simulatedEvent;
-		simulatedEvent.is_touch = true;
-		first.target.dispatchEvent( simulatedEvent );
-		e.preventDefault();
-	}
-
-	function ongesture(e)
-	{
-		e.eventType = e.type;
-
-		if(gl.ongesture && gl.ongesture(e) === false )
-			return;
-
-		if( LEvent.trigger( gl, e.type, e ) === false )
-			return;
-
-		e.preventDefault();
-	}
-
-	var keys = gl.keys = {};
-
-	/**
-	* Tells the system to capture key events on the canvas. This will trigger onkey
-	* @method captureKeys
-	* @param {boolean} prevent_default prevent default behaviour (like scroll on the web, etc)
-	* @param {boolean} only_canvas only caches keyboard events if they happen when the canvas is in focus
-	*/
-	var onkey_handler = null;
-	gl.captureKeys = function( prevent_default, only_canvas ) {
-		if(onkey_handler) 
-			return;
-		gl.keys = {};
-
-		var target = only_canvas ? gl.canvas : document;
-
-		document.addEventListener("keydown", inner );
-		document.addEventListener("keyup", inner );
-		function inner(e) { onkey(e, prevent_default); }
-		onkey_handler = inner;
-	}
-
-
-
-	function onkey(e, prevent_default)
-	{
-		e.eventType = e.type; //type cannot be overwritten, so I make a clone to allow me to overwrite
-
-		var target_element = e.target.nodeName.toLowerCase();
-		if(target_element === "input" || target_element === "textarea" || target_element === "select")
-			return;
-
-		e.character = String.fromCharCode(e.keyCode).toLowerCase();
-		var prev_state = false;
-		var key = GL.mapKeyCode(e.keyCode);
-		if(!key) //this key doesnt look like an special key
-			key = e.character;
-
-		//regular key
-		if (!e.altKey && !e.ctrlKey && !e.metaKey) {
-			if (key) 
-				gl.keys[key] = e.type == "keydown";
-			prev_state = gl.keys[e.keyCode];
-			gl.keys[e.keyCode] = e.type == "keydown";
-		}
-
-		//avoid repetition if key stays pressed
-		if(prev_state != gl.keys[e.keyCode])
-		{
-			if(e.type == "keydown" && gl.onkeydown) 
-				gl.onkeydown(e);
-			else if(e.type == "keyup" && gl.onkeyup) 
-				gl.onkeyup(e);
-			LEvent.trigger(gl, e.type, e);
-		}
-
-		if(gl.onkey)
-			gl.onkey(e);
-
-		if(prevent_default && (e.isChar || GL.blockable_keys[e.keyIdentifier || e.key ]) )
-			e.preventDefault();
-	}
-
-	//gamepads
-	gl.gamepads = null;
-	/*
-	function onButton(e, pressed)
-	{
-		console.log(e);
-		if(pressed && gl.onbuttondown)
-			gl.onbuttondown(e);
-		else if(!pressed && gl.onbuttonup)
-			gl.onbuttonup(e);
-		if(gl.onbutton)
-			gl.onbutton(e);
-		LEvent.trigger(gl, pressed ? "buttondown" : "buttonup", e );
-	}
-	function onGamepad(e)
-	{
-		console.log(e);
-		if(gl.ongamepad) 
-			gl.ongamepad(e);
-	}
-	*/
-
-	/**
-	* Tells the system to capture gamepad events on the canvas. 
-	* @method captureGamepads
-	*/
-	gl.captureGamepads = function()
-	{
-		var getGamepads = navigator.getGamepads || navigator.webkitGetGamepads || navigator.mozGetGamepads; 
-		if(!getGamepads) return;
-		this.gamepads = getGamepads.call(navigator);
-
-		//only in firefox, so I cannot rely on this
-		/*
-		window.addEventListener("gamepadButtonDown", function(e) { onButton(e, true); }, false);
-		window.addEventListener("MozGamepadButtonDown", function(e) { onButton(e, true); }, false);
-		window.addEventListener("WebkitGamepadButtonDown", function(e) { onButton(e, true); }, false);
-		window.addEventListener("gamepadButtonUp", function(e) { onButton(e, false); }, false);
-		window.addEventListener("MozGamepadButtonUp", function(e) { onButton(e, false); }, false);
-		window.addEventListener("WebkitGamepadButtonUp", function(e) { onButton(e, false); }, false);
-		window.addEventListener("gamepadconnected", onGamepad, false);
-		window.addEventListener("gamepaddisconnected", onGamepad, false);
-		*/
-
-	}
-
-	/**
-	* returns the detected gamepads on the system
-	* @method getGamepads
-	* @param {bool} skip_mapping if set to true it returns the basic gamepad, otherwise it returns a class with mapping info to XBOX controller
-	*/
-	gl.getGamepads = function(skip_mapping)
-	{
-		//gamepads
-		var getGamepads = navigator.getGamepads || navigator.webkitGetGamepads || navigator.mozGetGamepads; 
-		if(!getGamepads)
-			return;
-		var gamepads = getGamepads.call(navigator);
-		if(!this.gamepads)
-			this.gamepads = [];
-
-		//iterate to generate events
-		for(var i = 0; i < 4; i++)
-		{
-			var gamepad = gamepads[i]; //current state
-
-			if(gamepad && !skip_mapping)
-				addGamepadXBOXmapping(gamepad);
-
-			//launch connected gamepads events
-			if(gamepad && !gamepad.prev_buttons)
-			{
-				gamepad.prev_buttons = new Uint8Array(32);
-				var event = new CustomEvent("gamepadconnected");
-				event.eventType = event.type;
-				event.gamepad = gamepad;
-				if(this.ongamepadconnected)
-					this.ongamepadconnected(event);
-				LEvent.trigger(gl,"gamepadconnected",event);
-			}
-			/*
-			else if(old_gamepad && !gamepad)
-			{
-				var event = new CustomEvent("gamepaddisconnected");
-				event.eventType = event.type;
-				event.gamepad = old_gamepad;
-				if(this.ongamepaddisconnected)
-					this.ongamepaddisconnected(event);
-				LEvent.trigger(gl,"gamepaddisconnected",event);
-			}
-			*/
-
-			//seek buttons changes to trigger events
-			if(gamepad)
-			{
-				for(var j = 0; j < gamepad.buttons.length; ++j)
-				{
-					var button = gamepad.buttons[j];
-					button.was_pressed = false;
-					if( button.pressed && !gamepad.prev_buttons[j] )
-					{
-						button.was_pressed = true;
-						var event = new CustomEvent("gamepadButtonDown");
-						event.eventType = event.type;
-						event.button = button;
-						event.which = j;
-						event.gamepad = gamepad;
-						if(gl.onbuttondown)
-							gl.onbuttondown(event);
-						LEvent.trigger(gl,"buttondown",event);
-					}
-					else if( !button.pressed && gamepad.prev_buttons[j] )
-					{
-						var event = new CustomEvent("gamepadButtonUp");
-						event.eventType = event.type;
-						event.button = button;
-						event.which = j;
-						event.gamepad = gamepad;
-						if(gl.onbuttondown)
-							gl.onbuttondown(event);
-						LEvent.trigger(gl,"buttonup",event);
-					}
-
-					gamepad.prev_buttons[j] = button.pressed ? 1 : 0;
-				}
-			}
-		}
-		this.gamepads = gamepads;
-		return gamepads;
-	}
-
-	function addGamepadXBOXmapping(gamepad)
-	{
-		//xbox controller mapping
-		var xbox = gamepad.xbox || { axes:[], buttons:{}, hat: ""};
-		xbox.axes["lx"] = gamepad.axes[0];
-		xbox.axes["ly"] = gamepad.axes[1];
-		xbox.axes["rx"] = gamepad.axes[2];
-		xbox.axes["ry"] = gamepad.axes[3];
-		xbox.axes["triggers"] = gamepad.axes[4];
-
-		for(var i = 0; i < gamepad.buttons.length; i++)
-		{
-			switch(i) //I use a switch to ensure that a player with another gamepad could play
-			{
-				case 0: xbox.buttons["a"] = gamepad.buttons[i].pressed; break;
-				case 1: xbox.buttons["b"] = gamepad.buttons[i].pressed; break;
-				case 2: xbox.buttons["x"] = gamepad.buttons[i].pressed; break;
-				case 3: xbox.buttons["y"] = gamepad.buttons[i].pressed; break;
-				case 4: xbox.buttons["lb"] = gamepad.buttons[i].pressed; break;
-				case 5: xbox.buttons["rb"] = gamepad.buttons[i].pressed; break;
-				case 6: xbox.buttons["lt"] = gamepad.buttons[i].pressed; break;
-				case 7: xbox.buttons["rt"] = gamepad.buttons[i].pressed; break;
-				case 8: xbox.buttons["back"] = gamepad.buttons[i].pressed; break;
-				case 9: xbox.buttons["start"] = gamepad.buttons[i].pressed; break;
-				case 10: xbox.buttons["ls"] = gamepad.buttons[i].pressed; break;
-				case 11: xbox.buttons["rs"] = gamepad.buttons[i].pressed; break;
-				case 12: if( gamepad.buttons[i].pressed) xbox.hat += "up"; break;
-				case 13: if( gamepad.buttons[i].pressed) xbox.hat += "down"; break;
-				case 14: if( gamepad.buttons[i].pressed) xbox.hat += "left"; break;
-				case 15: if( gamepad.buttons[i].pressed) xbox.hat += "right"; break;
-				case 16: xbox.buttons["home"] = gamepad.buttons[i].pressed; break;
-				default:
-			}
-		}
-		gamepad.xbox = xbox;
-	}
-
-	/**
-	* launches de canvas in fullscreen mode
-	* @method fullscreen
-	*/
-	gl.fullscreen = function()
-	{
-		var canvas = this.canvas;
-		if(canvas.requestFullScreen)
-			canvas.requestFullScreen();
-		else if(canvas.webkitRequestFullScreen)
-			canvas.webkitRequestFullScreen();
-		else if(canvas.mozRequestFullScreen)
-			canvas.mozRequestFullScreen();
-		else
-			console.error("Fullscreen not supported");
-	}
-
-	/**
-	* returns a canvas with a snapshot of an area
-	* this is safer than using the canvas itself due to internals of webgl
-	* @method snapshot
-	* @param {Number} startx viewport x coordinate
-	* @param {Number} starty viewport y coordinate from bottom
-	* @param {Number} areax viewport area width
-	* @param {Number} areay viewport area height
-	* @return {Canvas} canvas
-	*/
-	gl.snapshot = function(startx, starty, areax, areay, skip_reverse)
-	{
-		var canvas = GL.createCanvas(areax,areay);
-		var ctx = canvas.getContext("2d");
-		var pixels = ctx.getImageData(0,0,canvas.width,canvas.height);
-
-		var buffer = new Uint8Array(areax * areay * 4);
-		gl.readPixels(startx, starty, canvas.width, canvas.height, gl.RGBA,gl.UNSIGNED_BYTE, buffer);
-
-		pixels.data.set( buffer );
-		ctx.putImageData(pixels,0,0);
-
-		if(skip_reverse)
-			return canvas;
-
-		//flip image 
-		var final_canvas = GL.createCanvas(areax,areay);
-		var ctx = final_canvas.getContext("2d");
-		ctx.translate(0,areay);
-		ctx.scale(1,-1);
-		ctx.drawImage(canvas,0,0);
-
-		return final_canvas;
-	}
-
-	//from https://webgl2fundamentals.org/webgl/lessons/webgl1-to-webgl2.html
-	function getAndApplyExtension( gl, name ) {
-		var ext = gl.getExtension(name);
-		if (!ext) {
-			return false;
-		}
-		var suffix = name.split("_")[0];
-		var prefix = suffix = '_';
-		var suffixRE = new RegExp(suffix + '$');
-		var prefixRE = new RegExp('^' + prefix);
-		for (var key in ext) {
-			var val = ext[key];
-			if (typeof(val) === 'function') {
-				// remove suffix (eg: bindVertexArrayOES -> bindVertexArray)
-				var unsuffixedKey = key.replace(suffixRE, '');
-				if (key.substing)
-					gl[unprefixedKey] = ext[key].bind(ext);
-			} else {
-				var unprefixedKey = key.replace(prefixRE, '');
-				gl[unprefixedKey] = ext[key];
-			}
-		}
-	}
-
-
-	//mini textures manager
-	var loading_textures = {};
-	/**
-	* returns a texture and caches it inside gl.textures[]
-	* @method loadTexture
-	* @param {String} url
-	* @param {Object} options (same options as when creating a texture)
-	* @param {Function} callback function called once the texture is loaded
-	* @return {Texture} texture
-	*/
-	gl.loadTexture = function(url, options, on_load)
-	{
-		if(this.textures[ url ])
-			return this.textures[url];
-
-		if( loading_textures[url] )
-			return null;
-
-		var img = new Image();
-		img.url = url;
-		img.onload = function()
-		{
-			var texture = GL.Texture.fromImage(this, options);
-			texture.img = this;
-			gl.textures[this.url] = texture;
-			delete loading_textures[this.url];
-			if(on_load)
-				on_load(texture);
-		} 
-		img.src = url;
-		loading_textures[url] = true;
-		return null;
-	}
-
-	/**
-	* draws a texture to the viewport
-	* @method drawTexture
-	* @param {Texture} texture
-	* @param {number} x in viewport coordinates 
-	* @param {number} y in viewport coordinates 
-	* @param {number} w in viewport coordinates 
-	* @param {number} h in viewport coordinates 
-	* @param {number} tx texture x in texture coordinates
-	* @param {number} ty texture y in texture coordinates
-	* @param {number} tw texture width in texture coordinates
-	* @param {number} th texture height in texture coordinates
-	*/
-	gl.drawTexture = (function() {
-		//static variables: less garbage
-		var identity = mat3.create();
-		var pos = vec2.create();
-		var size = vec2.create();
-		var area = vec4.create();
-		var white = vec4.fromValues(1,1,1,1);
-		var viewport = vec2.create();
-		var _uniforms = {u_texture: 0, u_position: pos, u_color: white, u_size: size, u_texture_area: area, u_viewport: viewport, u_transform: identity };
-
-		return (function(texture, x,y, w,h, tx,ty, tw,th, shader, uniforms)
-		{
-			pos[0] = x;	pos[1] = y;
-			if(w === undefined)
-				w = texture.width;
-			if(h === undefined)
-				h = texture.height;
-			size[0] = w;
-			size[1] = h;
-
-			if(tx === undefined) tx = 0;
-			if(ty === undefined) ty = 0;
-			if(tw === undefined) tw = texture.width;
-			if(th === undefined) th = texture.height;
-
-			area[0] = tx / texture.width;
-			area[1] = ty / texture.height;
-			area[2] = (tx + tw) / texture.width;
-			area[3] = (ty + th) / texture.height;
-
-			viewport[0] = this.viewport_data[2];
-			viewport[1] = this.viewport_data[3];
-
-			shader = shader || Shader.getPartialQuadShader(this);
-			var mesh = Mesh.getScreenQuad(this);
-			texture.bind(0);
-			shader.uniforms( _uniforms );
-			if( uniforms )
-				shader.uniforms( uniforms );
-			shader.draw( mesh, gl.TRIANGLES );
-		});
-	})();
-
-	gl.canvas.addEventListener("webglcontextlost", function(e) {
-		e.preventDefault();
-		gl.context_lost = true;
-		if(gl.onlosecontext)
-			gl.onlosecontext(e);
-	}, false);
-
-	/**
-	* use it to reset the the initial gl state
-	* @method gl.reset
-	*/
-	gl.reset = function()
-	{
-		//viewport
-		gl.viewport(0,0, this.canvas.width, this.canvas.height );
-
-		//flags
-		gl.disable( gl.BLEND );
-		gl.disable( gl.CULL_FACE );
-		gl.disable( gl.DEPTH_TEST );
-		gl.frontFace( gl.CCW );
-
-		//texture
-		gl._current_texture_drawto = null;
-		gl._current_fbo_color = null;
-		gl._current_fbo_depth = null;
-	}
-
-	gl.dump = function()
-	{
-		console.log("userAgent: ", navigator.userAgent );
-		console.log("Supported extensions:");
-		var extensions = gl.getSupportedExtensions();
-		console.log( extensions.join(",") );
-		var info = [ "VENDOR", "VERSION", "MAX_VERTEX_ATTRIBS", "MAX_VARYING_VECTORS", "MAX_VERTEX_UNIFORM_VECTORS", "MAX_VERTEX_TEXTURE_IMAGE_UNITS", "MAX_FRAGMENT_UNIFORM_VECTORS", "MAX_TEXTURE_SIZE", "MAX_TEXTURE_IMAGE_UNITS" ];
-		console.log("WebGL info:");
-		for(var i in info)
-			console.log(" * " + info[i] + ": " + gl.getParameter( gl[info[i]] ));
-		console.log("*************************************************")
-	}
-
-	//Reset state
-	gl.reset();
-
-	//Return
-	return gl;
-}
-
-GL.mapKeyCode = function(code)
-{
-	var named = {
-		8: 'BACKSPACE',
-		9: 'TAB',
-		13: 'ENTER',
-		16: 'SHIFT',
-		17: 'CTRL',
-		27: 'ESCAPE',
-		32: 'SPACE',
-		37: 'LEFT',
-		38: 'UP',
-		39: 'RIGHT',
-		40: 'DOWN'
-	};
-	return named[code] || (code >= 65 && code <= 90 ? String.fromCharCode(code) : null);
-}
-
-//add useful info to the event
-GL.dragging = false;
-GL.last_pos = [0,0];
-
-//adds extra info to the MouseEvent (coordinates in canvas axis, deltas and button state)
-GL.augmentEvent = function(e, root_element)
-{
-	var offset_left = 0;
-	var offset_top = 0;
-	var b = null;
-
-	root_element = root_element || e.target || gl.canvas;
-	b = root_element.getBoundingClientRect();
-		
-	e.mousex = e.clientX - b.left;
-	e.mousey = e.clientY - b.top;
-	e.canvasx = e.mousex;
-	e.canvasy = b.height - e.mousey;
-	e.deltax = 0;
-	e.deltay = 0;
-	
-	if(e.type == "pointerdown")
-	{
-		this.dragging = true;
-		//gl.mouse.buttons |= (1 << e.which); //enable
-	}
-	else if (e.type == "pointermove")
-	{
-	}
-	else if (e.type == "pointerup")
-	{
-		//gl.mouse.buttons = gl.mouse.buttons & ~(1 << e.which);
-		if(e.buttons == 0)
-			this.dragging = false;
-	}
-
-	if( e.movementX !== undefined && !GL.isMobile() ) //pointer lock (mobile gives always zero)
-	{
-		//console.log( e.movementX )
-		e.deltax = e.movementX;
-		e.deltay = e.movementY;
-	}
-	else
-	{
-		e.deltax = e.mousex - this.last_pos[0];
-		e.deltay = e.mousey - this.last_pos[1];
-	}
-	this.last_pos[0] = e.mousex;
-	this.last_pos[1] = e.mousey;
-
-	//insert info in event
-	e.dragging = this.dragging;
-	e.leftButton = !!(gl.mouse.buttons & GL.LEFT_MOUSE_BUTTON_MASK);
-	e.middleButton = !!(gl.mouse.buttons & GL.MIDDLE_MOUSE_BUTTON_MASK);
-	e.rightButton = !!(gl.mouse.buttons & GL.RIGHT_MOUSE_BUTTON_MASK);
-	//shitty non-coherent API, e.buttons use 1:left,2:right,4:middle) but e.button uses (0:left,1:middle,2:right)
-	e.buttons_mask = 0;
-	if( e.leftButton ) e.buttons_mask = 1;
-	if( e.middleButton ) e.buttons_mask |= 2;
-	if( e.rightButton ) e.buttons_mask |= 4;
-	e.isButtonPressed = function(num) { return this.buttons_mask & (1<<num); }
-}
-
-/**
-* Tells you if the app is running on a mobile device (iOS or Android)
-* @method isMobile
-* @return {boolean} true if is running on a iOS or Android device
-*/
-GL.isMobile = function()
-{
-	if(this.mobile !== undefined)
-		return this.mobile;
-
-	if(!global.navigator) //server side js?
-		return this.mobile = false;
-
-	if( (navigator.userAgent.match(/iPhone/i)) || 
-		(navigator.userAgent.match(/iPod/i)) || 
-		(navigator.userAgent.match(/iPad/i)) || 
-		(navigator.userAgent.match(/Android/i))) {
-		return this.mobile = true;
-	}
-	return this.mobile = false;
-}
-/**
-* @namespace 
-*/
 
 /**
 * LEvent is a lightweight events library focused in low memory footprint and fast delivery.
@@ -11207,284 +11512,238 @@ global.planeBoxOverlap = GL.planeBoxOverlap = function planeBoxOverlap(plane, bo
 * @param {Mesh} mesh object containing vertices buffer (indices buffer optional)
 */
 
-global.Octree = GL.Octree = function Octree( mesh )
-{
-	this.root = null;
-	this.total_depth = 0;
-	this.total_nodes = 0;
-	if(mesh)
-	{
-		this.buildFromMesh(mesh);
-		this.total_nodes = this.trim();
-	}
-}
-
-Octree.MAX_NODE_TRIANGLES_RATIO = 0.1;
-Octree.MAX_OCTREE_DEPTH = 8;
-Octree.OCTREE_MARGIN_RATIO = 0.01;
-Octree.OCTREE_MIN_MARGIN = 0.1;
-
 var octree_tested_boxes = 0;
 var octree_tested_triangles = 0;
 
-Octree.prototype.buildFromMesh = function( mesh )
-{
-	this.total_depth = 0;
-	this.total_nodes = 0;
-
-	var vertices = mesh.getBuffer("vertices").data;
-	var triangles = mesh.getIndexBuffer("triangles");
-	if(triangles) 
-		triangles = triangles.data; //get the internal data
-
-	var root = this.computeAABB(vertices);
-	this.root = root;
-	this.total_nodes = 1;
-	this.total_triangles = triangles ? triangles.length / 3 : vertices.length / 9;
-	this.max_node_triangles = this.total_triangles * Octree.MAX_NODE_TRIANGLES_RATIO;
-
-	var margin = vec3.create();
-	vec3.scale( margin, root.size, Octree.OCTREE_MARGIN_RATIO );
-	if(margin[0] < Octree.OCTREE_MIN_MARGIN) margin[0] = Octree.OCTREE_MIN_MARGIN;
-	if(margin[1] < Octree.OCTREE_MIN_MARGIN) margin[1] = Octree.OCTREE_MIN_MARGIN;
-	if(margin[2] < Octree.OCTREE_MIN_MARGIN) margin[2] = Octree.OCTREE_MIN_MARGIN;
-
-	vec3.sub(root.min, root.min, margin);
-	vec3.add(root.max, root.max, margin);
-
-	root.faces = [];
-	root.inside = 0;
-
-
-	//indexed
-	if(triangles)
-	{
-		for(var i = 0; i < triangles.length; i+=3)
+class Octree {
+	constructor( mesh ) {
+		this.root = null;
+		this.total_depth = 0;
+		this.total_nodes = 0;
+		if(mesh)
 		{
-			var face = new Float32Array([vertices[triangles[i]*3], vertices[triangles[i]*3+1],vertices[triangles[i]*3+2],
-						vertices[triangles[i+1]*3], vertices[triangles[i+1]*3+1],vertices[triangles[i+1]*3+2],
-						vertices[triangles[i+2]*3], vertices[triangles[i+2]*3+1],vertices[triangles[i+2]*3+2],i/3]);
-			this.addToNode( face,root,0);
+			this.buildFromMesh(mesh);
+			this.total_nodes = this.trim();
 		}
-	}
-	else
-	{
-		for(var i = 0; i < vertices.length; i+=9)
-		{
-			var face = new Float32Array( 10 );
-			face.set( vertices.subarray(i,i+9) );
-			face[9] = i/9;
-			this.addToNode(face,root,0);
-		}
+		this.octree_pos_ref = [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]];
 	}
 
-	return root;
-}
+	static MAX_NODE_TRIANGLES_RATIO = 0.1;
+	static MAX_OCTREE_DEPTH = 8;
+	static OCTREE_MARGIN_RATIO = 0.01;
+	static OCTREE_MIN_MARGIN = 0.1;
 
-Octree.prototype.addToNode = function( face, node, depth )
-{
-	node.inside += 1;
+	buildFromMesh( mesh ) {
+		this.total_depth = 0;
+		this.total_nodes = 0;
 
-	//has children
-	if(node.c)
-	{
-		var aabb = this.computeAABB(face);
-		var added = false;
-		for(var i in node.c)
+		var vertices = mesh.getBuffer("vertices").data;
+		var triangles = mesh.getIndexBuffer("triangles");
+		if(triangles) 
+			triangles = triangles.data; //get the internal data
+
+		var root = this.computeAABB(vertices);
+		this.root = root;
+		this.total_nodes = 1;
+		this.total_triangles = triangles ? triangles.length / 3 : vertices.length / 9;
+		this.max_node_triangles = this.total_triangles * Octree.MAX_NODE_TRIANGLES_RATIO;
+
+		var margin = vec3.create();
+		vec3.scale( margin, root.size, Octree.OCTREE_MARGIN_RATIO );
+		if(margin[0] < Octree.OCTREE_MIN_MARGIN) margin[0] = Octree.OCTREE_MIN_MARGIN;
+		if(margin[1] < Octree.OCTREE_MIN_MARGIN) margin[1] = Octree.OCTREE_MIN_MARGIN;
+		if(margin[2] < Octree.OCTREE_MIN_MARGIN) margin[2] = Octree.OCTREE_MIN_MARGIN;
+
+		vec3.sub(root.min, root.min, margin);
+		vec3.add(root.max, root.max, margin);
+
+		root.faces = [];
+		root.inside = 0;
+
+
+		//indexed
+		if(triangles)
 		{
-			var child = node.c[i];
-			if (Octree.isInsideAABB(aabb,child))
+			for(var i = 0; i < triangles.length; i+=3)
 			{
-				this.addToNode(face,child, depth+1);
-				added = true;
-				break;
+				var face = new Float32Array([vertices[triangles[i]*3], vertices[triangles[i]*3+1],vertices[triangles[i]*3+2],
+							vertices[triangles[i+1]*3], vertices[triangles[i+1]*3+1],vertices[triangles[i+1]*3+2],
+							vertices[triangles[i+2]*3], vertices[triangles[i+2]*3+1],vertices[triangles[i+2]*3+2],i/3]);
+				this.addToNode( face,root,0);
 			}
 		}
-		if(!added)
+		else
+		{
+			for(var i = 0; i < vertices.length; i+=9)
+			{
+				var face = new Float32Array( 10 );
+				face.set( vertices.subarray(i,i+9) );
+				face[9] = i/9;
+				this.addToNode(face,root,0);
+			}
+		}
+
+		return root;
+	}
+
+	addToNode( face, node, depth ) {
+		node.inside += 1;
+
+		//has children
+		if(node.c)
+		{
+			var aabb = this.computeAABB(face);
+			var added = false;
+			for(var i in node.c)
+			{
+				var child = node.c[i];
+				if (Octree.isInsideAABB(aabb,child))
+				{
+					this.addToNode(face,child, depth+1);
+					added = true;
+					break;
+				}
+			}
+			if(!added)
+			{
+				if(node.faces == null)
+					node.faces = [];
+				node.faces.push(face);
+			}
+		}
+		else //add till full, then split
 		{
 			if(node.faces == null)
 				node.faces = [];
 			node.faces.push(face);
-		}
-	}
-	else //add till full, then split
-	{
-		if(node.faces == null)
-			node.faces = [];
-		node.faces.push(face);
 
-		//split
-		if(node.faces.length > this.max_node_triangles && depth < Octree.MAX_OCTREE_DEPTH)
-		{
-			this.splitNode(node);
-			if(this.total_depth < depth + 1)
-				this.total_depth = depth + 1;
-
-			var faces = node.faces.concat();
-			node.faces = null;
-
-			//redistribute all nodes
-			for(var i in faces)
+			//split
+			if(node.faces.length > this.max_node_triangles && depth < Octree.MAX_OCTREE_DEPTH)
 			{
-				var face = faces[i];
-				var aabb = this.computeAABB(face);
-				var added = false;
-				for(var j in node.c)
+				this.splitNode(node);
+				if(this.total_depth < depth + 1)
+					this.total_depth = depth + 1;
+
+				var faces = node.faces.concat();
+				node.faces = null;
+
+				//redistribute all nodes
+				for(var i in faces)
 				{
-					var child = node.c[j];
-					if (Octree.isInsideAABB(aabb,child))
+					var face = faces[i];
+					var aabb = this.computeAABB(face);
+					var added = false;
+					for(var j in node.c)
 					{
-						this.addToNode(face,child, depth+1);
-						added = true;
-						break;
+						var child = node.c[j];
+						if (Octree.isInsideAABB(aabb,child))
+						{
+							this.addToNode(face,child, depth+1);
+							added = true;
+							break;
+						}
 					}
-				}
-				if (!added)
-				{
-					if(node.faces == null)
-						node.faces = [];
-					node.faces.push(face);
+					if (!added)
+					{
+						if(node.faces == null)
+							node.faces = [];
+						node.faces.push(face);
+					}
 				}
 			}
 		}
 	}
-};
+	
+	splitNode(node)	{
+		node.c = [];
+		var half = [(node.max[0] - node.min[0]) * 0.5, (node.max[1] - node.min[1]) * 0.5, (node.max[2] - node.min[2]) * 0.5];
 
-Octree.prototype.octree_pos_ref = [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]];
-
-Octree.prototype.splitNode = function(node)
-{
-	node.c = [];
-	var half = [(node.max[0] - node.min[0]) * 0.5, (node.max[1] - node.min[1]) * 0.5, (node.max[2] - node.min[2]) * 0.5];
-
-	for(var i in this.octree_pos_ref)
-	{
-		var ref = this.octree_pos_ref[i];
-
-		var newnode = {};
-		this.total_nodes += 1;
-
-		newnode.min = [ node.min[0] + half[0] * ref[0],  node.min[1] + half[1] * ref[1],  node.min[2] + half[2] * ref[2]];
-		newnode.max = [newnode.min[0] + half[0], newnode.min[1] + half[1], newnode.min[2] + half[2]];
-		newnode.faces = null;
-		newnode.inside = 0;
-		node.c.push(newnode);
-	}
-}
-
-Octree.prototype.computeAABB = function(vertices)
-{
-	var min = new Float32Array([ vertices[0], vertices[1], vertices[2] ]);
-	var max = new Float32Array([ vertices[0], vertices[1], vertices[2] ]);
-
-	for(var i = 0; i < vertices.length; i+=3)
-	{
-		for(var j = 0; j < 3; j++)
+		for(var i in this.octree_pos_ref)
 		{
-			if(min[j] > vertices[i+j]) 
-				min[j] = vertices[i+j];
-			if(max[j] < vertices[i+j]) 
-				max[j] = vertices[i+j];
+			var ref = this.octree_pos_ref[i];
+
+			var newnode = {};
+			this.total_nodes += 1;
+
+			newnode.min = [ node.min[0] + half[0] * ref[0],  node.min[1] + half[1] * ref[1],  node.min[2] + half[2] * ref[2]];
+			newnode.max = [newnode.min[0] + half[0], newnode.min[1] + half[1], newnode.min[2] + half[2]];
+			newnode.faces = null;
+			newnode.inside = 0;
+			node.c.push(newnode);
 		}
 	}
 
-	return {min: min, max: max, size: vec3.sub( vec3.create(), max, min) };
-}
+	computeAABB(vertices) {
+		var min = new Float32Array([ vertices[0], vertices[1], vertices[2] ]);
+		var max = new Float32Array([ vertices[0], vertices[1], vertices[2] ]);
 
-//remove empty nodes
-Octree.prototype.trim = function(node)
-{
-	node = node || this.root;
-	if(!node.c)
-		return 1;
-
-	var num = 1;
-	var valid = [];
-	var c = node.c;
-	for(var i = 0; i < c.length; ++i)
-	{
-		if(c[i].inside)
+		for(var i = 0; i < vertices.length; i+=3)
 		{
-			valid.push(c[i]);
-			num += this.trim(c[i]);
+			for(var j = 0; j < 3; j++)
+			{
+				if(min[j] > vertices[i+j]) 
+					min[j] = vertices[i+j];
+				if(max[j] < vertices[i+j]) 
+					max[j] = vertices[i+j];
+			}
 		}
+
+		return {min: min, max: max, size: vec3.sub( vec3.create(), max, min) };
 	}
-	node.c = valid;
-	return num;
-}
 
-/**
-* Test collision between ray and triangles in the octree
-* @method testRay
-* @param {vec3} origin ray origin position
-* @param {vec3} direction ray direction position
-* @param {number} dist_min
-* @param {number} dist_max
-* @return {HitTest} object containing pos and normal
-*/
-Octree.prototype.testRay = (function(){ 
-	var origin_temp = vec3.create();
-	var direction_temp = vec3.create();
-	var min_temp = vec3.create();
-	var max_temp = vec3.create();
+	//remove empty nodes
+	trim(node) {
+		node = node || this.root;
+		if(!node.c)
+			return 1;
 
-	return function(origin, direction, dist_min, dist_max, test_backfaces )
-	{
+		var num = 1;
+		var valid = [];
+		var c = node.c;
+		for(var i = 0; i < c.length; ++i)
+		{
+			if(c[i].inside)
+			{
+				valid.push(c[i]);
+				num += this.trim(c[i]);
+			}
+		}
+		node.c = valid;
+		return num;
+	}
+
+	/**
+	* test collision between sphere and the triangles in the octree (only test if there is any vertex inside the sphere)
+	* @method testSphere
+	* @param {vec3} origin sphere center
+	* @param {number} radius
+	* @return {Boolean} true if the sphere collided with the mesh
+	*/
+	testSphere( origin, radius ) {
+		origin = vec3.clone(origin);
 		octree_tested_boxes = 0;
 		octree_tested_triangles = 0;
 
 		if(!this.root)
-		{
 			throw("Error: octree not build");
-		}
 
-		origin_temp.set( origin );
-		direction_temp.set( direction );
-		min_temp.set( this.root.min );
-		max_temp.set( this.root.max );
+		//better to use always the radius squared, because all the calculations are going to do that
+		var rr = radius * radius;
 
-		var test = Octree.hitTestBox( origin_temp, direction_temp, min_temp, max_temp );
-		if(!test) //no collision with mesh bounding box
-			return null;
+		if( !Octree.testSphereBox( origin, rr, vec3.clone(this.root.min), vec3.clone(this.root.max) ) )
+			return false; //out of the box
 
-		var test = Octree.testRayInNode( this.root, origin_temp, direction_temp, test_backfaces );
-		if(test != null)
-		{
-			var pos = vec3.scale( vec3.create(), direction, test.t );
-			vec3.add( pos, pos, origin );
-			test.pos = pos;
-			return test;
-		}
-
-		return null;
+		return Octree.testSphereInNode( this.root, origin, rr );
 	}
-})();
 
-/**
-* test collision between sphere and the triangles in the octree (only test if there is any vertex inside the sphere)
-* @method testSphere
-* @param {vec3} origin sphere center
-* @param {number} radius
-* @return {Boolean} true if the sphere collided with the mesh
-*/
-Octree.prototype.testSphere = function( origin, radius )
-{
-	origin = vec3.clone(origin);
-	octree_tested_boxes = 0;
-	octree_tested_triangles = 0;
-
-	if(!this.root)
-		throw("Error: octree not build");
-
-	//better to use always the radius squared, because all the calculations are going to do that
-	var rr = radius * radius;
-
-	if( !Octree.testSphereBox( origin, rr, vec3.clone(this.root.min), vec3.clone(this.root.max) ) )
-		return false; //out of the box
-
-	return Octree.testSphereInNode( this.root, origin, rr );
+	//test if one bounding is inside or overlapping another bounding
+	static isInsideAABB(a,b) {
+		if(a.min[0] < b.min[0] || a.min[1] < b.min[1] || a.min[2] < b.min[2] ||
+			a.max[0] > b.max[0] || a.max[1] > b.max[1] || a.max[2] > b.max[2])
+			return false;
+		return true;
+	}
 }
-
 //WARNING: cannot use static here, it uses recursion
 Octree.testRayInNode = function( node, origin, direction, test_backfaces )
 {
@@ -11545,8 +11804,7 @@ Octree.testRayInNode = function( node, origin, direction, test_backfaces )
 }
 
 //WARNING: cannot use static here, it uses recursion
-Octree.testSphereInNode = function( node, origin, radius2 )
-{
+Octree.testSphereInNode = function( node, origin, radius2 ) {
 	var test = null;
 	var prev_test = null;
 	octree_tested_boxes += 1;
@@ -11585,16 +11843,6 @@ Octree.testSphereInNode = function( node, origin, radius2 )
 
 	return false;
 }
-
-//test if one bounding is inside or overlapping another bounding
-Octree.isInsideAABB = function(a,b)
-{
-	if(a.min[0] < b.min[0] || a.min[1] < b.min[1] || a.min[2] < b.min[2] ||
-		a.max[0] > b.max[0] || a.max[1] > b.max[1] || a.max[2] > b.max[2])
-		return false;
-	return true;
-}
-
 
 Octree.hitTestBox = (function(){ 
 	var tMin = vec3.create();
@@ -11773,56 +12021,107 @@ Octree.testSphereBox = function( center, radius2, box_min, box_max ) {
 
 	return false; //OUTSIDE;
 };
-// Provides a convenient raytracing interface.
 
+/**
+* Test collision between ray and triangles in the octree
+* @method testRay
+* @param {vec3} origin ray origin position
+* @param {vec3} direction ray direction position
+* @param {number} dist_min
+* @param {number} dist_max
+* @return {HitTest} object containing pos and normal
+*/
+Octree.prototype.testRay = (function(){ 
+	var origin_temp = vec3.create();
+	var direction_temp = vec3.create();
+	var min_temp = vec3.create();
+	var max_temp = vec3.create();
+
+	return function(origin, direction, dist_min, dist_max, test_backfaces )
+	{
+		octree_tested_boxes = 0;
+		octree_tested_triangles = 0;
+
+		if(!this.root)
+		{
+			throw("Error: octree not build");
+		}
+
+		origin_temp.set( origin );
+		direction_temp.set( direction );
+		min_temp.set( this.root.min );
+		max_temp.set( this.root.max );
+
+		var test = Octree.hitTestBox( origin_temp, direction_temp, min_temp, max_temp );
+		if(!test) //no collision with mesh bounding box
+			return null;
+
+		var test = Octree.testRayInNode( this.root, origin_temp, direction_temp, test_backfaces );
+		if(test != null)
+		{
+			var pos = vec3.scale( vec3.create(), direction, test.t );
+			vec3.add( pos, pos, origin );
+			test.pos = pos;
+			return test;
+		}
+
+		return null;
+	}
+})();
+GL.Octree = Octree;
+
+
+// Provides a convenient raytracing interface.
 // ### new GL.HitTest([t, hit, normal])
 // 
 // This is the object used to return hit test results. If there are no
 // arguments, the constructed argument represents a hit infinitely far
 // away.
-global.HitTest = GL.HitTest = function HitTest(t, hit, normal) {
-  this.t = arguments.length ? t : Number.MAX_VALUE;
-  this.hit = hit;
-  this.normal = normal;
-  this.face = null;
-}
+class HitTest {
+	constructor(t, hit, normal) {
+  		this.t = arguments.length ? t : Number.MAX_VALUE;
+  		this.hit = hit;
+  		this.normal = normal;
+  		this.face = null;
+	}
 
-// ### .mergeWith(other)
-// 
-// Changes this object to be the closer of the two hit test results.
-HitTest.prototype = {
-  mergeWith: function(other) {
-    if (other.t > 0 && other.t < this.t) {
-      this.t = other.t;
-      this.hit = other.hit;
-      this.normal = other.normal;
-	  this.face = other.face;
-    }
-  }
-};
+	// ### .mergeWith(other)
+	// Changes this object to be the closer of the two hit test results.
+	mergeWidth(other) {
+		if (other.t > 0 && other.t < this.t) {
+		 	this.t = other.t;
+		  	this.hit = other.hit;
+		  	this.normal = other.normal;
+		  	this.face = other.face;
+		}
+	}
+}
+GL.HitTest = HitTest;
+
 
 // ### new GL.Ray( origin, direction )
-global.Ray = GL.Ray = function Ray( origin, direction )
-{
-	this.origin = vec3.create();
-	this.direction = vec3.create();
-	this.collision_point = vec3.create();
+class Ray {
+	constructor( origin, direction ) {
+		this.origin = vec3.create();
+		this.direction = vec3.create();
+		this.collision_point = vec3.create();
 
-	if(origin)
-		this.origin.set( origin );
-	if(direction)
-		this.direction.set( direction );
-}
+		if(origin)
+			this.origin.set( origin );
+		if(direction)
+			this.direction.set( direction );
+	}
 
-Ray.prototype.testPlane = function( P, N )
-{
-	return geo.testRayPlane( this.origin, this.direction, P, N, this.collision_point );
-}
+	testPlane( P, N ) {
+		return geo.testRayPlane( this.origin, this.direction, P, N, this.collision_point );
+	}
 
-Ray.prototype.testSphere = function( center, radius, max_dist )
-{
-	return geo.testRaySphere( this.origin, this.direction, center, radius, this.collision_point, max_dist );
+	testSphere( center, radius, max_dist ) {
+		return geo.testRaySphere( this.origin, this.direction, center, radius, this.collision_point, max_dist );
+	}
 }
+GL.Ray = Ray;
+
 
 // ### new GL.Raytracer()
 // 
@@ -11839,43 +12138,142 @@ Ray.prototype.testSphere = function( center, radius, max_dist )
 //       var result = GL.Raytracer.hitTestSphere(
 //       tracer.eye, ray, new GL.Vector(0, 0, 0), 1);
 
-global.Raytracer = GL.Raytracer = function Raytracer( viewprojection_matrix, viewport ) {
-	this.viewport = vec4.create();
-	this.ray00 = vec3.create();
-	this.ray10 = vec3.create();
-	this.ray01 = vec3.create();
-	this.ray11 = vec3.create();
-	this.eye = vec3.create();
-	this.setup( viewprojection_matrix, viewport );
+class Raytracer {
+	constructor( viewprojection_matrix, viewport ) {
+		this.viewport = vec4.create();
+		this.ray00 = vec3.create();
+		this.ray10 = vec3.create();
+		this.ray01 = vec3.create();
+		this.ray11 = vec3.create();
+		this.eye = vec3.create();
+		this.setup( viewprojection_matrix, viewport );
+	}
+
+	setup( viewprojection_matrix, viewport ) {
+		viewport = viewport || gl.viewport_data;
+		this.viewport.set( viewport );
+
+		var minX = viewport[0], maxX = minX + viewport[2];
+		var minY = viewport[1], maxY = minY + viewport[3];
+
+		vec3.set( this.ray00, minX, minY, 1 );
+		vec3.set( this.ray10, maxX, minY, 1 );
+		vec3.set( this.ray01, minX, maxY, 1 );
+		vec3.set( this.ray11, maxX, maxY, 1 );
+		vec3.unproject( this.ray00, this.ray00, viewprojection_matrix, viewport);
+		vec3.unproject( this.ray10, this.ray10, viewprojection_matrix, viewport);
+		vec3.unproject( this.ray01, this.ray01, viewprojection_matrix, viewport);
+		vec3.unproject( this.ray11, this.ray11, viewprojection_matrix, viewport);
+		var eye = this.eye;
+		vec3.unproject(eye, eye, viewprojection_matrix, viewport);
+		vec3.subtract(this.ray00, this.ray00, eye);
+		vec3.subtract(this.ray10, this.ray10, eye);
+		vec3.subtract(this.ray01, this.ray01, eye);
+		vec3.subtract(this.ray11, this.ray11, eye);
+	}
+	
+	// ### GL.Raytracer.hitTestBox(origin, ray, min, max)
+	// 
+	// Traces the ray starting from `origin` along `ray` against the axis-aligned box
+	// whose coordinates extend from `min` to `max`. Returns a `HitTest` with the
+	// information or `null` for no intersection.
+	// 
+	// This implementation uses the [slab intersection method](http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm).
+	static hitTestBox(origin, ray, min, max, model) {
+		var _hittest_v3 = new Float32Array(10*3); //reuse memory to speedup
+		
+		if(model)
+		{
+		  var inv = mat4.invert( _hittest_inv, model );
+		  origin = mat4.multiplyVec3( _hittest_v3.subarray(3,6), inv, origin );
+		  ray = mat4.rotateVec3( _hittest_v3.subarray(6,9), inv, ray );
+		}
+	  
+		var tMin = vec3.subtract( _hittest_v3.subarray(9,12), min, origin );
+		vec3.divide( tMin, tMin, ray );
+	  
+		var tMax = vec3.subtract( _hittest_v3.subarray(12,15), max, origin );
+		vec3.divide( tMax, tMax, ray );
+	  
+		var t1 = vec3.min( _hittest_v3.subarray(15,18), tMin, tMax);
+		var t2 = vec3.max( _hittest_v3.subarray(18,21), tMin, tMax);
+	  
+		var tNear = vec3.maxValue(t1);
+		var tFar = vec3.minValue(t2);
+	  
+		if (tNear > 0 && tNear <= tFar) {
+		 	var epsilon = 1.0e-6;
+		  	var hit = vec3.scale( _hittest_v3.subarray(21,24), ray, tNear);
+		  	vec3.add( hit, origin, hit );
+	  
+		  	vec3.addValue(_hittest_v3.subarray(24,27), min, epsilon);
+		  	vec3.subValue(_hittest_v3.subarray(27,30), max, epsilon);
+	  
+		  	return new HitTest(tNear, hit, vec3.fromValues(
+				(hit[0] > max[0]) - (hit[0] < min[0]),
+				(hit[1] > max[1]) - (hit[1] < min[1]),
+				(hit[2] > max[2]) - (hit[2] < min[2])
+		  	));
+		}
+		return null;
+	}
+
+	// ### GL.Raytracer.hitTestSphere(origin, ray, center, radius)
+	// 
+	// Traces the ray starting from `origin` along `ray` against the sphere defined
+	// by `center` and `radius`. Returns a `HitTest` with the information or `null`
+	// for no intersection.
+	static hitTestSphere(origin, ray, center, radius) {
+		var offset = vec3.subtract( vec3.create(), origin,center);
+		var a = vec3.dot(ray,ray);
+		var b = 2 * vec3.dot(ray,offset);
+		var c = vec3.dot(offset,offset) - radius * radius;
+		var discriminant = b * b - 4 * a * c;
+	
+		if (discriminant > 0) {
+		var t = (-b - Math.sqrt(discriminant)) / (2 * a), hit = vec3.add(vec3.create(),origin, vec3.scale(vec3.create(), ray, t));
+		return new HitTest(t, hit, vec3.scale( vec3.create(), vec3.subtract(vec3.create(), hit,center), 1.0/radius));
+		}
+	
+		return null;
+	}
+
+	// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c)
+	// 
+	// Traces the ray starting from `origin` along `ray` against the triangle defined
+	// by the points `a`, `b`, and `c`. Returns a `HitTest` with the information or
+	// `null` for no intersection.
+	static hitTestTriangle(origin, ray, a, b, c) {
+		var ab = vec3.subtract(vec3.create(), b,a );
+		var ac = vec3.subtract(vec3.create(), c,a );
+		var normal = vec3.cross( vec3.create(), ab,ac);
+		vec3.normalize( normal, normal );
+		var t = vec3.dot(normal, vec3.subtract( vec3.create(), a,origin)) / vec3.dot(normal,ray);
+	
+		if (t > 0) {
+		var hit = vec3.add( vec3.create(), origin, vec3.scale(vec3.create(), ray,t));
+		var toHit = vec3.subtract( vec3.create(), hit, a);
+		var dot00 = vec3.dot(ac,ac);
+		var dot01 = vec3.dot(ac,ab);
+		var dot02 = vec3.dot(ac,toHit);
+		var dot11 = vec3.dot(ab,ab);
+		var dot12 = vec3.dot(ab,toHit);
+		var divide = dot00 * dot11 - dot01 * dot01;
+		var u = (dot11 * dot02 - dot01 * dot12) / divide;
+		var v = (dot00 * dot12 - dot01 * dot02) / divide;
+		if (u >= 0 && v >= 0 && u + v <= 1) return new HitTest(t, hit, normal);
+		}
+	
+		return null;
+	}
 }
+GL.Raytracer = Raytracer;
 
-Raytracer.prototype.setup = function( viewprojection_matrix, viewport )
-{
-	viewport = viewport || gl.viewport_data;
-	this.viewport.set( viewport );
+// used for Raytracer hitTests?
+var _hittest_inv = mat4.create();
 
-	var minX = viewport[0], maxX = minX + viewport[2];
-	var minY = viewport[1], maxY = minY + viewport[3];
-
-	vec3.set( this.ray00, minX, minY, 1 );
-	vec3.set( this.ray10, maxX, minY, 1 );
-	vec3.set( this.ray01, minX, maxY, 1 );
-	vec3.set( this.ray11, maxX, maxY, 1 );
-	vec3.unproject( this.ray00, this.ray00, viewprojection_matrix, viewport);
-	vec3.unproject( this.ray10, this.ray10, viewprojection_matrix, viewport);
-	vec3.unproject( this.ray01, this.ray01, viewprojection_matrix, viewport);
-	vec3.unproject( this.ray11, this.ray11, viewprojection_matrix, viewport);
-	var eye = this.eye;
-	vec3.unproject(eye, eye, viewprojection_matrix, viewport);
-	vec3.subtract(this.ray00, this.ray00, eye);
-	vec3.subtract(this.ray10, this.ray10, eye);
-	vec3.subtract(this.ray01, this.ray01, eye);
-	vec3.subtract(this.ray11, this.ray11, eye);
-}
-
-  // ### .getRayForPixel(x, y)
-  // 
-  // Returns the ray direction originating from the camera and traveling through the pixel `x, y`.
+// ### .getRayForPixel(x, y) 
+// Returns the ray direction originating from the camera and traveling through the pixel `x, y`.
 Raytracer.prototype.getRayForPixel = (function(){ 
 	var ray0 = vec3.create();
 	var ray1 = vec3.create();
@@ -11889,422 +12287,3 @@ Raytracer.prototype.getRayForPixel = (function(){
 		return vec3.normalize( out, out );
 	}
 })();
-
-// ### GL.Raytracer.hitTestBox(origin, ray, min, max)
-// 
-// Traces the ray starting from `origin` along `ray` against the axis-aligned box
-// whose coordinates extend from `min` to `max`. Returns a `HitTest` with the
-// information or `null` for no intersection.
-// 
-// This implementation uses the [slab intersection method](http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm).
-var _hittest_inv = mat4.create();
-Raytracer.hitTestBox = function(origin, ray, min, max, model) {
-  var _hittest_v3 = new Float32Array(10*3); //reuse memory to speedup
-  
-  if(model)
-  {
-	var inv = mat4.invert( _hittest_inv, model );
-	origin = mat4.multiplyVec3( _hittest_v3.subarray(3,6), inv, origin );
-	ray = mat4.rotateVec3( _hittest_v3.subarray(6,9), inv, ray );
-  }
-
-  var tMin = vec3.subtract( _hittest_v3.subarray(9,12), min, origin );
-  vec3.divide( tMin, tMin, ray );
-
-  var tMax = vec3.subtract( _hittest_v3.subarray(12,15), max, origin );
-  vec3.divide( tMax, tMax, ray );
-
-  var t1 = vec3.min( _hittest_v3.subarray(15,18), tMin, tMax);
-  var t2 = vec3.max( _hittest_v3.subarray(18,21), tMin, tMax);
-
-  var tNear = vec3.maxValue(t1);
-  var tFar = vec3.minValue(t2);
-
-  if (tNear > 0 && tNear <= tFar) {
-    var epsilon = 1.0e-6;
-	var hit = vec3.scale( _hittest_v3.subarray(21,24), ray, tNear);
-	vec3.add( hit, origin, hit );
-
-    vec3.addValue(_hittest_v3.subarray(24,27), min, epsilon);
-    vec3.subValue(_hittest_v3.subarray(27,30), max, epsilon);
-
-    return new HitTest(tNear, hit, vec3.fromValues(
-      (hit[0] > max[0]) - (hit[0] < min[0]),
-      (hit[1] > max[1]) - (hit[1] < min[1]),
-      (hit[2] > max[2]) - (hit[2] < min[2])
-    ));
-  }
-
-  return null;
-};
-
-
-
-
-// ### GL.Raytracer.hitTestSphere(origin, ray, center, radius)
-// 
-// Traces the ray starting from `origin` along `ray` against the sphere defined
-// by `center` and `radius`. Returns a `HitTest` with the information or `null`
-// for no intersection.
-Raytracer.hitTestSphere = function(origin, ray, center, radius) {
-  var offset = vec3.subtract( vec3.create(), origin,center);
-  var a = vec3.dot(ray,ray);
-  var b = 2 * vec3.dot(ray,offset);
-  var c = vec3.dot(offset,offset) - radius * radius;
-  var discriminant = b * b - 4 * a * c;
-
-  if (discriminant > 0) {
-    var t = (-b - Math.sqrt(discriminant)) / (2 * a), hit = vec3.add(vec3.create(),origin, vec3.scale(vec3.create(), ray, t));
-    return new HitTest(t, hit, vec3.scale( vec3.create(), vec3.subtract(vec3.create(), hit,center), 1.0/radius));
-  }
-
-  return null;
-};
-
-
-// ### GL.Raytracer.hitTestTriangle(origin, ray, a, b, c)
-// 
-// Traces the ray starting from `origin` along `ray` against the triangle defined
-// by the points `a`, `b`, and `c`. Returns a `HitTest` with the information or
-// `null` for no intersection.
-Raytracer.hitTestTriangle = function(origin, ray, a, b, c) {
-  var ab = vec3.subtract(vec3.create(), b,a );
-  var ac = vec3.subtract(vec3.create(), c,a );
-  var normal = vec3.cross( vec3.create(), ab,ac);
-  vec3.normalize( normal, normal );
-  var t = vec3.dot(normal, vec3.subtract( vec3.create(), a,origin)) / vec3.dot(normal,ray);
-
-  if (t > 0) {
-    var hit = vec3.add( vec3.create(), origin, vec3.scale(vec3.create(), ray,t));
-    var toHit = vec3.subtract( vec3.create(), hit, a);
-    var dot00 = vec3.dot(ac,ac);
-    var dot01 = vec3.dot(ac,ab);
-    var dot02 = vec3.dot(ac,toHit);
-    var dot11 = vec3.dot(ab,ab);
-    var dot12 = vec3.dot(ab,toHit);
-    var divide = dot00 * dot11 - dot01 * dot01;
-    var u = (dot11 * dot02 - dot01 * dot12) / divide;
-    var v = (dot00 * dot12 - dot01 * dot02) / divide;
-    if (u >= 0 && v >= 0 && u + v <= 1) return new HitTest(t, hit, normal);
-  }
-
-  return null;
-};
-
-/* BINARY FORMAT ************************************/
-
-if(global.WBin)
-	global.WBin.classes["Mesh"] = Mesh;
-
-Mesh.binary_file_formats["wbin"] = true;
-
-Mesh.parsers["wbin"] = Mesh.fromBinary = function( data_array, options = {} )
-{
-	if(!global.WBin)
-		throw("To use binary meshes you need to install WBin.js from https://github.com/jagenjo/litescene.js/blob/master/src/utils/wbin.js ");
-
-	var o = null;
-	if( data_array.constructor == ArrayBuffer )
-		o = WBin.load( data_array, true );
-	else
-		o = data_array;
-
-	if(!o.info)
-		console.warn("This WBin doesn't seem to contain a mesh. Classname: ", o["@classname"] );
-
-	if( o.format )
-		GL.Mesh.decompress( o );
-
-	var vertex_buffers = {};
-	if(o.vertex_buffers)
-	{
-		for(var i in o.vertex_buffers)
-			vertex_buffers[ o.vertex_buffers[i] ] = o[ o.vertex_buffers[i] ];
-	}
-	else
-	{
-		if(o.vertices) vertex_buffers.vertices = o.vertices;
-		if(o.normals) vertex_buffers.normals = o.normals;
-		if(o.coords) vertex_buffers.coords = o.coords;
-		if(o.weights) vertex_buffers.weights = o.weights;
-		if(o.bone_indices) vertex_buffers.bone_indices = o.bone_indices;
-	}
-
-	var index_buffers = {};
-	if( o.index_buffers )
-	{
-		for(var i in o.index_buffers)
-			index_buffers[ o.index_buffers[i] ] = o[ o.index_buffers[i] ];
-	}
-	else
-	{
-		if(o.triangles) index_buffers.triangles = o.triangles;
-		if(o.wireframe) index_buffers.wireframe = o.wireframe;
-	}
-
-	var mesh = { 
-		vertex_buffers: vertex_buffers,
-		index_buffers: index_buffers,
-		bounding: o.bounding,
-		info: o.info
-	};
-
-	if(o.bones)
-	{
-		mesh.bones = o.bones;
-		//restore Float32array
-		for(var i = 0; i < mesh.bones.length; ++i)
-			mesh.bones[i][1] = mat4.clone(mesh.bones[i][1]);
-		if(o.bind_matrix)
-			mesh.bind_matrix = mat4.clone( o.bind_matrix );		
-	}
-
-	if(o.morph_targets)
-		mesh.morph_targets = o.morph_targets;
-
-	if(options.only_data)
-		return mesh;
-
-	//build mesh object
-	var final_mesh = options.mesh || new GL.Mesh();
-	final_mesh.configure( mesh );
-	return final_mesh;
-}
-
-Mesh.encoders["wbin"] = function( mesh, options )
-{
-	return mesh.toBinary( options );
-}
-
-Mesh.prototype.toBinary = function( options )
-{
-	if(!global.WBin)
-		throw("to use Mesh.toBinary you need to have WBin included. Check the repository for wbin.js");
-
-	if(!this.info)
-		this.info = {};
-
-	//clean data
-	var o = {
-		object_class: "Mesh",
-		info: this.info,
-		groups: this.groups
-	};
-
-	if(this.bones)
-	{
-		var bones = [];
-		//convert to array
-		for(var i = 0; i < this.bones.length; ++i)
-			bones.push([ this.bones[i][0], mat4.toArray( this.bones[i][1] ) ]);
-		o.bones = bones;
-		if(this.bind_matrix)
-			o.bind_matrix = this.bind_matrix;
-	}
-
-	//bounding box
-	if(!this.bounding)	
-		this.updateBoundingBox();
-	o.bounding = this.bounding;
-
-	var vertex_buffers = [];
-	var index_buffers = [];
-
-	for(var i in this.vertexBuffers)
-	{
-		var stream = this.vertexBuffers[i];
-		o[ stream.name ] = stream.data;
-		vertex_buffers.push( stream.name );
-
-		if(stream.name == "vertices")
-			o.info.num_vertices = stream.data.length / 3;
-	}
-
-	for(var i in this.indexBuffers)
-	{
-		var stream = this.indexBuffers[i];
-		o[i] = stream.data;
-		index_buffers.push( i );
-	}
-
-	o.vertex_buffers = vertex_buffers;
-	o.index_buffers = index_buffers;
-
-	//compress wbin using the bounding
-	if( GL.Mesh.enable_wbin_compression ) //apply compression
-		GL.Mesh.compress( o );
-
-	//create pack file
-	var bin = WBin.create( o, "Mesh" ); 
-	return bin;
-}
-
-Mesh.compress = function( o, format )
-{
-	format = format || "bounding_compressed";
-	o.format = {
-		type: format
-	};
-
-	var func = Mesh.compressors[ format ];
-	if(!func)
-		throw("compression format not supported:" + format );
-	return func( o );
-}
-
-Mesh.decompress = function( o )
-{
-	if(!o.format)
-		return;
-	var func = Mesh.decompressors[ o.format.type ];
-	if(!func)
-		throw("decompression format not supported:" + o.format.type );
-	return func( o );
-}
-
-Mesh.compressors["bounding_compressed"] = function(o)
-{
-	if(!o.vertex_buffers)
-		throw("buffers not found");
-
-	var min = BBox.getMin( o.bounding );
-	var max = BBox.getMax( o.bounding );
-	var range = vec3.sub( vec3.create(), max, min );
-
-	var vertices = o.vertices;
-	var new_vertices = new Uint16Array( vertices.length );
-	for(var i = 0; i < vertices.length; i+=3)
-	{
-		new_vertices[i] = ((vertices[i] - min[0]) / range[0]) * 65535;
-		new_vertices[i+1] = ((vertices[i+1] - min[1]) / range[1]) * 65535;
-		new_vertices[i+2] = ((vertices[i+2] - min[2]) / range[2]) * 65535;
-	}
-	o.vertices = new_vertices;		
-
-	if( o.normals )
-	{
-		var normals = o.normals;
-		var new_normals = new Uint8Array( normals.length );
-		var normals_range = new_normals.constructor == Uint8Array ? 255 : 65535;
-		for(var i = 0; i < normals.length; i+=3)
-		{
-			new_normals[i] = (normals[i] * 0.5 + 0.5) * normals_range;
-			new_normals[i+1] = (normals[i+1] * 0.5 + 0.5) * normals_range;
-			new_normals[i+2] = (normals[i+2] * 0.5 + 0.5) * normals_range;
-		}
-		o.normals = new_normals;
-	}
-
-	if( o.coords )
-	{
-		//compute uv bounding: [minu,minv,maxu,maxv]
-		var coords = o.coords;
-		var uvs_bounding = [10000,10000,-10000,-10000];
-		for(var i = 0; i < coords.length; i+=2)
-		{
-			var u = coords[i];
-			if( uvs_bounding[0] > u ) uvs_bounding[0] = u;
-			else if( uvs_bounding[2] < u ) uvs_bounding[2] = u;
-			var v = coords[i+1];
-			if( uvs_bounding[1] > v ) uvs_bounding[1] = v;
-			else if( uvs_bounding[3] < v ) uvs_bounding[3] = v;
-		}
-		o.format.uvs_bounding = uvs_bounding;
-
-		var new_coords = new Uint16Array( coords.length );
-		var range = [ uvs_bounding[2] - uvs_bounding[0], uvs_bounding[3] - uvs_bounding[1] ];
-		for(var i = 0; i < coords.length; i+=2)
-		{
-			new_coords[i] = ((coords[i] - uvs_bounding[0]) / range[0]) * 65535;
-			new_coords[i+1] = ((coords[i+1] - uvs_bounding[1]) / range[1]) * 65535;
-		}
-		o.coords = new_coords;
-	}
-
-	if( o.weights )
-	{
-		var weights = o.weights;
-		var new_weights = new Uint16Array( weights.length ); //using only one byte distorts the meshes a lot
-		var weights_range = new_weights.constructor == Uint8Array ? 255 : 65535;
-		for(var i = 0; i < weights.length; i+=4)
-		{
-			new_weights[i] = weights[i] * weights_range;
-			new_weights[i+1] = weights[i+1] * weights_range;
-			new_weights[i+2] = weights[i+2] * weights_range;
-			new_weights[i+3] = weights[i+3] * weights_range;
-		}
-		o.weights = new_weights;
-	}
-}
-
-
-Mesh.decompressors["bounding_compressed"] = function(o)
-{
-	var bounding = o.bounding;
-	if(!bounding)
-		throw("error in mesh decompressing data: bounding not found, cannot use the bounding decompression.");
-
-	var min = BBox.getMin( bounding );
-	var max = BBox.getMax( bounding );
-	var range = vec3.sub( vec3.create(), max, min );
-
-	var format = o.format;
-
-	var inv8 = 1 / 255;
-	var inv16 = 1 / 65535;
-	var vertices = o.vertices;
-	var new_vertices = new Float32Array( vertices.length );
-	for( var i = 0, l = vertices.length; i < l; i += 3 )
-	{
-		new_vertices[i] = ((vertices[i] * inv16) * range[0]) + min[0];
-		new_vertices[i+1] = ((vertices[i+1] * inv16) * range[1]) + min[1];
-		new_vertices[i+2] = ((vertices[i+2] * inv16) * range[2]) + min[2];
-	}
-	o.vertices = new_vertices;		
-
-	if( o.normals && o.normals.constructor != Float32Array )
-	{
-		var normals = o.normals;
-		var new_normals = new Float32Array( normals.length );
-		var inormals_range = normals.constructor == Uint8Array ? inv8 : inv16;
-		for( var i = 0, l = normals.length; i < l; i += 3 )
-		{
-			new_normals[i] = (normals[i] * inormals_range) * 2.0 - 1.0;
-			new_normals[i+1] = (normals[i+1] * inormals_range) * 2.0 - 1.0;
-			new_normals[i+2] = (normals[i+2] * inormals_range) * 2.0 - 1.0;
-			var N = new_normals.subarray(i,i+3);
-			vec3.normalize(N,N);
-		}
-		o.normals = new_normals;
-	}
-
-	if( o.coords && format.uvs_bounding && o.coords.constructor != Float32Array )
-	{
-		var coords = o.coords;
-		var uvs_bounding = format.uvs_bounding;
-		var range = [ uvs_bounding[2] - uvs_bounding[0], uvs_bounding[3] - uvs_bounding[1] ];
-		var new_coords = new Float32Array( coords.length );
-		for( var i = 0, l = coords.length; i < l; i += 2 )
-		{
-			new_coords[i] = (coords[i] * inv16) * range[0] + uvs_bounding[0];
-			new_coords[i+1] = (coords[i+1] * inv16) * range[1] + uvs_bounding[1];
-		}
-		o.coords = new_coords;
-	}
-
-	//bones are already in Uint8 format so dont need to compress them further, but weights yes
-	if( o.weights && o.weights.constructor != Float32Array ) //do we really need to unpack them? what if we use them like this?
-	{
-		var weights = o.weights;
-		var new_weights = new Float32Array( weights.length );
-		var iweights_range = weights.constructor == Uint8Array ? inv8 : inv16;
-		for(var i = 0, l = weights.length; i < l; i += 4 )
-		{
-			new_weights[i] = weights[i] * iweights_range;
-			new_weights[i+1] = weights[i+1] * iweights_range;
-			new_weights[i+2] = weights[i+2] * iweights_range;
-			new_weights[i+3] = weights[i+3] * iweights_range;
-		}
-		o.weights = new_weights;
-	}
-}
