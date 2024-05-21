@@ -72,12 +72,13 @@ export var LiteGraph = new class {
         this.EVENT = -1; // for outputs
         this.ACTION = -1; // for inputs
 
-        this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger"]; // helper, will add "On Request" and more in the future
+        this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper, will add "On Request" and more in the future
         this.NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
         this.ALWAYS = 0;
         this.ON_EVENT = 1;
         this.NEVER = 2;
         this.ON_TRIGGER = 3;
+        this.ON_REQUEST = 4; // used from event-based nodes, where ancestors are recursively executed on needed
 
         this.UP = 1;
         this.DOWN = 2;
@@ -125,6 +126,9 @@ export var LiteGraph = new class {
         this.search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
         this.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
 
+        this.show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
+        this.show_node_tooltip_use_descr_property = false; // enabled tooltip from desc when property tooltip not set
+
         this.auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
 
         // set these values if not using auto_load_slot_types
@@ -135,7 +139,13 @@ export var LiteGraph = new class {
         this.slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
         this.slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
 
+        this.graphDefaultConfig = {
+            align_to_grid: true,
+            links_ontop: false,
+        };
+
         this.alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
+        this.alt_shift_drag_connect_clone_with_input = true; // [true!] very handy, when cloning, keep input connections with SHIFT
 
         this.do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
 
@@ -144,13 +154,73 @@ export var LiteGraph = new class {
         this.middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
 
         this.release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
+        this.two_fingers_opens_menu = false; // [true!] using pointer event isPrimary, when is not simulate right click
 
+        this.backspace_delete = true; // [false!] delete key is enough, don't mess with text edit and custom
 
         this.ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+
+        this.actionHistory_enabled = false; // cntrlZ, cntrlY
+		this.actionHistoryMaxSave = 40;
+
+		/* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
+		this.refreshAncestorsOnTriggers = false; //[true!]
+        this.refreshAncestorsOnActions = false; //[true!]
+      	this.ensureUniqueExecutionAndActionCall = false; //[true!] the new tecnique.. let's make it working best of
 
         // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
         this.use_uuids = false;
+
+        // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
+        this.context_menu_filter_enabled = true;
+
+        this.showCanvasOptions = false; //[true!] customize availableCanvasOptions
+        this.availableCanvasOptions = [   
+            "allow_addOutSlot_onExecuted",
+            "free_resize",
+            "highquality_render",
+            "use_gradients", //set to true to render titlebar with gradients
+            "pause_rendering",
+            "clear_background",
+            "read_only", //if set to true users cannot modify the graph
+            //"render_only_selected", // not implemented
+            "live_mode",
+            "show_info",
+            "allow_dragcanvas",
+            "allow_dragnodes",
+            "allow_interaction", //allow to control widgets, buttons, collapse, etc
+            "allow_searchbox",
+            "move_destination_link_without_shift", //rename: old allow_reconnect_links //allows to change a connection, no need to hold shift
+            "set_canvas_dirty_on_mouse_event", //forces to redraw the canvas if the mouse does anything
+            "always_render_background",
+            "render_shadows",
+            "render_canvas_border",
+            "render_connections_shadows", //too much cpu
+            "render_connections_border",
+            // ,"render_curved_connections", // always on, or specific fixed graph
+            "render_connection_arrows",
+            "render_collapsed_slots",
+            "render_execution_order",
+            "render_title_colored",
+            "render_link_tooltip",
+        ];
+        //,"editor_alpha" //= 1; //used for transition
+
+        this.actionHistoryMaxSave = 40;
+
+        this.canRemoveSlots = true;
+        this.canRemoveSlots_onlyOptional = true;
+        this.canRenameSlots = true;
+        this.canRenameSlots_onlyOptional = true;
+
+        this.ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
+        this.ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
+        this.preventAncestorRecalculation = false; // OLD(?) when calculating the ancestors, set a flag to prevent recalculate the subtree
+
+        this.ensureUniqueExecutionAndActionCall = true; // NEW ensure single event execution
+
+        this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
     }
 
     /**
@@ -190,7 +260,7 @@ export var LiteGraph = new class {
         });
 
         const prev = this.registered_node_types[type];
-        if(prev) {
+        if(prev && LiteGraph.debug) {
             console.log("replacing node type: " + type);
         }
         if( !Object.prototype.hasOwnProperty.call( base_class.prototype, "shape") ) {
@@ -251,10 +321,18 @@ export var LiteGraph = new class {
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
 
-        // TODO one would want to know input and ouput :: this would allow through registerNodeAndSlotType to get all the slots types
-        if (this.auto_load_slot_types) {
-            new base_class(base_class.title || "tmpnode");
+        //used to know which nodes create when dragging files to the canvas
+        if (base_class.supported_extensions) {
+            for (var i=0; i < base_class.supported_extensions.length; i++) {
+                var ext = base_class.supported_extensions[i];
+                if(ext && ext.constructor === String)
+                    this.node_types_by_file_extension[ ext.toLowerCase() ] = base_class;
+            }
         }
+
+        //console.debug("Registering "+type);
+        if (this.auto_load_slot_types) 
+            new base_class(base_class.title ?? "tmpnode");
     }
 
     /**
@@ -771,6 +849,34 @@ export var LiteGraph = new class {
             ")"
         );
     }
+
+    canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
+		var words = (text+"").trim().split(' ');
+		var line = '';
+		var ret = {lines: [], maxW: 0, height:0};
+		if (words.length>1) {
+			for(var n = 0; n < words.length; n++) {
+				var testLine = line + words[n] + ' ';
+				var metrics = context.measureText(testLine);
+				var testWidth = metrics.width;
+				if (testWidth > maxWidth && n > 0) {
+					context.fillText(line, x, y+(lineHeight*ret.lines.length));
+					line = words[n] + ' ';
+					//y += lineHeight;
+					ret.max = testWidth;
+					ret.lines.push(line);
+				}else{
+					line = testLine;
+				}
+			}
+		} else {
+			line = words[0];
+		}
+		context.fillText(line, x, y+(lineHeight*ret.lines.length));
+		ret.lines.push(line);
+		ret.height = lineHeight*ret.lines.length || lineHeight;
+		return ret;
+	}
 
     isInsideRectangle(x, y, left, top, width, height) {
         return x > left && x < left + width && y > top && y < top + height;

@@ -9,10 +9,10 @@ class WidgetButton {
     constructor() {
         this.addOutput("", LiteGraph.EVENT);
         this.addOutput("", "boolean");
-        this.addProperty("text", "click me");
+        this.addProperty("text", "DO");
         this.addProperty("font_size", 30);
         this.addProperty("message", "");
-        this.size = [164, 84];
+        this.size = [84, 84];
         this.clicked = false;
     }
 

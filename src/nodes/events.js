@@ -31,7 +31,10 @@ class TriggerEvent {
         this.addOutput("true", LiteGraph.EVENT);
         this.addOutput("change", LiteGraph.EVENT);
         this.addOutput("false", LiteGraph.EVENT);
-        this.properties = { only_on_change: true };
+        this.properties = { 
+            only_on_change: true, 
+            tooltip:"Triggers event if input evaluates to true",
+        };
         this.prev = 0;
     }
 
@@ -144,7 +147,9 @@ class WaitAll {
         // check all
         this.ready.length = this.outputs.length;
         this.ready[slot_index] = true;
-        for (var i = 0; i < this.ready.length; ++i) if (!this.ready[i]) return;
+        for (var i = 0; i < this.ready.length; ++i) 
+            if (!this.ready[i])
+                 return;
         // pass
         this.reset();
         this.triggerSlot(0);

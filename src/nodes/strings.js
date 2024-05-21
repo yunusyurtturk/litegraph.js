@@ -32,7 +32,7 @@ function concatenate(a, b) {
     if (b === undefined) {
         return a;
     }
-    return a + b;
+    return a + "" + b;
 }
 LiteGraph.wrapFunctionAsNode(
     "string/concatenate",

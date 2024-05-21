@@ -104,9 +104,10 @@ export class LGraphNode {
      * @method configure
      */
     configure(info) {
-
+        /* @TODO: Atlasan has this commented, not sure if it stays that way
         if(this.graph)
-            this.graph._version++;
+            this.graph.onGraphChanged({action: "nodeConfigure", doSave: false});
+        */
 
         Object.entries(info).forEach(([key, value]) => {
             if (key === "properties") {
@@ -135,17 +136,18 @@ export class LGraphNode {
         }
 
         this.inputs?.forEach((input, i) => {
+            if(!input.link) 
+                return;
             const link_info = this.graph ? this.graph.links[input.link] : null;
             this.onConnectionsChange?.(LiteGraph.INPUT, i, true, link_info, input);
             this.onInputAdded?.(input);
         });
 
         this.outputs?.forEach((output, i) => {
-            if (!output.links) {
+            if (!output.links)
                 return;
-            }
             output.links.forEach((link) => {
-                const link_info = this.graph?.links[link] || null;
+                const link_info = this.graph; // ?.links[link] || null; // as per Atlasan
                 this.onConnectionsChange?.(LiteGraph.OUTPUT, i, true, link_info, output);
             });
             this.onOutputAdded?.(output);
@@ -168,6 +170,7 @@ export class LGraphNode {
             });
         }
         this.onConfigure?.(info);
+        this.graph?.onGraphChanged({action: "nodeConfigure", doSave: false});
     }
 
     /**
@@ -193,7 +196,7 @@ export class LGraphNode {
         }
 
         if (this.inputs) {
-            o.inputs = this.inputs;
+            o.inputs = LiteGraph.cloneObject(this.inputs);
         }
 
         if (this.outputs) {
@@ -201,7 +204,7 @@ export class LGraphNode {
             this.outputs.forEach((output) => {
                 delete output._data;
             });
-            o.outputs = this.outputs;
+            o.outputs = LiteGraph.cloneObject(this.outputs);
         }
 
         if (this.title && this.title != this.constructor.title) {
@@ -332,11 +335,10 @@ export class LGraphNode {
             return;
         }
 
-        // this maybe slow and a niche case
-        // if(slot && slot.constructor === String)
-        //	slot = this.findOutputSlot(slot);
-
-        if (slot == -1 || slot >= this.outputs.length) {
+        if(slot?.constructor === String){
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+        	slot = this.findOutputSlot(slot);
+        }else if (slot == -1 || slot >= this.outputs.length) {
             return;
         }
 
@@ -392,7 +394,7 @@ export class LGraphNode {
      * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
      * @return {*} data or if it is not connected returns undefined
      */
-    getInputData(slot, force_update) {
+    getInputData(slot, force_update, refresh_tree) {
         if (!this.inputs) {
             return;
         } // undefined;
@@ -418,10 +420,17 @@ export class LGraphNode {
             return link.data;
         }
 
+        // atlasan: refactor: This is a basic, but seems working, version. Consider moving this out of here and use a single ancestorsCalculation (for each event?)
+        if (refresh_tree) {
+            var uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
+            var optsAncestors = {action: uIdRand, options:{action_call: uIdRand}};
+            this.refreshAncestors(optsAncestors);
+        }
+
         if (node.updateOutputData) {
             node.updateOutputData(link.origin_slot);
-        } else if (node.onExecute) {
-            node.onExecute();
+        } else {
+            node.doExecute?.();
         }
 
         return link.data;
@@ -550,12 +559,14 @@ export class LGraphNode {
      * @return {*} value
      */
     getInputOrProperty(name) {
-        if (this.inputs) {
-            const input = this.inputs.find((input_info) => input_info.name === name && input_info.link !== null);
-            if (input) {
-                const link = this.graph.links[input.link];
-                if (link) {
-                    return link.data;
+        if (this.inputs){
+            for (var i = 0, l = this.inputs.length; i < l; ++i) {
+                var input_info = this.inputs[i];
+                if (name == input_info.name && input_info.link != null) {
+                    var link = this.graph.links[input_info.link];
+                    if (link) {
+                        return link.data;
+                    }
                 }
             }
         }
@@ -648,7 +659,7 @@ export class LGraphNode {
     addOnTriggerInput() {
         var trigS = this.findInputSlot("onTrigger");
         if (trigS == -1) { // !trigS ||
-            this.addInput("onTrigger", LiteGraph.EVENT, {optional: true, nameLocked: true});
+            this.addInput("onTrigger", LiteGraph.EVENT, {removable: true, nameLocked: true});
             return this.findInputSlot("onTrigger");
         }
         return trigS;
@@ -657,7 +668,7 @@ export class LGraphNode {
     addOnExecutedOutput() {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS == -1) { // !trigS ||
-            this.addOutput("onExecuted", LiteGraph.ACTION, {optional: true, nameLocked: true});
+            this.addOutput("onExecuted", LiteGraph.ACTION, {removable: true, nameLocked: true});
             return this.findOutputSlot("onExecuted");
         }
         return trigS;
@@ -667,9 +678,11 @@ export class LGraphNode {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
 
-            // console.debug(this.id+":"+this.order+" triggering slot onAfterExecute");
-            // console.debug(param);
-            // console.debug(options);
+            if (LiteGraph.debug) {
+                console.debug(this.id+":"+this.order+" triggering slot onAfterExecute");
+                console.debug(param);
+                console.debug(options);
+            }
             this.triggerSlot(trigS, param, null, options);
 
         }
@@ -725,6 +738,29 @@ export class LGraphNode {
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
 
+            if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]){
+                if (LiteGraph.debug) {
+                    console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
+                }
+                return;
+            }
+            if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined){
+                if (LiteGraph.debug) {
+                    console.debug("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
+                }
+                return;
+            }
+            //console.debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
+            if (LiteGraph.ensureUniqueExecutionAndActionCall){
+                //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
+                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
+                    if (LiteGraph.debug) {
+                        console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);
+                    }
+                    return;
+                }
+            }
+
             this.graph.nodes_executing[this.id] = true; // .push(this.id);
 
             this.onExecute(param, options);
@@ -753,7 +789,26 @@ export class LGraphNode {
 
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
-
+            
+            if (LiteGraph.ensureNodeSingleAction){
+                if (this.graph.nodes_actioning && this.graph.nodes_actioning[this.id] == options.action_call){ // == action){
+                    //console.debug("NODE already actioning! Prevent! "+this.id+":"+this.order+" :: "+options.action_call);
+                    return;
+                }
+            }
+            if (LiteGraph.debug) {
+                console.debug("CheckActioned ? "+this.id+":"+this.order+" :: "+this.action_call);
+            }
+            if (LiteGraph.ensureUniqueExecutionAndActionCall){
+                //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
+                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
+                    if (LiteGraph.debug) {
+                        console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);ç
+                    }
+                    return;
+                }
+            }
+            
             this.graph.nodes_actioning[this.id] = (action?action:"actioning"); // .push(this.id);
 
             this.onAction(action, param, options, action_slot);
@@ -820,6 +875,12 @@ export class LGraphNode {
             return;
         }
 
+        // check for ancestors calls
+        if (this.graph && this.graph.ancestorsCall){
+            //console.debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
+            return;
+        }
+
         if (this.graph) {
             this.graph._last_trigger_time = LiteGraph.getTime();
         }
@@ -843,12 +904,12 @@ export class LGraphNode {
                 continue;
             }
 
-            // used to mark events in graph
-            var target_connection = node.inputs[link_info.target_slot];
-
             if (node.mode === LiteGraph.ON_TRIGGER) {
                 // generate unique trigger ID if not present
-                if (!options.action_call) options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
+                if (!options.action_call) 
+                    options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
+                if (LiteGraph.refreshAncestorsOnTriggers) 
+                    node.refreshAncestors({action: "trigger", param: param, options: options});
                 if (node.onExecute) {
                     // -- wrapping node.onExecute(param); --
                     node.doExecute(param, options); // @BUG: Possible misname here
@@ -857,12 +918,19 @@ export class LGraphNode {
                 // generate unique action ID if not present
                 if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 // pass the action name
-                target_connection = node.inputs[link_info.target_slot];
+                let target_connection = node.inputs[link_info.target_slot];
+                
+                if (LiteGraph.debug) {
+                    console.debug("will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
+                }
+
+                // METHOD 1 ancestors
+				if (LiteGraph.refreshAncestorsOnActions) 
+                    node.refreshAncestors({action: target_connection.name, param: param, options:options});
 
                 // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
-                    if(!node._waiting_actions)
-                        node._waiting_actions = [];
+                    node._waiting_actions ??= [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
                 } else {
                     // wrap node.onAction(target_connection.name, param);
@@ -1588,7 +1656,7 @@ export class LGraphNode {
      * @param {string} target_type the input slot type of the target node
      * @return {Object} the link_info is created, otherwise null
      */
-    connectByType(slot, target_node, target_slotType, optsIn = {}) {
+    connectByType(slot, target_node, target_slotType = "*", optsIn = {}) {
         var optsDef = {
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
@@ -1600,19 +1668,22 @@ export class LGraphNode {
         }
         var target_slot = target_node.findInputSlotByType(target_slotType, false, true);
         if (target_slot >= 0 && target_slot !== null) {
-            // console.debug("CONNbyTYPE type "+target_slotType+" for "+target_slot)
+            if(LiteGraph.debug)
+                console.debug("CONNbyTYPE type "+target_slotType+" for "+target_slot)
             return this.connect(slot, target_node, target_slot);
         }else{
             // console.log("type "+target_slotType+" not found or not free?")
             if (opts.createEventInCase && target_slotType == LiteGraph.EVENT) {
                 // WILL CREATE THE onTrigger IN SLOT
-                // console.debug("connect WILL CREATE THE onTrigger "+target_slotType+" to "+target_node);
+                if(LiteGraph.debug)
+                    console.debug("connect WILL CREATE THE onTrigger "+target_slotType+" to "+target_node);
                 return this.connect(slot, target_node, -1);
             }
             // connect to the first general output slot if not found a specific type and
             if (opts.generalTypeInCase) {
                 target_slot = target_node.findInputSlotByType(0, false, true, true);
-                // console.debug("connect TO a general type (*, 0), if not found the specific type ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
+                if(LiteGraph.debug)
+                    console.debug("connect TO a general type (*, 0), if not found the specific type ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
                 if (target_slot >= 0) {
                     return this.connect(slot, target_node, target_slot);
                 }
@@ -1620,13 +1691,14 @@ export class LGraphNode {
             // connect to the first free input slot if not found a specific type and this output is general
             if (opts.firstFreeIfOutputGeneralInCase && (target_slotType == 0 || target_slotType == "*" || target_slotType == "")) {
                 target_slot = target_node.findInputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
-                // console.debug("connect TO TheFirstFREE ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
+                if(LiteGraph.debug)
+                    console.debug("connect TO TheFirstFREE ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
                 if (target_slot >= 0) {
                     return this.connect(slot, target_node, target_slot);
                 }
             }
-
-            console.debug("no way to connect type: ",target_slotType," to targetNODE ",target_node);
+            if(LiteGraph.debug)
+                console.debug("no way to connect type: ",target_slotType," to targetNODE ",target_node);
             // TODO filter
 
             return null;
@@ -1641,7 +1713,7 @@ export class LGraphNode {
      * @param {string} target_type the output slot type of the target node
      * @return {Object} the link_info is created, otherwise null
      */
-    connectByTypeOutput(slot, source_node, source_slotType, optsIn = {}) {
+    connectByTypeOutput(slot, source_node, source_slotType = "*", optsIn = {}) {
         var optsDef = {
             createEventInCase: true,
             firstFreeIfInputGeneralInCase: true,
@@ -1653,7 +1725,8 @@ export class LGraphNode {
         }
         var source_slot = source_node.findOutputSlotByType(source_slotType, false, true);
         if (source_slot >= 0 && source_slot !== null) {
-            // console.debug("CONNbyTYPE OUT! type "+source_slotType+" for "+source_slot)
+            if(LiteGraph.debug)
+                console.debug("CONNbyTYPE OUT! type "+source_slotType+" for "+source_slot)
             return source_node.connect(source_slot, this, slot);
         }else{
 
@@ -1673,7 +1746,7 @@ export class LGraphNode {
                 }
             }
             // connect to the first free output slot if not found a specific type and this input is general
-            if (opts.firstFreeIfInputGeneralInCase && (source_slotType == 0 || source_slotType == "*" || source_slotType == "")) {
+            if (opts.firstFreeIfInputGeneralInCase && (source_slotType == 0 || source_slotType == "*" || source_slotType == "" || source_slotType == "undefined")) {
                 source_slot = source_node.findOutputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
                 if (source_slot >= 0) {
                     return source_node.connect(source_slot, this, slot);
@@ -1683,7 +1756,8 @@ export class LGraphNode {
             console.debug("no way to connect byOUT type: ",source_slotType," to sourceNODE ",source_node);
             // TODO filter
 
-            // console.log("type OUT! "+source_slotType+" not found or not free?")
+            if(LiteGraph.debug)
+                console.log("type OUT! "+source_slotType+" not found or not free?")
             return null;
         }
     }
@@ -1773,32 +1847,26 @@ export class LGraphNode {
             return null;
         }
 
-        // allow target node to change slot
-        if (target_node.onBeforeConnectInput) {
-            // This way node can choose another slot (or make a new one?)
-            target_slot = target_node.onBeforeConnectInput(target_slot); // callback
+        // This way node can choose another slot (or make a new one?)
+        target_slot = target_node.onBeforeConnectInput?.(target_slot); // callback
+        if ( this.onConnectOutput?.(slot, input.type, input, target_node, target_slot) === false ) {
+            return null;
         }
-
+        
         // check target_slot and check connection types
         if (target_slot===false || target_slot===null || !LiteGraph.isValidConnection(output.type, input.type)) {
             this.setDirtyCanvas(false, true);
             if(changed)
                 this.graph.connectionChange(this, link_info);
             return null;
-        }else{
-            // console.debug("valid connection",output.type, input.type);
         }
 
         // allows nodes to block connection, callback
-        if (target_node.onConnectInput) {
-            if ( target_node.onConnectInput(target_slot, output.type, output, this, slot) === false ) {
-                return null;
-            }
+        if ( target_node.onConnectInput?.(target_slot, output.type, output, this, slot) === false ) {
+            return null;
         }
-        if (this.onConnectOutput) { // callback
-            if ( this.onConnectOutput(slot, input.type, input, target_node, target_slot) === false ) {
-                return null;
-            }
+        if ( this.onConnectOutput?.(slot, input.type, input, target_node, target_slot) === false ) {
+            return null;
         }
 
         // if there is something already plugged there, disconnect
@@ -1807,7 +1875,7 @@ export class LGraphNode {
             target_node.disconnectInput(target_slot, {doProcessChange: false});
             changed = true;
         }
-        if (output.links !== null && output.links.length) {
+        if (output.links?.length) {
             switch(output.type) {
                 case LiteGraph.EVENT:
                     if (!LiteGraph.allow_multi_output_for_events) {
@@ -1847,27 +1915,22 @@ export class LGraphNode {
         output.links.push(link_info.id);
         // connect in input
         target_node.inputs[target_slot].link = link_info.id;
-        if (this.graph) {
-            this.graph._version++;
-        }
-        if (this.onConnectionsChange) {
-            this.onConnectionsChange(
-                LiteGraph.OUTPUT,
-                slot,
-                true,
-                link_info,
-                output,
-            );
-        } // link_info has been created now, so its updated
-        if (target_node.onConnectionsChange) {
-            target_node.onConnectionsChange(
-                LiteGraph.INPUT,
-                target_slot,
-                true,
-                link_info,
-                input,
-            );
-        }
+
+        this.onConnectionsChange?.(
+            LiteGraph.OUTPUT,
+            slot,
+            true,
+            link_info,
+            output,
+        );
+        // link_info has been created now, so its updated
+        target_node.onConnectionsChange?.(
+            LiteGraph.INPUT,
+            target_slot,
+            true,
+            link_info,
+            input,
+        );
         if (this.graph && this.graph.onNodeConnectionChange) {
             this.graph.onNodeConnectionChange(
                 LiteGraph.INPUT,
@@ -1885,6 +1948,7 @@ export class LGraphNode {
             );
         }
 
+        this.graph.onGraphChanged({action: "connect"});
         this.setDirtyCanvas(false, true);
         this.graph.afterChange();
         this.graph.connectionChange(this, link_info);
@@ -1899,7 +1963,10 @@ export class LGraphNode {
      * @param {LGraphNode} target_node the target node to which this slot is connected [Optional, if not target_node is specified all nodes will be disconnected]
      * @return {boolean} if it was disconnected successfully
      */
-    disconnectOutput(slot, target_node) {
+    disconnectOutput(slot, target_node, optsIn = {}) {
+        var optsDef = { doProcessChange: true };
+        var opts = Object.assign(optsDef,optsIn);
+
         if (slot.constructor === String) {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
@@ -1940,35 +2007,28 @@ export class LGraphNode {
                     var input = target_node.inputs[link_info.target_slot];
                     input.link = null; // remove there
                     delete this.graph.links[link_id]; // remove the link from the links pool
-                    if (this.graph) {
-                        this.graph._version++;
-                    }
-                    if (target_node.onConnectionsChange) {
-                        target_node.onConnectionsChange(
-                            LiteGraph.INPUT,
-                            link_info.target_slot,
-                            false,
-                            link_info,
-                            input,
-                        );
-                    } // link_info hasn't been modified so its ok
-                    if (this.onConnectionsChange) {
-                        this.onConnectionsChange(
-                            LiteGraph.OUTPUT,
-                            slot,
-                            false,
-                            link_info,
-                            output,
-                        );
-                    }
+                    this.graph?.onGraphChanged({action: "disconnectOutput", doSave: opts.doProcessChange});
+                    target_node.onConnectionsChange?.(
+                        LiteGraph.INPUT,
+                        link_info.target_slot,
+                        false,
+                        link_info,
+                        input,
+                    );
+                    // link_info hasn't been modified so its ok
+                    this.onConnectionsChange?.(
+                        LiteGraph.OUTPUT,
+                        slot,
+                        false,
+                        link_info,
+                        output,
+                    );
                     if (this.graph && this.graph.onNodeConnectionChange) {
                         this.graph.onNodeConnectionChange(
                             LiteGraph.OUTPUT,
                             this,
                             slot,
                         );
-                    }
-                    if (this.graph && this.graph.onNodeConnectionChange) {
                         this.graph.onNodeConnectionChange(
                             LiteGraph.OUTPUT,
                             this,
@@ -1994,9 +2054,7 @@ export class LGraphNode {
 
                 target_node = this.graph.getNodeById(link_info.target_id);
                 input = null;
-                if (this.graph) {
-                    this.graph._version++;
-                }
+                this.graph?.onGraphChanged({action: "disconnectOutput", doSave: opts.doProcessChange});
                 if (target_node) {
                     input = target_node.inputs[link_info.target_slot];
                     input.link = null; // remove other side link
@@ -2054,7 +2112,10 @@ export class LGraphNode {
      * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
      * @return {boolean} if it was disconnected successfully
      */
-    disconnectInput(slot) {
+    disconnectInput(slot, optsIn = {}) {
+        var optsDef = { doProcessChange: true };
+        var opts = Object.assign(optsDef,optsIn);
+
         // seek for the output slot
         if (slot.constructor === String) {
             slot = this.findInputSlot(slot);
@@ -2102,9 +2163,8 @@ export class LGraphNode {
                 }
 
                 delete this.graph.links[link_id]; // remove from the pool
-                if (this.graph) {
-                    this.graph._version++;
-                }
+                this.graph?.onGraphChanged({action: "disconnectInput", doSave: opts.doProcessChange});
+
                 if (this.onConnectionsChange) {
                     this.onConnectionsChange(
                         LiteGraph.INPUT,
@@ -2343,7 +2403,7 @@ export class LGraphNode {
      * @method collapse
      **/
     collapse(force) {
-        this.graph._version++;
+        this.graph.onGraphChanged({action: "collapse"});
         if (this.constructor.collapsable === false && !force) {
             return;
         }
@@ -2361,7 +2421,7 @@ export class LGraphNode {
      **/
 
     pin(v) {
-        this.graph._version++;
+        this.graph.onGraphChanged({action: "pin"});
         if (v === undefined) {
             this.flags.pinned = !this.flags.pinned;
         } else {
@@ -2374,5 +2434,55 @@ export class LGraphNode {
             (x + this.pos[0]) * graphcanvas.scale + graphcanvas.offset[0],
             (y + this.pos[1]) * graphcanvas.scale + graphcanvas.offset[1],
         ];
+    }
+
+    refreshAncestors(optsIn = {}) {
+        var optsDef = { 
+            action: "",
+            param: null,
+            options: null,
+            passParam: true,
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
+        if (!this.inputs) {
+            return;
+        }
+        if (LiteGraph.preventAncestorRecalculation){
+            if (this.graph.node_ancestorsCalculated && this.graph.node_ancestorsCalculated[this.id]){
+                //console.debug("NODE already calculated subtree! Prevent! "+this.id+":"+this.order);
+                return;
+            }
+        }
+
+        if (!opts.action || opts.action == "") 
+            opts.action = this.id+"_ancestors";
+        if (!opts.param || opts.param == "") 
+            opts.param = this.id+"_ancestors";
+        if (!opts.options) 
+            opts.options = {};
+        opts.options = Object.assign({action_call: opts.action},opts.options);
+
+        //console.debug("ancestors processing");
+        //console.debug(this.id+":"+this.order+" "+opts.options.action_call);
+
+        this.graph.ancestorsCall = true; // prevent triggering slots
+
+        var optsAncestors = {
+            modesSkip: [LiteGraph.NEVER, LiteGraph.ON_EVENT, LiteGraph.ON_TRIGGER],
+            modesOnly: [LiteGraph.ALWAYS, LiteGraph.ON_REQUEST],
+            typesSkip: [LiteGraph.ACTION],
+            typesOnly: [],
+        };
+        var aAncestors = this.graph.getAncestors(this,optsAncestors);
+        for(iN in aAncestors){
+            aAncestors[iN].doExecute(opts.param, opts.options);
+            this.graph.node_ancestorsCalculated[aAncestors[iN].id] = true;
+        }
+
+        this.graph.ancestorsCall = false; // restore triggering slots
+        this.graph.node_ancestorsCalculated[this.id] = true;
+
+        return true;
     }
 }

@@ -164,8 +164,9 @@ class HTTPRequestNode {
     }
 
     fetch() {
-        var url = this.getInputData(1) ?? this.properties.url;
-        if (!url) return;
+        var url = this.getInputOrProperty("url");
+        if (!url)
+            return;
 
         this.boxcolor = "#FF0";
         var that = this;
@@ -187,7 +188,8 @@ class HTTPRequestNode {
     }
 
     onAction(evt) {
-        if (evt == "request") this.fetch();
+        if (evt == "request") 
+            this.fetch();
     }
 
     onExecute() {

@@ -77,6 +77,8 @@ export class LGraph {
 
         // custom data
         this.config = {};
+        this.configApplyDefaults();
+
         this.vars = {};
         this.extra = {}; // to store custom data
 
@@ -91,8 +93,16 @@ export class LGraph {
 
         this.catch_errors = true;
 
+        // savings
+        this.history = {    
+            actionHistory: [],
+            actionHistoryVersions: [],
+            actionHistoryPtr: 0,
+        };
+
         this.nodes_executing = [];
         this.nodes_actioning = [];
+        this.node_ancestorsCalculated = [];
         this.nodes_executedAction = [];
 
         // subgraph_data
@@ -106,12 +116,35 @@ export class LGraph {
     }
 
     /**
+    * Apply config values to LGraph config object
+    * @method configApply
+     * @param {object} opts options to merge
+    */
+    configApply(opts) {
+        /*
+        align_to_grid
+        links_ontop
+        */
+        this.config = Object.assign(this.config,opts);
+    }
+
+    /**
+    * Apply config values to LGraph config object
+    * @method configApply
+     * @param {object} opts options to merge
+    */
+    configApplyDefaults() {
+        var opts = LiteGraph.graphDefaultConfig;
+        this.configApply(opts);
+    }
+
+    /**
      * Attach Canvas to this graph
      * @method attachCanvas
      * @param {GraphCanvas} graph_canvas
      */
     attachCanvas(graphcanvas) {
-        if (graphcanvas.constructor != LGraphCanvas) {
+        if (! graphcanvas instanceof LGraphCanvas) {
             throw new Error("attachCanvas expects a LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
@@ -242,7 +275,7 @@ export class LGraph {
                         }
 
                         if (node.mode === LiteGraph.ALWAYS) {
-                            node.onExecute?.();
+                            node.doExecute?.();
                         }
                     });
 
@@ -277,6 +310,7 @@ export class LGraph {
         this.last_update_time = now;
         this.nodes_executing = [];
         this.nodes_actioning = [];
+        this.node_ancestorsCalculated = [];
         this.nodes_executedAction = [];
     }
 
@@ -442,25 +476,88 @@ export class LGraph {
      * @method getAncestors
      * @return {Array} an array with all the LGraphNodes that affect this node, in order of execution
      */
-    getAncestors(node) {
+    getAncestors(node, optsIn = {}) {
+        var optsDef = { 
+            modesSkip: [],
+            modesOnly: [],
+            typesSkip: [],
+            typesOnly: [],
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
         var ancestors = [];
+        var ancestorsIds = [];
         var pending = [node];
         var visited = {};
 
         while (pending.length) {
             var current = pending.shift();
-            if (!current.inputs) {
+            if (!current) {
                 continue;
             }
-            if (!visited[current.id] && current != node) {
-                visited[current.id] = true;
-                ancestors.push(current);
+            if (visited[current.id]){
+                continue;
+            }
+            // mark as visited
+            visited[current.id] = true;
+  
+            // add to ancestors
+            if (current.id != node.id) {
+  
+                // mode check
+                if (opts.modesSkip && opts.modesSkip.length){
+                    if (opts.modesSkip.indexOf(current.mode) != -1){
+                        //DBG("mode skip "+current.id+":"+current.order+" :: "+current.mode);
+                        continue;
+                    }
+                }
+                if (opts.modesOnly && opts.modesOnly.length){
+                    if (opts.modesOnly.indexOf(current.mode) == -1){
+                        //DBG("mode only "+current.id+":"+current.order+" :: "+current.mode);
+                        continue;
+                    }
+                }
+  
+                if (ancestorsIds.indexOf(current.id) == -1) {
+                    ancestors.push(current);
+                    ancestorsIds.push(current.id);
+                    //DBG("push current "+current.id+":"+current.order);
+                }
+  
+            }
+  
+            // get its inputs
+            if (!current.inputs){
+                continue;
             }
 
             for (var i = 0; i < current.inputs.length; ++i) {
                 var input = current.getInputNode(i);
-                if (input && !ancestors.includes(input)) {
-                    pending.push(input);
+                if (!input) 
+                    continue;
+                var inputType = current.inputs[i].type;
+
+                // type check
+                if (opts.typesSkip && opts.typesSkip.length){
+                    if (opts.typesSkip.indexOf(inputType) != -1){
+                        //DBG("type skip "+input.id+":"+input.order+" :: "+inputType);
+                        continue;
+                    }
+                }
+                if (opts.typesOnly && opts.typesOnly.length){
+                    if (opts.typesOnly.indexOf(input.mode) == -1){
+                        //DBG("type only "+input.id+":"+input.order+" :: "+inputType);
+                        continue;
+                    }
+                }
+
+                //DBG("input "+i+" "+input.id+":"+input.order);
+                // push em in
+                if (ancestorsIds.indexOf(input.id) == -1) {
+                    if(!visited[input.id]){
+                      pending.push(input);
+                      //DBG("push input "+input.id+":"+input.order);
+                    }
                 }
             }
         }
@@ -597,7 +694,14 @@ export class LGraph {
      * @method add
      * @param {LGraphNode} node the instance of the node
      */
-    add(node, skip_compute_order) {
+    add(node, skip_compute_order, optsIn = {}) {
+        
+        var optsDef = {
+            doProcessChange: true,
+            doCalcSize: true,
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
         if (!node) {
             return;
         }
@@ -608,7 +712,7 @@ export class LGraph {
             this.setDirtyCanvas(true);
             this.change();
             node.graph = this;
-            this._version++;
+            this.onGraphChanged({action: "groupAdd", doSave: opts.doProcessChange});
             return;
         }
 
@@ -639,7 +743,7 @@ export class LGraph {
         }
 
         node.graph = this;
-        this._version++;
+        this.onGraphChanged({action: "nodeAdd", doSave: opts.doProcessChange});
 
         this._nodes.push(node);
         this._nodes_by_id[node.id] = node;
@@ -656,6 +760,9 @@ export class LGraph {
 
         this.onNodeAdded?.(node);
 
+        if (opts.doCalcSize){
+            node.setSize( node.computeSize() );
+        }
         this.setDirtyCanvas(true);
         this.change();
 
@@ -674,7 +781,7 @@ export class LGraph {
                 this._groups.splice(index, 1);
             }
             node.graph = null;
-            this._version++;
+            this.onGraphChanged({action: "groupRemove"});
             this.setDirtyCanvas(true, true);
             this.change();
             return;
@@ -688,14 +795,14 @@ export class LGraph {
             return;
         } // cannot be removed
 
-        this.beforeChange(); // sure? - almost sure is wrong
+        // this.beforeChange(); // sure? - almost sure is wrong
 
         // disconnect inputs
         if (node.inputs) {
             for (let i = 0; i < node.inputs.length; i++) {
                 let slot = node.inputs[i];
                 if (slot.link != null) {
-                    node.disconnectInput(i);
+                    node.disconnectInput(i, {doProcessChange: false});
                 }
             }
         }
@@ -705,7 +812,7 @@ export class LGraph {
             for (let i = 0; i < node.outputs.length; i++) {
                 let slot = node.outputs[i];
                 if (slot.links != null && slot.links.length) {
-                    node.disconnectOutput(i);
+                    node.disconnectOutput(i, false, {doProcessChange: false});
                 }
             }
         }
@@ -715,7 +822,7 @@ export class LGraph {
         // callback
         node.onRemoved?.();
         node.graph = null;
-        this._version++;
+        this.onGraphChanged({action: "nodeRemove"});
 
         // remove from canvas render
         if (this.list_of_graphcanvas) {
@@ -743,7 +850,7 @@ export class LGraph {
         this.sendActionToCanvas("checkPanels");
 
         this.setDirtyCanvas(true, true);
-        this.afterChange(); // sure? - almost sure is wrong
+        // this.afterChange(); // sure? - almost sure is wrong
         this.change();
 
         this.updateExecutionOrder();
@@ -839,7 +946,8 @@ export class LGraph {
             if (node.constructor == ctor) {
                 continue;
             }
-            console.log(`node being replaced by newer version: ${node.type}`);
+            if(LiteGraph.debug)
+                console.log(`node being replaced by newer version: ${node.type}`);
             var newnode = LiteGraph.createNode(node.type);
             this._nodes[i] = newnode;
             newnode.configure(node.serialize());
@@ -897,7 +1005,7 @@ export class LGraph {
 
         this.beforeChange();
         this.inputs[name] = { name: name, type: type, value: value };
-        this._version++;
+        this.onGraphChanged({action: "addInput"});
         this.afterChange();
         this.onInputAdded?.(name, type);
         this.onInputsOutputsChange?.();
@@ -953,7 +1061,7 @@ export class LGraph {
 
         this.inputs[name] = this.inputs[old_name];
         delete this.inputs[old_name];
-        this._version++;
+        this.onGraphChanged({action: "renameInput"});
 
         this.onInputRenamed?.(old_name, name);
         this.onInputsOutputsChange?.();
@@ -979,7 +1087,7 @@ export class LGraph {
         }
 
         this.inputs[name].type = type;
-        this._version++;
+        this.onGraphChanged({action: "changeInputType"});
         this.onInputTypeChanged?.(name, type);
     }
 
@@ -995,7 +1103,7 @@ export class LGraph {
         }
 
         delete this.inputs[name];
-        this._version++;
+        this.onGraphChanged({action: "graphRemoveInput"});
 
         this.onInputRemoved?.(name);
         this.onInputsOutputsChange?.();
@@ -1011,7 +1119,7 @@ export class LGraph {
      */
     addOutput(name, type, value) {
         this.outputs[name] = { name: name, type: type, value: value };
-        this._version++;
+        this.onGraphChanged({action: "addOutput"});
 
         this.onOutputAdded?.(name, type);
         this.onInputsOutputsChange?.();
@@ -1089,7 +1197,7 @@ export class LGraph {
         }
 
         this.outputs[name].type = type;
-        this._version++;
+        this.onGraphChanged({action: "changeOutputType"});
         this.onOutputTypeChanged?.(name, type);
     }
 
@@ -1103,7 +1211,7 @@ export class LGraph {
             return false;
         }
         delete this.outputs[name];
-        this._version++;
+        this.onGraphChanged({action: "removeOutput"});
 
         this.onOutputRemoved?.(name);
         this.onInputsOutputsChange?.();
@@ -1163,7 +1271,7 @@ export class LGraph {
     connectionChange(node) {
         this.updateExecutionOrder();
         this.onConnectionChange?.(node);
-        this._version++;
+        this.onGraphChanged({action: "connectionChange", doSave: false});
         this.sendActionToCanvas("onConnectionChange");
     }
 
@@ -1206,7 +1314,7 @@ export class LGraph {
      */
     change() {
         if (LiteGraph.debug) {
-            console.log("Graph changed");
+            console.log("Graph visually changed");
         }
         this.sendActionToCanvas("setDirty", [true, true]);
         this.on_change?.(this);
@@ -1227,7 +1335,11 @@ export class LGraph {
             return;
         }
         var node = this.getNodeById(link.target_id);
-        node?.disconnectInput(link.target_slot);
+        if(node) {
+            this.beforeChange();
+            node.disconnectInput(link.target_slot); /* , optsIn */
+            this.afterChange();
+        }
     }
 
     /**
@@ -1334,7 +1446,7 @@ export class LGraph {
                 }
 
                 node.id = n_info.id; // id it or it will create a new id
-                this.add(node, true); // add before configure, otherwise configure cannot create links
+                this.add(node, true, {doProcessChange: false}); // add before configure, otherwise configure cannot create links
             }
 
             // configure nodes afterwards so they can reach each other
@@ -1350,7 +1462,7 @@ export class LGraph {
             data.groups.forEach((groupData) => {
                 const group = new LGraphGroup();
                 group.configure(groupData);
-                this.add(group);
+                this.add(group, true, {doProcessChange: false});
             });
         }
 
@@ -1359,8 +1471,12 @@ export class LGraph {
         this.extra = data.extra ?? {};
 
         this.onConfigure?.(data);
-
-        this._version++;
+        // TODO implement: when loading (configuring) a whole graph, skip calling graphChanged on every single configure
+        if (!data._version){
+            this.onGraphChanged({action: "graphConfigure", doSave: false}); // this._version++;
+        } else if (LiteGraph.debug) {
+            console.debug("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
+        }
         this.setDirtyCanvas(true, true);
         return error;
     }
@@ -1403,9 +1519,195 @@ export class LGraph {
         };
     }
 
-    /*
-    onNodeTrace(node, msg, color) {
-        //@TODO
-    }
+    /**
+    * Meant to serve the history-saving mechanism
+    * @method onGraphSaved
+    * @param {object} optsIn options
     */
+    onGraphSaved(optsIn = {}) {
+        var optsDef = { 
+                        };
+        var opts = Object.assign(optsDef,optsIn);
+
+        this.savedVersion = this._version;
+    }
+    
+    /**
+    * Meant to serve the history-saving mechanism
+    * @method onGraphSaved
+    * @param {object} optsIn options
+    */
+    onGraphLoaded(optsIn = {}) {
+        var optsDef = {};
+        var opts = Object.assign(optsDef,optsIn);
+        this.savedVersion = this._version;
+    };
+    
+    /**
+    * Ment to be the history and prevent-exit mechanism, call to change _version
+    * @method onGraphChanged
+    * @param {object} optsIn options
+    */
+    onGraphChanged(optsIn = {}) {
+        var optsDef = { 
+            action: "",
+            doSave: true, // log action in graph.history
+            doSaveGraph: true, // save 
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
+        this._version++;
+
+        if(opts.action){
+            if (LiteGraph.debug) {
+                console.debug("Graph change",opts.action);
+            }
+        }else{
+            if (LiteGraph.debug) {
+                console.debug("Graph change, no action",opts);
+            }
+        }
+
+        if(opts.doSave && LiteGraph.actionHistory_enabled){
+
+            if (LiteGraph.debug) {
+                console.debug("onGraphChanged SAVE :: "+opts.action); // debug history
+            }
+
+            var oHistory = {   actionName: opts.action };
+            if(opts.doSaveGraph){
+                oHistory = Object.assign(
+                    oHistory, { graphSave: this.serialize() } // this is a heavy method, but the alternative is way more complex: every action has to have its contrary
+                );
+            }
+
+            var obH = this.history;
+
+            // check if pointer has gone back: remove newest
+            while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1){
+                if (LiteGraph.debug) {
+                    console.debug("popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
+                }
+                obH.actionHistoryVersions.pop();
+            }
+            // check if maximum saves
+            if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave){
+                var olderSave = obH.actionHistoryVersions.shift();
+                if (LiteGraph.debug) {
+                    console.debug("maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
+                }
+                obH.actionHistory[olderSave] = false; // unset
+            }
+
+            // update pointer
+            obH.actionHistoryPtr = obH.actionHistoryVersions.length;
+            obH.actionHistoryVersions.push(obH.actionHistoryPtr);
+
+            // save to pointer
+            obH.actionHistory[obH.actionHistoryPtr] = oHistory;
+
+            if (LiteGraph.debug) {
+                console.debug("history saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
+            }
+        }
+    }
+    
+    /**
+    * Go back in action history
+    * @method actionHistoryBack
+    * @param {object} optsIn options
+    */
+    actionHistoryBack(optsIn = {}) {
+        var optsDef = {};
+        var opts = Object.assign(optsDef,optsIn);
+
+        var obH = this.history;
+
+        if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0){
+            obH.actionHistoryPtr--;
+            if (LiteGraph.debug) {
+                console.debug("history step back: "+obH.actionHistoryPtr); // debug history
+            }
+            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})){
+                console.warn("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                // history not found?
+                obH.actionHistoryPtr++;
+                return false;
+            }else{
+                if (LiteGraph.debug) {
+                    console.debug("history loaded back: "+obH.actionHistoryPtr); // debug history
+                    console.debug(this.history);
+                }
+                return true;
+            }
+        }else{
+            if (LiteGraph.debug) {
+                console.debug("history is already at older state");
+            }
+            return false;
+        }
+    }
+    
+    /**
+    * Go forward in action history
+    * @method actionHistoryForward
+    * @param {object} optsIn options
+    */
+    actionHistoryForward(optsIn = {}) {
+        var optsDef = {};
+        var opts = Object.assign(optsDef,optsIn);
+
+        var obH = this.history;
+
+        if (obH.actionHistoryPtr<obH.actionHistoryVersions.length){
+            obH.actionHistoryPtr++;
+            if (LiteGraph.debug) {
+                console.debug("history step forward: "+obH.actionHistoryPtr); // debug history
+            }
+            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})){
+                console.warn("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                // history not found?
+                obH.actionHistoryPtr--;
+                return false;
+            }else{
+                if (LiteGraph.debug) {
+                    console.debug("history loaded forward: "+obH.actionHistoryPtr); // debug history
+                }
+                return true;
+            }
+        }else{
+            if (LiteGraph.debug) {
+                console.debug("history is already at newer state");
+            }
+            return false;
+        }
+    }
+    
+    /**
+    * Load from action history
+    * @method actionHistoryLoad
+    * @param {object} optsIn options
+    */
+    actionHistoryLoad(optsIn = {}) {
+        var optsDef = {
+            iVersion: false,
+            backStep: false,
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
+        var obH = this.history;
+
+        if(obH.actionHistory[opts.iVersion] && obH.actionHistory[opts.iVersion].graphSave){
+            var tmpHistory = JSON.stringify(this.history);
+            this.configure( obH.actionHistory[opts.iVersion].graphSave );
+            this.history = JSON.parse(tmpHistory);
+            if (LiteGraph.debug) {
+                console.debug("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
+            }
+            // no: this.onGraphLoaded();
+            return true;
+        }else{
+            return false;
+        }
+    }
 }

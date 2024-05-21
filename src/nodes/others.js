@@ -17,12 +17,20 @@ LiteGraph.slot_types_default_in["vec2"] = "math3d/xy-to-vec2";
 LiteGraph.slot_types_default_in["vec3"] = "math3d/xyz-to-vec3";
 LiteGraph.slot_types_default_in["vec4"] = "math3d/xyzw-to-vec4";
 
+LiteGraph.slot_types_default_in["audio"] = ["audio/source","audio/media_source"];
+LiteGraph.slot_types_default_in["canvas"] = "graphics/canvas";
+LiteGraph.slot_types_default_in["geometry"] = ["geometry/polygon","geometry/eval"];
+LiteGraph.slot_types_default_in["image"] = ["graphics/image","graphics/video","graphics/webcam"];
+LiteGraph.slot_types_default_in["mat4"] = "math3d/mat4";
+LiteGraph.slot_types_default_in["quat"] = ["math3d/quaternion","math3d/rotation"];
+LiteGraph.slot_types_default_in["table"] = "string/toTable";
+
 /* out types :: run in console :: var s=""; LiteGraph.slot_types_out.forEach(function(el){s+=el+"\n";}); console.log(s); */
 if (typeof LiteGraph.slot_types_default_out == "undefined")
     LiteGraph.slot_types_default_out = {};
 LiteGraph.slot_types_default_out["_event_"] = [
     "logic/IF",
-    "events/sequencer",
+    "events/sequence",
     "events/log",
     "events/counter",
 ];
@@ -48,9 +56,13 @@ LiteGraph.slot_types_default_out["number"] = [
     { node: "math/compare", outputs: [["A<B", "boolean"]], title: "A<B" },
 ];
 LiteGraph.slot_types_default_out["object"] = [
+    "objects/property_widget",
+    "objects/method_widget",
+    "objects/properties",
     "basic/object_property",
     "basic/keys",
-    ["string/toString", "basic/watch"],
+    "string/toString",
+    "basic/watch"
 ];
 LiteGraph.slot_types_default_out["string"] = [
     "basic/watch",
@@ -61,3 +73,11 @@ LiteGraph.slot_types_default_out["string"] = [
 LiteGraph.slot_types_default_out["vec2"] = "math3d/vec2-to-xy";
 LiteGraph.slot_types_default_out["vec3"] = "math3d/vec3-to-xyz";
 LiteGraph.slot_types_default_out["vec4"] = "math3d/vec4-to-xyzw";
+
+LiteGraph.slot_types_default_out["audio"] = ["audio/destination","audio/mixer","audio/analyser"];
+LiteGraph.slot_types_default_out["canvas"] = ["graphics/frame","graphics/drawImage"];
+LiteGraph.slot_types_default_out["geometry"] = ["geometry/points_to_instances","geometry/extrude","geometry/eval","geometry/connectPoints","geometry/transform"];
+LiteGraph.slot_types_default_out["image"] = ["graphics/frame","graphics/drawImage"];
+//LiteGraph.slot_types_default_out["mat4"] = "geometry/transform";
+LiteGraph.slot_types_default_out["quat"] = ["math3d/rotate_vec3","math3d/rotation"];
+LiteGraph.slot_types_default_out["table"] = "string/toTable";

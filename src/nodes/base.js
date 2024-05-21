@@ -1114,9 +1114,12 @@ class ConstantArray {
         var v = this.getInputData(0);
         if (v && v.length) {
             // clone
-            if (!this._value) this._value = new Array();
+            if (!this._value) 
+                this._value = new Array();
             this._value.length = v.length;
-            for (var i = 0; i < v.length; ++i) this._value[i] = v[i];
+            for (var i = 0; i < v.length; ++i) 
+                this._value[i] = v[i];
+            this.changeOutputType("arrayOut", "array");
         }
         this.setOutputData(0, this._value);
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
@@ -1124,6 +1127,30 @@ class ConstantArray {
 }
 ConstantArray.prototype.setValue = ConstantNumber.prototype.setValue;
 LiteGraph.registerNodeType("basic/array", ConstantArray);
+
+class ArrayLength {
+
+    static title = "aLength";
+    static desc = "Get the length of an array";
+
+    constructor() {
+        this.addInput("arr", "array");
+        this.addOutput("length", "number");
+    }
+
+    onExecute() {
+        var arr = this.getInputData(0);
+        if(!arr)
+            return;
+        if(["array","object"].includes(typeof(arr)) && typeof(arr.length)!=="undefined"){
+            this.setOutputData(0,arr.length);
+        }else{
+            console.debug("Not an array or object",typeof(arr),arr);
+            this.setOutputData(0,null);
+        }
+    }
+}
+LiteGraph.registerNodeType("basic/array_length", ArrayLength );
 
 
 class SetArray {
@@ -1622,7 +1649,7 @@ class Alert {
 LiteGraph.registerNodeType("basic/alert", Alert);
 
 
-// Execites simple code
+// Executes simple code
 class NodeScript {
 
     static title = "Script";
