@@ -7820,7 +7820,7 @@ export class LGraphCanvas {
                 // {content:"Collapse All", callback: LGraphCanvas.onMenuCollapseAll }
             ];
             if (LiteGraph.showCanvasOptions) {
-                options.push({ content: "Options", callback: that.showShowGraphOptionsPanel });
+                options.push({ content: "Options", callback: this.showShowGraphOptionsPanel });
             }
 
             if (Object.keys(this.selected_nodes).length > 1) {
