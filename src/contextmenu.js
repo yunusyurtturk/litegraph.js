@@ -150,15 +150,17 @@ export class ContextMenu {
     #insertMenu() {
         const doc = this.options.event?.target.ownerDocument ?? document;
         const parent = doc.fullscreenElement ?? doc.body;
+        const root = this.root;
+        const that = this;
 
         // Atlasan's code: @BUG: Variable names will mismatch
         if (LiteGraph.context_menu_filter_enabled) {
-            if(root_document){
+            if(doc){
                 // TEXT FILTER by KEYPRESS
                 // TODO FIX THIS :: need to remove correctly events !! getting multiple
                 if(root.f_textfilter){
-                    root_document.removeEventListener("keydown",root.f_textfilter,false);
-                    root_document.removeEventListener("keydown",root.f_textfilter,true);
+                    doc.removeEventListener("keydown",root.f_textfilter,false);
+                    doc.removeEventListener("keydown",root.f_textfilter,true);
                     root.f_textfilter = false;
                 }
                 root.f_textfilter = function(e) {
@@ -193,8 +195,8 @@ export class ContextMenu {
                             case "Escape":
                                 // should close ContextMenu
                                 if(root.f_textfilter){
-                                    root_document.removeEventListener("keydown",root.f_textfilter,false);
-                                    root_document.removeEventListener("keydown",root.f_textfilter,true);
+                                    doc.removeEventListener("keydown",root.f_textfilter,false);
+                                    doc.removeEventListener("keydown",root.f_textfilter,true);
                                     root.f_textfilter = false;
                                 }
                                 that.close();
@@ -274,11 +276,11 @@ export class ContextMenu {
                                                 }
                                                 // try cleaning parent listeners
                                                 if(root.f_textfilter){
-                                                    if(root_document){
-                                                        root_document.removeEventListener('keydown',root.f_textfilter,false);
-                                                        root_document.removeEventListener('keydown',root.f_textfilter,true);
+                                                    if(doc){
+                                                        doc.removeEventListener('keydown',root.f_textfilter,false);
+                                                        doc.removeEventListener('keydown',root.f_textfilter,true);
                                                         if( LiteGraph.debug ){
-                                                            console.debug("Cleaned ParentContextMenu listener",root_document,that);
+                                                            console.debug("Cleaned ParentContextMenu listener",doc,that);
                                                         }
                                                     }
                                                 }
@@ -413,13 +415,13 @@ export class ContextMenu {
                     //e.preventDefault();
                     //return false;
                 }
-                root_document.addEventListener(
+                doc.addEventListener(
                     "keydown"
                     ,root.f_textfilter
                     ,true
                 );
             }else{
-                console.warning("NO root_document to add context menu and event",root_document,options);
+                console.warning("NO root document to add context menu and event",doc,options);
             }
         }
 
@@ -597,17 +599,17 @@ export class ContextMenu {
     close(e, ignore_parent_menu) {
 
         if(this.root.f_textfilter){
-            var root_document = document;
-            root_document.removeEventListener('keydown',this.root.f_textfilter,true);
-            root_document.removeEventListener('keydown',this.root.f_textfilter,false);
+            let doc = document;
+            doc.removeEventListener('keydown',this.root.f_textfilter,true);
+            doc.removeEventListener('keydown',this.root.f_textfilter,false);
             if (e && e.target) {
-                root_document = e.target.ownerDocument;
+                doc = e.target.ownerDocument;
             }
-            if (!root_document) {
-                root_document = document;
+            if (!doc) {
+                doc = document;
             }
-            root_document.removeEventListener('keydown',this.root.f_textfilter,true);
-            root_document.removeEventListener('keydown',this.root.f_textfilter,false);
+            doc.removeEventListener('keydown',this.root.f_textfilter,true);
+            doc.removeEventListener('keydown',this.root.f_textfilter,false);
         }
 
         if (this.parentMenu && !ignore_parent_menu) {
