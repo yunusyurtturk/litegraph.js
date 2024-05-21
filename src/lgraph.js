@@ -94,7 +94,7 @@ export class LGraph {
         this.catch_errors = true;
 
         // savings
-        this.history = {    
+        this.history = {
             actionHistory: [],
             actionHistoryVersions: [],
             actionHistoryPtr: 0,
@@ -477,7 +477,7 @@ export class LGraph {
      * @return {Array} an array with all the LGraphNodes that affect this node, in order of execution
      */
     getAncestors(node, optsIn = {}) {
-        var optsDef = { 
+        var optsDef = {
             modesSkip: [],
             modesOnly: [],
             typesSkip: [],
@@ -495,68 +495,68 @@ export class LGraph {
             if (!current) {
                 continue;
             }
-            if (visited[current.id]){
+            if (visited[current.id]) {
                 continue;
             }
             // mark as visited
             visited[current.id] = true;
-  
+
             // add to ancestors
             if (current.id != node.id) {
-  
+
                 // mode check
-                if (opts.modesSkip && opts.modesSkip.length){
-                    if (opts.modesSkip.indexOf(current.mode) != -1){
-                        //DBG("mode skip "+current.id+":"+current.order+" :: "+current.mode);
+                if (opts.modesSkip && opts.modesSkip.length) {
+                    if (opts.modesSkip.indexOf(current.mode) != -1) {
+                        // DBG("mode skip "+current.id+":"+current.order+" :: "+current.mode);
                         continue;
                     }
                 }
-                if (opts.modesOnly && opts.modesOnly.length){
-                    if (opts.modesOnly.indexOf(current.mode) == -1){
-                        //DBG("mode only "+current.id+":"+current.order+" :: "+current.mode);
+                if (opts.modesOnly && opts.modesOnly.length) {
+                    if (opts.modesOnly.indexOf(current.mode) == -1) {
+                        // DBG("mode only "+current.id+":"+current.order+" :: "+current.mode);
                         continue;
                     }
                 }
-  
+
                 if (ancestorsIds.indexOf(current.id) == -1) {
                     ancestors.push(current);
                     ancestorsIds.push(current.id);
-                    //DBG("push current "+current.id+":"+current.order);
+                    // DBG("push current "+current.id+":"+current.order);
                 }
-  
+
             }
-  
+
             // get its inputs
-            if (!current.inputs){
+            if (!current.inputs) {
                 continue;
             }
 
             for (var i = 0; i < current.inputs.length; ++i) {
                 var input = current.getInputNode(i);
-                if (!input) 
+                if (!input)
                     continue;
                 var inputType = current.inputs[i].type;
 
                 // type check
-                if (opts.typesSkip && opts.typesSkip.length){
-                    if (opts.typesSkip.indexOf(inputType) != -1){
-                        //DBG("type skip "+input.id+":"+input.order+" :: "+inputType);
+                if (opts.typesSkip && opts.typesSkip.length) {
+                    if (opts.typesSkip.indexOf(inputType) != -1) {
+                        // DBG("type skip "+input.id+":"+input.order+" :: "+inputType);
                         continue;
                     }
                 }
-                if (opts.typesOnly && opts.typesOnly.length){
-                    if (opts.typesOnly.indexOf(input.mode) == -1){
-                        //DBG("type only "+input.id+":"+input.order+" :: "+inputType);
+                if (opts.typesOnly && opts.typesOnly.length) {
+                    if (opts.typesOnly.indexOf(input.mode) == -1) {
+                        // DBG("type only "+input.id+":"+input.order+" :: "+inputType);
                         continue;
                     }
                 }
 
-                //DBG("input "+i+" "+input.id+":"+input.order);
+                // DBG("input "+i+" "+input.id+":"+input.order);
                 // push em in
                 if (ancestorsIds.indexOf(input.id) == -1) {
-                    if(!visited[input.id]){
-                      pending.push(input);
-                      //DBG("push input "+input.id+":"+input.order);
+                    if(!visited[input.id]) {
+                        pending.push(input);
+                        // DBG("push input "+input.id+":"+input.order);
                     }
                 }
             }
@@ -695,7 +695,7 @@ export class LGraph {
      * @param {LGraphNode} node the instance of the node
      */
     add(node, skip_compute_order, optsIn = {}) {
-        
+
         var optsDef = {
             doProcessChange: true,
             doCalcSize: true,
@@ -760,7 +760,7 @@ export class LGraph {
 
         this.onNodeAdded?.(node);
 
-        if (opts.doCalcSize){
+        if (opts.doCalcSize) {
             node.setSize( node.computeSize() );
         }
         this.setDirtyCanvas(true);
@@ -1472,7 +1472,7 @@ export class LGraph {
 
         this.onConfigure?.(data);
         // TODO implement: when loading (configuring) a whole graph, skip calling graphChanged on every single configure
-        if (!data._version){
+        if (!data._version) {
             this.onGraphChanged({action: "graphConfigure", doSave: false}); // this._version++;
         } else if (LiteGraph.debug) {
             console.debug("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
@@ -1525,13 +1525,12 @@ export class LGraph {
     * @param {object} optsIn options
     */
     onGraphSaved(optsIn = {}) {
-        var optsDef = { 
-                        };
+        var optsDef = {};
         var opts = Object.assign(optsDef,optsIn);
 
         this.savedVersion = this._version;
     }
-    
+
     /**
     * Meant to serve the history-saving mechanism
     * @method onGraphSaved
@@ -1541,24 +1540,24 @@ export class LGraph {
         var optsDef = {};
         var opts = Object.assign(optsDef,optsIn);
         this.savedVersion = this._version;
-    };
-    
+    }
+
     /**
     * Ment to be the history and prevent-exit mechanism, call to change _version
     * @method onGraphChanged
     * @param {object} optsIn options
     */
     onGraphChanged(optsIn = {}) {
-        var optsDef = { 
+        var optsDef = {
             action: "",
             doSave: true, // log action in graph.history
-            doSaveGraph: true, // save 
+            doSaveGraph: true, // save
         };
         var opts = Object.assign(optsDef,optsIn);
 
         this._version++;
 
-        if(opts.action){
+        if(opts.action) {
             if (LiteGraph.debug) {
                 console.debug("Graph change",opts.action);
             }
@@ -1568,30 +1567,29 @@ export class LGraph {
             }
         }
 
-        if(opts.doSave && LiteGraph.actionHistory_enabled){
+        if(opts.doSave && LiteGraph.actionHistory_enabled) {
 
             if (LiteGraph.debug) {
                 console.debug("onGraphChanged SAVE :: "+opts.action); // debug history
             }
 
-            var oHistory = {   actionName: opts.action };
-            if(opts.doSaveGraph){
-                oHistory = Object.assign(
-                    oHistory, { graphSave: this.serialize() } // this is a heavy method, but the alternative is way more complex: every action has to have its contrary
+            var oHistory = { actionName: opts.action };
+            if(opts.doSaveGraph) {
+                oHistory = Object.assign(oHistory, { graphSave: this.serialize() }, // this is a heavy method, but the alternative is way more complex: every action has to have its contrary
                 );
             }
 
             var obH = this.history;
 
             // check if pointer has gone back: remove newest
-            while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1){
+            while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1) {
                 if (LiteGraph.debug) {
                     console.debug("popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
                 }
                 obH.actionHistoryVersions.pop();
             }
             // check if maximum saves
-            if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave){
+            if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave) {
                 var olderSave = obH.actionHistoryVersions.shift();
                 if (LiteGraph.debug) {
                     console.debug("maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
@@ -1611,7 +1609,7 @@ export class LGraph {
             }
         }
     }
-    
+
     /**
     * Go back in action history
     * @method actionHistoryBack
@@ -1623,12 +1621,12 @@ export class LGraph {
 
         var obH = this.history;
 
-        if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0){
+        if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0) {
             obH.actionHistoryPtr--;
             if (LiteGraph.debug) {
                 console.debug("history step back: "+obH.actionHistoryPtr); // debug history
             }
-            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})){
+            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
                 console.warn("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr++;
@@ -1647,7 +1645,7 @@ export class LGraph {
             return false;
         }
     }
-    
+
     /**
     * Go forward in action history
     * @method actionHistoryForward
@@ -1659,12 +1657,12 @@ export class LGraph {
 
         var obH = this.history;
 
-        if (obH.actionHistoryPtr<obH.actionHistoryVersions.length){
+        if (obH.actionHistoryPtr<obH.actionHistoryVersions.length) {
             obH.actionHistoryPtr++;
             if (LiteGraph.debug) {
                 console.debug("history step forward: "+obH.actionHistoryPtr); // debug history
             }
-            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})){
+            if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
                 console.warn("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr--;
@@ -1682,7 +1680,7 @@ export class LGraph {
             return false;
         }
     }
-    
+
     /**
     * Load from action history
     * @method actionHistoryLoad
@@ -1697,7 +1695,7 @@ export class LGraph {
 
         var obH = this.history;
 
-        if(obH.actionHistory[opts.iVersion] && obH.actionHistory[opts.iVersion].graphSave){
+        if(obH.actionHistory[opts.iVersion] && obH.actionHistory[opts.iVersion].graphSave) {
             var tmpHistory = JSON.stringify(this.history);
             this.configure( obH.actionHistory[opts.iVersion].graphSave );
             this.history = JSON.parse(tmpHistory);

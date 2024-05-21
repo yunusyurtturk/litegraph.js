@@ -161,12 +161,12 @@ export var LiteGraph = new class {
         this.ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
         this.actionHistory_enabled = false; // cntrlZ, cntrlY
-		this.actionHistoryMaxSave = 40;
+        this.actionHistoryMaxSave = 40;
 
-		/* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
-		this.refreshAncestorsOnTriggers = false; //[true!]
-        this.refreshAncestorsOnActions = false; //[true!]
-      	this.ensureUniqueExecutionAndActionCall = false; //[true!] the new tecnique.. let's make it working best of
+        /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
+        this.refreshAncestorsOnTriggers = false; // [true!]
+        this.refreshAncestorsOnActions = false; // [true!]
+      	this.ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
 
         // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
@@ -175,28 +175,28 @@ export var LiteGraph = new class {
         // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
         this.context_menu_filter_enabled = true;
 
-        this.showCanvasOptions = false; //[true!] customize availableCanvasOptions
-        this.availableCanvasOptions = [   
+        this.showCanvasOptions = false; // [true!] customize availableCanvasOptions
+        this.availableCanvasOptions = [
             "allow_addOutSlot_onExecuted",
             "free_resize",
             "highquality_render",
-            "use_gradients", //set to true to render titlebar with gradients
+            "use_gradients", // set to true to render titlebar with gradients
             "pause_rendering",
             "clear_background",
-            "read_only", //if set to true users cannot modify the graph
-            //"render_only_selected", // not implemented
+            "read_only", // if set to true users cannot modify the graph
+            // "render_only_selected", // not implemented
             "live_mode",
             "show_info",
             "allow_dragcanvas",
             "allow_dragnodes",
-            "allow_interaction", //allow to control widgets, buttons, collapse, etc
+            "allow_interaction", // allow to control widgets, buttons, collapse, etc
             "allow_searchbox",
-            "move_destination_link_without_shift", //rename: old allow_reconnect_links //allows to change a connection, no need to hold shift
-            "set_canvas_dirty_on_mouse_event", //forces to redraw the canvas if the mouse does anything
+            "move_destination_link_without_shift", // rename: old allow_reconnect_links //allows to change a connection, no need to hold shift
+            "set_canvas_dirty_on_mouse_event", // forces to redraw the canvas if the mouse does anything
             "always_render_background",
             "render_shadows",
             "render_canvas_border",
-            "render_connections_shadows", //too much cpu
+            "render_connections_shadows", // too much cpu
             "render_connections_border",
             // ,"render_curved_connections", // always on, or specific fixed graph
             "render_connection_arrows",
@@ -205,7 +205,7 @@ export var LiteGraph = new class {
             "render_title_colored",
             "render_link_tooltip",
         ];
-        //,"editor_alpha" //= 1; //used for transition
+        // ,"editor_alpha" //= 1; //used for transition
 
         this.actionHistoryMaxSave = 40;
 
@@ -321,17 +321,17 @@ export var LiteGraph = new class {
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
 
-        //used to know which nodes create when dragging files to the canvas
+        // used to know which nodes create when dragging files to the canvas
         if (base_class.supported_extensions) {
             for (var i=0; i < base_class.supported_extensions.length; i++) {
                 var ext = base_class.supported_extensions[i];
                 if(ext && ext.constructor === String)
-                    this.node_types_by_file_extension[ ext.toLowerCase() ] = base_class;
+                    this.node_types_by_file_extension[ext.toLowerCase()] = base_class;
             }
         }
 
-        //console.debug("Registering "+type);
-        if (this.auto_load_slot_types) 
+        // console.debug("Registering "+type);
+        if (this.auto_load_slot_types)
             new base_class(base_class.title ?? "tmpnode");
     }
 
@@ -851,32 +851,32 @@ export var LiteGraph = new class {
     }
 
     canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
-		var words = (text+"").trim().split(' ');
-		var line = '';
-		var ret = {lines: [], maxW: 0, height:0};
-		if (words.length>1) {
-			for(var n = 0; n < words.length; n++) {
-				var testLine = line + words[n] + ' ';
-				var metrics = context.measureText(testLine);
-				var testWidth = metrics.width;
-				if (testWidth > maxWidth && n > 0) {
-					context.fillText(line, x, y+(lineHeight*ret.lines.length));
-					line = words[n] + ' ';
-					//y += lineHeight;
-					ret.max = testWidth;
-					ret.lines.push(line);
-				}else{
-					line = testLine;
-				}
-			}
-		} else {
-			line = words[0];
-		}
-		context.fillText(line, x, y+(lineHeight*ret.lines.length));
-		ret.lines.push(line);
-		ret.height = lineHeight*ret.lines.length || lineHeight;
-		return ret;
-	}
+        var words = (text+"").trim().split(' ');
+        var line = '';
+        var ret = {lines: [], maxW: 0, height: 0};
+        if (words.length>1) {
+            for(var n = 0; n < words.length; n++) {
+                var testLine = line + words[n] + ' ';
+                var metrics = context.measureText(testLine);
+                var testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, y+(lineHeight*ret.lines.length));
+                    line = words[n] + ' ';
+                    // y += lineHeight;
+                    ret.max = testWidth;
+                    ret.lines.push(line);
+                }else{
+                    line = testLine;
+                }
+            }
+        } else {
+            line = words[0];
+        }
+        context.fillText(line, x, y+(lineHeight*ret.lines.length));
+        ret.lines.push(line);
+        ret.height = lineHeight*ret.lines.length || lineHeight;
+        return ret;
+    }
 
     isInsideRectangle(x, y, left, top, width, height) {
         return x > left && x < left + width && y > top && y < top + height;

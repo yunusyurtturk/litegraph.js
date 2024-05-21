@@ -233,7 +233,7 @@ class logicFor {
         this.addInput("nElements", "number");
         this.addInput("do", LiteGraph.ACTION);
         this.addInput("break", LiteGraph.ACTION);
-        //this.addInput("reset", LiteGraph.ACTION);
+        // this.addInput("reset", LiteGraph.ACTION);
         this.addOutput("do", LiteGraph.EVENT);
         this.addOutput("index", "number");
         this.started = false;
@@ -247,10 +247,10 @@ class logicFor {
         if (!this.started) return;
         var iI = this.getInputData(0);
         var num = this.getInputData(1);
-        for (k=iI;k<iI+num;k++){            
+        for (k=iI;k<iI+num;k++) {
             console.debug("for cycle "+k);
             this.triggerSlot(0, param);
-            if (this.stopped){
+            if (this.stopped) {
                 console.debug("for cycle stopped on index "+k);
                 break;
             }
@@ -260,22 +260,22 @@ class logicFor {
         this.stopped = true;
     }
 
-    onAction(action, param){
-        /*console.debug(action);
+    onAction(action, param) {
+        /* console.debug(action);
         console.debug(param);
         console.debug(this);*/
-        switch(action){
+        switch(action) {
             case "break":
                 this.stopped = true;
-            break;
-            /*case "reset":
+                break;
+            /* case "reset":
                 this.stopped = false;
             break;*/
             case "do":
                 this.started = true;
                 this.stopped = false;
                 this.execute();
-            break;
+                break;
         }
     }
 }
@@ -305,12 +305,12 @@ class logicWhile {
         this.cond = this.getInputData(1);
     }
     onAction(action, param) {
-        switch(action){
+        switch(action) {
             case "break":
                 this.stopped = true;
-            break;
+                break;
             case "do":
-                /*this.started = true;
+                /* this.started = true;
                 this.stopped = false;
                 this.execute();*/
                 this.started = true;
@@ -319,12 +319,12 @@ class logicWhile {
                 this.cond = !checkOnStart || this.getInputData(1);
                 this.k = 0;
                 cycleLimit = this.properties.cycleLimit || 999;
-                while (this.cond && this.k<cycleLimit){
+                while (this.cond && this.k<cycleLimit) {
                     console.debug("while cycle "+this.k);
                     this.setOutputData(1, this.k);
                     this.triggerSlot(0, param);
                     // done
-                    if (this.stopped){
+                    if (this.stopped) {
                         console.debug("while cycle stopped on index "+k);
                         break;
                     }
@@ -336,7 +336,7 @@ class logicWhile {
                 this.cond = this.getInputData(1);
                 this.started = false;
                 this.stopped = true;
-            break;
+                break;
         }
     }
 }

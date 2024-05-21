@@ -188,7 +188,7 @@ class HTTPRequestNode {
     }
 
     onAction(evt) {
-        if (evt == "request") 
+        if (evt == "request")
             this.fetch();
     }
 

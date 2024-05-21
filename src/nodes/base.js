@@ -1114,10 +1114,10 @@ class ConstantArray {
         var v = this.getInputData(0);
         if (v && v.length) {
             // clone
-            if (!this._value) 
+            if (!this._value)
                 this._value = new Array();
             this._value.length = v.length;
-            for (var i = 0; i < v.length; ++i) 
+            for (var i = 0; i < v.length; ++i)
                 this._value[i] = v[i];
             this.changeOutputType("arrayOut", "array");
         }
@@ -1142,7 +1142,7 @@ class ArrayLength {
         var arr = this.getInputData(0);
         if(!arr)
             return;
-        if(["array","object"].includes(typeof(arr)) && typeof(arr.length)!=="undefined"){
+        if(["array","object"].includes(typeof(arr)) && typeof(arr.length)!=="undefined") {
             this.setOutputData(0,arr.length);
         }else{
             console.debug("Not an array or object",typeof(arr),arr);

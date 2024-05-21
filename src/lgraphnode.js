@@ -136,7 +136,7 @@ export class LGraphNode {
         }
 
         this.inputs?.forEach((input, i) => {
-            if(!input.link) 
+            if(!input.link)
                 return;
             const link_info = this.graph ? this.graph.links[input.link] : null;
             this.onConnectionsChange?.(LiteGraph.INPUT, i, true, link_info, input);
@@ -335,7 +335,7 @@ export class LGraphNode {
             return;
         }
 
-        if(slot?.constructor === String){
+        if(slot?.constructor === String) {
             // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
         	slot = this.findOutputSlot(slot);
         }else if (slot == -1 || slot >= this.outputs.length) {
@@ -423,7 +423,7 @@ export class LGraphNode {
         // atlasan: refactor: This is a basic, but seems working, version. Consider moving this out of here and use a single ancestorsCalculation (for each event?)
         if (refresh_tree) {
             var uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
-            var optsAncestors = {action: uIdRand, options:{action_call: uIdRand}};
+            var optsAncestors = {action: uIdRand, options: {action_call: uIdRand}};
             this.refreshAncestors(optsAncestors);
         }
 
@@ -559,7 +559,7 @@ export class LGraphNode {
      * @return {*} value
      */
     getInputOrProperty(name) {
-        if (this.inputs){
+        if (this.inputs) {
             for (var i = 0, l = this.inputs.length; i < l; ++i) {
                 var input_info = this.inputs[i];
                 if (name == input_info.name && input_info.link != null) {
@@ -738,22 +738,22 @@ export class LGraphNode {
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
 
-            if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]){
+            if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
                 if (LiteGraph.debug) {
                     console.debug("NODE already executing! Prevent! "+this.id+":"+this.order);
                 }
                 return;
             }
-            if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined){
+            if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined) {
                 if (LiteGraph.debug) {
                     console.debug("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
                 }
                 return;
             }
-            //console.debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
-            if (LiteGraph.ensureUniqueExecutionAndActionCall){
-                //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
-                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
+            // console.debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
+            if (LiteGraph.ensureUniqueExecutionAndActionCall) {
+                // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
+                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
                     if (LiteGraph.debug) {
                         console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);
                     }
@@ -789,26 +789,26 @@ export class LGraphNode {
 
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
-            
-            if (LiteGraph.ensureNodeSingleAction){
-                if (this.graph.nodes_actioning && this.graph.nodes_actioning[this.id] == options.action_call){ // == action){
-                    //console.debug("NODE already actioning! Prevent! "+this.id+":"+this.order+" :: "+options.action_call);
+
+            if (LiteGraph.ensureNodeSingleAction) {
+                if (this.graph.nodes_actioning && this.graph.nodes_actioning[this.id] == options.action_call) { // == action){
+                    // console.debug("NODE already actioning! Prevent! "+this.id+":"+this.order+" :: "+options.action_call);
                     return;
                 }
             }
             if (LiteGraph.debug) {
                 console.debug("CheckActioned ? "+this.id+":"+this.order+" :: "+this.action_call);
             }
-            if (LiteGraph.ensureUniqueExecutionAndActionCall){
-                //if(this.action_call && options && options.action_call && this.action_call == options.action_call){
-                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call){
+            if (LiteGraph.ensureUniqueExecutionAndActionCall) {
+                // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
+                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
                     if (LiteGraph.debug) {
                         console.debug("!! NODE already ACTION THIS STEP !! "+options.action_call);ç
                     }
                     return;
                 }
             }
-            
+
             this.graph.nodes_actioning[this.id] = (action?action:"actioning"); // .push(this.id);
 
             this.onAction(action, param, options, action_slot);
@@ -876,8 +876,8 @@ export class LGraphNode {
         }
 
         // check for ancestors calls
-        if (this.graph && this.graph.ancestorsCall){
-            //console.debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
+        if (this.graph && this.graph.ancestorsCall) {
+            // console.debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
             return;
         }
 
@@ -906,9 +906,9 @@ export class LGraphNode {
 
             if (node.mode === LiteGraph.ON_TRIGGER) {
                 // generate unique trigger ID if not present
-                if (!options.action_call) 
+                if (!options.action_call)
                     options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`;
-                if (LiteGraph.refreshAncestorsOnTriggers) 
+                if (LiteGraph.refreshAncestorsOnTriggers)
                     node.refreshAncestors({action: "trigger", param: param, options: options});
                 if (node.onExecute) {
                     // -- wrapping node.onExecute(param); --
@@ -919,14 +919,14 @@ export class LGraphNode {
                 if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 // pass the action name
                 let target_connection = node.inputs[link_info.target_slot];
-                
+
                 if (LiteGraph.debug) {
                     console.debug("will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
                 }
 
                 // METHOD 1 ancestors
-				if (LiteGraph.refreshAncestorsOnActions) 
-                    node.refreshAncestors({action: target_connection.name, param: param, options:options});
+                if (LiteGraph.refreshAncestorsOnActions)
+                    node.refreshAncestors({action: target_connection.name, param: param, options: options});
 
                 // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
@@ -1852,7 +1852,7 @@ export class LGraphNode {
         if ( this.onConnectOutput?.(slot, input.type, input, target_node, target_slot) === false ) {
             return null;
         }
-        
+
         // check target_slot and check connection types
         if (target_slot===false || target_slot===null || !LiteGraph.isValidConnection(output.type, input.type)) {
             this.setDirtyCanvas(false, true);
@@ -2437,7 +2437,7 @@ export class LGraphNode {
     }
 
     refreshAncestors(optsIn = {}) {
-        var optsDef = { 
+        var optsDef = {
             action: "",
             param: null,
             options: null,
@@ -2448,23 +2448,23 @@ export class LGraphNode {
         if (!this.inputs) {
             return;
         }
-        if (LiteGraph.preventAncestorRecalculation){
-            if (this.graph.node_ancestorsCalculated && this.graph.node_ancestorsCalculated[this.id]){
-                //console.debug("NODE already calculated subtree! Prevent! "+this.id+":"+this.order);
+        if (LiteGraph.preventAncestorRecalculation) {
+            if (this.graph.node_ancestorsCalculated && this.graph.node_ancestorsCalculated[this.id]) {
+                // console.debug("NODE already calculated subtree! Prevent! "+this.id+":"+this.order);
                 return;
             }
         }
 
-        if (!opts.action || opts.action == "") 
+        if (!opts.action || opts.action == "")
             opts.action = this.id+"_ancestors";
-        if (!opts.param || opts.param == "") 
+        if (!opts.param || opts.param == "")
             opts.param = this.id+"_ancestors";
-        if (!opts.options) 
+        if (!opts.options)
             opts.options = {};
         opts.options = Object.assign({action_call: opts.action},opts.options);
 
-        //console.debug("ancestors processing");
-        //console.debug(this.id+":"+this.order+" "+opts.options.action_call);
+        // console.debug("ancestors processing");
+        // console.debug(this.id+":"+this.order+" "+opts.options.action_call);
 
         this.graph.ancestorsCall = true; // prevent triggering slots
 
@@ -2475,7 +2475,7 @@ export class LGraphNode {
             typesOnly: [],
         };
         var aAncestors = this.graph.getAncestors(this,optsAncestors);
-        for(iN in aAncestors){
+        for(iN in aAncestors) {
             aAncestors[iN].doExecute(opts.param, opts.options);
             this.graph.node_ancestorsCalculated[aAncestors[iN].id] = true;
         }

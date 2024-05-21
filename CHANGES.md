@@ -41,3 +41,7 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * All mouse events are now *pointer* events
 
 # For 0.10.x/master
+
+## Breaking
+
+* Integrated Atlasan's fork

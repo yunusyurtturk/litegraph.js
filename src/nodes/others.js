@@ -62,7 +62,7 @@ LiteGraph.slot_types_default_out["object"] = [
     "basic/object_property",
     "basic/keys",
     "string/toString",
-    "basic/watch"
+    "basic/watch",
 ];
 LiteGraph.slot_types_default_out["string"] = [
     "basic/watch",
@@ -78,6 +78,6 @@ LiteGraph.slot_types_default_out["audio"] = ["audio/destination","audio/mixer","
 LiteGraph.slot_types_default_out["canvas"] = ["graphics/frame","graphics/drawImage"];
 LiteGraph.slot_types_default_out["geometry"] = ["geometry/points_to_instances","geometry/extrude","geometry/eval","geometry/connectPoints","geometry/transform"];
 LiteGraph.slot_types_default_out["image"] = ["graphics/frame","graphics/drawImage"];
-//LiteGraph.slot_types_default_out["mat4"] = "geometry/transform";
+// LiteGraph.slot_types_default_out["mat4"] = "geometry/transform";
 LiteGraph.slot_types_default_out["quat"] = ["math3d/rotate_vec3","math3d/rotation"];
 LiteGraph.slot_types_default_out["table"] = "string/toTable";

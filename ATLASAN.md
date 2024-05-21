@@ -1,4 +1,4 @@
-Currently at L15682
+Integration *mostly* complete
 
 L4565 excision, can't find specifically the right one
 if (this.onConnectionsChange) {
@@ -21,6 +21,7 @@ if (this.onConnectionsChange) {
 
 
 We lost audio playback between litegraph.js and lgraphnode.js for this commit.
+Notably though, the audiosource is being decoded, and it's a silent error.
 
 Need conversion:
 
