@@ -22,9 +22,3 @@ if (this.onConnectionsChange) {
 
 We lost audio playback between litegraph.js and lgraphnode.js for this commit.
 Notably though, the audiosource is being decoded, and it's a silent error.
-
-Need conversion:
-
-nodes/objects.js
-nodes/libraries.js
-nodes/html.js
