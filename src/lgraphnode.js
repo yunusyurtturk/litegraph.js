@@ -314,7 +314,7 @@ export class LGraphNode {
         }
 
         // Update the widget value associated with the property name
-        const widgetToUpdate = this.widgets.find((widget) => widget && widget.options?.property === name);
+        const widgetToUpdate = this.widgets?.find((widget) => widget && widget.options?.property === name);
 
         if (widgetToUpdate) {
             widgetToUpdate.value = value;
@@ -776,6 +776,15 @@ export class LGraphNode {
         }
         this.execute_triggered = 2; // the nFrames it will be used (-- each step), means "how old" is the event
         this.onAfterExecuteNode?.(param, options); // callback
+    }
+	/**
+     * retrocompatibility :: old doExecute
+     * @method doExecute
+     * @param {*} param
+     * @param {*} options
+     */
+    execute(param, options = {}) {
+        return this.doExecute(param, options);
     }
 
     /**
@@ -1847,8 +1856,10 @@ export class LGraphNode {
             return null;
         }
 
-        // This way node can choose another slot (or make a new one?)
-        target_slot = target_node.onBeforeConnectInput?.(target_slot); // callback
+        if(target_node.onBeforeConnectInput){
+            target_slot = target_node.onBeforeConnectInput(target_node); // callback
+        }
+
         if ( this.onConnectOutput?.(slot, input.type, input, target_node, target_slot) === false ) {
             return null;
         }
@@ -1859,6 +1870,10 @@ export class LGraphNode {
             if(changed)
                 this.graph.connectionChange(this, link_info);
             return null;
+        }else{
+            if (LiteGraph.debug) {
+                console.debug("DBG targetSlot",target_slot);
+            }
         }
 
         // allows nodes to block connection, callback
@@ -1914,6 +1929,9 @@ export class LGraphNode {
         }
         output.links.push(link_info.id);
         // connect in input
+        if(typeof target_node.inputs[target_slot] == "undefined"){
+            console.warn("FIXME error, target_slot does not exists on target_node",target_node,target_slot);
+        }
         target_node.inputs[target_slot].link = link_info.id;
 
         this.onConnectionsChange?.(

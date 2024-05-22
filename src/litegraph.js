@@ -173,7 +173,7 @@ export var LiteGraph = new class {
         this.use_uuids = false;
 
         // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
-        this.context_menu_filter_enabled = true;
+        this.context_menu_filter_enabled = false; // FIX event handler removal
 
         this.showCanvasOptions = false; // [true!] customize availableCanvasOptions
         this.availableCanvasOptions = [

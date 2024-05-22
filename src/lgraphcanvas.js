@@ -633,8 +633,10 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        // console.log(y,this.viewport);
-        // console.log("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y);
+        if (LiteGraph.debug) {
+            // console.log(y,this.viewport);
+            console.log("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
+        }
 
         this.ds.viewport = this.viewport;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
@@ -653,7 +655,7 @@ export class LGraphCanvas {
         var node = this.graph.getNodeOnPos( e.canvasX, e.canvasY, this.visible_nodes, 5 );
         var skip_action = false;
         var now = LiteGraph.getTime();
-        var is_primary = (e.isPrimary === undefined || !e.isPrimary);
+        var is_primary = (e.isPrimary === undefined || e.isPrimary);
         var is_double_click = (now - this.last_mouseclick < 300) && is_primary;
         this.mouse[0] = e.clientX;
         this.mouse[1] = e.clientY;
@@ -983,6 +985,10 @@ export class LGraphCanvas {
                         this.showSearchBox(e);
                         e.preventDefault();
                         e.stopPropagation();
+                    }
+
+                    if (LiteGraph.debug) {
+                        console.debug("DEBUG canvas click is_double_click,this.allow_searchbox",is_double_click,this.allow_searchbox);
                     }
 
                     clicking_canvas_bg = true;
@@ -2613,6 +2619,7 @@ export class LGraphCanvas {
 
                 switch (connType) {
                     case LiteGraph.EVENT:
+                    case LiteGraph.ACTION:
                         link_color = LiteGraph.EVENT_LINK_COLOR;
                         break;
                     default:
@@ -2635,6 +2642,7 @@ export class LGraphCanvas {
                 ctx.beginPath();
                 if (
                     connType === LiteGraph.EVENT ||
+                    connType === LiteGraph.ACTION ||
                     connShape === LiteGraph.BOX_SHAPE
                 ) {
                     ctx.rect(
@@ -3305,13 +3313,13 @@ export class LGraphCanvas {
                         slot_shape = LiteGraph.GRID_SHAPE; // place in addInput? addOutput instead?
                     } else if (slot.name == "onTrigger" || slot.name == "onExecuted") {
                         slot_shape = LiteGraph.ARROW_SHAPE;
-                    } else if(slot_type === LiteGraph.EVENT) {
+                    } else if(slot_type === LiteGraph.EVENT || slot_type === LiteGraph.ACTION) {
                         slot_shape = LiteGraph.BOX_SHAPE;
                     }
 
                     doStroke = true;
 
-                    if (slot.shape === LiteGraph.BOX_SHAPE) {
+                    if (slot_shape === LiteGraph.BOX_SHAPE) {
                         if (horizontal) {
                             ctx.rect(
                                 pos[0] - 5 + 0.5,
@@ -3406,11 +3414,9 @@ export class LGraphCanvas {
                         slot_shape = LiteGraph.GRID_SHAPE;
                     } else if (slot.name == "onTrigger" || slot.name == "onExecuted") {
                         slot_shape = LiteGraph.ARROW_SHAPE;
-                    } else if(slot_type === LiteGraph.EVENT) {
+                    } else if(slot_type === LiteGraph.EVENT || slot_type === LiteGraph.ACTION) {
                         slot_shape = LiteGraph.BOX_SHAPE;
                     }
-
-
 
                     doStroke = true;
 
@@ -3534,7 +3540,7 @@ export class LGraphCanvas {
                 ctx.fillStyle = "#686";
                 ctx.beginPath();
                 if (
-                    slot.type === LiteGraph.EVENT ||
+                    slot.type === LiteGraph.EVENT || slot.type === LiteGraph.ACTION ||
                     slot.shape === LiteGraph.BOX_SHAPE
                 ) {
                     ctx.rect(x - 7 + 0.5, y - 4, 14, 8);
@@ -3560,7 +3566,7 @@ export class LGraphCanvas {
                 ctx.strokeStyle = "black";
                 ctx.beginPath();
                 if (
-                    slot.type === LiteGraph.EVENT ||
+                    slot.type === LiteGraph.EVENT || slot.type === LiteGraph.ACTION ||
                     slot.shape === LiteGraph.BOX_SHAPE
                 ) {
                     ctx.rect(x - 7 + 0.5, y - 4, 14, 8);
@@ -3708,8 +3714,7 @@ export class LGraphCanvas {
         var low_quality = this.lowQualityRenderingRequired(0.5);
 
         // render node area depending on shape
-        var shape =
-            node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE;
+        var shape = node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE;
 
         var title_mode = node.constructor.title_mode;
 
@@ -4803,7 +4808,7 @@ export class LGraphCanvas {
                             }
                         } else if (delta) { // clicked in arrow, used for combos
                             var index = -1;
-                            this.last_mouseclick = 0; // avoids dobl click event
+                            this.last_mouseclick = 0; // avoids double click event
                             if(values.constructor === Object)
                                 index = values_list.indexOf( String( w.value ) ) + delta;
                             else
@@ -6022,6 +6027,7 @@ export class LGraphCanvas {
     }
 
     // refactor: there are different dialogs, some uses createDialog some dont
+    // prompt v2
     prompt(title = "", value, callback, event, multiline) {
 
         var dialog = document.createElement("div");
@@ -6031,6 +6037,7 @@ export class LGraphCanvas {
             dialog.innerHTML = "<span class='name'></span> <textarea autofocus class='value'></textarea><button class='rounded'>OK</button>";
         else
             dialog.innerHTML = "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>";
+
         dialog.close = () => {
             this.prompt_box = null;
             dialog.parentNode?.removeChild(dialog);
@@ -6093,8 +6100,12 @@ export class LGraphCanvas {
                     dialog.close();
                     break;
                 case 13: // Enter key
-                    if (e.target.localName !== "textarea" && callback) {
-                        callback(this.value);
+                    if (e.target.localName !== "textarea" && typeof(callback)=="function") {
+                        callback(input.value);
+                        this.setDirty(true); // CHECK should probably call graphChanged instead
+                    }
+                    if (LiteGraph.debug) {
+                        console.debug("prompt v2 ENTER",input.value,e.target.localName,callback);
                     }
                     dialog.close();
                     break;
@@ -6108,10 +6119,13 @@ export class LGraphCanvas {
 
         const button = dialog.querySelector("button");
         button.addEventListener("click", (_event) => {
-            if (callback) {
+            if (typeof(callback)=="function") {
                 callback(input.value);
+                this.setDirty(true); // CHECK should probably call graphChanged instead
             }
-            this.setDirty(true);
+            if (LiteGraph.debug) {
+                console.debug("prompt v2 OK",input.value,callback);
+            }
             dialog.close();
         });
 
@@ -7190,7 +7204,7 @@ export class LGraphCanvas {
         if(this.constructor && this.constructor.name == "HTMLDivElement") {
             // assume coming from the menu event click
             if (! obEv?.event?.target?.lgraphcanvas) {
-                console.warn("References not found to add optionPanel"); // need a ref to canvas obj
+                console.warn("References not found to add optionPanel",refOpts, obEv); // need a ref to canvas obj
                 if (LiteGraph.debug)
                     console.debug("!obEv || !obEv.event || !obEv.event.target || !obEv.event.target.lgraphcanvas",obEv,obEv.event,obEv.event.target,obEv.event.target.lgraphcanvas);
                 return;
@@ -7390,7 +7404,7 @@ export class LGraphCanvas {
             {*/
             panel.alt_content.innerHTML = "<textarea class='code'></textarea>";
             var textarea = panel.alt_content.querySelector("textarea");
-            fDoneWith = () => {
+            var fDoneWith = () => {
                 panel.toggleAltContent(false); // if(node_prop_div) node_prop_div.style.display = "block"; // panel.close();
                 panel.toggleFooterVisibility(true);
                 textarea.parentNode.removeChild(textarea);

@@ -247,7 +247,7 @@ class logicFor {
         if (!this.started) return;
         var iI = this.getInputData(0);
         var num = this.getInputData(1);
-        for (k=iI;k<iI+num;k++) {
+        for (var k=iI;k<iI+num;k++) {
             console.debug("for cycle "+k);
             this.triggerSlot(0, param);
             if (this.stopped) {

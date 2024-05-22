@@ -248,8 +248,10 @@ export class ContextMenu {
                                         if( LiteGraph.debug ) {
                                             console.debug("ContextElement simCLICK",that.allOptions[iO]);
                                         }
-                                        // that.allOptions[that.selectedOption].do_click(e, ignore_parent_menu);
-                                        that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
+                                        // checking because of bad event removal :: FIX
+                                        if(that.allOptions[that.selectedOption].do_click){
+                                            that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
+                                        }
                                     }else{
                                         if( LiteGraph.debug ) {
                                             console.debug("ContextElement selection wrong",that.selectedOption);
@@ -530,7 +532,7 @@ export class ContextMenu {
             let closeParent = true;
 
             if(LiteGraph.debug)
-                console.debug("ContextMenu handleMenuItemClick",value,options,close_parent,this.current_submenu,this);
+                console.debug("ContextMenu handleMenuItemClick",value,options,closeParent,this.current_submenu,this);
 
             // Close any current submenu
             that.current_submenu?.close(event);
@@ -538,7 +540,7 @@ export class ContextMenu {
             // Execute global callback
             if (options.callback) {
                 if(LiteGraph.debug)
-                    console.debug("ContextMenu handleMenuItemClick callback",this,value,options,e,that,options.node);
+                    console.debug("ContextMenu handleMenuItemClick callback",this,value,options,event,that,options.node);
 
                 const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
                 if (globalCallbackResult === true) {
@@ -551,7 +553,7 @@ export class ContextMenu {
                 if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
 
                     if(LiteGraph.debug)
-                        console.debug("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,e,that,options.node);
+                        console.debug("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,event,that,options.node);
                     const itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
                     if (itemCallbackResult === true) {
                         closeParent = false;
