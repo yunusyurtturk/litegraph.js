@@ -584,9 +584,7 @@ export class LGraphCanvas {
                 case "touch":
                     break;
                 default:
-				    if (LiteGraph.debug) {
-                        console.log?.("pointerType unknown " + ev.pointerType);
-                    }
+                    console.log?.("pointerType unknown " + ev.pointerType);
             }
         }
 
@@ -633,10 +631,8 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        if (LiteGraph.debug) {
-            // console.log?.(y,this.viewport);
-            console.log?.("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
-        }
+        // console.log?.(y,this.viewport);
+        console.log?.("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
 
         this.ds.viewport = this.viewport;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
@@ -987,10 +983,7 @@ export class LGraphCanvas {
                         e.stopPropagation();
                     }
 
-                    if (LiteGraph.debug) {
-                        console.debug?.("DEBUG canvas click is_double_click,this.allow_searchbox",is_double_click,this.allow_searchbox);
-                    }
-
+                    console.debug?.("DEBUG canvas click is_double_click,this.allow_searchbox",is_double_click,this.allow_searchbox);
                     clicking_canvas_bg = true;
                 }
             }
@@ -1884,9 +1877,7 @@ export class LGraphCanvas {
                     this.graph.actionHistoryBack();
                 }
             }
-            if (LiteGraph.debug) {
-                console.debug?.("Canvas keydown "+e.keyCode); // debug keydown
-            }
+            console.debug?.("Canvas keydown "+e.keyCode); // debug keydown
 
             // TODO
             if (this.selected_nodes) {
@@ -3592,9 +3583,7 @@ export class LGraphCanvas {
 
     drawNodeTooltip( ctx, node ) {
         if(!node || !ctx) {
-            if (LiteGraph.debug) {
-                console.warn?.("drawNodeTooltip: invalid node or ctx",node,ctx);
-            }
+            console.warn?.("drawNodeTooltip: invalid node or ctx",node,ctx);
             return;
         }
         var text = node.properties.tooltip!=undefined?node.properties.tooltip:"";
@@ -3605,9 +3594,7 @@ export class LGraphCanvas {
         }
         text = (text+"").trim();
         if(!text || text == "") {
-            if (LiteGraph.debug) {
-                // DBG("Empty tooltip");
-            }
+            // DBG("Empty tooltip");
             return;
         }
 
@@ -4907,9 +4894,7 @@ export class LGraphCanvas {
         }// end for
 
         function inner_value_change(widget, value, old_value) {
-            if (LiteGraph.debug) {
-                console.debug?.("inner_value_change for processNodeWidgets",widget,value);
-            }
+            console.debug?.("inner_value_change for processNodeWidgets",widget,value);
             // value changed
             if( old_value != w.value ) {
                 if(node.onWidgetChanged) {
@@ -6104,9 +6089,7 @@ export class LGraphCanvas {
                         callback(input.value);
                         this.setDirty(true); // CHECK should probably call graphChanged instead
                     }
-                    if (LiteGraph.debug) {
-                        console.debug?.("prompt v2 ENTER",input.value,e.target.localName,callback);
-                    }
+                    console.debug?.("prompt v2 ENTER",input.value,e.target.localName,callback);
                     dialog.close();
                     break;
                 default:
@@ -6123,9 +6106,7 @@ export class LGraphCanvas {
                 callback(input.value);
                 this.setDirty(true); // CHECK should probably call graphChanged instead
             }
-            if (LiteGraph.debug) {
-                console.debug?.("prompt v2 OK",input.value,callback);
-            }
+            console.debug?.("prompt v2 OK",input.value,callback);
             dialog.close();
         });
 

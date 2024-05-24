@@ -677,14 +677,8 @@ export class LGraphNode {
     onAfterExecuteNode(param, options) {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
-
-            if (LiteGraph.debug) {
-                console.debug?.(this.id+":"+this.order+" triggering slot onAfterExecute");
-                console.debug?.(param);
-                console.debug?.(options);
-            }
+            console.debug?.(this.id+":"+this.order+" triggering slot onAfterExecute", param, options);
             this.triggerSlot(trigS, param, null, options);
-
         }
     }
 
@@ -739,24 +733,18 @@ export class LGraphNode {
             options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
 
             if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
-                if (LiteGraph.debug) {
-                    console.debug?.("NODE already executing! Prevent! "+this.id+":"+this.order);
-                }
+                console.debug?.("NODE already executing! Prevent! "+this.id+":"+this.order);
                 return;
             }
             if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined) {
-                if (LiteGraph.debug) {
-                    console.debug?.("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
-                }
+                console.debug?.("!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
                 return;
             }
             // console.debug?.("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
             if (LiteGraph.ensureUniqueExecutionAndActionCall) {
                 // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                    if (LiteGraph.debug) {
-                        console.debug?.("!! NODE already ACTION THIS STEP !! "+options.action_call);
-                    }
+                    console.debug?.("!! NODE already ACTION THIS STEP !! "+options.action_call);
                     return;
                 }
             }
@@ -805,15 +793,11 @@ export class LGraphNode {
                     return;
                 }
             }
-            if (LiteGraph.debug) {
-                console.debug?.("CheckActioned ? "+this.id+":"+this.order+" :: "+this.action_call);
-            }
+            console.debug?.("CheckActioned ? "+this.id+":"+this.order+" :: "+this.action_call);
             if (LiteGraph.ensureUniqueExecutionAndActionCall) {
                 // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                    if (LiteGraph.debug) {
-                        console.debug?.("!! NODE already ACTION THIS STEP !! "+options.action_call);ç
-                    }
+                    console.debug?.("!! NODE already ACTION THIS STEP !! "+options.action_call);ç
                     return;
                 }
             }
@@ -929,9 +913,7 @@ export class LGraphNode {
                 // pass the action name
                 let target_connection = node.inputs[link_info.target_slot];
 
-                if (LiteGraph.debug) {
-                    console.debug?.("will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
-                }
+                console.debug?.("will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
 
                 // METHOD 1 ancestors
                 if (LiteGraph.refreshAncestorsOnActions)
@@ -1790,15 +1772,11 @@ export class LGraphNode {
         if (slot.constructor === String) {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
-                if (LiteGraph.debug) {
-                    console.log?.(`Connect: Error, no slot of name ${slot}`);
-                }
+                console.log?.(`Connect: Error, no slot of name ${slot}`);
                 return null;
             }
         } else if (!this.outputs || slot >= this.outputs.length) {
-            if (LiteGraph.debug) {
-                console.log?.("Connect: Error, slot number not found");
-            }
+            console.log?.("Connect: Error, slot number not found");
             return null;
         }
 
@@ -1818,9 +1796,7 @@ export class LGraphNode {
         if (target_slot.constructor === String) {
             target_slot = target_node.findInputSlot(target_slot);
             if (target_slot == -1) {
-                if (LiteGraph.debug) {
-                    console.log?.(`Connect: Error, no slot of name ${target_slot}`);
-                }
+                console.log?.(`Connect: Error, no slot of name ${target_slot}`);
                 return null;
             }
         } else if (target_slot === LiteGraph.EVENT) {
@@ -1838,9 +1814,7 @@ export class LGraphNode {
             !target_node.inputs ||
             target_slot >= target_node.inputs.length
         ) {
-            if (LiteGraph.debug) {
-                console.log?.("Connect: Error, slot number not found");
-            }
+            console.log?.("Connect: Error, slot number not found");
             return null;
         }
 
@@ -1870,10 +1844,8 @@ export class LGraphNode {
             if(changed)
                 this.graph.connectionChange(this, link_info);
             return null;
-        }else{
-            if (LiteGraph.debug) {
-                console.debug?.("DBG targetSlot",target_slot);
-            }
+        } else {
+            console.debug?.("DBG targetSlot",target_slot);
         }
 
         // allows nodes to block connection, callback
@@ -1988,15 +1960,11 @@ export class LGraphNode {
         if (slot.constructor === String) {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
-                if (LiteGraph.debug) {
-                    console.log?.(`Connect: Error, no slot of name ${slot}`);
-                }
+                console.log?.(`Connect: Error, no slot of name ${slot}`);
                 return false;
             }
         } else if (!this.outputs || slot >= this.outputs.length) {
-            if (LiteGraph.debug) {
-                console.log?.("Connect: Error, slot number not found");
-            }
+            console.log?.("Connect: Error, slot number not found");
             return false;
         }
 
@@ -2138,15 +2106,11 @@ export class LGraphNode {
         if (slot.constructor === String) {
             slot = this.findInputSlot(slot);
             if (slot == -1) {
-                if (LiteGraph.debug) {
-                    console.log?.(`Connect: Error, no slot of name ${slot}`);
-                }
+                console.log?.(`Connect: Error, no slot of name ${slot}`);
                 return false;
             }
         } else if (!this.inputs || slot >= this.inputs.length) {
-            if (LiteGraph.debug) {
-                console.log?.("Connect: Error, slot number not found");
-            }
+            console.log?.("Connect: Error, slot number not found");
             return false;
         }
 

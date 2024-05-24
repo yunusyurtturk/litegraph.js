@@ -247,10 +247,7 @@ export var LiteGraph = new class {
             throw new Error("Cannot register a simple object, it must be a class with a prototype");
         }
         base_class.type = type;
-
-        if (LiteGraph.debug) {
-            console.log?.("Node registered: " + type);
-        }
+        console.log?.("Node registered: " + type);
 
         const classname = base_class.name;
 
@@ -548,9 +545,7 @@ export var LiteGraph = new class {
         const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
-            if (LiteGraph.debug) {
-                console.log?.(`GraphNode type "${type}" not registered.`);
-            }
+            console.log?.(`GraphNode type "${type}" not registered.`);
             return null;
         }
 
@@ -668,9 +663,7 @@ export var LiteGraph = new class {
             }
 
             try {
-                if (LiteGraph.debug) {
-                    console.log?.("Reloading: " + src);
-                }
+                console.log?.("Reloading: " + src);
                 var dynamicScript = document.createElement("script");
                 dynamicScript.type = "text/javascript";
                 dynamicScript.src = src;
@@ -680,15 +673,10 @@ export var LiteGraph = new class {
                 if (LiteGraph.throw_errors) {
                     throw err;
                 }
-                if (LiteGraph.debug) {
-                    console.log?.("Error while reloading " + src);
-                }
+                console.log?.("Error while reloading " + src);
             }
         }
-
-        if (LiteGraph.debug) {
-            console.log?.("Nodes reloaded");
-        }
+        console.log?.("Nodes reloaded");
     }
 
     // separated just to improve if it doesn't work

@@ -167,9 +167,7 @@ export class ContextMenu {
                     // console.debug?.("keyPressInsideContext",e,that,this,options);
                     if(that.current_submenu) {
                         // removing listeners is buggy, this prevent parent menus to process the key event
-                        if( LiteGraph.debug ) {
-                            console.debug?.("Prevent filtering on ParentMenu",that);
-                        }
+                        console.debug?.("Prevent filtering on ParentMenu",that);
                         return;
                     }
                     if(!that.allOptions) {
@@ -245,17 +243,13 @@ export class ContextMenu {
                                 if(that.selectedOption !== false) {
 
                                     if(that.allOptions[that.selectedOption]) {
-                                        if( LiteGraph.debug ) {
-                                            console.debug?.("ContextElement simCLICK",that.allOptions[iO]);
-                                        }
+                                        console.debug?.("ContextElement simCLICK",that.allOptions[iO]);
                                         // checking because of bad event removal :: FIX
                                         if(that.allOptions[that.selectedOption].do_click){
                                             that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                         }
                                     }else{
-                                        if( LiteGraph.debug ) {
-                                            console.debug?.("ContextElement selection wrong",that.selectedOption);
-                                        }
+                                        console.debug?.("ContextElement selection wrong",that.selectedOption);
                                         // selection fix when filtering
                                         that.selectedOption = that.selectedOption!==false
                                             ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
@@ -270,17 +264,13 @@ export class ContextMenu {
                                                 // && that.allOptions[iO].textContent !== "Add Node"
                                                 && that.allOptions[iO].textContent !== "Search"
                                             ) {
-                                                if( LiteGraph.debug ) {
-                                                    console.debug?.("ContextElement simCLICK",that.allOptions[iO]);
-                                                }
+                                                console.debug?.("ContextElement simCLICK",that.allOptions[iO]);
                                                 // try cleaning parent listeners
                                                 if(root.f_textfilter) {
                                                     if(doc) {
                                                         doc.removeEventListener('keydown',root.f_textfilter,false);
                                                         doc.removeEventListener('keydown',root.f_textfilter,true);
-                                                        if( LiteGraph.debug ) {
-                                                            console.debug?.("Cleaned ParentContextMenu listener",doc,that);
-                                                        }
+                                                        console.debug?.("Cleaned ParentContextMenu listener",doc,that);
                                                     }
                                                 }
                                                 var ignore_parent_menu = false; // ?
@@ -294,9 +284,7 @@ export class ContextMenu {
                                 kdone = true;
                                 break;
                             default:
-                                if( LiteGraph.debug ) {
-                                    console.debug?.("ContextMenu filter: keyEvent",e.keyCode,e.key);
-                                }
+                                console.debug?.("ContextMenu filter: keyEvent",e.keyCode,e.key);
                                 if (String.fromCharCode(e.key).match(/(\w|\s)/g)) {
                                     // pressed key is a char
                                 } else {
@@ -378,14 +366,10 @@ export class ContextMenu {
                     // process selection (up down)
                     var hasSelected = that.selectedOption !== false;
                     if(hasSelected) {
-                        if( LiteGraph.debug ) {
-                            console.debug?.("ContextMenu selection: ",that.selectedOption);
-                        }
+                        console.debug?.("ContextMenu selection: ",that.selectedOption);
                         for(var iO in that.allOptions) {
                             var isSelected = that.selectedOption+"" === iO+"";
-                            if( LiteGraph.debug ) {
-                                // console.debug?.("ContextMenu check sel: ",that.selectedOption,iO);
-                            }
+                            // console.debug?.("ContextMenu check sel: ",that.selectedOption,iO);
                             if(isSelected) {
                                 // that.allOptions[iO].style.backgroundColor = "#333";
                                 that.allOptions[iO].classList.add("selected");
