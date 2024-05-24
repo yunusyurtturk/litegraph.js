@@ -227,29 +227,69 @@ export var LiteGraph = new class {
         this.ensureUniqueExecutionAndActionCall = true; // NEW ensure single event execution
 
         this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
+
+
+        this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
+        // this.loggingSetup();
+        
+        // this.debug = 1; // has custom get set, in this.debug_level is stored the actual numeric value
+        // this.debug_level = 1;
+        this.logging_set_level(2);
     }
 
-    set debug(v) {
-        if(!Number.isInteger(v))
-            throw new TypeError(v);
+    // get and set debug (log)level
+    // from -1 (none), 0 (error), .. to 4 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
+    logging_set_level(v) {
+        this.debug_level = Number(v);
+    }
 
-        const methods = ['error', 'warn', 'info', 'log', 'debug'];
-        if(v < 0 || v > methods.length)
-            throw new RangeError(v);
-
-        if(console[`_error`])
-            throw new Error('LiteGraph.debug is already set, and can only be set once right now');
-
-        console.level = v;
-
-        // silence unwanted ones
-        for (const key of methods.slice(Math.max(0, console.level), methods.length)) {
-            delete console[key];
+    // entrypoint to debug log
+    logging(lvl/**/) { // arguments
+        
+        // callee.caller is not usable
+        /* function st2(f) {
+            return !f ? [] : 
+                st2(f.caller).concat([f.toString().split('(')[0].substring(9) + '(' + f.arguments.join(',') + ')']);
         }
+        const s_trace = st2(arguments.callee.caller); */
+        
+        function clean_args(args){
+            let aRet = [];
+            for(let iA=1; iA<args.length; iA++) {
+                if(typeof(args[iA])!=="undedined") aRet.push(args[iA]);
+            }
+            return aRet;
+        }
+
+        let lvl_txt = "debug";
+        if(lvl>=0&&lvl<=4) lvl_txt = ['error', 'warn', 'info', 'log', 'debug'][lvl];
+        
+        // debugging the debugger :: console.debug("[LG-log]",lvl,lvl_txt,this.debug_level,clean_args(arguments));
+        
+        if(typeof(console[lvl_txt])!=="function"){
+            console.warn("[LG-log] invalid console method",lvl_txt,clean_args(arguments));
+            throw new RangeError;
+        }
+
+        if(lvl <= this.debug_level)
+            console[lvl_txt]("[LG]",...clean_args(arguments));
     }
-    get debug() {
-        return ['error', 'warn', 'info', 'log', 'debug'][console.level];
-    }
+    // map common console methods
+    /* loggingSetup(){
+        // for (const lvl_txt of this.log_methods) {
+        for (const lvl in this.log_methods) {
+            this[lvl] = function(){
+                // console[lvl_txt](arguments); // call directly
+                this.logging(lvl,arguments); // encapsulate in LiteGraph.debug .log .warn ..
+            };
+        }
+    } */
+    // manually mapping
+    error(){ this.logging(0,...arguments); }
+    warn(){ this.logging(1,...arguments); }
+    info(){ this.logging(2,...arguments); }
+    log(){ this.logging(3,...arguments); }
+    debug(){ this.logging(4,...arguments); }
 
     /**
      * Register a node class so it can be listed when the user wants to create a new one
@@ -285,7 +325,7 @@ export var LiteGraph = new class {
         });
 
         const prev = this.registered_node_types[type];
-        if(prev && LiteGraph.debug) {
+        if(prev) {
             console.log?.("replacing node type: " + type);
         }
         if( !Object.prototype.hasOwnProperty.call( base_class.prototype, "shape") ) {
