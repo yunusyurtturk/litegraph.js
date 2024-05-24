@@ -2,7 +2,13 @@
 import { LiteGraph } from "../../src/litegraph.js";
 import { Editor } from "../../src/litegraph-editor.js";
 
-export var gl;
+export var gl; // webgl_canvas
+
+// remove to prevent access from the console (why should?)
+if (typeof(global)=="object") global.LiteGraph = LiteGraph;
+if (typeof(window)=="object") window.LiteGraph = LiteGraph;
+
+LiteGraph.info("LiteGraph included");
 
 var webgl_canvas = null;
 
