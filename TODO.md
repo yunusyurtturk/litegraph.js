@@ -1,16 +1,43 @@
 
-# 1. Unit Testing and Debugging
+# Goals for 1.0
 
-GL is getting close?
-Done up to L3967, gltextures.js
-108 problems in lint
-Expand on Jest testing to run tests for each class, both in core and in src/nodes/
+There are in fact already many other flow graph tools in the world, but they aren't compatible code to
+existing and are often not anywhere close to the full feature set of litegraph.
 
-# 2. Documentation
+## Drop In Compatibility with OG
 
-Set up JSDocs comments for LLink, LGraphCanvas
+litegraph 1.0 can only be achieved when we have API compatibility with OG litegraph.  Effectively, while
+it was viewed as a living codebase back when Javi had it, it has now been widely extended on and is
+foundation code for some things.
 
-# 3. Fix API breaks to date
+## Near-Feature Compatibility with OG
+
+Our goal for 1.0 is have a 'sufficiently' compatible feature set, while integrating 'bugfix' improvements
+and any 'completion of feature' improvements as we imagine it.  We can also add nodepacks, but this is not
+a goal of 1.0.
+
+## Unit Testing and Debugging
+
+LiteGraph only had 12 basic tests for core.  Our goal for the 1.x line is to expand the tests
+to eventually have decent unit testing.  These should test that functionalities still exist
+rather than becoming binding to detail.
+
+## Documentation and Readability
+
+A primary goal is to complete JSDocs comments for all of the code so that existing code can be read
+and understood for ongoing development.
+
+A secondary goal is to use modern JS features to make the code easier to read, smaller, and more streamlined internally.
+
+# Status
+
+* GL is getting close?
+* Done conversion to ES6 up to L3967, gltextures.js
+* 108 problems in lint
+* Expand on Jest testing to run tests for each class, both in core and in src/nodes/
+* LLink and LGraphCanvas are poorly documented
+
+## Fix API breaks that have happened to date
 
 * Removed LiteGraph.pointerAddListener in favor of addEventListener()
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
@@ -38,6 +65,3 @@ if (this.onConnectionsChange) {
 ```
 * We lost audio playback between litegraph.js and lgraphnode.js during my integration of atlasan's work.
 So we know what commit it was.  Notably though, the audiosource is being decoded, and it's a silent error.
-
-# 4. Extend classes *backwards* so that existing namespaces are the final product
-
