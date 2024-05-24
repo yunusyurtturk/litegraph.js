@@ -6,18 +6,10 @@ import { LGraphNode } from "./lgraphnode.js";
  *
  * @NOTE:
  * Try to avoid adding things to this class.
- *
- * this was just converted over from a global Object to class on 2024-05-09 in the early morning
- * and my goal is to fix the anti-pattern which involves putting all of this stuff where it *actually*
- * belongs.
- *
  * https://dzone.com/articles/singleton-anti-pattern
- *
  */
-
 export var LiteGraph = new class {
     constructor() {
-        // @TODO: This is awful, and these settings need to be put where they belong.
 
         this.VERSION = "0.10.2";
 
@@ -221,6 +213,28 @@ export var LiteGraph = new class {
         this.ensureUniqueExecutionAndActionCall = true; // NEW ensure single event execution
 
         this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
+    }
+
+    set debug(v) {
+        if(!Number.isInteger(v))
+            throw new TypeError(v);
+
+        const methods = ['error', 'warn', 'info', 'log', 'debug'];
+        if(v < 0 || v > methods.length)
+            throw new RangeError(v);
+
+        if(console[`_error`])
+            throw new Error('LiteGraph.debug is already set, and can only be set once right now');
+
+        console.level = v;
+
+        // silence unwanted ones
+        for (const key of methods.slice(Math.max(0, console.level), methods.length)) {
+            delete console[key];
+        }
+    }
+    get debug() {
+        return ['error', 'warn', 'info', 'log', 'debug'][console.level];
     }
 
     /**
