@@ -36,8 +36,8 @@ if (this.onConnectionsChange) {
 		  );
 	}
 ```
-* We lost audio playback between litegraph.js and lgraphnode.js for this commit.
-Notably though, the audiosource is being decoded, and it's a silent error.
+* We lost audio playback between litegraph.js and lgraphnode.js during my integration of atlasan's work.
+So we know what commit it was.  Notably though, the audiosource is being decoded, and it's a silent error.
 
 # 4. Extend classes *backwards* so that existing namespaces are the final product
 
