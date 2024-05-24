@@ -43,6 +43,7 @@ A secondary goal is to use modern JS features to make the code easier to read, s
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
 * Removed Mesh.compile in favor of Mesh.upload as it was already deprecated
 * Removed LiteGraph.pointerevents_method
+* Some of the LiteGraph.x class attachments are broken
 * L4565 excision, can't find specifically the right one
 ```
 if (this.onConnectionsChange) {
@@ -65,3 +66,12 @@ if (this.onConnectionsChange) {
 ```
 * We lost audio playback between litegraph.js and lgraphnode.js during my integration of atlasan's work.
 So we know what commit it was.  Notably though, the audiosource is being decoded, and it's a silent error.
+
+## What We Do Let Break for 1.0
+
+* Anything that relies on arcane details within methods or something not existing etc.  If you need exactly
+  LiteGraph 0.4.0 then that's available there.
+* We use ES6 class behavior
+* We use Modular, not CommonJS
+* Deprecated 3rd Party endpoints like JQuery 1.6.2, or DOMMouseScroll or document.createElement('CustomEvent')
+* We use modern audit-passing tools - Jest, ESLint but not Prettier, JSDocs but not Yuidocs
