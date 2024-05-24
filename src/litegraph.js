@@ -1022,7 +1022,12 @@ export var LiteGraph = new class {
 
     clamp = (v, a, b) => {
         return a > v ? a : b < v ? b : v;
-    }
+    };
+
+    closeAllContextMenus = () => {
+        console.warn?.('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
+        ContextMenu.closeAll();
+    };
 }
 
 // timer that works everywhere

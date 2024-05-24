@@ -139,8 +139,8 @@ export class LGraph {
      * @param {GraphCanvas} graph_canvas
      */
     attachCanvas(graphcanvas) {
-        if (! graphcanvas instanceof LGraphCanvas) {
-            throw new Error("attachCanvas expects a LGraphCanvas instance");
+        if (! graphcanvas instanceof LiteGraph.LGraphCanvas) {
+            throw new Error("attachCanvas expects a LiteGraph.LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
             graphcanvas.graph.detachCanvas(graphcanvas);

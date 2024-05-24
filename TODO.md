@@ -12,12 +12,9 @@ Set up JSDocs comments for LLink, LGraphCanvas
 
 # 3. Fix API breaks to date
 
-* Replaced LiteGraph.*class* with just *class*
-* Removed LiteGraph.closeAllContextMenus in favor of ContextMenu.closeAll()
 * Removed LiteGraph.pointerAddListener in favor of addEventListener()
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
-* Removed some unused/blank methods
-* Removed Mesh.compile in favor of Mesh.upload
+* Removed Mesh.compile in favor of Mesh.upload as it was already deprecated
 * Removed LiteGraph.pointerevents_method
 * L4565 excision, can't find specifically the right one
 ```
