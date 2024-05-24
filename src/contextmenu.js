@@ -245,7 +245,7 @@ export class ContextMenu {
                                     if(that.allOptions[that.selectedOption]) {
                                         console.debug?.("ContextElement simCLICK",that.allOptions[iO]);
                                         // checking because of bad event removal :: FIX
-                                        if(that.allOptions[that.selectedOption].do_click){
+                                        if(that.allOptions[that.selectedOption].do_click) {
                                             that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                         }
                                     }else{

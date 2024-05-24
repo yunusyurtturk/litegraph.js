@@ -27,8 +27,8 @@ class DOMSelector {
 }
 LiteGraph.registerNodeType("html/dom_selector", DOMSelector);
 
-class DOMSelectorAll {    
-    
+class DOMSelectorAll {
+
     static title = "DOMSelectorAll";
     static desc = "Execute a querySelectorAll() on the document returning the corresponding Elements";
 
@@ -67,7 +67,7 @@ class HtmlEventListener {
         // this.properties = {eventType: "" };
         this.mode = LiteGraph.ON_ACTION;
     }
-    
+
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {

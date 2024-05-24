@@ -3,22 +3,21 @@
 
 GL is getting close?
 Done up to L3967, gltextures.js
-24 problems in lint
+108 problems in lint
 Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 
 # 2. Documentation
 
-Set up JSDocs comments for LGraphNode, LLink, LGraphCanvas even if their program is broken.
+Set up JSDocs comments for LLink, LGraphCanvas
 
-# 3. Fix Layout Errors (width/height/font/top/left)
+# Fix API breaks to date
 
-Removed ones for context menu.  Others likely on lgraphcanvas, editor, code, etc.
+* Replaced LiteGraph.*class* with just *class*
+* Removed LiteGraph.closeAllContextMenus in favor of ContextMenu.closeAll()
+* Removed LiteGraph.pointerAddListener in favor of addEventListener()
+* Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
+* Removed some unused/blank methods
+* Removed Mesh.compile in favor of Mesh.upload
+* Removed LiteGraph.pointerevents_method
 
-# Examine Issues in old repo, changes from Atlasan
-
-https://github.com/jagenjo/litegraph.js/issues
-https://github.com/atlasan/litegraph.js
-
-# Extend classes with a *Canvas class
-
-Shift render related methods and properties to that.
+# Extend classes *backwards* so that existing namespaces are the final product

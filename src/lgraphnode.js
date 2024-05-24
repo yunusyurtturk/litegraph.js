@@ -765,7 +765,7 @@ export class LGraphNode {
         this.execute_triggered = 2; // the nFrames it will be used (-- each step), means "how old" is the event
         this.onAfterExecuteNode?.(param, options); // callback
     }
-	/**
+    /**
      * retrocompatibility :: old doExecute
      * @method doExecute
      * @param {*} param
@@ -1830,7 +1830,7 @@ export class LGraphNode {
             return null;
         }
 
-        if(target_node.onBeforeConnectInput){
+        if(target_node.onBeforeConnectInput) {
             target_slot = target_node.onBeforeConnectInput(target_node); // callback
         }
 
@@ -1901,7 +1901,7 @@ export class LGraphNode {
         }
         output.links.push(link_info.id);
         // connect in input
-        if(typeof target_node.inputs[target_slot] == "undefined"){
+        if(typeof target_node.inputs[target_slot] == "undefined") {
             console.warn?.("FIXME error, target_slot does not exists on target_node",target_node,target_slot);
         }
         target_node.inputs[target_slot].link = link_info.id;
