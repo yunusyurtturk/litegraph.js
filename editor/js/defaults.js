@@ -1,7 +1,7 @@
 
 import { LiteGraph } from "../../src/litegraph.js";
 
-LiteGraph.debug = false;
+LiteGraph.debug = 4; // now shows up to index of console['error','warning','info','log','debug']
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;
 LiteGraph.allow_scripts = false; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
