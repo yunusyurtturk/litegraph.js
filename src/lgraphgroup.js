@@ -1,6 +1,4 @@
 import { LiteGraph } from "./litegraph.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraphNode } from "./lgraphnode.js";
 
 export class LGraphGroup {
 
@@ -12,7 +10,7 @@ export class LGraphGroup {
 
         this.title = title;
         this.font_size = 24;
-        this.color = LGraphCanvas.node_colors.pale_blue?.groupcolor ?? "#AAA";
+        this.color = LiteGraph.LGraphCanvas.node_colors.pale_blue?.groupcolor ?? "#AAA";
         this._bounding = new Float32Array([10, 10, 140, 80]);
         this._pos = this._bounding.subarray(0, 2);
         this._size = this._bounding.subarray(2, 4);
@@ -115,6 +113,6 @@ export class LGraphGroup {
         });
     }
 
-    isPointInside = LGraphNode.prototype.isPointInside;
-    setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;
+    isPointInside = LiteGraph.LGraphNode.prototype.isPointInside;
+    setDirtyCanvas = LiteGraph.LGraphNode.prototype.setDirtyCanvas;
 }

@@ -1,7 +1,6 @@
 import { LiteGraph } from "./litegraph.js";
 import { ContextMenu } from "./contextmenu.js";
 import { DragAndScale } from "./dragandscale.js";
-import { LGraphGroup } from "./lgraphgroup.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -5101,7 +5100,7 @@ export class LGraphCanvas {
 
     static onGroupAdd(info, entry, mouse_event) {
         var canvas = LGraphCanvas.active_canvas;
-        var group = new LGraphGroup();
+        var group = new LiteGraph.LGraphGroup();
         group.pos = canvas.convertEventToCanvasOffset(mouse_event);
         canvas.graph.add(group);
     }
@@ -7647,7 +7646,7 @@ export class LGraphCanvas {
 
             const fApplyColor = (node) => {
                 if (color) {
-                    if (node.constructor === LGraphGroup) {
+                    if (node.constructor === LiteGraph.LGraphGroup) {
                         node.color = color.groupcolor;
                     } else {
                         node.color = color.color;

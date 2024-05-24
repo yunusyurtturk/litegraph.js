@@ -1,6 +1,5 @@
 import { LiteGraph } from "../litegraph.js";
 
-
 class WidgetButton {
 
     static title = "Button";

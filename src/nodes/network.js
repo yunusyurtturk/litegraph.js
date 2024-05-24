@@ -1,6 +1,5 @@
 import { LiteGraph } from "../litegraph.js";
 
-
 class LGWebSocket {
 
     static title = "WebSocket";

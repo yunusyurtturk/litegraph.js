@@ -1,5 +1,8 @@
-
+import { LLink } from "./llink.js";
+import { LGraph } from "./lgraph.js";
 import { LGraphNode } from "./lgraphnode.js";
+import { LGraphGroup } from "./lgraphgroup.js";
+import { LGraphCanvas } from "./lgraphcanvas.js";
 
 /**
  * @class LiteGraph
@@ -12,6 +15,18 @@ export var LiteGraph = new class {
     constructor() {
 
         this.VERSION = "0.10.2";
+        this.LLink = LLink;
+        this.LGraph = LGraph;
+        this.LGraphNode = LGraphNode;
+        this.LGraphGroup = LGraphGroup;
+        this.LGraphCanvas = LGraphCanvas;
+
+
+
+
+
+
+
 
         this.CANVAS_GRID_SIZE = 10;
 

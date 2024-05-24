@@ -1,7 +1,4 @@
 import { LiteGraph } from "./litegraph.js";
-import { LGraphCanvas } from "./lgraphcanvas.js";
-import { LGraphGroup } from "./lgraphgroup.js";
-import { LLink } from "./llink.js";
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -470,7 +467,7 @@ export class LGraph {
      * Returns all the nodes that could affect this one (ancestors) by crawling all the inputs recursively.
      * It doesn't include the node itself
      * @method getAncestors
-     * @return {Array} an array with all the LGraphNodes that affect this node, in order of execution
+     * @return {Array} an array with all the LiteGraph.LGraphNodes that affect this node, in order of execution
      */
     getAncestors(node, optsIn = {}) {
         var optsDef = {
@@ -688,7 +685,7 @@ export class LGraph {
     /**
      * Adds a new node instance to this graph
      * @method add
-     * @param {LGraphNode} node the instance of the node
+     * @param {LiteGraph.LGraphNode} node the instance of the node
      */
     add(node, skip_compute_order, optsIn = {}) {
 
@@ -703,7 +700,7 @@ export class LGraph {
         }
 
         // groups
-        if (node.constructor === LGraphGroup) {
+        if (node.constructor === LiteGraph.LGraphGroup) {
             this._groups.push(node);
             this.setDirtyCanvas(true);
             this.change();
@@ -768,10 +765,10 @@ export class LGraph {
     /**
      * Removes a node from the graph
      * @method remove
-     * @param {LGraphNode} node the instance of the node
+     * @param {LiteGraph.LGraphNode} node the instance of the node
      */
     remove(node) {
-        if (node.constructor === LGraphGroup) {
+        if (node.constructor === LiteGraph.LGraphGroup) {
             var index = this._groups.indexOf(node);
             if (index != -1) {
                 this._groups.splice(index, 1);
@@ -913,7 +910,7 @@ export class LGraph {
      * @param {number} x the x coordinate in canvas space
      * @param {number} y the y coordinate in canvas space
      * @param {Array} nodes_list a list with all the nodes to search from, by default is all the nodes in the graph
-     * @return {LGraphNode} the node at this position or null
+     * @return {LiteGraph.LGraphNode} the node at this position or null
      */
     getNodeOnPos(x, y, nodes_list = this._nodes, margin = 0) {
         return nodes_list.reverse().find((node) => node.isPointInside(x, y, margin)) ?? null;
@@ -924,7 +921,7 @@ export class LGraph {
      * @method getGroupOnPos
      * @param {number} x the x coordinate in canvas space
      * @param {number} y the y coordinate in canvas space
-     * @return {LGraphGroup} the group or null
+     * @return {LiteGraph.LGraphGroup} the group or null
      */
     getGroupOnPos(x, y) {
         return this._groups.find((group) => group.isPointInside(x, y, 2, true)) ?? null;
@@ -1352,7 +1349,7 @@ export class LGraph {
             if (!link.serialize) {
                 // weird bug I havent solved yet
                 console.warn?.("weird LLink bug, link info is not a LLink but a regular object");
-                var link2 = new LLink();
+                var link2 = new LiteGraph.LLink();
                 for (var j in link) {
                     link2[j] = link[j];
                 }
@@ -1405,7 +1402,7 @@ export class LGraph {
                     console.warn?.("serialized graph link data contains errors, skipping.");
                     continue;
                 }
-                var link = new LLink();
+                var link = new LiteGraph.LLink();
                 link.configure(link_data);
                 links[link.id] = link;
             }
@@ -1430,7 +1427,7 @@ export class LGraph {
                     console.log?.(`Node not found or has errors: ${n_info.type}`);
 
                     // in case of error we create a replacement node to avoid losing info
-                    node = new LGraphNode();
+                    node = new LiteGraph.LGraphNode();
                     node.last_serialization = n_info;
                     node.has_errors = true;
                     error = true;
@@ -1452,7 +1449,7 @@ export class LGraph {
         this._groups.length = 0;
         if (data.groups) {
             data.groups.forEach((groupData) => {
-                const group = new LGraphGroup();
+                const group = new LiteGraph.LGraphGroup();
                 group.configure(groupData);
                 this.add(group, true, {doProcessChange: false});
             });

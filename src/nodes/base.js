@@ -1,6 +1,4 @@
 import { LiteGraph } from "../litegraph.js";
-import { LGraphNode } from "../lgraphnode.js";
-import { LGraph } from "../lgraph.js";
 
 // Constant
 class Time {
@@ -32,7 +30,7 @@ class Subgraph {
         this.enabled = true;
 
         // create inner graph
-        this.subgraph = new LGraph();
+        this.subgraph = new LiteGraph.LGraph();
         this.subgraph._subgraph_node = this;
         this.subgraph._is_subgraph = true;
 
@@ -325,7 +323,7 @@ class Subgraph {
     }
 
     serialize() {
-        var data = LGraphNode.prototype.serialize.call(this);
+        var data = LiteGraph.LGraphNode.prototype.serialize.call(this);
         data.subgraph = this.subgraph.serialize();
         return data;
     }
@@ -408,7 +406,7 @@ class Subgraph {
         var data = this.serialize();
 
         if (LiteGraph.use_uuids) {
-            // LGraph.serialize() seems to reuse objects in the original graph. But we
+            // LiteGraph.LGraph.serialize() seems to reuse objects in the original graph. But we
             // need to change node IDs here, so clone it first.
             const subgraph = LiteGraph.cloneObject(data.subgraph);
 

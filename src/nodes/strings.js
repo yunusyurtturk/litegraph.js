@@ -1,6 +1,5 @@
 import { LiteGraph } from "../litegraph.js";
 
-
 function toString(a) {
     if (a && a.constructor === Object) {
         try {
