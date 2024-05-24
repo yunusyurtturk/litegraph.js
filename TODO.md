@@ -10,7 +10,7 @@ Expand on Jest testing to run tests for each class, both in core and in src/node
 
 Set up JSDocs comments for LLink, LGraphCanvas
 
-# Fix API breaks to date
+# 3. Fix API breaks to date
 
 * Replaced LiteGraph.*class* with just *class*
 * Removed LiteGraph.closeAllContextMenus in favor of ContextMenu.closeAll()
@@ -19,5 +19,28 @@ Set up JSDocs comments for LLink, LGraphCanvas
 * Removed some unused/blank methods
 * Removed Mesh.compile in favor of Mesh.upload
 * Removed LiteGraph.pointerevents_method
+* L4565 excision, can't find specifically the right one
+```
+if (this.onConnectionsChange) {
+		  this.onConnectionsChange(
+		      LiteGraph.OUTPUT,
+		      slot,
+		      false,
+		      link_info,
+		      output
+		  );
+	}
+	// JUST THIS ONE BELOW
+	if (this.graph && this.graph.onNodeConnectionChange) {
+		  this.graph.onNodeConnectionChange(
+		      LiteGraph.OUTPUT,
+		      this,
+		      slot
+		  );
+	}
+```
+* We lost audio playback between litegraph.js and lgraphnode.js for this commit.
+Notably though, the audiosource is being decoded, and it's a silent error.
 
-# Extend classes *backwards* so that existing namespaces are the final product
+# 4. Extend classes *backwards* so that existing namespaces are the final product
+
