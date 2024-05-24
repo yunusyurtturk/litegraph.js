@@ -245,14 +245,10 @@ export var LiteGraph = new class {
 
     // entrypoint to debug log
     logging(lvl/**/) { // arguments
-        
-        // callee.caller is not usable
-        /* function st2(f) {
-            return !f ? [] : 
-                st2(f.caller).concat([f.toString().split('(')[0].substring(9) + '(' + f.arguments.join(',') + ')']);
-        }
-        const s_trace = st2(arguments.callee.caller); */
-        
+
+        if(lvl > this.debug_level)
+            return; // -- break, debug only below or equal current --
+
         function clean_args(args){
             let aRet = [];
             for(let iA=1; iA<args.length; iA++) {
@@ -264,27 +260,13 @@ export var LiteGraph = new class {
         let lvl_txt = "debug";
         if(lvl>=0&&lvl<=4) lvl_txt = ['error', 'warn', 'info', 'log', 'debug'][lvl];
         
-        // debugging the debugger :: console.debug("[LG-log]",lvl,lvl_txt,this.debug_level,clean_args(arguments));
-        
         if(typeof(console[lvl_txt])!=="function"){
             console.warn("[LG-log] invalid console method",lvl_txt,clean_args(arguments));
             throw new RangeError;
         }
 
-        if(lvl <= this.debug_level)
-            console[lvl_txt]("[LG]",...clean_args(arguments));
+        console[lvl_txt]("[LG]",...clean_args(arguments));
     }
-    // map common console methods
-    /* loggingSetup(){
-        // for (const lvl_txt of this.log_methods) {
-        for (const lvl in this.log_methods) {
-            this[lvl] = function(){
-                // console[lvl_txt](arguments); // call directly
-                this.logging(lvl,arguments); // encapsulate in LiteGraph.debug .log .warn ..
-            };
-        }
-    } */
-    // manually mapping
     error(){ this.logging(0,...arguments); }
     warn(){ this.logging(1,...arguments); }
     info(){ this.logging(2,...arguments); }
@@ -302,7 +284,8 @@ export var LiteGraph = new class {
             throw new Error("Cannot register a simple object, it must be a class with a prototype");
         }
         base_class.type = type;
-        console.log?.("Node registered: " + type);
+        
+        this.debug?.("registerNodeType","start",type);
 
         const classname = base_class.name;
 
@@ -326,7 +309,7 @@ export var LiteGraph = new class {
 
         const prev = this.registered_node_types[type];
         if(prev) {
-            console.log?.("replacing node type: " + type);
+            this.debug?.("registerNodeType","replacing node type",type,prev);
         }
         if( !Object.prototype.hasOwnProperty.call( base_class.prototype, "shape") ) {
             Object.defineProperty(base_class.prototype, "shape", {
@@ -381,7 +364,7 @@ export var LiteGraph = new class {
 
         // warnings
         if (base_class.prototype.onPropertyChange) {
-            console.warn?.("LiteGraph node class " +
+            LiteGraph.warn("LiteGraph node class " +
                     type +
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
@@ -395,8 +378,10 @@ export var LiteGraph = new class {
             }
         }
 
-        // console.debug?.("Registering "+type);
+        this.debug?.("registerNodeType","type registered",type);
+        
         if (this.auto_load_slot_types)
+            this.debug?.("registerNodeType","do auto_load_slot_types",type);
             new base_class(base_class.title ?? "tmpnode");
     }
 
@@ -600,7 +585,7 @@ export var LiteGraph = new class {
         const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
-            console.log?.(`GraphNode type "${type}" not registered.`);
+            this.log?.(`GraphNode type "${type}" not registered.`);
             return null;
         }
 
@@ -612,7 +597,7 @@ export var LiteGraph = new class {
             try {
                 node = new base_class(title);
             } catch (err) {
-                console.error?.(err);
+                this.error?.(err);
                 return null;
             }
         } else {
@@ -718,7 +703,7 @@ export var LiteGraph = new class {
             }
 
             try {
-                console.log?.("Reloading: " + src);
+                this.log?.("Reloading: " + src);
                 var dynamicScript = document.createElement("script");
                 dynamicScript.type = "text/javascript";
                 dynamicScript.src = src;
@@ -728,10 +713,10 @@ export var LiteGraph = new class {
                 if (LiteGraph.throw_errors) {
                     throw err;
                 }
-                console.log?.("Error while reloading " + src);
+                this.log?.("Error while reloading " + src);
             }
         }
-        console.log?.("Nodes reloaded");
+        this.log?.("Nodes reloaded");
     }
 
     // separated just to improve if it doesn't work
@@ -850,7 +835,7 @@ export var LiteGraph = new class {
                         on_complete(data);
                 })
                 .catch((error) => {
-                    console.error?.("error fetching file:",url);
+                    this.error?.("error fetching file:",url);
                     if(on_error)
                         on_error(error);
                 });
@@ -1065,7 +1050,7 @@ export var LiteGraph = new class {
     };
 
     closeAllContextMenus = () => {
-        console.warn?.('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
+        LiteGraph.warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenu.closeAll();
     };
 }

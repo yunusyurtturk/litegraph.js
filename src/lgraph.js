@@ -20,7 +20,7 @@ export class LGraph {
      * @param {Object} o data from previous serialization [optional]} o
      */
     constructor(o) {
-        console.log?.("Graph created");
+        LiteGraph.log?.("Graph created");
         this.list_of_graphcanvas = null;
         this.clear();
 
@@ -286,7 +286,7 @@ export class LGraph {
                 if (LiteGraph.throw_errors) {
                     throw err;
                 }
-                console.log?.(`Error during execution: ${err}`);
+                LiteGraph.log?.(`Error during execution: ${err}`);
                 this.stop();
             }
         }
@@ -434,7 +434,7 @@ export class LGraph {
         }
 
         if (L.length != this._nodes.length && LiteGraph.debug) {
-            console.warn?.("something went wrong, nodes missing");
+            LiteGraph.warn?.("something went wrong, nodes missing");
         }
 
         var l = L.length;
@@ -711,7 +711,7 @@ export class LGraph {
 
         // nodes
         if (node.id != -1 && this._nodes_by_id[node.id] != null) {
-            console.warn?.("LiteGraph: there is already a node with this ID, changing it");
+            LiteGraph.warn?.("LiteGraph: there is already a node with this ID, changing it");
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
             } else {
@@ -940,7 +940,7 @@ export class LGraph {
                 continue;
             }
             if(LiteGraph.debug)
-                console.log?.(`node being replaced by newer version: ${node.type}`);
+                LiteGraph.log?.(`node being replaced by newer version: ${node.type}`);
             var newnode = LiteGraph.createNode(node.type);
             this._nodes[i] = newnode;
             newnode.configure(node.serialize());
@@ -1048,7 +1048,7 @@ export class LGraph {
         }
 
         if (this.inputs[name]) {
-            console.error?.("there is already one input with that name");
+            LiteGraph.error?.("there is already one input with that name");
             return false;
         }
 
@@ -1158,7 +1158,7 @@ export class LGraph {
         }
 
         if (this.outputs[name]) {
-            console.error?.("there is already one output with that name");
+            LiteGraph.error?.("there is already one output with that name");
             return false;
         }
 
@@ -1306,7 +1306,7 @@ export class LGraph {
      * @method change
      */
     change() {
-        console.log?.("Graph visually changed");
+        LiteGraph.log?.("Graph visually changed");
         this.sendActionToCanvas("setDirty", [true, true]);
         this.on_change?.(this);
     }
@@ -1348,7 +1348,7 @@ export class LGraph {
             var link = this.links[i];
             if (!link.serialize) {
                 // weird bug I havent solved yet
-                console.warn?.("weird LLink bug, link info is not a LLink but a regular object");
+                LiteGraph.warn?.("weird LLink bug, link info is not a LLink but a regular object");
                 var link2 = new LiteGraph.LLink();
                 for (var j in link) {
                     link2[j] = link[j];
@@ -1399,7 +1399,7 @@ export class LGraph {
             for (var i = 0; i < data.links.length; ++i) {
                 var link_data = data.links[i];
                 if(!link_data) { // @BUG: "weird bug" originally
-                    console.warn?.("serialized graph link data contains errors, skipping.");
+                    LiteGraph.warn?.("serialized graph link data contains errors, skipping.");
                     continue;
                 }
                 var link = new LiteGraph.LLink();
@@ -1424,7 +1424,7 @@ export class LGraph {
                 var n_info = nodes[i]; // stored info
                 var node = LiteGraph.createNode(n_info.type, n_info.title);
                 if (!node) {
-                    console.log?.(`Node not found or has errors: ${n_info.type}`);
+                    LiteGraph.log?.(`Node not found or has errors: ${n_info.type}`);
 
                     // in case of error we create a replacement node to avoid losing info
                     node = new LiteGraph.LGraphNode();
@@ -1464,7 +1464,7 @@ export class LGraph {
         if (!data._version) {
             this.onGraphChanged({action: "graphConfigure", doSave: false}); // this._version++;
         } else {
-            console.debug?.("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
+            LiteGraph.debug?.("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
         }
         this.setDirtyCanvas(true, true);
         return error;
@@ -1496,7 +1496,7 @@ export class LGraph {
         req.send(null);
         req.onload = (_event) => {
             if (req.status !== 200) {
-                console.error?.("Error loading graph:", req.status, req.response);
+                LiteGraph.error?.("Error loading graph:", req.status, req.response);
                 return;
             }
             var data = JSON.parse( req.response );
@@ -1504,7 +1504,7 @@ export class LGraph {
             callback?.();
         };
         req.onerror = (err) => {
-            console.error?.("Error loading graph:", err);
+            LiteGraph.error?.("Error loading graph:", err);
         };
     }
 
@@ -1547,14 +1547,14 @@ export class LGraph {
         this._version++;
 
         if(opts.action) {
-            console.debug?.("Graph change",opts.action);
+            LiteGraph.debug?.("Graph change",opts.action);
         } else {
-            console.debug?.("Graph change, no action",opts);
+            LiteGraph.debug?.("Graph change, no action",opts);
         }
 
         if(opts.doSave && LiteGraph.actionHistory_enabled) {
 
-            console.debug?.("onGraphChanged SAVE :: "+opts.action); // debug history
+            LiteGraph.debug?.("onGraphChanged SAVE :: "+opts.action); // debug history
 
             var oHistory = { actionName: opts.action };
             if(opts.doSaveGraph) {
@@ -1566,13 +1566,13 @@ export class LGraph {
 
             // check if pointer has gone back: remove newest
             while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1) {
-                console.debug?.("popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
+                LiteGraph.debug?.("popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
                 obH.actionHistoryVersions.pop();
             }
             // check if maximum saves
             if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave) {
                 var olderSave = obH.actionHistoryVersions.shift();
-                console.debug?.("maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
+                LiteGraph.debug?.("maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
                 obH.actionHistory[olderSave] = false; // unset
             }
 
@@ -1583,7 +1583,7 @@ export class LGraph {
             // save to pointer
             obH.actionHistory[obH.actionHistoryPtr] = oHistory;
 
-            console.debug?.("history saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
+            LiteGraph.debug?.("history saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
         }
     }
 
@@ -1600,19 +1600,19 @@ export class LGraph {
 
         if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0) {
             obH.actionHistoryPtr--;
-            console.debug?.("history step back: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.debug?.("history step back: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                console.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr++;
                 return false;
             }else{
-                console.debug?.("history loaded back: "+obH.actionHistoryPtr); // debug history
-                console.debug?.(this.history);
+                LiteGraph.debug?.("history loaded back: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.debug?.(this.history);
                 return true;
             }
         }else{
-            console.debug?.("history is already at older state");
+            LiteGraph.debug?.("history is already at older state");
             return false;
         }
     }
@@ -1630,18 +1630,18 @@ export class LGraph {
 
         if (obH.actionHistoryPtr<obH.actionHistoryVersions.length) {
             obH.actionHistoryPtr++;
-            console.debug?.("history step forward: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.debug?.("history step forward: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                console.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr--;
                 return false;
             }else{
-                console.debug?.("history loaded forward: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.debug?.("history loaded forward: "+obH.actionHistoryPtr); // debug history
                 return true;
             }
         }else{
-            console.debug?.("history is already at newer state");
+            LiteGraph.debug?.("history is already at newer state");
             return false;
         }
     }
@@ -1664,7 +1664,7 @@ export class LGraph {
             var tmpHistory = JSON.stringify(this.history);
             this.configure( obH.actionHistory[opts.iVersion].graphSave );
             this.history = JSON.parse(tmpHistory);
-            console.debug?.("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
+            LiteGraph.debug?.("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
             // no: this.onGraphLoaded();
             return true;
         }else{
