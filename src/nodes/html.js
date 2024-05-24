@@ -100,7 +100,7 @@ class HtmlEventListener {
                     break;
             }
         }else{
-            console.log("no el to add event");
+            console.log?.("no el to add event");
             // this.setOutputData(2,null); // clean ?
         }
         this.setOutputData(0,res);
@@ -137,7 +137,7 @@ class HtmlEventListenerRemove {
             oLis.element.removeEventListener(oLis.event, oLis.function);
             res = true;
         }else{
-            console.log("bad element to remove listener");
+            console.log?.("bad element to remove listener");
         }
         this.setOutputData(0,res);
     }
@@ -176,7 +176,7 @@ class HtmlValue {
                 }*/
             }
         }else{
-            // console.log("no element to get value");
+            // console.log?.("no element to get value");
         }
         this.setOutputData(0,res);
     }
@@ -215,13 +215,13 @@ class HtmlValueSet {
                     el.textContent = sVal+"";
                     res = true;
                 }else{
-                    console.log("unkonwn element to set value");
+                    console.log?.("unkonwn element to set value");
                 }
                 /* switch(el.constructor.name){
                 }*/
             }
         }else{
-            // console.log("no element to set value");
+            // console.log?.("no element to set value");
         }
         this.setOutputData(0,res);
     }
@@ -269,7 +269,7 @@ class HtmlCreateElement {
                 res = el;
             }
         }else{
-            // console.log("no type to create");
+            // console.log?.("no type to create");
         }
         this.setOutputData(0,res);
     }
@@ -305,7 +305,7 @@ class HtmlAppendChild {
         if (parent && child && parent.appendChild) {
             res = parent.appendChild(child)?true:false;
         }else{
-            // console.log("no type to create");
+            // console.log?.("no type to create");
         }
         this.setOutputData(0,res);
     }
@@ -339,7 +339,7 @@ class HtmlRemoveElement {
         if (element && element.remove) {
             res = element.remove()?true:false;
         }else{
-            // console.log("no type to create");
+            // console.log?.("no type to create");
         }
         this.setOutputData(0,res);
     }
@@ -391,9 +391,9 @@ class HtmlElementStyle {
         var cssValue = this.getInputOrProperty("cssValue");
         if (element && element.style) {
             res = element.style[cssProperty] = cssValue;
-            console.log("applied",cssProperty,cssValue,"to",element);
+            console.log?.("applied",cssProperty,cssValue,"to",element);
         }else{
-            console.log("no el to apply css");
+            console.log?.("no el to apply css");
         }
         this.setOutputData(0,res);
     }

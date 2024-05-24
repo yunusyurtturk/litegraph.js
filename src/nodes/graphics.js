@@ -145,13 +145,13 @@ class GraphicsImage {
             if (callback) {
                 callback(this);
             }
-            console.log(`Image loaded, size: ${that.img.width}x${that.img.height}`);
+            console.log?.(`Image loaded, size: ${that.img.width}x${that.img.height}`);
             this.dirty = true;
             that.boxcolor = "#9F9";
             that.setDirtyCanvas(true);
         };
         this.img.onerror = function () {
-            console.log("error loading the image:" + url);
+            console.log?.("error loading the image:" + url);
         };
     }
 
@@ -444,7 +444,7 @@ class ImageCrop {
         if (name == "scale") {
             this.properties[name] = parseFloat(value);
             if (this.properties[name] == 0) {
-                console.error("Error in scale");
+                console.error?.("Error in scale");
                 this.properties[name] = 1.0;
             }
         } else {
@@ -651,38 +651,38 @@ class ImageVideo {
         var that = this;
         this._video.addEventListener("loadedmetadata", (_event) => {
             // onload
-            console.log("Duration: " + this.duration + " seconds");
-            console.log("Size: " + this.videoWidth + "," + this.videoHeight);
+            console.log?.("Duration: " + this.duration + " seconds");
+            console.log?.("Size: " + this.videoWidth + "," + this.videoHeight);
             that.setDirtyCanvas(true);
             this.width = this.videoWidth;
             this.height = this.videoHeight;
         });
         this._video.addEventListener("progress", (_event) => {
             // onload
-            console.log("video loading...");
+            console.log?.("video loading...");
         });
         this._video.addEventListener("error", (_event) => {
-            console.error("Error loading video: " + this.src);
+            console.error?.("Error loading video: " + this.src);
             if (this.error) {
                 switch (this.error.code) {
                     case this.error.MEDIA_ERR_ABORTED:
-                        console.error("You stopped the video.");
+                        console.error?.("You stopped the video.");
                         break;
                     case this.error.MEDIA_ERR_NETWORK:
-                        console.error("Network error - please try again later.");
+                        console.error?.("Network error - please try again later.");
                         break;
                     case this.error.MEDIA_ERR_DECODE:
-                        console.error("Video is broken..");
+                        console.error?.("Video is broken..");
                         break;
                     case this.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                        console.error("Sorry, your browser can't play this video.");
+                        console.error?.("Sorry, your browser can't play this video.");
                         break;
                 }
             }
         });
 
         this._video.addEventListener("ended", (_event) => {
-            console.log("Video Ended.");
+            console.log?.("Video Ended.");
             this.play(); // loop
         });
         // document.body.appendChild(this.video);
@@ -727,7 +727,7 @@ class ImageVideo {
         if (!this._video) {
             return;
         }
-        console.log("Video paused");
+        console.log?.("Video paused");
         this._video.pause();
     }
 
@@ -778,7 +778,7 @@ class ImageWebcam {
 
     openStream() {
         if (!navigator.mediaDevices.getUserMedia) {
-            console.log("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
+            console.log?.("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
             return;
         }
 
@@ -798,7 +798,7 @@ class ImageWebcam {
 
         var that = this;
         function onFailSoHard(e) {
-            console.log("Webcam rejected", e);
+            console.log?.("Webcam rejected", e);
             that._webcam_stream = false;
             ImageWebcam.is_webcam_open = false;
             that.boxcolor = "red";
@@ -849,7 +849,7 @@ class ImageWebcam {
             // when video info is loaded (size and so)
             video.onloadedmetadata = function (e) {
                 // Ready to go. Do some stuff.
-                console.log(e);
+                console.log?.(e);
                 ImageWebcam.is_webcam_open = true;
             };
         }

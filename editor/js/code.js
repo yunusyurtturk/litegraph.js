@@ -64,7 +64,7 @@ select.addEventListener("change", function(e){
 });
 
 elem.querySelector("#save").addEventListener("click",function(){
-	console.log("saved");
+	console.log?.("saved");
 	localStorage.setItem( "graphdemo_save", JSON.stringify( graph.serialize() ) );
 });
 
@@ -72,7 +72,7 @@ elem.querySelector("#load").addEventListener("click",function(){
 	var data = localStorage.getItem( "graphdemo_save" );
 	if(data)
 		graph.configure( JSON.parse( data ) );
-	console.log("loaded");
+	console.log?.("loaded");
 });
 
 elem.querySelector("#download").addEventListener("click",function(){
@@ -142,15 +142,15 @@ function enableWebGL() {
 		}
 	  	try {
 		 	await import(scriptPath);
-		  	console.log(`${scriptPath} loaded successfully`);
+		  	console.log?.(`${scriptPath} loaded successfully`);
 		} catch (error) {
-		  	console.error(`Error loading ${scriptPath}: ${error}`);
+		  	console.error?.(`Error loading ${scriptPath}: ${error}`);
 		}
 	}
 	libs.forEach(lib => fetchJS(lib));
 
 	const on_ready = () => {
-		console.log(this.src);
+		console.log?.(this.src);
 		if(!window.GL)
 			return;
 		webgl_canvas = document.createElement("canvas");
@@ -181,7 +181,7 @@ function enableWebGL() {
 
 		editor.graph.onBeforeStep = ondraw;
 
-		console.log("webgl ready");
+		console.log?.("webgl ready");
 		function ondraw () {
 			gl.clearColor(0,0,0,0);
 			gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );

@@ -210,13 +210,13 @@ class Subgraph {
     // }
     onMouseDown(e, localpos, graphcanvas) {
         var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT + 0.5;
-        console.log(0);
+        console.log?.(0);
         if (localpos[1] > y) {
             if (localpos[0] < this.size[0] / 2) {
-                console.log(1);
+                console.log?.(1);
                 graphcanvas.showSubgraphPropertiesDialog(this);
             } else {
-                console.log(2);
+                console.log?.(2);
                 graphcanvas.showSubgraphPropertiesDialogRight(this);
             }
         }
@@ -963,7 +963,7 @@ class ConstantFile {
             .catch((_error) => {
                 that._data = null;
                 that.boxcolor = "red";
-                console.error("error fetching file:", url);
+                console.error?.("error fetching file:", url);
             });
     }
 
@@ -1145,7 +1145,7 @@ class ArrayLength {
         if(["array","object"].includes(typeof(arr)) && typeof(arr.length)!=="undefined") {
             this.setOutputData(0,arr.length);
         }else{
-            console.debug("Not an array or object",typeof(arr),arr);
+            console.debug?.("Not an array or object",typeof(arr),arr);
             this.setOutputData(0,null);
         }
     }
@@ -1589,11 +1589,11 @@ class Console {
         if (!msg) msg = this.properties.msg;
         if (!msg) msg = "Event: " + param; // msg is undefined if the slot is lost?
         if (action == "log") {
-            console.log(msg);
+            console.log?.(msg);
         } else if (action == "warn") {
-            console.warn(msg);
+            console.warn?.(msg);
         } else if (action == "error") {
-            console.error(msg);
+            console.error?.(msg);
         }
     }
 
@@ -1602,7 +1602,7 @@ class Console {
         if (!msg) msg = this.properties.msg;
         if (msg != null && typeof msg != "undefined") {
             this.properties.msg = msg;
-            console.log(msg);
+            console.log?.(msg);
         }
     }
 
@@ -1669,18 +1669,18 @@ class NodeScript {
     onConfigure(o) {
         if (o.properties.onExecute && LiteGraph.allow_scripts)
             this.compileCode(o.properties.onExecute);
-        else console.warn("Script not compiled, LiteGraph.allow_scripts is false");
+        else console.warn?.("Script not compiled, LiteGraph.allow_scripts is false");
     }
 
     onPropertyChanged(name, value) {
         if (name == "onExecute" && LiteGraph.allow_scripts) this.compileCode(value);
-        else console.warn("Script not compiled, LiteGraph.allow_scripts is false");
+        else console.warn?.("Script not compiled, LiteGraph.allow_scripts is false");
     }
 
     compileCode(code) {
         this._func = null;
         if (code.length > 256) {
-            console.warn("Script too long, max 256 chars");
+            console.warn?.("Script too long, max 256 chars");
         } else {
             var code_low = code.toLowerCase();
             var forbidden_words = [
@@ -1693,15 +1693,15 @@ class NodeScript {
             ]; // bad security solution
             for (var i = 0; i < forbidden_words.length; ++i) {
                 if (code_low.indexOf(forbidden_words[i]) != -1) {
-                    console.warn("invalid script");
+                    console.warn?.("invalid script");
                     return;
                 }
             }
             try {
                 this._func = new Function("A", "B", "C", "DATA", "node", code);
             } catch (err) {
-                console.error("Error parsing script");
-                console.error(err);
+                console.error?.("Error parsing script");
+                console.error?.(err);
             }
         }
     }
@@ -1717,8 +1717,8 @@ class NodeScript {
             var C = this.getInputData(2);
             this.setOutputData(0, this._func(A, B, C, this.data, this));
         } catch (err) {
-            console.error("Error in script");
-            console.error(err);
+            console.error?.("Error in script");
+            console.error?.(err);
         }
     }
 

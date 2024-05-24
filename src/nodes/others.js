@@ -1,6 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
-/* in types :: run in console :: var s=""; LiteGraph.slot_types_in.forEach(function(el){s+=el+"\n";}); console.log(s); */
+/* in types :: run in console :: var s=""; LiteGraph.slot_types_in.forEach(function(el){s+=el+"\n";}); console.log?.(s); */
 
 if (typeof LiteGraph.slot_types_default_in == "undefined")
     LiteGraph.slot_types_default_in = {}; // [];
@@ -25,7 +25,7 @@ LiteGraph.slot_types_default_in["mat4"] = "math3d/mat4";
 LiteGraph.slot_types_default_in["quat"] = ["math3d/quaternion","math3d/rotation"];
 LiteGraph.slot_types_default_in["table"] = "string/toTable";
 
-/* out types :: run in console :: var s=""; LiteGraph.slot_types_out.forEach(function(el){s+=el+"\n";}); console.log(s); */
+/* out types :: run in console :: var s=""; LiteGraph.slot_types_out.forEach(function(el){s+=el+"\n";}); console.log?.(s); */
 if (typeof LiteGraph.slot_types_default_out == "undefined")
     LiteGraph.slot_types_default_out = {};
 LiteGraph.slot_types_default_out["_event_"] = [

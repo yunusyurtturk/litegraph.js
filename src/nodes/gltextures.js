@@ -625,7 +625,7 @@ class LGraphTextureOperation {
                 );
                 this.boxcolor = "#00FF00";
             } catch (err) {
-                // console.log("Error compiling shader: ", err, final_pixel_code );
+                // console.log?.("Error compiling shader: ", err, final_pixel_code );
                 GL.Shader.dumpErrorToConsole(
                     err,
                     Shader.SCREEN_VERTEX_SHADER,
@@ -2253,7 +2253,7 @@ class LGraphImageToTexture {
         try {
             this._temp_texture.uploadImage(img);
         } catch (err) {
-            console.error("image comes from an unsafe location, cannot be uploaded to webgl: "+err);
+            console.error?.("image comes from an unsafe location, cannot be uploaded to webgl: "+err);
             return;
         }
 
@@ -4307,7 +4307,7 @@ LGraphTextureWebcam.is_webcam_open = false;
 
 LGraphTextureWebcam.prototype.openStream = function () {
     if (!navigator.getUserMedia) {
-        // console.log('getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags');
+        // console.log?.('getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags');
         return;
     }
 
@@ -4326,7 +4326,7 @@ LGraphTextureWebcam.prototype.openStream = function () {
     var that = this;
     function onFailSoHard(e) {
         LGraphTextureWebcam.is_webcam_open = false;
-        console.log("Webcam rejected", e);
+        console.log?.("Webcam rejected", e);
         that._webcam_stream = false;
         that.boxcolor = "red";
         that.trigger("stream_error");
@@ -4364,7 +4364,7 @@ LGraphTextureWebcam.prototype.streamReady = function (localMediaStream) {
         video.onloadedmetadata = function (e) {
             // Ready to go. Do some stuff.
             LGraphTextureWebcam.is_webcam_open = true;
-            console.log(e);
+            console.log?.(e);
         };
     }
     this.trigger("stream_ready", video);
@@ -5446,8 +5446,8 @@ LGraphTextureCanvas2D.prototype.compileCode = function (code) {
         this.boxcolor = "#00FF00";
     } catch (err) {
         this.boxcolor = "#FF0000";
-        console.error("Error parsing script");
-        console.error(err);
+        console.error?.("Error parsing script");
+        console.error?.(err);
     }
 };
 
@@ -5528,8 +5528,8 @@ LGraphTextureCanvas2D.prototype.executeDraw = function (func_context) {
                 that.boxcolor = "#00FF00";
             } catch (err) {
                 that.boxcolor = "#FF0000";
-                console.error("Error executing script");
-                console.error(err);
+                console.error?.("Error executing script");
+                console.error?.(err);
             }
             gl.finish2D();
         });
@@ -5554,8 +5554,8 @@ LGraphTextureCanvas2D.prototype.executeDraw = function (func_context) {
             this.boxcolor = "#00FF00";
         } catch (err) {
             this.boxcolor = "#FF0000";
-            console.error("Error executing script");
-            console.error(err);
+            console.error?.("Error executing script");
+            console.error?.(err);
         }
         temp.uploadImage(canvas);
     }

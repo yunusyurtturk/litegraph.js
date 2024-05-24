@@ -709,7 +709,7 @@ class MathOperation {
         if (name != "OP") return;
         this._func = MathOperation.funcs[this.properties.OP];
         if (!this._func) {
-            console.warn("Unknown operation: " + this.properties.OP);
+            console.warn?.("Unknown operation: " + this.properties.OP);
             this._func = function (A) {
                 return A;
             };

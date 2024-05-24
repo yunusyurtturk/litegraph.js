@@ -92,7 +92,6 @@ export var LiteGraph = new class {
         this.proxy = null; // used to redirect calls
         this.node_images_path = "";
 
-        this.debug = false;
         this.catch_exceptions = true;
         this.throw_errors = true;
         this.allow_scripts = false; // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
@@ -250,7 +249,7 @@ export var LiteGraph = new class {
         base_class.type = type;
 
         if (LiteGraph.debug) {
-            console.log("Node registered: " + type);
+            console.log?.("Node registered: " + type);
         }
 
         const classname = base_class.name;
@@ -275,7 +274,7 @@ export var LiteGraph = new class {
 
         const prev = this.registered_node_types[type];
         if(prev && LiteGraph.debug) {
-            console.log("replacing node type: " + type);
+            console.log?.("replacing node type: " + type);
         }
         if( !Object.prototype.hasOwnProperty.call( base_class.prototype, "shape") ) {
             Object.defineProperty(base_class.prototype, "shape", {
@@ -330,7 +329,7 @@ export var LiteGraph = new class {
 
         // warnings
         if (base_class.prototype.onPropertyChange) {
-            console.warn("LiteGraph node class " +
+            console.warn?.("LiteGraph node class " +
                     type +
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
@@ -344,7 +343,7 @@ export var LiteGraph = new class {
             }
         }
 
-        // console.debug("Registering "+type);
+        // console.debug?.("Registering "+type);
         if (this.auto_load_slot_types)
             new base_class(base_class.title ?? "tmpnode");
     }
@@ -550,7 +549,7 @@ export var LiteGraph = new class {
 
         if (!base_class) {
             if (LiteGraph.debug) {
-                console.log(`GraphNode type "${type}" not registered.`);
+                console.log?.(`GraphNode type "${type}" not registered.`);
             }
             return null;
         }
@@ -563,7 +562,7 @@ export var LiteGraph = new class {
             try {
                 node = new base_class(title);
             } catch (err) {
-                console.error(err);
+                console.error?.(err);
                 return null;
             }
         } else {
@@ -670,7 +669,7 @@ export var LiteGraph = new class {
 
             try {
                 if (LiteGraph.debug) {
-                    console.log("Reloading: " + src);
+                    console.log?.("Reloading: " + src);
                 }
                 var dynamicScript = document.createElement("script");
                 dynamicScript.type = "text/javascript";
@@ -682,13 +681,13 @@ export var LiteGraph = new class {
                     throw err;
                 }
                 if (LiteGraph.debug) {
-                    console.log("Error while reloading " + src);
+                    console.log?.("Error while reloading " + src);
                 }
             }
         }
 
         if (LiteGraph.debug) {
-            console.log("Nodes reloaded");
+            console.log?.("Nodes reloaded");
         }
     }
 
@@ -808,7 +807,7 @@ export var LiteGraph = new class {
                         on_complete(data);
                 })
                 .catch((error) => {
-                    console.error("error fetching file:",url);
+                    console.error?.("error fetching file:",url);
                     if(on_error)
                         on_error(error);
                 });

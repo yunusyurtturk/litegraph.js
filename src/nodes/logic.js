@@ -248,10 +248,10 @@ class logicFor {
         var iI = this.getInputData(0);
         var num = this.getInputData(1);
         for (var k=iI;k<iI+num;k++) {
-            console.debug("for cycle "+k);
+            console.debug?.("for cycle "+k);
             this.triggerSlot(0, param);
             if (this.stopped) {
-                console.debug("for cycle stopped on index "+k);
+                console.debug?.("for cycle stopped on index "+k);
                 break;
             }
             this.setOutputData(1, k);
@@ -261,9 +261,9 @@ class logicFor {
     }
 
     onAction(action, param) {
-        /* console.debug(action);
-        console.debug(param);
-        console.debug(this);*/
+        /* console.debug?.(action);
+        console.debug?.(param);
+        console.debug?.(this);*/
         switch(action) {
             case "break":
                 this.stopped = true;
@@ -320,12 +320,12 @@ class logicWhile {
                 this.k = 0;
                 cycleLimit = this.properties.cycleLimit || 999;
                 while (this.cond && this.k<cycleLimit) {
-                    console.debug("while cycle "+this.k);
+                    console.debug?.("while cycle "+this.k);
                     this.setOutputData(1, this.k);
                     this.triggerSlot(0, param);
                     // done
                     if (this.stopped) {
-                        console.debug("while cycle stopped on index "+k);
+                        console.debug?.("while cycle stopped on index "+k);
                         break;
                     }
                     this.k++;

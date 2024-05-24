@@ -131,7 +131,7 @@ class Math3DOperation {
                 vec3.cross(result, A, B);
                 break;
             default:
-                console.warn("Unknown operation: " + this.properties.OP);
+                console.warn?.("Unknown operation: " + this.properties.OP);
         }
         this.setOutputData(0, result);
     }
@@ -622,5 +622,5 @@ if (glMatrix) {
 
 // glMatrix
 } else if (LiteGraph.debug) {
-    console.warn("No glmatrix found, some Math3D nodes may not work");
+    console.warn?.("No glmatrix found, some Math3D nodes may not work");
 }

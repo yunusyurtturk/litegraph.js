@@ -7,18 +7,18 @@ class LGAudio {
         if (!this._audio_context) {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!window.AudioContext) {
-                console.error("AudioContext not supported by browser");
+                console.error?.("AudioContext not supported by browser");
                 return null;
             }
             this._audio_context = new AudioContext();
             this._audio_context.onmessage = function (msg) {
-                console.log("msg", msg);
+                console.log?.("msg", msg);
             };
             this._audio_context.onended = function (msg) {
-                console.log("ended", msg);
+                console.log?.("ended", msg);
             };
             this._audio_context.oncomplete = function (msg) {
-                console.log("complete", msg);
+                console.log?.("complete", msg);
             };
         }
 
@@ -32,7 +32,7 @@ class LGAudio {
         try {
             audionodeA.connect(audionodeB);
         } catch (err) {
-            console.warn("LGraphAudio:", err);
+            console.warn?.("LGraphAudio:", err);
         }
     }
 
@@ -40,7 +40,7 @@ class LGAudio {
         try {
             audionodeA.disconnect(audionodeB);
         } catch (err) {
-            console.warn("LGraphAudio:", err);
+            console.warn?.("LGraphAudio:", err);
         }
     }
 
@@ -202,11 +202,11 @@ class LGAudio {
 
         // Decode asynchronously
         request.onload = function () {
-            console.log("AudioSource loaded");
+            console.log?.("AudioSource loaded");
             context.decodeAudioData(
                 request.response,
                 function (buffer) {
-                    console.log("AudioSource decoded");
+                    console.log?.("AudioSource decoded");
                     LGAudio.cached_audios[url] = buffer;
                     if (on_complete) {
                         on_complete(buffer);
@@ -218,7 +218,7 @@ class LGAudio {
         request.send();
 
         function onError(err) {
-            console.log("Audio loading sample error:", err);
+            console.log?.("Audio loading sample error:", err);
             if (on_error) {
                 on_error(err);
             }
@@ -395,7 +395,7 @@ class LGAudioSource {
         this.trigger("start");
 
         audionode.onended = function () {
-            // console.log("ended!");
+            // console.log?.("ended!");
             that.trigger("ended");
             // remove
             var index = that._audionodes.indexOf(audionode);
@@ -538,7 +538,7 @@ class LGAudioMediaSource {
 
     openStream() {
         if (!navigator.mediaDevices) {
-            console.log("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
+            console.log?.("getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags");
             return;
         }
 
@@ -552,7 +552,7 @@ class LGAudioMediaSource {
 
         var that = this;
         function onFailSoHard(err) {
-            console.log("Media rejected", err);
+            console.log?.("Media rejected", err);
             that._media_stream = false;
             that.boxcolor = "red";
         }
@@ -811,7 +811,7 @@ class LGAudioConvolver {
         function inner(buffer) {
             that._impulse_buffer = buffer;
             that.audionode.buffer = buffer;
-            console.log("Impulse signal set");
+            console.log?.("Impulse signal set");
             that._loading_impulse = false;
         }
     }
@@ -1171,7 +1171,7 @@ class LGAudioOscillatorNode {
             try {
                 this.audionode.start();
             } catch (error) {
-                console.warn(error);
+                console.warn?.(error);
             }
         }
     }
@@ -1372,7 +1372,7 @@ class LGAudioScript {
         if (ctx.createScriptProcessor) {
             this.audionode = ctx.createScriptProcessor(4096, 1, 1);
         } else { // buffer size, input channels, output channels
-            console.warn("ScriptProcessorNode deprecated");
+            console.warn?.("ScriptProcessorNode deprecated");
             this.audionode = ctx.createGain(); // bypass audio
         }
 
@@ -1423,7 +1423,7 @@ class LGAudioScript {
             this._old_code = this.properties.code;
             this._callback = this._script.onaudioprocess;
         } catch (err) {
-            console.error("Error in onaudioprocess code", err);
+            console.error?.("Error in onaudioprocess code", err);
             this._callback = LGAudioScript._bypass_function;
             this.audionode.onaudioprocess = this._callback;
         }

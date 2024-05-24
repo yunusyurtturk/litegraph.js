@@ -319,7 +319,7 @@ class MIDIInterface {
             if (on_error) {
                 on_error("Not supported");
             } else {
-                console.error("MIDI NOT SUPPORTED, enable by chrome://flags");
+                console.error?.("MIDI NOT SUPPORTED, enable by chrome://flags");
             }
             return;
         }
@@ -342,9 +342,9 @@ class MIDIInterface {
     }
 
     onMIDISuccess(midiAccess) {
-        console.log("MIDI ready!");
+        console.log?.("MIDI ready!");
         if(LiteGraph.debug)
-            console.log(midiAccess);
+            console.log?.(midiAccess);
         this.midi = midiAccess; // store in the global (in real usage, would probably keep in an object instance)
         this.updatePorts();
 
@@ -368,7 +368,7 @@ class MIDIInterface {
             let port_info = it_value.value;
             this.input_ports_info.push(port_info);
             if(LiteGraph.debug)
-                console.log("Input port [type:'" +
+                console.log?.("Input port [type:'" +
                     port_info.type +
                     "'] id:'" +
                     port_info.id +
@@ -391,7 +391,7 @@ class MIDIInterface {
             let port_info = it_value.value;
             this.output_ports_info.push(port_info);
             if(LiteGraph.debug)
-                console.log("Output port [type:'" +
+                console.log?.("Output port [type:'" +
                     port_info.type +
                     "'] id:'" +
                     port_info.id +
@@ -409,7 +409,7 @@ class MIDIInterface {
     }
 
     onMIDIFailure(msg) {
-        console.error("Failed to get MIDI access - " + msg);
+        console.error?.("Failed to get MIDI access - " + msg);
     }
 
     openInputPort(port, callback) {
@@ -430,7 +430,7 @@ class MIDIInterface {
                 MIDIInterface.on_message(a.data, midi_event);
             }
         };
-        console.log("port open: ", input_port);
+        console.log?.("port open: ", input_port);
         return true;
     }
 
@@ -647,7 +647,7 @@ class LGMIDIOut {
     }
 
     onAction(event, midi_event) {
-        // console.log(midi_event);
+        // console.log?.(midi_event);
         if (!this._midi) {
             return;
         }
@@ -1270,7 +1270,7 @@ class LGMIDIFromFile {
         this._playing = false;
 
         if (typeof MidiParser == "undefined") {
-            console.error("midi-parser.js not included, LGMidiPlay requires that library: https://raw.githubusercontent.com/colxi/midi-parser-js/master/src/main.js");
+            console.error?.("midi-parser.js not included, LGMidiPlay requires that library: https://raw.githubusercontent.com/colxi/midi-parser-js/master/src/main.js");
             this.boxcolor = "red";
         }
     }
@@ -1368,7 +1368,7 @@ class LGMIDIPlay {
         this.addOutput("note", LiteGraph.EVENT);
 
         if (typeof AudioSynth == "undefined") {
-            console.error("Audiosynth.js not included, LGMidiPlay requires that library");
+            console.error?.("Audiosynth.js not included, LGMidiPlay requires that library");
             this.boxcolor = "red";
         } else {
             var Synth = (this.synth = new AudioSynth());

@@ -96,7 +96,7 @@ function parseGLSLDescriptions() {
             params: params,
         };
         GLSL_functions_name.push(func_name);
-        // console.log( GLSL_functions[i] );
+        // console.log?.( GLSL_functions[i] );
     }
 }
 
@@ -442,7 +442,7 @@ export class LGShaderContext {
     // generates the shader code from the template and the
     computeShader(graph, shader) {
         var finalcode = this.computeShaderCode(graph);
-        console.log(finalcode.vs_code, finalcode.fs_code);
+        console.log?.(finalcode.vs_code, finalcode.fs_code);
 
         if (!LiteGraph.catch_exceptions) {
             this._shader_error = true;
@@ -461,16 +461,16 @@ export class LGShaderContext {
             return shader;
         } catch (err) {
             if (!this._shader_error) {
-                console.error(err);
+                console.error?.(err);
                 if (err.indexOf("Fragment shader") != -1)
-                    console.log(finalcode.fs_code
+                    console.log?.(finalcode.fs_code
                         .split("\n")
                         .map(function (v, i) {
                             return i + ".- " + v;
                         })
                         .join("\n"));
                 else
-                    console.log(finalcode.vs_code);
+                    console.log?.(finalcode.vs_code);
             }
             this._shader_error = true;
             return null;
@@ -768,7 +768,7 @@ class LGraphShaderGraph {
                 content: "Print Code",
                 callback: function () {
                     var code = that._context.computeShaderCode();
-                    console.log(code.vs_code, code.fs_code);
+                    console.log?.(code.vs_code, code.fs_code);
                 },
             },
         ];
@@ -1070,7 +1070,7 @@ class LGraphShaderConstant {
                 );
                 break;
             default:
-                console.error("unknown type for constant");
+                console.error?.("unknown type for constant");
         }
     }
 
@@ -2050,7 +2050,7 @@ class LGraphShaderRemap {
         var return_type = this.getInputDataType(0);
         this.outputs[0].type = return_type;
         if (return_type == "T") {
-            console.warn("node type is T and cannot be resolved");
+            console.warn?.("node type is T and cannot be resolved");
             return;
         }
 

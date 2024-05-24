@@ -81,7 +81,7 @@ class LGWebSocket {
         }
         this._ws = new WebSocket(url);
         this._ws.onopen = function () {
-            console.log("ready");
+            console.log?.("ready");
             that.boxcolor = "#6C6";
         };
         this._ws.onmessage = function (e) {
@@ -107,11 +107,11 @@ class LGWebSocket {
             }
         };
         this._ws.onerror = function (_e) {
-            console.log("couldnt connect to websocket");
+            console.log?.("couldnt connect to websocket");
             that.boxcolor = "#E88";
         };
         this._ws.onclose = function (_e) {
-            console.log("connection closed");
+            console.log?.("connection closed");
             that.boxcolor = "#000";
         };
     }

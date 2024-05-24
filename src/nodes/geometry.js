@@ -222,7 +222,7 @@ class LGraphPoints3D {
                 LGraphPoints3D.generateFromInsideObject(points, size, obj);
                 // if(normals)
                 //	LGraphPoints3D.generateSphericalNormals( points, normals );
-            } else console.warn("wrong mode in LGraphPoints3D");
+            } else console.warn?.("wrong mode in LGraphPoints3D");
         }
         return points;
     }
@@ -1310,7 +1310,7 @@ if (typeof GL != "undefined") {
             if (!mesh) return;
 
             if (!LGraphRender.onRequestCameraMatrices) {
-                console.warn("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
+                console.warn?.("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
                 return;
             }
 
@@ -1593,7 +1593,7 @@ if (typeof GL != "undefined") {
                 this.updateMesh(geometry);
 
             if (!LGraphRender.onRequestCameraMatrices) {
-                console.warn("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
+                console.warn?.("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
                 return;
             }
 
@@ -1805,7 +1805,7 @@ if (typeof GL != "undefined") {
 
 		if(!LGraphRender.onRequestCameraMatrices)
 		{
-			console.warn("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
+			console.warn?.("cannot render geometry, LiteGraph.onRequestCameraMatrices is null, remember to fill this with a callback(view_matrix, projection_matrix,viewprojection_matrix) to use 3D rendering from the graph");
 			return;
 		}
 

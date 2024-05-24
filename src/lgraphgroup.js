@@ -84,9 +84,9 @@ export class LGraphGroup {
      */
     move(deltax, deltay, ignore_nodes) {
         if(isNaN(deltax))
-            console.error("LGraphGroup.move() deltax NaN");
+            console.error?.("LGraphGroup.move() deltax NaN");
         if(isNaN(deltay))
-            console.error("LGraphGroup.move() deltay NaN");
+            console.error?.("LGraphGroup.move() deltay NaN");
 
         this._pos[0] += deltax;
         this._pos[1] += deltay;

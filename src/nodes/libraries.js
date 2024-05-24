@@ -65,7 +65,7 @@ class CDNLibSearch {
                     try{
                         this._data = JSON.parse(this._data);
                     }catch(e) {
-                        console.warn("Not a JSON resp",this._data);
+                        console.warn?.("Not a JSON resp",this._data);
                     }
                 }
 
@@ -98,7 +98,7 @@ class CDNLibSearch {
         //     try{
         //         this._data = JSON.parse(this._data);
         //     }catch(e){
-        //         console.warn("Not a JSON resp",this._data);
+        //         console.warn?.("Not a JSON resp",this._data);
         //     }
         // }
         // if(this._data && typeof(this._data)=="object"){
@@ -159,7 +159,7 @@ class CDNLibInclude {
     }
 
     on_loaded(ob_lib, a) {
-        console.debug("Loaded library",ob_lib,a);
+        console.debug?.("Loaded library",ob_lib,a);
         if(ob_lib && ob_lib.name) {
             this.trigger("ready");
             libraries_loaded[ob_lib.name] = ob_lib;
@@ -172,7 +172,7 @@ class CDNLibInclude {
     on_error(ob_lib, e) {
         this.trigger("error");
         this.boxcolor = "#F00";
-        console.warn("Lib loading failed",ob_lib,e);
+        console.warn?.("Lib loading failed",ob_lib,e);
     }
 
     onAction(evt) {

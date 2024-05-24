@@ -13,7 +13,7 @@ class LogEvent {
     }
 
     onAction(action, param) {
-        console.log(action, param);
+        console.log?.(action, param);
     }
 }
 LiteGraph.registerNodeType("events/log", LogEvent);

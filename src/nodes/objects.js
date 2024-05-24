@@ -220,8 +220,8 @@ class objPropertyWidget {
         return [{
             content: "Console DBG", // has_submenu: false,
             callback: function(menuitO,obX,ev,htmO,nodeX) {
-                console.debug(nodeX.widg_prop);
-                console.debug(nodeX);
+                console.debug?.(nodeX.widg_prop);
+                console.debug?.(nodeX);
             },
         }];
     }
@@ -264,16 +264,16 @@ class objMethodWidget {
                 try{
                     this._methods = [];
                     var allProps = Object.keys(this._obin);
-                    console.debug("Props",allProps);
+                    console.debug?.("Props",allProps);
                     for(var iM in allProps) {
-                        // console.debug("dbg prop",allProps[iM],typeof(this._obin[allProps[iM]]));
+                        // console.debug?.("dbg prop",allProps[iM],typeof(this._obin[allProps[iM]]));
                         if(typeof(this._obin[allProps[iM]]) == "function") {
                             this._methods.push(allProps[iM]);
                         }
                     }
                     if(this._methods && this._methods.sort) this._methods = this._methods.sort();
                 }catch(e) {
-                    console.warn("Err on methods get",e);
+                    console.warn?.("Err on methods get",e);
                 }
                 if(this._methods) {
                     // this.removeWidget();
@@ -282,7 +282,7 @@ class objMethodWidget {
                 }
 
             }else{
-                console.debug("Invalid obj",data);
+                console.debug?.("Invalid obj",data);
                 this._function = null;
                 this._methods = [];
             }
@@ -318,7 +318,7 @@ class objMethodWidget {
             this._params = names;
 
         }else{
-            console.debug("Invalid method",actVal);
+            console.debug?.("Invalid method",actVal);
             this._function = null;
         }
         this.setOutputData(1, this._function); // update function output
@@ -330,12 +330,12 @@ class objMethodWidget {
     }
 
     // objMethodWidget.prototype.onPropertyChanged = function(name, value, prev_value){
-    //     console.debug("Property changed", name, value, prev_value)
+    //     console.debug?.("Property changed", name, value, prev_value)
     //     this.updateInputsForMethod();
     // }
     
     onWidgetChanged(name, value, prev_value, widget) {
-        console.debug("Widget changed", name, value, prev_value);
+        console.debug?.("Widget changed", name, value, prev_value);
         // if changed, reset inputs
         if(this.properties.method !== value) {
             for (var i = 3; i < this.inputs.length; ++i) {
@@ -359,7 +359,7 @@ class objMethodWidget {
                 }
 
                 // call execute
-                console.debug("NodeObjMethod Execute",parValues);
+                console.debug?.("NodeObjMethod Execute",parValues);
                 var r = this._function(parValues); // this._function.apply(this, parValues);
 
                 this.triggerSlot(0);
@@ -396,7 +396,7 @@ class objMethodWidget {
         return [{
             content: "NodeObjMethod DBG", // has_submenu: false,
             callback: function(menuitO,obX,ev,htmO,nodeX) {
-                console.debug(NodeObjMethod, nodeX.widg_prop, nodeX);
+                console.debug?.(NodeObjMethod, nodeX.widg_prop, nodeX);
             },
         }];
     }
@@ -423,7 +423,7 @@ class objEvalGlo {
         if (o.properties.obj_eval && LiteGraph.allow_scripts)
             this.compileCode(o.properties.obj_eval);
         else
-            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
+            console.warn?.("Obj string not evaluated, LiteGraph.allow_scripts is false");
     }
 
     static widgets_info = {obj_eval: { type: "code" }};
@@ -432,13 +432,13 @@ class objEvalGlo {
         if (name == "obj_eval" && LiteGraph.allow_scripts)
             this.compileCode(value);
         else
-            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
+            console.warn?.("Obj string not evaluated, LiteGraph.allow_scripts is false");
     }
 
     compileCode(code) {
         this._func = null;
         if (code.length > 256) {
-            console.warn("Script too long, max 256 chars");
+            console.warn?.("Script too long, max 256 chars");
         } else {
             var code_eval = "return "+code;
             // var forbidden_words = [
@@ -451,15 +451,15 @@ class objEvalGlo {
             // ]; //bad security solution
             // for (var i = 0; i < forbidden_words.length; ++i) {
             //     if (code_low.indexOf(forbidden_words[i]) != -1) {
-            //         console.warn("invalid script");
+            //         console.warn?.("invalid script");
             //         return;
             //     }
             // }
             try {
                 this._func = new Function("DATA", "node", code_eval);
             } catch (err) {
-                console.error("Error parsing obj evaluation");
-                console.error(err);
+                console.error?.("Error parsing obj evaluation");
+                console.error?.(err);
             }
         }
     }
@@ -471,8 +471,8 @@ class objEvalGlo {
         try {
             this.setOutputData(0, this._func(this.data, this));
         } catch (err) {
-            console.error("Error in code eval");
-            console.error(err);
+            console.error?.("Error in code eval");
+            console.error?.(err);
         }
     }
 
