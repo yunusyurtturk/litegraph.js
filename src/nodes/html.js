@@ -12,7 +12,7 @@ class DOMSelector {
         this.properties = { };
     }
 
-    onExecute(param) {
+    onExecute() {
         var sSel = this.getInputData(0);
         var res = null;
         if (sSel) {
@@ -38,7 +38,7 @@ class DOMSelectorAll {
         this.properties = { };
     }
 
-    onExecute(param) {
+    onExecute() {
         var sSel = this.getInputData(0);
         var res = null;
         if (sSel) {
@@ -76,7 +76,7 @@ class HtmlEventListener {
         } else this.setOutputData(3,null);
     }
 
-    onAction(action, param, options) {
+    onAction(action) {
         var sSel = this.getInputData(0);
         var eventType = this.getInputOrProperty("eventType");
         var res = null;
@@ -129,7 +129,7 @@ class HtmlEventListenerRemove {
         }
     }
 
-    onAction(action, param, options) {
+    onAction() {
         var oLis = this.getInputData(0);
         var res = false;
         if (oLis && oLis.element && oLis.function && oLis.event && oLis.element.removeEventListener) {
@@ -158,7 +158,7 @@ class HtmlValue {
         // this.mode = LiteGraph.ON_ACTION;
     }
 
-    onExecute(param, options) {
+    onExecute() {
         var el = this.getInputData(0);
         var res = false;
         if (el) {
@@ -198,7 +198,7 @@ class HtmlValueSet {
         // this.mode = LiteGraph.ON_ACTION;
     }
 
-    onExecute(param, options) {
+    onExecute() {
         // if (this.mode == LiteGraph.ON_TRIGGER) this.onAction(action, param, options);
         var el = this.getInputData(0);
         var sVal = this.getInputOrProperty("value"); // getInputData(1);
@@ -256,7 +256,7 @@ class HtmlCreateElement {
         }
     }
 
-    onAction(action, param, options) {
+    onAction() {
         var sType = this.getInputOrProperty("type"); // this.getInputData(1);
         var sId = this.getInputOrProperty("id"); // getInputData(2);
         var sClass = this.getInputOrProperty("class"); // getInputData(3);
@@ -298,7 +298,7 @@ class HtmlAppendChild {
         }
     }
 
-    onAction(action, param, options) {
+    onAction() {
         var parent = this.getInputData(0);
         var child = this.getInputData(1);
         var res = null;
@@ -333,7 +333,7 @@ class HtmlRemoveElement {
         }
     }
 
-    onAction(action, param, options) {
+    onAction() {
         var element = this.getInputData(0);
         var res = null;
         if (element && element.remove) {
@@ -384,7 +384,7 @@ class HtmlElementStyle {
         }
     }
 
-    onAction(action, param, options) {
+    onAction() {
         var element = this.getInputData(0);
         var res = null;
         var cssProperty = this.getInputOrProperty("cssProperty");

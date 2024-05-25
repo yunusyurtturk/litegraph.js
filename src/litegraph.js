@@ -3,6 +3,8 @@ import { LGraph } from "./lgraph.js";
 import { LGraphNode } from "./lgraphnode.js";
 import { LGraphGroup } from "./lgraphgroup.js";
 import { LGraphCanvas } from "./lgraphcanvas.js";
+import { DragAndScale } from "./dragandscale.js";
+import { ContextMenu } from "./contextmenu.js";
 
 /**
  * @class LiteGraph
@@ -15,21 +17,17 @@ export var LiteGraph = new class {
     constructor() {
 
         this.VERSION = "0.10.2";
+
+        // from OG LiteGraph, just bringing it back for compatibility
         this.LLink = LLink;
         this.LGraph = LGraph;
         this.LGraphNode = LGraphNode;
         this.LGraphGroup = LGraphGroup;
         this.LGraphCanvas = LGraphCanvas;
-
-
-
-
-
-
-
+        this.DragAndScale = DragAndScale;
+        this.ContextMenu = ContextMenu;
 
         this.CANVAS_GRID_SIZE = 10;
-
         this.NODE_TITLE_HEIGHT = 30;
         this.NODE_TITLE_TEXT_Y = 20;
         this.NODE_SLOT_HEIGHT = 20;
@@ -172,7 +170,7 @@ export var LiteGraph = new class {
         /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
         this.refreshAncestorsOnTriggers = false; // [true!]
         this.refreshAncestorsOnActions = false; // [true!]
-      	this.ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
+        this.ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
 
         // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
@@ -231,7 +229,7 @@ export var LiteGraph = new class {
 
         this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
         // this.loggingSetup();
-        
+
         // this.debug = 1; // has custom get set, in this.debug_level is stored the actual numeric value
         // this.debug_level = 1;
         this.logging_set_level(2);
@@ -249,29 +247,39 @@ export var LiteGraph = new class {
         if(lvl > this.debug_level)
             return; // -- break, debug only below or equal current --
 
-        function clean_args(args){
+        function clean_args(args) {
             let aRet = [];
             for(let iA=1; iA<args.length; iA++) {
-                if(typeof(args[iA])!=="undedined") aRet.push(args[iA]);
+                if(typeof(args[iA])!=="undefined") aRet.push(args[iA]);
             }
             return aRet;
         }
 
         let lvl_txt = "debug";
         if(lvl>=0&&lvl<=4) lvl_txt = ['error', 'warn', 'info', 'log', 'debug'][lvl];
-        
-        if(typeof(console[lvl_txt])!=="function"){
+
+        if(typeof(console[lvl_txt])!=="function") {
             console.warn("[LG-log] invalid console method",lvl_txt,clean_args(arguments));
             throw new RangeError;
         }
 
         console[lvl_txt]("[LG]",...clean_args(arguments));
     }
-    error(){ this.logging(0,...arguments); }
-    warn(){ this.logging(1,...arguments); }
-    info(){ this.logging(2,...arguments); }
-    log(){ this.logging(3,...arguments); }
-    debug(){ this.logging(4,...arguments); }
+    error() {
+        this.logging(0,...arguments);
+    }
+    warn() {
+        this.logging(1,...arguments);
+    }
+    info() {
+        this.logging(2,...arguments);
+    }
+    log() {
+        this.logging(3,...arguments);
+    }
+    debug() {
+        this.logging(4,...arguments);
+    }
 
     /**
      * Register a node class so it can be listed when the user wants to create a new one
@@ -284,7 +292,7 @@ export var LiteGraph = new class {
             throw new Error("Cannot register a simple object, it must be a class with a prototype");
         }
         base_class.type = type;
-        
+
         this.debug?.("registerNodeType","start",type);
 
         const classname = base_class.name;
@@ -379,10 +387,10 @@ export var LiteGraph = new class {
         }
 
         this.debug?.("registerNodeType","type registered",type);
-        
+
         if (this.auto_load_slot_types)
             this.debug?.("registerNodeType","do auto_load_slot_types",type);
-            new base_class(base_class.title ?? "tmpnode");
+        new base_class(base_class.title ?? "tmpnode");
     }
 
     /**

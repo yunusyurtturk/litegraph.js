@@ -145,7 +145,7 @@ export class LGraphNode {
         this.outputs?.forEach((output, i) => {
             if (!output.links)
                 return;
-            output.links.forEach((link) => {
+            output.links.forEach(() => {
                 const link_info = this.graph; // ?.links[link] || null; // as per Atlasan
                 this.onConnectionsChange?.(LiteGraph.OUTPUT, i, true, link_info, output);
             });
@@ -336,7 +336,7 @@ export class LGraphNode {
 
         if(slot?.constructor === String) {
             // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
-        	slot = this.findOutputSlot(slot);
+            slot = this.findOutputSlot(slot);
         }else if (slot == -1 || slot >= this.outputs.length) {
             return;
         }

@@ -258,7 +258,7 @@ export class ContextMenu {
 
                                 }else{
                                     if(that.filteringText.length) {
-                                        for(var iO in that.allOptions) {
+                                        for(let iO in that.allOptions) {
                                             if( that.allOptions[iO].style.display !== "none" // filtering for visible
                                                 && !(that.allOptions[iO].classList+"").includes("separator")
                                                 // && that.allOptions[iO].textContent !== "Add Node"
@@ -308,7 +308,7 @@ export class ContextMenu {
                     if(that.filteringText && that.filteringText!=="") {
                         var aFilteredOpts = [];
                         that.currentOptions = []; // reset filtered
-                        for(var iO in that.allOptions) {
+                        for(let iO in that.allOptions) {
                             // if(that.allOptions[iO].textContent){ //.startWith(that.filteringText)){
                             var txtCont = that.allOptions[iO].textContent;
                             var doesContainW = txtCont.toLocaleLowerCase().includes(that.filteringText.toLocaleLowerCase());
@@ -354,7 +354,7 @@ export class ContextMenu {
                     }else{
                         aFilteredOpts = that.allOptions; // combo_options
                         that.currentOptions = that.allOptions; // no filtered options
-                        for(var iO in that.allOptions) {
+                        for(let iO in that.allOptions) {
                             that.allOptions[iO].style.display = "block";
                             that.allOptions[iO].style.fontStyle = "inherit";
                             that.allOptions[iO].style.fontWeight = "inherit";
@@ -367,7 +367,7 @@ export class ContextMenu {
                     var hasSelected = that.selectedOption !== false;
                     if(hasSelected) {
                         LiteGraph.debug?.("ContextMenu selection: ",that.selectedOption);
-                        for(var iO in that.allOptions) {
+                        for(let iO in that.allOptions) {
                             var isSelected = that.selectedOption+"" === iO+"";
                             // LiteGraph.debug?.("ContextMenu check sel: ",that.selectedOption,iO);
                             if(isSelected) {

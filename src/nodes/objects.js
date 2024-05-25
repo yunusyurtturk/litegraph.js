@@ -48,18 +48,19 @@ class objProperties {
         this._properties = [];
     }
 
-    onExecute(param, options) {
+    onExecute() {
         var data = this.getInputData(0);
         if (data != null) {
             this._value = data;
             try{
                 this._properties = Object.keys(this._value);
             }catch(e) {
+                console.error?.(e);
             }
             this.setOutputData(0, this._properties);
         }
     }
-    onAction(action, param, options) {
+    onAction() {
         // should probably execute on action
     }
     onGetInputs() {
@@ -69,11 +70,11 @@ class objProperties {
         // return [["out", 0]];
     }
     getTitle() {
-        if (this.flags.collapsed) {
-        }
+    //    if (this.flags.collapsed) {
+    //    }
         return this.title;
     }
-    onPropertyChanged(name, value) {
+    onPropertyChanged() {
         // this.widget.value = value;
     }
 }
@@ -155,7 +156,7 @@ class objPropertyWidget {
         this.widg_prop.value = v;
     }
 
-    updateFromInput(v) {
+    updateFromInput() {
         var data = this.getInputData(0);
         if (data != null) {
             this._obin = data;
@@ -163,8 +164,10 @@ class objPropertyWidget {
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try{
                     this._properties = Object.keys(this._obin);
-                    if(this._properties && this._properties.sort) this._properties = this._properties.sort();
+                    if(this._properties && this._properties.sort)
+                        this._properties = this._properties.sort();
                 }catch(e) {
+                    console.error?.(e);
                 }
                 if(this._properties) {
                     // this.removeWidget();
@@ -186,11 +189,11 @@ class objPropertyWidget {
         this.setOutputData(0, this._value);
     }
 
-    onExecute(param, options) {
+    onExecute() {
         this.updateFromInput();
     }
 
-    onAction(action, param, options) {
+    onAction() {
         // should probably execute on action
         this.updateFromInput();
     }
@@ -216,7 +219,7 @@ class objPropertyWidget {
         }
     }
 
-    getExtraMenuOptions(canvas, options) {
+    getExtraMenuOptions() {
         return [{
             content: "Console DBG", // has_submenu: false,
             callback: function(menuitO,obX,ev,htmO,nodeX) {
@@ -255,7 +258,7 @@ class objMethodWidget {
         this.widg_prop.value = v;
     }
 
-    updateFromInput(v) {
+    updateFromInput() {
         var data = this.getInputData(0);
         if (data != null) {
             this._obin = data;
@@ -307,7 +310,6 @@ class objMethodWidget {
 
             this._function = this._obin[actVal];
 
-            var params = Array(this._function.length);
             var names = LiteGraph.getParameterNames(this._function);
             for (var i = 0; i < names.length; ++i) {
                 var exs = this.findInputSlot(names[i]);
@@ -324,7 +326,7 @@ class objMethodWidget {
         this.setOutputData(1, this._function); // update function output
     }
 
-    onExecute(param, options) {
+    onExecute() {
         // this.updateFromInput();
         // ?
     }
@@ -334,7 +336,7 @@ class objMethodWidget {
     //     this.updateInputsForMethod();
     // }
 
-    onWidgetChanged(name, value, prev_value, widget) {
+    onWidgetChanged(name, value, prev_value) {
         console.debug?.("Widget changed", name, value, prev_value);
         // if changed, reset inputs
         if(this.properties.method !== value) {
@@ -345,7 +347,7 @@ class objMethodWidget {
         this.updateInputsForMethod();
     }
 
-    onAction(action, param, options) {
+    onAction(action) {
         // should probably execute on action
         // this.updateFromInput();
         if(action == "refresh") {
@@ -392,7 +394,7 @@ class objMethodWidget {
         }
     }
 
-    getExtraMenuOptions(canvas, options) {
+    getExtraMenuOptions() {
         return [{
             content: "NodeObjMethod DBG", // has_submenu: false,
             callback: function(menuitO,obX,ev,htmO,nodeX) {

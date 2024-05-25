@@ -260,7 +260,7 @@ class logicFor {
         this.stopped = true;
     }
 
-    onAction(action, param) {
+    onAction(action) {
         /* console.debug?.(action);
         console.debug?.(param);
         console.debug?.(this);*/
@@ -300,7 +300,7 @@ class logicWhile {
     static title = "WHILE";
     static desc = "Cycle WHILE";
 
-    onExecute(param) {
+    onExecute() {
         this.setOutputData(1, this.k);
         this.cond = this.getInputData(1);
     }

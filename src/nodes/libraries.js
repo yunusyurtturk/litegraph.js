@@ -2,21 +2,20 @@
 import { LiteGraph } from "../litegraph.js";
 
 // https://api.cdnjs.com/libraries
-
+/*
 LiteGraph.libraries_known = {
     // "jquery": {"obj":"jQuery","name":"jquery", "latest":"..URL.."}
 };
 LiteGraph.libraries_loaded = {
     // "vue":{},
 };
-
+*/
 
 
 // CDN LIBRARY SEARCH
 
 class CDNLibSearch {
     constructor() {
-        var that = this;
         this.addInput("search", LiteGraph.ACTION);
         // this.addInput("name", "string"); in optionals
         this.addProperty("name", "", "string");
@@ -129,7 +128,6 @@ class CDNLibInclude {
     static desc = "Load and include a CDN library";
 
     constructor() {
-        var that = this;
         this.addInput("load", LiteGraph.ACTION);
         this.addInput("lib_spec", "object");
         this.addOutput("ready", LiteGraph.EVENT);

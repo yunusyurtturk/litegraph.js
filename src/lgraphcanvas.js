@@ -1,6 +1,4 @@
 import { LiteGraph } from "./litegraph.js";
-import { ContextMenu } from "./contextmenu.js";
-import { DragAndScale } from "./dragandscale.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -29,7 +27,7 @@ export class LGraphCanvas {
             canvas = document.querySelector(canvas);
         }
 
-        this.ds = new DragAndScale();
+        this.ds = new LiteGraph.DragAndScale();
         this.zoom_modify_alpha = true; // otherwise it generates ugly patterns when scaling down too much
 
         this.title_text_font = `${LiteGraph.NODE_TEXT_SIZE}px Arial`;
@@ -666,7 +664,7 @@ export class LGraphCanvas {
         }
         this.pointer_is_down = true;
         this.canvas.focus();
-        ContextMenu.closeAll(ref_window);
+        LiteGraph.ContextMenu.closeAll(ref_window);
 
         if (this.onMouse?.(e))
             return;
@@ -4811,7 +4809,7 @@ export class LGraphCanvas {
                                 w.value = index;
                         } else { // combo clicked
                             var text_values = values != values_list ? Object.values(values) : values;
-                            new ContextMenu(
+                            new LiteGraph.ContextMenu(
                                 text_values, {
                                     scale: Math.max(1, this.ds.scale),
                                     event: event,
@@ -5196,7 +5194,7 @@ export class LGraphCanvas {
     }
 
     static onNodeAlign(value, options, event, prev_menu, node) {
-        new ContextMenu(["Top", "Bottom", "Left", "Right"], {
+        new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
             event: event,
             callback: inner_clicked,
             parentMenu: prev_menu,
@@ -5208,7 +5206,7 @@ export class LGraphCanvas {
     }
 
     static onGroupAlign(value, options, event, prev_menu) {
-        new ContextMenu(["Top", "Bottom", "Left", "Right"], {
+        new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
             event: event,
             callback: inner_clicked,
             parentMenu: prev_menu,
@@ -5291,7 +5289,7 @@ export class LGraphCanvas {
 
             });
 
-            new ContextMenu( entries, { event: e, parentMenu: prev_menu }, ref_window );
+            new LiteGraph.ContextMenu( entries, { event: e, parentMenu: prev_menu }, ref_window );
 
         }
 
@@ -5360,7 +5358,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new ContextMenu(
+        new LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -5470,7 +5468,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new ContextMenu(
+        new LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -5505,7 +5503,7 @@ export class LGraphCanvas {
                 for (let i in value) {
                     entries.push({ content: i, value: value[i] });
                 }
-                new ContextMenu(entries, {
+                new LiteGraph.ContextMenu(entries, {
                     event: e,
                     callback: inner_clicked,
                     parentMenu: prev_menu,
@@ -5562,7 +5560,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new ContextMenu(
+        new LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -5628,7 +5626,7 @@ export class LGraphCanvas {
         // var options = ["Add Node",null,"Delete",null];
 
 
-        var menu = new ContextMenu(options, {
+        var menu = new LiteGraph.ContextMenu(options, {
             event: e,
             title: link.data != null ? link.data.constructor.name : null,
             callback: inner_clicked,
@@ -5884,7 +5882,7 @@ export class LGraphCanvas {
         }
 
         // build menu
-        var menu = new ContextMenu(options, {
+        var menu = new LiteGraph.ContextMenu(options, {
             event: opts.e,
             title: (slotX && slotX.name!="" ? (slotX.name + (fromSlotType?" | ":"")) : "")+(slotX && fromSlotType ? fromSlotType : ""),
             callback: (v, options, e) => {
@@ -7104,7 +7102,7 @@ export class LGraphCanvas {
                     var values = options.values || [];
                     var propname = this.parentNode.dataset["property"];
                     var elem_that = this;
-                    new ContextMenu(
+                    new LiteGraph.ContextMenu(
                         values,{
                             event: event,
                             className: "dark",
@@ -7561,7 +7559,7 @@ export class LGraphCanvas {
     }
 
     static onMenuNodeMode(value, options, e, menu, node) {
-        new ContextMenu(
+        new LiteGraph.ContextMenu(
             LiteGraph.NODE_MODES,
             { event: e, callback: inner_clicked, parentMenu: menu, node: node },
         );
@@ -7620,7 +7618,7 @@ export class LGraphCanvas {
             };
             values.push(value);
         }
-        new ContextMenu(values, {
+        new LiteGraph.ContextMenu(values, {
             event: e,
             callback: inner_clicked,
             parentMenu: menu,
@@ -7667,7 +7665,7 @@ export class LGraphCanvas {
             throw new Error("no node passed");
         }
 
-        new ContextMenu(LiteGraph.VALID_SHAPES, {
+        new LiteGraph.ContextMenu(LiteGraph.VALID_SHAPES, {
             event: e,
             callback: inner_clicked,
             parentMenu: menu,
@@ -8052,7 +8050,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new ContextMenu(menu_info, options, ref_window);
+        new LiteGraph.ContextMenu(menu_info, options, ref_window);
 
         function inner_option_clicked(v, options) {
             if (!v) {
