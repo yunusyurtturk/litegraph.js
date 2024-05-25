@@ -3,7 +3,7 @@
  * Class representing a link object that stores link information between two nodes.
  */
 export class LLink {
-    
+
     /**
      * Create a link object.
      * @param {string} id - The unique identifier of the link.

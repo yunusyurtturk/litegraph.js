@@ -4371,7 +4371,7 @@ class LGraphTextureWebcam {
             };
         }
         this.trigger("stream_ready", video);
-    };
+    }
 
     onPropertyChanged(name, value) {
         if (name == "facingMode") {
@@ -4565,7 +4565,7 @@ class LGraphLensFX {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_texture;\n\
     uniform float u_factor;\n\
@@ -4619,430 +4619,424 @@ class LGraphLensFX {
 }
 LiteGraph.registerNodeType("texture/lensfx", LGraphLensFX);
 
-function LGraphTextureFromData() {
-    this.addInput("in", "");
-    this.properties = {
-        precision: LGraphTexture.LOW,
-        width: 0,
-        height: 0,
-        channels: 1,
-    };
-    this.addOutput("out", "Texture");
+
+class LGraphTextureFromData {
+
+    static title = "Data->Tex";
+    static desc = "Generates or applies a curve to a texture";
+
+    constructor() {
+        this.addInput("in", "");
+        this.properties = {
+            precision: LGraphTexture.LOW,
+            width: 0,
+            height: 0,
+            channels: 1,
+        };
+        this.addOutput("out", "Texture");
+    }
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
+    }
+
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var data = this.getInputData(0);
+        if (!data) return;
+
+        var channels = this.properties.channels;
+        var w = this.properties.width;
+        var h = this.properties.height;
+        if (!w || !h) {
+            w = Math.floor(data.length / channels);
+            h = 1;
+        }
+        var format = gl.RGBA;
+        if (channels == 3) format = gl.RGB;
+        else if (channels == 1) format = gl.LUMINANCE;
+
+        var temp = this._temp_texture;
+        var type = LGraphTexture.getTextureType(this.properties.precision);
+        if (!temp || temp.width != w || temp.height != h || temp.type != type) {
+            temp = this._temp_texture = new GL.Texture(w, h, {
+                type: type,
+                format: format,
+                filter: gl.LINEAR,
+            });
+        }
+
+        temp.uploadData(data);
+        this.setOutputData(0, temp);
+    }
 }
-
-LGraphTextureFromData.title = "Data->Tex";
-LGraphTextureFromData.desc = "Generates or applies a curve to a texture";
-LGraphTextureFromData.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
-
-LGraphTextureFromData.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
-
-    var data = this.getInputData(0);
-    if (!data) return;
-
-    var channels = this.properties.channels;
-    var w = this.properties.width;
-    var h = this.properties.height;
-    if (!w || !h) {
-        w = Math.floor(data.length / channels);
-        h = 1;
-    }
-    var format = gl.RGBA;
-    if (channels == 3) format = gl.RGB;
-    else if (channels == 1) format = gl.LUMINANCE;
-
-    var temp = this._temp_texture;
-    var type = LGraphTexture.getTextureType(this.properties.precision);
-    if (!temp || temp.width != w || temp.height != h || temp.type != type) {
-        temp = this._temp_texture = new GL.Texture(w, h, {
-            type: type,
-            format: format,
-            filter: gl.LINEAR,
-        });
-    }
-
-    temp.uploadData(data);
-    this.setOutputData(0, temp);
-};
-
 LiteGraph.registerNodeType("texture/fromdata", LGraphTextureFromData);
 
-// applies a curve (or generates one)
-function LGraphTextureCurve() {
-    this.addInput("in", "Texture");
-    this.addOutput("out", "Texture");
-    this.properties = {
-        precision: LGraphTexture.LOW,
-        split_channels: false,
+
+class LGraphTextureCurve {
+
+    static title = "Curve";
+    static desc = "Generates or applies a curve to a texture";
+
+    constructor() {
+        this.addInput("in", "Texture");
+        this.addOutput("out", "Texture");
+        this.properties = {
+            precision: LGraphTexture.LOW,
+            split_channels: false,
+        };
+        this._values = new Uint8Array(256 * 4);
+        this._values.fill(255);
+        this._curve_texture = null;
+        this._uniforms = { u_texture: 0, u_curve: 1, u_range: 1.0 };
+        this._must_update = true;
+        this._points = {
+            RGB: [
+                [0, 0],
+                [1, 1],
+            ],
+            R: [
+                [0, 0],
+                [1, 1],
+            ],
+            G: [
+                [0, 0],
+                [1, 1],
+            ],
+            B: [
+                [0, 0],
+                [1, 1],
+            ],
+        };
+        this.curve_editor = null;
+        this.addWidget("toggle", "Split Channels", false, "split_channels");
+        this.addWidget(
+            "combo",
+            "Channel",
+            "RGB",
+            {values: ["RGB", "R", "G", "B"]},
+        );
+        this.curve_offset = 68;
+        this.size = [240, 160];
+    }
+
+    static widgets_info = {
+        precision: {
+            widget: "combo",
+            values: LGraphTexture.MODE_VALUES,
+        },
     };
-    this._values = new Uint8Array(256 * 4);
-    this._values.fill(255);
-    this._curve_texture = null;
-    this._uniforms = { u_texture: 0, u_curve: 1, u_range: 1.0 };
-    this._must_update = true;
-    this._points = {
-        RGB: [
-            [0, 0],
-            [1, 1],
-        ],
-        R: [
-            [0, 0],
-            [1, 1],
-        ],
-        G: [
-            [0, 0],
-            [1, 1],
-        ],
-        B: [
-            [0, 0],
-            [1, 1],
-        ],
-    };
-    this.curve_editor = null;
-    this.addWidget("toggle", "Split Channels", false, "split_channels");
-    this.addWidget(
-        "combo",
-        "Channel",
-        "RGB",
-        {values: ["RGB", "R", "G", "B"]},
-    );
-    this.curve_offset = 68;
-    this.size = [240, 160];
-}
 
-LGraphTextureCurve.title = "Curve";
-LGraphTextureCurve.desc = "Generates or applies a curve to a texture";
-LGraphTextureCurve.widgets_info = {
-    precision: {
-        widget: "combo",
-        values: LGraphTexture.MODE_VALUES,
-    },
-};
+    onExecute() {
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-LGraphTextureCurve.prototype.onExecute = function () {
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
+        var tex = this.getInputData(0);
 
-    var tex = this.getInputData(0);
+        var temp = this._temp_texture;
+        if (!tex) {
+            // generate one texture, nothing else
+            if (this._must_update || !this._curve_texture) this.updateCurve();
+            this.setOutputData(0, this._curve_texture);
+            return;
+        }
 
-    var temp = this._temp_texture;
-    if (!tex) {
-        // generate one texture, nothing else
+        var type = LGraphTexture.getTextureType(this.properties.precision, tex);
+
+        // apply curve to input texture
+        if (
+            !temp ||
+            temp.type != type ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.format != tex.format
+        )
+            temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: type,
+                format: tex.format,
+                filter: gl.LINEAR,
+            });
+
+        var shader = LGraphTextureCurve._shader;
+        if (!shader) {
+            shader = LGraphTextureCurve._shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureCurve.pixel_shader,
+            );
+        }
+
         if (this._must_update || !this._curve_texture) this.updateCurve();
-        this.setOutputData(0, this._curve_texture);
-        return;
-    }
 
-    var type = LGraphTexture.getTextureType(this.properties.precision, tex);
+        var uniforms = this._uniforms;
+        var curve_texture = this._curve_texture;
 
-    // apply curve to input texture
-    if (
-        !temp ||
-        temp.type != type ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.format != tex.format
-    )
-        temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: type,
-            format: tex.format,
-            filter: gl.LINEAR,
+        // apply shader
+        temp.drawTo(function () {
+            gl.disable(gl.DEPTH_TEST);
+            tex.bind(0);
+            curve_texture.bind(1);
+            shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
         });
 
-    var shader = LGraphTextureCurve._shader;
-    if (!shader) {
-        shader = LGraphTextureCurve._shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureCurve.pixel_shader,
-        );
+        this.setOutputData(0, temp);
     }
 
-    if (this._must_update || !this._curve_texture) this.updateCurve();
-
-    var uniforms = this._uniforms;
-    var curve_texture = this._curve_texture;
-
-    // apply shader
-    temp.drawTo(function () {
-        gl.disable(gl.DEPTH_TEST);
-        tex.bind(0);
-        curve_texture.bind(1);
-        shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
-    });
-
-    this.setOutputData(0, temp);
-};
-
-LGraphTextureCurve.prototype.sampleCurve = function (f, points) {
-    points ||= this._points.RGB;
-    if (!points)
-        return;
-    for (var i = 0; i < points.length - 1; ++i) {
-        var p = points[i];
-        var pn = points[i + 1];
-        if (pn[0] < f) continue;
-        var r = pn[0] - p[0];
-        if (Math.abs(r) < 0.00001) return p[1];
-        var local_f = (f - p[0]) / r;
-        return p[1] * (1.0 - local_f) + pn[1] * local_f;
+    sampleCurve(f, points) {
+        points ||= this._points.RGB;
+        if (!points)
+            return;
+        for (var i = 0; i < points.length - 1; ++i) {
+            var p = points[i];
+            var pn = points[i + 1];
+            if (pn[0] < f) continue;
+            var r = pn[0] - p[0];
+            if (Math.abs(r) < 0.00001) return p[1];
+            var local_f = (f - p[0]) / r;
+            return p[1] * (1.0 - local_f) + pn[1] * local_f;
+        }
+        return 0;
     }
-    return 0;
-};
 
-LGraphTextureCurve.prototype.updateCurve = function () {
-    var values = this._values;
-    var num = values.length / 4;
-    var split = this.properties.split_channels;
-    for (var i = 0; i < num; ++i) {
-        if (split) {
-            values[i * 4] = clamp(
-                this.sampleCurve(i / num, this._points.R) * 255,
-                0,
-                255,
+    updateCurve() {
+        var values = this._values;
+        var num = values.length / 4;
+        var split = this.properties.split_channels;
+        for (var i = 0; i < num; ++i) {
+            if (split) {
+                values[i * 4] = clamp(
+                    this.sampleCurve(i / num, this._points.R) * 255,
+                    0,
+                    255,
+                );
+                values[i * 4 + 1] = clamp(
+                    this.sampleCurve(i / num, this._points.G) * 255,
+                    0,
+                    255,
+                );
+                values[i * 4 + 2] = clamp(
+                    this.sampleCurve(i / num, this._points.B) * 255,
+                    0,
+                    255,
+                );
+            } else {
+                var v = this.sampleCurve(i / num); // sample curve
+                values[i * 4] =
+                    values[i * 4 + 1] =
+                    values[i * 4 + 2] =
+                        clamp(v * 255, 0, 255);
+            }
+            values[i * 4 + 3] = 255; // alpha fixed
+        }
+        if (!this._curve_texture)
+            this._curve_texture = new GL.Texture(256, 1, {
+                format: gl.RGBA,
+                magFilter: gl.LINEAR,
+                wrap: gl.CLAMP_TO_EDGE,
+            });
+        this._curve_texture.uploadData(values, null, true);
+    }
+
+    onSerialize(o) {
+        var curves = {};
+        for (var i in this._points) curves[i] = this._points[i].concat();
+        o.curves = curves;
+    }
+
+    onConfigure(o) {
+        this._points = o.curves;
+        if (this.curve_editor) curve_editor.points = this._points;
+        this._must_update = true;
+    }
+
+    onMouseDown(e, localpos, graphcanvas) {
+        if (this.curve_editor) {
+            var r = this.curve_editor.onMouseDown(
+                [localpos[0], localpos[1] - this.curve_offset],
+                graphcanvas,
             );
-            values[i * 4 + 1] = clamp(
-                this.sampleCurve(i / num, this._points.G) * 255,
-                0,
-                255,
+            if (r) this.captureInput(true);
+            return r;
+        }
+    }
+
+    onMouseMove(e, localpos, graphcanvas) {
+        if (this.curve_editor)
+            return this.curve_editor.onMouseMove(
+                [localpos[0], localpos[1] - this.curve_offset],
+                graphcanvas,
             );
-            values[i * 4 + 2] = clamp(
-                this.sampleCurve(i / num, this._points.B) * 255,
-                0,
-                255,
+    }
+
+    onMouseUp(e, localpos, graphcanvas) {
+        if (this.curve_editor)
+            return this.curve_editor.onMouseUp(
+                [localpos[0], localpos[1] - this.curve_offset],
+                graphcanvas,
             );
+        this.captureInput(false);
+    }
+
+    static channel_line_colors = {
+        RGB: "#666",
+        R: "#F33",
+        G: "#3F3",
+        B: "#33F",
+    };
+
+    onDrawBackground(ctx, graphcanvas) {
+        if (this.flags.collapsed) return;
+
+        if (!this.curve_editor)
+            this.curve_editor = new LiteGraph.CurveEditor(this._points.R);
+        ctx.save();
+        ctx.translate(0, this.curve_offset);
+        var channel = this.widgets[1].value;
+
+        if (this.properties.split_channels) {
+            if (channel == "RGB") {
+                this.widgets[1].value = channel = "R";
+                this.widgets[1].disabled = false;
+            }
+            this.curve_editor.points = this._points.R;
+            this.curve_editor.draw(
+                ctx,
+                [this.size[0], this.size[1] - this.curve_offset],
+                graphcanvas,
+                "#111",
+                LGraphTextureCurve.channel_line_colors.R,
+                true,
+            );
+            ctx.globalCompositeOperation = "lighten";
+            this.curve_editor.points = this._points.G;
+            this.curve_editor.draw(
+                ctx,
+                [this.size[0], this.size[1] - this.curve_offset],
+                graphcanvas,
+                null,
+                LGraphTextureCurve.channel_line_colors.G,
+                true,
+            );
+            this.curve_editor.points = this._points.B;
+            this.curve_editor.draw(
+                ctx,
+                [this.size[0], this.size[1] - this.curve_offset],
+                graphcanvas,
+                null,
+                LGraphTextureCurve.channel_line_colors.B,
+                true,
+            );
+            ctx.globalCompositeOperation = "source-over";
         } else {
-            var v = this.sampleCurve(i / num); // sample curve
-            values[i * 4] =
-                values[i * 4 + 1] =
-                values[i * 4 + 2] =
-                    clamp(v * 255, 0, 255);
+            this.widgets[1].value = channel = "RGB";
+            this.widgets[1].disabled = true;
         }
-        values[i * 4 + 3] = 255; // alpha fixed
-    }
-    if (!this._curve_texture)
-        this._curve_texture = new GL.Texture(256, 1, {
-            format: gl.RGBA,
-            magFilter: gl.LINEAR,
-            wrap: gl.CLAMP_TO_EDGE,
-        });
-    this._curve_texture.uploadData(values, null, true);
-};
 
-LGraphTextureCurve.prototype.onSerialize = function (o) {
-    var curves = {};
-    for (var i in this._points) curves[i] = this._points[i].concat();
-    o.curves = curves;
-};
-
-LGraphTextureCurve.prototype.onConfigure = function (o) {
-    this._points = o.curves;
-    if (this.curve_editor) curve_editor.points = this._points;
-    this._must_update = true;
-};
-
-LGraphTextureCurve.prototype.onMouseDown = function (
-    e,
-    localpos,
-    graphcanvas,
-) {
-    if (this.curve_editor) {
-        var r = this.curve_editor.onMouseDown(
-            [localpos[0], localpos[1] - this.curve_offset],
-            graphcanvas,
-        );
-        if (r) this.captureInput(true);
-        return r;
-    }
-};
-
-LGraphTextureCurve.prototype.onMouseMove = function (
-    e,
-    localpos,
-    graphcanvas,
-) {
-    if (this.curve_editor)
-        return this.curve_editor.onMouseMove(
-            [localpos[0], localpos[1] - this.curve_offset],
-            graphcanvas,
-        );
-};
-
-LGraphTextureCurve.prototype.onMouseUp = function (
-    e,
-    localpos,
-    graphcanvas,
-) {
-    if (this.curve_editor)
-        return this.curve_editor.onMouseUp(
-            [localpos[0], localpos[1] - this.curve_offset],
-            graphcanvas,
-        );
-    this.captureInput(false);
-};
-
-LGraphTextureCurve.channel_line_colors = {
-    RGB: "#666",
-    R: "#F33",
-    G: "#3F3",
-    B: "#33F",
-};
-
-LGraphTextureCurve.prototype.onDrawBackground = function (
-    ctx,
-    graphcanvas,
-) {
-    if (this.flags.collapsed) return;
-
-    if (!this.curve_editor)
-        this.curve_editor = new LiteGraph.CurveEditor(this._points.R);
-    ctx.save();
-    ctx.translate(0, this.curve_offset);
-    var channel = this.widgets[1].value;
-
-    if (this.properties.split_channels) {
-        if (channel == "RGB") {
-            this.widgets[1].value = channel = "R";
-            this.widgets[1].disabled = false;
-        }
-        this.curve_editor.points = this._points.R;
+        this.curve_editor.points = this._points[channel];
         this.curve_editor.draw(
             ctx,
             [this.size[0], this.size[1] - this.curve_offset],
             graphcanvas,
-            "#111",
-            LGraphTextureCurve.channel_line_colors.R,
-            true,
+            this.properties.split_channels ? null : "#111",
+            LGraphTextureCurve.channel_line_colors[channel],
         );
-        ctx.globalCompositeOperation = "lighten";
-        this.curve_editor.points = this._points.G;
-        this.curve_editor.draw(
-            ctx,
-            [this.size[0], this.size[1] - this.curve_offset],
-            graphcanvas,
-            null,
-            LGraphTextureCurve.channel_line_colors.G,
-            true,
-        );
-        this.curve_editor.points = this._points.B;
-        this.curve_editor.draw(
-            ctx,
-            [this.size[0], this.size[1] - this.curve_offset],
-            graphcanvas,
-            null,
-            LGraphTextureCurve.channel_line_colors.B,
-            true,
-        );
-        ctx.globalCompositeOperation = "source-over";
-    } else {
-        this.widgets[1].value = channel = "RGB";
-        this.widgets[1].disabled = true;
+        ctx.restore();
     }
 
-    this.curve_editor.points = this._points[channel];
-    this.curve_editor.draw(
-        ctx,
-        [this.size[0], this.size[1] - this.curve_offset],
-        graphcanvas,
-        this.properties.split_channels ? null : "#111",
-        LGraphTextureCurve.channel_line_colors[channel],
-    );
-    ctx.restore();
-};
-
-LGraphTextureCurve.pixel_shader =
-    "precision highp float;\n\
-    varying vec2 v_coord;\n\
-    uniform sampler2D u_texture;\n\
-    uniform sampler2D u_curve;\n\
-    uniform float u_range;\n\
-    \n\
-    void main() {\n\
-        vec4 color = texture2D( u_texture, v_coord ) * u_range;\n\
-        color.x = texture2D( u_curve, vec2( color.x, 0.5 ) ).x;\n\
-        color.y = texture2D( u_curve, vec2( color.y, 0.5 ) ).y;\n\
-        color.z = texture2D( u_curve, vec2( color.z, 0.5 ) ).z;\n\
-        //color.w = texture2D( u_curve, vec2( color.w, 0.5 ) ).w;\n\
-        gl_FragColor = color;\n\
-    }";
-
+    pixel_shader =
+        "precision highp float;\n\
+        varying vec2 v_coord;\n\
+        uniform sampler2D u_texture;\n\
+        uniform sampler2D u_curve;\n\
+        uniform float u_range;\n\
+        \n\
+        void main() {\n\
+            vec4 color = texture2D( u_texture, v_coord ) * u_range;\n\
+            color.x = texture2D( u_curve, vec2( color.x, 0.5 ) ).x;\n\
+            color.y = texture2D( u_curve, vec2( color.y, 0.5 ) ).y;\n\
+            color.z = texture2D( u_curve, vec2( color.z, 0.5 ) ).z;\n\
+            //color.w = texture2D( u_curve, vec2( color.w, 0.5 ) ).w;\n\
+            gl_FragColor = color;\n\
+        }";
+}
 LiteGraph.registerNodeType("texture/curve", LGraphTextureCurve);
 
+
 // simple exposition, but plan to expand it to support different gamma curves
-function LGraphExposition() {
-    this.addInput("in", "Texture");
-    this.addInput("exp", "number");
-    this.addOutput("out", "Texture");
-    this.properties = { exposition: 1, precision: LGraphTexture.LOW };
-    this._uniforms = { u_texture: 0, u_exposition: 1 };
-}
-
-LGraphExposition.title = "Exposition";
-LGraphExposition.desc = "Controls texture exposition";
-
-LGraphExposition.widgets_info = {
-    exposition: { widget: "slider", min: 0, max: 3 },
-    precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
-};
-
-LGraphExposition.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+class LGraphExposition {
+    constructor() {
+        this.addInput("in", "Texture");
+        this.addInput("exp", "number");
+        this.addOutput("out", "Texture");
+        this.properties = { exposition: 1, precision: LGraphTexture.LOW };
+        this._uniforms = { u_texture: 0, u_exposition: 1 };
     }
 
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
+    static title = "Exposition";
+    static desc = "Controls texture exposition";
 
-    var temp = this._temp_texture;
-    if (
-        !temp ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.type != tex.type
-    ) {
-        temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: tex.type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
+    static widgets_info = {
+        exposition: { widget: "slider", min: 0, max: 3 },
+        precision: { widget: "combo", values: LGraphTexture.MODE_VALUES },
+    };
+
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var temp = this._temp_texture;
+        if (
+            !temp ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.type != tex.type
+        ) {
+            temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: tex.type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
+
+        var shader = LGraphExposition._shader;
+        if (!shader) {
+            shader = LGraphExposition._shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                LGraphExposition.pixel_shader,
+            );
+        }
+
+        // @BUG: It isn't actually *using* exp or exp_input in execution.
+        var exp = this.properties.exposition;
+        var exp_input = this.getInputData(1);
+        if (exp_input != null) {
+            exp = this.properties.exposition = exp_input;
+        }
+        var uniforms = this._uniforms;
+
+        // apply shader
+        temp.drawTo(function () {
+            gl.disable(gl.DEPTH_TEST);
+            tex.bind(0);
+            shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
         });
+
+        this.setOutputData(0, temp);
     }
 
-    var shader = LGraphExposition._shader;
-    if (!shader) {
-        shader = LGraphExposition._shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            LGraphExposition.pixel_shader,
-        );
-    }
-
-    // @BUG: It isn't actually *using* exp or exp_input in execution.
-    var exp = this.properties.exposition;
-    var exp_input = this.getInputData(1);
-    if (exp_input != null) {
-        exp = this.properties.exposition = exp_input;
-    }
-    var uniforms = this._uniforms;
-
-    // apply shader
-    temp.drawTo(function () {
-        gl.disable(gl.DEPTH_TEST);
-        tex.bind(0);
-        shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
-    });
-
-    this.setOutputData(0, temp);
-};
-
-LGraphExposition.pixel_shader = `
+    static pixel_shader = `
         precision highp float;
         varying vec2 v_coord;
         uniform sampler2D u_texture;
@@ -5053,9 +5047,9 @@ LGraphExposition.pixel_shader = `
             gl_FragColor = vec4(color.xyz * u_exposition, color.a);
         }
     `;
-
-
+}
 LiteGraph.registerNodeType("texture/exposition", LGraphExposition);
+
 
 function LGraphToneMapping() {
     this.addInput("in", "Texture");
