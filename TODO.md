@@ -32,7 +32,7 @@ A secondary goal is to use modern JS features to make the code easier to read, s
 # Status
 
 * GL is getting close?
-* Done conversion to ES6 up to L3967, gltextures.js
+* Done conversion to ES6 up to L4621, gltextures.js
 * 34 problems in lint
 * Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 * LLink and LGraphCanvas are poorly documented
