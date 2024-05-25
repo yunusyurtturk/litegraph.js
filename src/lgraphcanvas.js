@@ -40,16 +40,8 @@ export class LGraphCanvas {
             output_off: "#778",
             output_on: "#7F7", // "#BBD"
         };
-        this.default_connection_color_byType = {
-            /* number: "#7F7",
-            string: "#77F",
-            boolean: "#F77",*/
-        };
-        this.default_connection_color_byTypeOff = {
-            /* number: "#474",
-            string: "#447",
-            boolean: "#744",*/
-        };
+        this.default_connection_color_byType = {}; /* number: "#7F7", string: "#77F", boolean: "#F77",*/
+        this.default_connection_color_byTypeOff = {}; /* number: "#474", string: "#447", boolean: "#744",*/
         this.drag_mode = false; // never used ?
         this.dragging_rectangle = null;
 
@@ -562,11 +554,11 @@ export class LGraphCanvas {
 
     processUserInputDown(e) {
 
-        if (this.pointer_is_down && e.isPrimary!==undefined && !e.isPrimary) {
-		  this.userInput_isNotPrimary = true;
-		  // DBG("pointerevents: userInput_isNotPrimary start");
-        }else{
-		  this.userInput_isNotPrimary = false;
+        if(this.pointer_is_down && e.isPrimary !== undefined && !e.isPrimary) {
+            this.userInput_isNotPrimary = true;
+            // DBG("pointerevents: userInput_isNotPrimary start");
+        } else {
+            this.userInput_isNotPrimary = false;
         }
 
         this.userInput_type = e.pointerType?e.pointerType:false;
@@ -575,9 +567,9 @@ export class LGraphCanvas {
         if (e.pointerType) {
             switch (e.pointerType) {
                 case "mouse":
-				    break;
+                    break;
                 case "pen":
-				    break;
+                    break;
                 case "touch":
                     break;
                 default:
