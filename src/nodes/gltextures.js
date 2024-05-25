@@ -5162,7 +5162,7 @@ class LGraphToneMapping {
     }
 
     static pixel_shader =
-    "precision highp float;\n\
+        "precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_texture;\n\
     uniform float u_scale;\n\
@@ -5214,7 +5214,7 @@ class LGraphToneMapping {
 LiteGraph.registerNodeType("texture/tonemapping", LGraphToneMapping);
 
 class LGraphTexturePerlin {
-    constructor(){
+    constructor() {
         this.addOutput("out", "Texture");
         this.properties = {
             width: 512,
