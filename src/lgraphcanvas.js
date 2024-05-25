@@ -1488,7 +1488,7 @@ export class LGraphCanvas {
                 var connInOrOut = this.connecting_output || this.connecting_input;
                 var connType = connInOrOut.type;
 
-                var node = this.graph.getNodeOnPos(
+                node = this.graph.getNodeOnPos(
                     e.canvasX,
                     e.canvasY,
                     this.visible_nodes,
@@ -2041,8 +2041,8 @@ export class LGraphCanvas {
             // --- BREAK ---
         }
 
-        var x = e.localX;
-        var y = e.localY;
+        x = e.localX;
+        y = e.localY;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
         if(!is_inside) {
             return;

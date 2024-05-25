@@ -84,9 +84,10 @@ class HtmlEventListener {
             switch(action) {
                 case "add_listener":
                 default:
+                    var fEv;
                     if ( ! sSel.attributes["data-listener-"+eventType] ) {
                         var that = this;
-                        var fEv = function(e) {
+                        fEv = function(e) {
                             that.setOutputData(2,e);
                             that.setOutputData(3,e);
                             that.triggerSlot(1);
@@ -94,7 +95,7 @@ class HtmlEventListener {
                         sSel.addEventListener(eventType, fEv);
                         sSel.attributes["data-listener-"+eventType] = fEv;
                     }else{
-                        var fEv = sSel.attributes["data-listener-"+eventType];
+                        fEv = sSel.attributes["data-listener-"+eventType];
                     }
                     res = {element: sSel, function: fEv, event: eventType};
                     break;

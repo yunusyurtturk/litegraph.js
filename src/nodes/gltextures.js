@@ -1953,8 +1953,8 @@ class LGraphTextureMinMax {
 
         // @BUG: the behavior of tex here is probably a bug.
         tex.copyTo(this._textures_chain[0]);
-        for (var i = 1; i <= this._textures_chain.length; ++i) {
-            var tex = this._textures_chain[i];
+        for (let i = 1; i <= this._textures_chain.length; ++i) {
+            tex = this._textures_chain[i];
         }
 
         var shader = LGraphTextureMinMax._shader;
@@ -3964,601 +3964,607 @@ class LGraphTextureGlow {
 }
 LiteGraph.registerNodeType("texture/glow", LGraphTextureGlow);
 
-// Texture Filter *****************************************
-function LGraphTextureKuwaharaFilter() {
-    this.addInput("Texture", "Texture");
-    this.addOutput("Filtered", "Texture");
-    this.properties = { intensity: 1, radius: 5 };
-}
 
-LGraphTextureKuwaharaFilter.title = "Kuwahara Filter";
-LGraphTextureKuwaharaFilter.desc =
-    "Filters a texture giving an artistic oil canvas painting";
+class LGraphTextureKuwaharaFilter {
 
-LGraphTextureKuwaharaFilter.max_radius = 10;
-LGraphTextureKuwaharaFilter._shaders = [];
+    static title = "Kuwahara Filter";
+    static desc = "Filters a texture giving an artistic oil canvas painting";
 
-LGraphTextureKuwaharaFilter.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addOutput("Filtered", "Texture");
+        this.properties = { intensity: 1, radius: 5 };
     }
 
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
+    static max_radius = 10;
+    static _shaders = [];
 
-    var temp = this._temp_texture;
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
 
-    if (
-        !temp ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.type != tex.type
-    ) {
-        this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: tex.type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
-        });
-    }
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
 
-    // iterations
-    var radius = this.properties.radius;
-    radius = Math.min(
-        Math.floor(radius),
-        LGraphTextureKuwaharaFilter.max_radius,
-    );
-    if (radius == 0) {
-        // skip blurring
-        this.setOutputData(0, tex);
-        return;
-    }
+        var temp = this._temp_texture;
 
-    var intensity = this.properties.intensity;
+        if (
+            !temp ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.type != tex.type
+        ) {
+            this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: tex.type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
 
-    // blur sometimes needs an aspect correction
-    var aspect = LiteGraph.camera_aspect;
-    if (!aspect && window.gl !== undefined) {
-        aspect = gl.canvas.height / gl.canvas.width;
-    }
-    if (!aspect) {
-        aspect = 1;
-    }
-    aspect = this.properties.preserve_aspect ? aspect : 1;
-
-    if (!LGraphTextureKuwaharaFilter._shaders[radius]) {
-        LGraphTextureKuwaharaFilter._shaders[radius] = new GL.Shader(
-            Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureKuwaharaFilter.pixel_shader,
-            { RADIUS: radius.toFixed(0) },
+        // iterations
+        var radius = this.properties.radius;
+        radius = Math.min(
+            Math.floor(radius),
+            LGraphTextureKuwaharaFilter.max_radius,
         );
+        if (radius == 0) {
+            // skip blurring
+            this.setOutputData(0, tex);
+            return;
+        }
+
+        var intensity = this.properties.intensity;
+
+        // blur sometimes needs an aspect correction
+        var aspect = LiteGraph.camera_aspect;
+        if (!aspect && window.gl !== undefined) {
+            aspect = gl.canvas.height / gl.canvas.width;
+        }
+        if (!aspect) {
+            aspect = 1;
+        }
+        aspect = this.properties.preserve_aspect ? aspect : 1;
+
+        if (!LGraphTextureKuwaharaFilter._shaders[radius]) {
+            LGraphTextureKuwaharaFilter._shaders[radius] = new GL.Shader(
+                Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureKuwaharaFilter.pixel_shader,
+                { RADIUS: radius.toFixed(0) },
+            );
+        }
+
+        var shader = LGraphTextureKuwaharaFilter._shaders[radius];
+        var mesh = GL.Mesh.getScreenQuad();
+        tex.bind(0);
+
+        this._temp_texture.drawTo(function () {
+            shader
+                .uniforms({
+                    u_texture: 0,
+                    u_intensity: intensity,
+                    u_resolution: [tex.width, tex.height],
+                    u_iResolution: [1 / tex.width, 1 / tex.height],
+                })
+                .draw(mesh);
+        });
+
+        this.setOutputData(0, this._temp_texture);
     }
 
-    var shader = LGraphTextureKuwaharaFilter._shaders[radius];
-    var mesh = GL.Mesh.getScreenQuad();
-    tex.bind(0);
-
-    this._temp_texture.drawTo(function () {
-        shader
-            .uniforms({
-                u_texture: 0,
-                u_intensity: intensity,
-                u_resolution: [tex.width, tex.height],
-                u_iResolution: [1 / tex.width, 1 / tex.height],
-            })
-            .draw(mesh);
-    });
-
-    this.setOutputData(0, this._temp_texture);
-};
-
-// from https://www.shadertoy.com/view/MsXSz4
-LGraphTextureKuwaharaFilter.pixel_shader =
-    "\n\
-precision highp float;\n\
-varying vec2 v_coord;\n\
-uniform sampler2D u_texture;\n\
-uniform float u_intensity;\n\
-uniform vec2 u_resolution;\n\
-uniform vec2 u_iResolution;\n\
-#ifndef RADIUS\n\
-#define RADIUS 7\n\
-#endif\n\
-void main() {\n\
-\n\
-const int radius = RADIUS;\n\
-vec2 fragCoord = v_coord;\n\
-vec2 src_size = u_iResolution;\n\
-vec2 uv = v_coord;\n\
-float n = float((radius + 1) * (radius + 1));\n\
-int i;\n\
-int j;\n\
-vec3 m0 = vec3(0.0); vec3 m1 = vec3(0.0); vec3 m2 = vec3(0.0); vec3 m3 = vec3(0.0);\n\
-vec3 s0 = vec3(0.0); vec3 s1 = vec3(0.0); vec3 s2 = vec3(0.0); vec3 s3 = vec3(0.0);\n\
-vec3 c;\n\
-\n\
-for (int j = -radius; j <= 0; ++j)  {\n\
-    for (int i = -radius; i <= 0; ++i)  {\n\
-        c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
-        m0 += c;\n\
-        s0 += c * c;\n\
+    // from https://www.shadertoy.com/view/MsXSz4
+    static pixel_shader =
+        "\n\
+    precision highp float;\n\
+    varying vec2 v_coord;\n\
+    uniform sampler2D u_texture;\n\
+    uniform float u_intensity;\n\
+    uniform vec2 u_resolution;\n\
+    uniform vec2 u_iResolution;\n\
+    #ifndef RADIUS\n\
+    #define RADIUS 7\n\
+    #endif\n\
+    void main() {\n\
+    \n\
+    const int radius = RADIUS;\n\
+    vec2 fragCoord = v_coord;\n\
+    vec2 src_size = u_iResolution;\n\
+    vec2 uv = v_coord;\n\
+    float n = float((radius + 1) * (radius + 1));\n\
+    int i;\n\
+    int j;\n\
+    vec3 m0 = vec3(0.0); vec3 m1 = vec3(0.0); vec3 m2 = vec3(0.0); vec3 m3 = vec3(0.0);\n\
+    vec3 s0 = vec3(0.0); vec3 s1 = vec3(0.0); vec3 s2 = vec3(0.0); vec3 s3 = vec3(0.0);\n\
+    vec3 c;\n\
+    \n\
+    for (int j = -radius; j <= 0; ++j)  {\n\
+        for (int i = -radius; i <= 0; ++i)  {\n\
+            c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
+            m0 += c;\n\
+            s0 += c * c;\n\
+        }\n\
     }\n\
-}\n\
-\n\
-for (int j = -radius; j <= 0; ++j)  {\n\
-    for (int i = 0; i <= radius; ++i)  {\n\
-        c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
-        m1 += c;\n\
-        s1 += c * c;\n\
+    \n\
+    for (int j = -radius; j <= 0; ++j)  {\n\
+        for (int i = 0; i <= radius; ++i)  {\n\
+            c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
+            m1 += c;\n\
+            s1 += c * c;\n\
+        }\n\
     }\n\
-}\n\
-\n\
-for (int j = 0; j <= radius; ++j)  {\n\
-    for (int i = 0; i <= radius; ++i)  {\n\
-        c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
-        m2 += c;\n\
-        s2 += c * c;\n\
+    \n\
+    for (int j = 0; j <= radius; ++j)  {\n\
+        for (int i = 0; i <= radius; ++i)  {\n\
+            c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
+            m2 += c;\n\
+            s2 += c * c;\n\
+        }\n\
     }\n\
-}\n\
-\n\
-for (int j = 0; j <= radius; ++j)  {\n\
-    for (int i = -radius; i <= 0; ++i)  {\n\
-        c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
-        m3 += c;\n\
-        s3 += c * c;\n\
+    \n\
+    for (int j = 0; j <= radius; ++j)  {\n\
+        for (int i = -radius; i <= 0; ++i)  {\n\
+            c = texture2D(u_texture, uv + vec2(i,j) * src_size).rgb;\n\
+            m3 += c;\n\
+            s3 += c * c;\n\
+        }\n\
     }\n\
-}\n\
-\n\
-float min_sigma2 = 1e+2;\n\
-m0 /= n;\n\
-s0 = abs(s0 / n - m0 * m0);\n\
-\n\
-float sigma2 = s0.r + s0.g + s0.b;\n\
-if (sigma2 < min_sigma2) {\n\
-    min_sigma2 = sigma2;\n\
-    gl_FragColor = vec4(m0, 1.0);\n\
-}\n\
-\n\
-m1 /= n;\n\
-s1 = abs(s1 / n - m1 * m1);\n\
-\n\
-sigma2 = s1.r + s1.g + s1.b;\n\
-if (sigma2 < min_sigma2) {\n\
-    min_sigma2 = sigma2;\n\
-    gl_FragColor = vec4(m1, 1.0);\n\
-}\n\
-\n\
-m2 /= n;\n\
-s2 = abs(s2 / n - m2 * m2);\n\
-\n\
-sigma2 = s2.r + s2.g + s2.b;\n\
-if (sigma2 < min_sigma2) {\n\
-    min_sigma2 = sigma2;\n\
-    gl_FragColor = vec4(m2, 1.0);\n\
-}\n\
-\n\
-m3 /= n;\n\
-s3 = abs(s3 / n - m3 * m3);\n\
-\n\
-sigma2 = s3.r + s3.g + s3.b;\n\
-if (sigma2 < min_sigma2) {\n\
-    min_sigma2 = sigma2;\n\
-    gl_FragColor = vec4(m3, 1.0);\n\
-}\n\
-}\n\
-";
-
+    \n\
+    float min_sigma2 = 1e+2;\n\
+    m0 /= n;\n\
+    s0 = abs(s0 / n - m0 * m0);\n\
+    \n\
+    float sigma2 = s0.r + s0.g + s0.b;\n\
+    if (sigma2 < min_sigma2) {\n\
+        min_sigma2 = sigma2;\n\
+        gl_FragColor = vec4(m0, 1.0);\n\
+    }\n\
+    \n\
+    m1 /= n;\n\
+    s1 = abs(s1 / n - m1 * m1);\n\
+    \n\
+    sigma2 = s1.r + s1.g + s1.b;\n\
+    if (sigma2 < min_sigma2) {\n\
+        min_sigma2 = sigma2;\n\
+        gl_FragColor = vec4(m1, 1.0);\n\
+    }\n\
+    \n\
+    m2 /= n;\n\
+    s2 = abs(s2 / n - m2 * m2);\n\
+    \n\
+    sigma2 = s2.r + s2.g + s2.b;\n\
+    if (sigma2 < min_sigma2) {\n\
+        min_sigma2 = sigma2;\n\
+        gl_FragColor = vec4(m2, 1.0);\n\
+    }\n\
+    \n\
+    m3 /= n;\n\
+    s3 = abs(s3 / n - m3 * m3);\n\
+    \n\
+    sigma2 = s3.r + s3.g + s3.b;\n\
+    if (sigma2 < min_sigma2) {\n\
+        min_sigma2 = sigma2;\n\
+        gl_FragColor = vec4(m3, 1.0);\n\
+    }\n\
+    }\n\
+    ";
+}
 LiteGraph.registerNodeType("texture/kuwahara", LGraphTextureKuwaharaFilter);
 
-// Texture  *****************************************
-function LGraphTextureXDoGFilter() {
-    this.addInput("Texture", "Texture");
-    this.addOutput("Filtered", "Texture");
-    this.properties = {
-        sigma: 1.4,
-        k: 1.6,
-        p: 21.7,
-        epsilon: 79,
-        phi: 0.017,
-    };
-}
 
-LGraphTextureXDoGFilter.title = "XDoG Filter";
-LGraphTextureXDoGFilter.desc =
-    "Filters a texture giving an artistic ink style";
+class LGraphTextureXDoGFilter {
 
-LGraphTextureXDoGFilter.max_radius = 10;
-LGraphTextureXDoGFilter._shaders = [];
+    static title = "XDoG Filter";
+    static desc = "Filters a texture giving an artistic ink style";
 
-LGraphTextureXDoGFilter.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+    constructor() {
+        this.addInput("Texture", "Texture");
+        this.addOutput("Filtered", "Texture");
+        this.properties = {
+            sigma: 1.4,
+            k: 1.6,
+            p: 21.7,
+            epsilon: 79,
+            phi: 0.017,
+        };
     }
 
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
+    static max_radius = 10;
+    static _shaders = [];
 
-    var temp = this._temp_texture;
-    if (
-        !temp ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.type != tex.type
-    ) {
-        this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: tex.type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        var temp = this._temp_texture;
+        if (
+            !temp ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.type != tex.type
+        ) {
+            this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: tex.type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
+
+        if (!LGraphTextureXDoGFilter._xdog_shader) {
+            LGraphTextureXDoGFilter._xdog_shader = new GL.Shader(
+                Shader.SCREEN_VERTEX_SHADER,
+                LGraphTextureXDoGFilter.xdog_pixel_shader,
+            );
+        }
+        var shader = LGraphTextureXDoGFilter._xdog_shader;
+        var mesh = GL.Mesh.getScreenQuad();
+
+        var sigma = this.properties.sigma;
+        var k = this.properties.k;
+        var p = this.properties.p;
+        var epsilon = this.properties.epsilon;
+        var phi = this.properties.phi;
+        tex.bind(0);
+        this._temp_texture.drawTo(function () {
+            shader
+                .uniforms({
+                    src: 0,
+                    sigma: sigma,
+                    k: k,
+                    p: p,
+                    epsilon: epsilon,
+                    phi: phi,
+                    cvsWidth: tex.width,
+                    cvsHeight: tex.height,
+                })
+                .draw(mesh);
         });
+
+        this.setOutputData(0, this._temp_texture);
     }
 
-    if (!LGraphTextureXDoGFilter._xdog_shader) {
-        LGraphTextureXDoGFilter._xdog_shader = new GL.Shader(
-            Shader.SCREEN_VERTEX_SHADER,
-            LGraphTextureXDoGFilter.xdog_pixel_shader,
-        );
-    }
-    var shader = LGraphTextureXDoGFilter._xdog_shader;
-    var mesh = GL.Mesh.getScreenQuad();
-
-    var sigma = this.properties.sigma;
-    var k = this.properties.k;
-    var p = this.properties.p;
-    var epsilon = this.properties.epsilon;
-    var phi = this.properties.phi;
-    tex.bind(0);
-    this._temp_texture.drawTo(function () {
-        shader
-            .uniforms({
-                src: 0,
-                sigma: sigma,
-                k: k,
-                p: p,
-                epsilon: epsilon,
-                phi: phi,
-                cvsWidth: tex.width,
-                cvsHeight: tex.height,
-            })
-            .draw(mesh);
-    });
-
-    this.setOutputData(0, this._temp_texture);
-};
-
-// from https://github.com/RaymondMcGuire/GPU-Based-Image-Processing-Tools/blob/master/lib_webgl/scripts/main.js
-LGraphTextureXDoGFilter.xdog_pixel_shader =
-    "\n\
-precision highp float;\n\
-uniform sampler2D src;\n\n\
-uniform float cvsHeight;\n\
-uniform float cvsWidth;\n\n\
-uniform float sigma;\n\
-uniform float k;\n\
-uniform float p;\n\
-uniform float epsilon;\n\
-uniform float phi;\n\
-varying vec2 v_coord;\n\n\
-float cosh(float val)\n\
-{\n\
-float tmp = exp(val);\n\
-float cosH = (tmp + 1.0 / tmp) / 2.0;\n\
-return cosH;\n\
-}\n\n\
-float tanh(float val)\n\
-{\n\
-float tmp = exp(val);\n\
-float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n\
-return tanH;\n\
-}\n\n\
-float sinh(float val)\n\
-{\n\
-float tmp = exp(val);\n\
-float sinH = (tmp - 1.0 / tmp) / 2.0;\n\
-return sinH;\n\
-}\n\n\
-void main(void){\n\
-vec3 destColor = vec3(0.0);\n\
-float tFrag = 1.0 / cvsHeight;\n\
-float sFrag = 1.0 / cvsWidth;\n\
-vec2 Frag = vec2(sFrag,tFrag);\n\
-vec2 uv = gl_FragCoord.st;\n\
-float twoSigmaESquared = 2.0 * sigma * sigma;\n\
-float twoSigmaRSquared = twoSigmaESquared * k * k;\n\
-int halfWidth = int(ceil( 1.0 * sigma * k ));\n\n\
-const int MAX_NUM_ITERATION = 99999;\n\
-vec2 sum = vec2(0.0);\n\
-vec2 norm = vec2(0.0);\n\n\
-for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n\
-    if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n\
-    int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n\
-    int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+1);\n\n\
-    float d = length(vec2(i,j));\n\
-    vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n\
-                        exp( -d * d / twoSigmaRSquared ));\n\n\
-    vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n\
-    norm += kernel;\n\
-    sum += kernel * L;\n\
-}\n\n\
-sum /= norm;\n\n\
-float H = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n\
-float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n\
-destColor = vec3(edge);\n\
-gl_FragColor = vec4(destColor, 1.0);\n\
-}";
-
+    // from https://github.com/RaymondMcGuire/GPU-Based-Image-Processing-Tools/blob/master/lib_webgl/scripts/main.js
+    static xdog_pixel_shader =
+        "\n\
+    precision highp float;\n\
+    uniform sampler2D src;\n\n\
+    uniform float cvsHeight;\n\
+    uniform float cvsWidth;\n\n\
+    uniform float sigma;\n\
+    uniform float k;\n\
+    uniform float p;\n\
+    uniform float epsilon;\n\
+    uniform float phi;\n\
+    varying vec2 v_coord;\n\n\
+    float cosh(float val)\n\
+    {\n\
+    float tmp = exp(val);\n\
+    float cosH = (tmp + 1.0 / tmp) / 2.0;\n\
+    return cosH;\n\
+    }\n\n\
+    float tanh(float val)\n\
+    {\n\
+    float tmp = exp(val);\n\
+    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n\
+    return tanH;\n\
+    }\n\n\
+    float sinh(float val)\n\
+    {\n\
+    float tmp = exp(val);\n\
+    float sinH = (tmp - 1.0 / tmp) / 2.0;\n\
+    return sinH;\n\
+    }\n\n\
+    void main(void){\n\
+    vec3 destColor = vec3(0.0);\n\
+    float tFrag = 1.0 / cvsHeight;\n\
+    float sFrag = 1.0 / cvsWidth;\n\
+    vec2 Frag = vec2(sFrag,tFrag);\n\
+    vec2 uv = gl_FragCoord.st;\n\
+    float twoSigmaESquared = 2.0 * sigma * sigma;\n\
+    float twoSigmaRSquared = twoSigmaESquared * k * k;\n\
+    int halfWidth = int(ceil( 1.0 * sigma * k ));\n\n\
+    const int MAX_NUM_ITERATION = 99999;\n\
+    vec2 sum = vec2(0.0);\n\
+    vec2 norm = vec2(0.0);\n\n\
+    for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n\
+        if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n\
+        int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n\
+        int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+1);\n\n\
+        float d = length(vec2(i,j));\n\
+        vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n\
+                            exp( -d * d / twoSigmaRSquared ));\n\n\
+        vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n\
+        norm += kernel;\n\
+        sum += kernel * L;\n\
+    }\n\n\
+    sum /= norm;\n\n\
+    float H = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n\
+    float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n\
+    destColor = vec3(edge);\n\
+    gl_FragColor = vec4(destColor, 1.0);\n\
+    }";
+}
 LiteGraph.registerNodeType("texture/xDoG", LGraphTextureXDoGFilter);
 
-// Texture Webcam *****************************************
-function LGraphTextureWebcam() {
-    this.addOutput("Webcam", "Texture");
-    this.properties = { texture_name: "", facingMode: "user" };
-    this.boxcolor = "black";
-    this.version = 0;
-}
 
-LGraphTextureWebcam.title = "Webcam";
-LGraphTextureWebcam.desc = "Webcam texture";
+class LGraphTextureWebcam {
 
-LGraphTextureWebcam.is_webcam_open = false;
-
-LGraphTextureWebcam.prototype.openStream = function () {
-    if (!navigator.getUserMedia) {
-        // console.log?.('getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags');
-        return;
+    constructor() {
+        this.addOutput("Webcam", "Texture");
+        this.properties = { texture_name: "", facingMode: "user" };
+        this.boxcolor = "black";
+        this.version = 0;
     }
 
-    this._waiting_confirmation = true;
+    static title = "Webcam";
+    static desc = "Webcam texture";
 
-    // Not showing vendor prefixes.
-    var constraints = {
-        audio: false,
-        video: { facingMode: this.properties.facingMode },
+    static is_webcam_open = false;
+
+    openStream() {
+        if (!navigator.getUserMedia) {
+            // console.log?.('getUserMedia() is not supported in your browser, use chrome and enable WebRTC from about://flags');
+            return;
+        }
+
+        this._waiting_confirmation = true;
+
+        // Not showing vendor prefixes.
+        var constraints = {
+            audio: false,
+            video: { facingMode: this.properties.facingMode },
+        };
+        navigator.mediaDevices
+            .getUserMedia(constraints)
+            .then(this.streamReady.bind(this))
+            .catch(onFailSoHard);
+
+        var that = this;
+        function onFailSoHard(e) {
+            LGraphTextureWebcam.is_webcam_open = false;
+            console.log?.("Webcam rejected", e);
+            that._webcam_stream = false;
+            that.boxcolor = "red";
+            that.trigger("stream_error");
+        }
+    }
+
+    closeStream() {
+        if (this._webcam_stream) {
+            var tracks = this._webcam_stream.getTracks();
+            if (tracks.length) {
+                for (var i = 0; i < tracks.length; ++i) {
+                    tracks[i].stop();
+                }
+            }
+            LGraphTextureWebcam.is_webcam_open = false;
+            this._webcam_stream = null;
+            this._video = null;
+            this.boxcolor = "black";
+            this.trigger("stream_closed");
+        }
+    }
+
+    streamReady(localMediaStream) {
+        this._webcam_stream = localMediaStream;
+        // this._waiting_confirmation = false;
+        this.boxcolor = "green";
+        var video = this._video;
+        if (!video) {
+            video = document.createElement("video");
+            video.autoplay = true;
+            video.srcObject = localMediaStream;
+            this._video = video;
+            // document.body.appendChild( video ); //debug
+            // when video info is loaded (size and so)
+            video.onloadedmetadata = function (e) {
+                // Ready to go. Do some stuff.
+                LGraphTextureWebcam.is_webcam_open = true;
+                console.log?.(e);
+            };
+        }
+        this.trigger("stream_ready", video);
     };
-    navigator.mediaDevices
-        .getUserMedia(constraints)
-        .then(this.streamReady.bind(this))
-        .catch(onFailSoHard);
 
-    var that = this;
-    function onFailSoHard(e) {
-        LGraphTextureWebcam.is_webcam_open = false;
-        console.log?.("Webcam rejected", e);
-        that._webcam_stream = false;
-        that.boxcolor = "red";
-        that.trigger("stream_error");
+    onPropertyChanged(name, value) {
+        if (name == "facingMode") {
+            this.properties.facingMode = value;
+            this.closeStream();
+            this.openStream();
+        }
     }
-};
 
-LGraphTextureWebcam.prototype.closeStream = function () {
-    if (this._webcam_stream) {
+    onRemoved() {
+        if (!this._webcam_stream) {
+            return;
+        }
+
         var tracks = this._webcam_stream.getTracks();
         if (tracks.length) {
             for (var i = 0; i < tracks.length; ++i) {
                 tracks[i].stop();
             }
         }
-        LGraphTextureWebcam.is_webcam_open = false;
+
         this._webcam_stream = null;
         this._video = null;
-        this.boxcolor = "black";
-        this.trigger("stream_closed");
-    }
-};
-
-LGraphTextureWebcam.prototype.streamReady = function (localMediaStream) {
-    this._webcam_stream = localMediaStream;
-    // this._waiting_confirmation = false;
-    this.boxcolor = "green";
-    var video = this._video;
-    if (!video) {
-        video = document.createElement("video");
-        video.autoplay = true;
-        video.srcObject = localMediaStream;
-        this._video = video;
-        // document.body.appendChild( video ); //debug
-        // when video info is loaded (size and so)
-        video.onloadedmetadata = function (e) {
-            // Ready to go. Do some stuff.
-            LGraphTextureWebcam.is_webcam_open = true;
-            console.log?.(e);
-        };
-    }
-    this.trigger("stream_ready", video);
-};
-
-LGraphTextureWebcam.prototype.onPropertyChanged = function (name, value) {
-    if (name == "facingMode") {
-        this.properties.facingMode = value;
-        this.closeStream();
-        this.openStream();
-    }
-};
-
-LGraphTextureWebcam.prototype.onRemoved = function () {
-    if (!this._webcam_stream) {
-        return;
     }
 
-    var tracks = this._webcam_stream.getTracks();
-    if (tracks.length) {
-        for (var i = 0; i < tracks.length; ++i) {
-            tracks[i].stop();
+    onDrawBackground(ctx) {
+        if (this.flags.collapsed || this.size[1] <= 20) {
+            return;
+        }
+
+        if (!this._video) {
+            return;
+        }
+
+        // render to graph canvas
+        ctx.save();
+        if (!ctx.webgl) {
+            // reverse image
+            ctx.drawImage(this._video, 0, 0, this.size[0], this.size[1]);
+        } else {
+            if (this._video_texture) {
+                ctx.drawImage(
+                    this._video_texture,
+                    0,
+                    0,
+                    this.size[0],
+                    this.size[1],
+                );
+            }
+        }
+        ctx.restore();
+    }
+
+    onExecute() {
+        if (this._webcam_stream == null && !this._waiting_confirmation) {
+            this.openStream();
+        }
+
+        if (!this._video || !this._video.videoWidth) {
+            return;
+        }
+
+        var width = this._video.videoWidth;
+        var height = this._video.videoHeight;
+
+        var temp = this._video_texture;
+        if (!temp || temp.width != width || temp.height != height) {
+            this._video_texture = new GL.Texture(width, height, {
+                format: gl.RGB,
+                filter: gl.LINEAR,
+            });
+        }
+
+        this._video_texture.uploadImage(this._video);
+        this._video_texture.version = ++this.version;
+
+        if (this.properties.texture_name) {
+            var container = LGraphTexture.getTexturesContainer();
+            container[this.properties.texture_name] = this._video_texture;
+        }
+
+        this.setOutputData(0, this._video_texture);
+        for (var i = 1; i < this.outputs.length; ++i) {
+            if (!this.outputs[i]) {
+                continue;
+            }
+            switch (this.outputs[i].name) {
+                case "width":
+                    this.setOutputData(i, this._video.videoWidth);
+                    break;
+                case "height":
+                    this.setOutputData(i, this._video.videoHeight);
+                    break;
+            }
         }
     }
 
-    this._webcam_stream = null;
-    this._video = null;
-};
-
-LGraphTextureWebcam.prototype.onDrawBackground = function (ctx) {
-    if (this.flags.collapsed || this.size[1] <= 20) {
-        return;
+    onGetOutputs() {
+        return [
+            ["width", "number"],
+            ["height", "number"],
+            ["stream_ready", LiteGraph.EVENT],
+            ["stream_closed", LiteGraph.EVENT],
+            ["stream_error", LiteGraph.EVENT],
+        ];
     }
-
-    if (!this._video) {
-        return;
-    }
-
-    // render to graph canvas
-    ctx.save();
-    if (!ctx.webgl) {
-        // reverse image
-        ctx.drawImage(this._video, 0, 0, this.size[0], this.size[1]);
-    } else {
-        if (this._video_texture) {
-            ctx.drawImage(
-                this._video_texture,
-                0,
-                0,
-                this.size[0],
-                this.size[1],
-            );
-        }
-    }
-    ctx.restore();
-};
-
-LGraphTextureWebcam.prototype.onExecute = function () {
-    if (this._webcam_stream == null && !this._waiting_confirmation) {
-        this.openStream();
-    }
-
-    if (!this._video || !this._video.videoWidth) {
-        return;
-    }
-
-    var width = this._video.videoWidth;
-    var height = this._video.videoHeight;
-
-    var temp = this._video_texture;
-    if (!temp || temp.width != width || temp.height != height) {
-        this._video_texture = new GL.Texture(width, height, {
-            format: gl.RGB,
-            filter: gl.LINEAR,
-        });
-    }
-
-    this._video_texture.uploadImage(this._video);
-    this._video_texture.version = ++this.version;
-
-    if (this.properties.texture_name) {
-        var container = LGraphTexture.getTexturesContainer();
-        container[this.properties.texture_name] = this._video_texture;
-    }
-
-    this.setOutputData(0, this._video_texture);
-    for (var i = 1; i < this.outputs.length; ++i) {
-        if (!this.outputs[i]) {
-            continue;
-        }
-        switch (this.outputs[i].name) {
-            case "width":
-                this.setOutputData(i, this._video.videoWidth);
-                break;
-            case "height":
-                this.setOutputData(i, this._video.videoHeight);
-                break;
-        }
-    }
-};
-
-LGraphTextureWebcam.prototype.onGetOutputs = function () {
-    return [
-        ["width", "number"],
-        ["height", "number"],
-        ["stream_ready", LiteGraph.EVENT],
-        ["stream_closed", LiteGraph.EVENT],
-        ["stream_error", LiteGraph.EVENT],
-    ];
-};
-
+}
 LiteGraph.registerNodeType("texture/webcam", LGraphTextureWebcam);
 
+
 // from https://github.com/spite/Wagner
-function LGraphLensFX() {
-    this.addInput("in", "Texture");
-    this.addInput("f", "number");
-    this.addOutput("out", "Texture");
-    this.properties = {
-        enabled: true,
-        factor: 1,
-        precision: LGraphTexture.LOW,
-    };
+class LGraphLensFX {
+    constructor() {
+        this.addInput("in", "Texture");
+        this.addInput("f", "number");
+        this.addOutput("out", "Texture");
+        this.properties = {
+            enabled: true,
+            factor: 1,
+            precision: LGraphTexture.LOW,
+        };
 
-    this._uniforms = { u_texture: 0, u_factor: 1 };
-}
-
-LGraphLensFX.title = "Lens FX";
-LGraphLensFX.desc = "distortion and chromatic aberration";
-
-LGraphLensFX.widgets_info = {precision: { widget: "combo", values: LGraphTexture.MODE_VALUES }};
-
-LGraphLensFX.prototype.onGetInputs = function () {
-    return [["enabled", "boolean"]];
-};
-
-LGraphLensFX.prototype.onExecute = function () {
-    var tex = this.getInputData(0);
-    if (!tex) {
-        return;
+        this._uniforms = { u_texture: 0, u_factor: 1 };
     }
 
-    if (!this.isOutputConnected(0)) {
-        return;
-    } // saves work
+    static title = "Lens FX";
+    static desc = "distortion and chromatic aberration";
 
-    if (
-        this.properties.precision === LGraphTexture.PASS_THROUGH ||
-        this.getInputOrProperty("enabled") === false
-    ) {
-        this.setOutputData(0, tex);
-        return;
+    static widgets_info = {precision: { widget: "combo", values: LGraphTexture.MODE_VALUES }};
+
+    onGetInputs() {
+        return [["enabled", "boolean"]];
     }
 
-    var temp = this._temp_texture;
-    if (
-        !temp ||
-        temp.width != tex.width ||
-        temp.height != tex.height ||
-        temp.type != tex.type
-    ) {
-        temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
-            type: tex.type,
-            format: gl.RGBA,
-            filter: gl.LINEAR,
+    onExecute() {
+        var tex = this.getInputData(0);
+        if (!tex) {
+            return;
+        }
+
+        if (!this.isOutputConnected(0)) {
+            return;
+        } // saves work
+
+        if (
+            this.properties.precision === LGraphTexture.PASS_THROUGH ||
+            this.getInputOrProperty("enabled") === false
+        ) {
+            this.setOutputData(0, tex);
+            return;
+        }
+
+        var temp = this._temp_texture;
+        if (
+            !temp ||
+            temp.width != tex.width ||
+            temp.height != tex.height ||
+            temp.type != tex.type
+        ) {
+            temp = this._temp_texture = new GL.Texture(tex.width, tex.height, {
+                type: tex.type,
+                format: gl.RGBA,
+                filter: gl.LINEAR,
+            });
+        }
+
+        var shader = LGraphLensFX._shader;
+        if (!shader) {
+            shader = LGraphLensFX._shader = new GL.Shader(
+                GL.Shader.SCREEN_VERTEX_SHADER,
+                LGraphLensFX.pixel_shader,
+            );
+        }
+
+        var factor = this.getInputData(1);
+        if (factor == null) {
+            factor = this.properties.factor;
+        }
+
+        var uniforms = this._uniforms;
+        uniforms.u_factor = factor;
+
+        // apply shader
+        gl.disable(gl.DEPTH_TEST);
+        temp.drawTo(function () {
+            tex.bind(0);
+            shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
         });
+
+        this.setOutputData(0, temp);
     }
 
-    var shader = LGraphLensFX._shader;
-    if (!shader) {
-        shader = LGraphLensFX._shader = new GL.Shader(
-            GL.Shader.SCREEN_VERTEX_SHADER,
-            LGraphLensFX.pixel_shader,
-        );
-    }
-
-    var factor = this.getInputData(1);
-    if (factor == null) {
-        factor = this.properties.factor;
-    }
-
-    var uniforms = this._uniforms;
-    uniforms.u_factor = factor;
-
-    // apply shader
-    gl.disable(gl.DEPTH_TEST);
-    temp.drawTo(function () {
-        tex.bind(0);
-        shader.uniforms(uniforms).draw(GL.Mesh.getScreenQuad());
-    });
-
-    this.setOutputData(0, temp);
-};
-
-LGraphLensFX.pixel_shader =
+    static pixel_shader =
     "precision highp float;\n\
     varying vec2 v_coord;\n\
     uniform sampler2D u_texture;\n\
@@ -4610,7 +4616,7 @@ LGraphLensFX.pixel_shader =
         }\n\
         gl_FragColor = sumcol / sumw;\n\
     }";
-
+}
 LiteGraph.registerNodeType("texture/lensfx", LGraphLensFX);
 
 function LGraphTextureFromData() {
