@@ -10,8 +10,7 @@ import { gl as localGL } from "../code.js";
  */
 
 // temporary shunt to patch things in this file.
-const global = {};
-global.gl = localGL;
+const global = { gl: localGL };
 
 //polyfill
 window.requestAnimationFrame ??= window.mozRequestAnimationFrame ?? 

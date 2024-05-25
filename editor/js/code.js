@@ -2,13 +2,13 @@
 import { LiteGraph } from "../../src/litegraph.js";
 import { Editor } from "../../src/litegraph-editor.js";
 
-export var gl; // webgl_canvas
+export var gl = null; // webgl_canvas
 
 // remove to prevent access from the console (why should?)
 if (typeof(global)=="object") global.LiteGraph = LiteGraph;
 if (typeof(window)=="object") window.LiteGraph = LiteGraph;
 
-LiteGraph.info("LiteGraph included");
+LiteGraph.info?.("LiteGraph included");
 
 var webgl_canvas = null;
 
@@ -133,13 +133,9 @@ function enableWebGL() {
 		return;
 	}
 
-	const libs = [
+	let libs = [
 		"./libs/gl-matrix-min.js",
 		"./libs/litegl.js",
-		"../src/nodes/gltextures.js",
-		"../src/nodes/glfx.js",
-		"../src/nodes/glshaders.js",
-		"../src/nodes/geometry.js"
 	];
 	  
 	async function fetchJS(scriptPath) {
@@ -157,8 +153,10 @@ function enableWebGL() {
 
 	const on_ready = () => {
 		console.log?.(this.src);
-		if(!window.GL)
+		if(!window.GL) {
+			LiteGraph.warn?.("GL doesn't exist");
 			return;
+		}
 		webgl_canvas = document.createElement("canvas");
 		webgl_canvas.width = 400;
 		webgl_canvas.height = 300;
@@ -182,17 +180,25 @@ function enableWebGL() {
 		var parent = document.querySelector(".editor-area");
 		parent.appendChild( webgl_canvas );
 		gl = GL.create({ canvas: webgl_canvas });
-		if(!gl)
+		if(!gl) {
+			LiteGraph.warn?.("gl doesn't exist");
 			return;
+		}
+		libs = [
+			"../src/nodes/gltextures.js",
+			"../src/nodes/glfx.js",
+			"../src/nodes/glshaders.js",
+			"../src/nodes/geometry.js"
+		];
+		libs.forEach(lib => fetchJS(lib));
 
-		editor.graph.onBeforeStep = ondraw;
-
-		console.log?.("webgl ready");
-		function ondraw () {
+		editor.graph.onBeforeStep = () => {
 			gl.clearColor(0,0,0,0);
 			gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 			gl.viewport(0,0,gl.canvas.width, gl.canvas.height );
 		}
+
+		console.log?.("webgl ready");
 	}
 }
 
