@@ -31,7 +31,7 @@ A secondary goal is to use modern JS features to make the code easier to read, s
 
 # Status
 
-* GL is getting close?
+* GL is getting close
 * 34 problems in lint
 * Expand on Jest testing to run tests for each class, both in core and in src/nodes/
 * LGraphCanvas documented up to L500
@@ -39,10 +39,11 @@ A secondary goal is to use modern JS features to make the code easier to read, s
 
 ## Fix API breaks that have happened to date
 
-* Removed LiteGraph.pointerAddListener in favor of addEventListener()
-* Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
+* Removed and Re-Added LiteGraph.pointerAddListener, still broken
+* Removed and Re-Added LiteGraph.pointerRemoveListener, still broken
+* Removed and Re-Added LiteGraph.pointerevents_method, still broken
+
 * Removed Mesh.compile in favor of Mesh.upload as it was already deprecated
-* Removed LiteGraph.pointerevents_method
 * L4565 excision, can't find specifically the right one
 ```
 if (this.onConnectionsChange) {

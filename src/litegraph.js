@@ -1057,6 +1057,20 @@ export var LiteGraph = new class {
         return a > v ? a : b < v ? b : v;
     };
 
+    // @BUG: Re-add these
+    pointerAddListener = () => {
+        console.error?.("Removed and being re-integrated sorta");
+    };
+    pointerRemoveListener = () => {
+        console.error?.("Removed and being re-integrated sorta");
+    };
+    set pointerevents_method(v) {
+        console.error?.("Removed and being re-integrated sorta");
+    }
+    get pointerevents_method() {
+        console.error?.("Removed and being re-integrated sorta");
+    }
+
     closeAllContextMenus = () => {
         LiteGraph.warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenu.closeAll();
