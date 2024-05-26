@@ -1,8 +1,10 @@
+import { LiteGraph } from "../../src/litegraph.js";
 
-LiteGraph.debug = true;
+LiteGraph.logging_set_level(4); // -1 to disable all, 4 is all on : will set LiteGraph.debug_level
+
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;
-LiteGraph.allow_scripts = false; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
+LiteGraph.allow_scripts = true; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
 
 LiteGraph.searchbox_extras = {}; //used to add extra features to the search box
 LiteGraph.auto_sort_node_types = true; // [true!] If set to true; will automatically sort node types / categories in the context menus
@@ -31,7 +33,7 @@ LiteGraph.do_add_triggers_slots = true; // [true!] will create and connect event
 LiteGraph.allow_multi_output_for_events = false; // [false!] being events; it is strongly reccomended to use them sequentially; one by one
 LiteGraph.middle_click_slot_add_default_node = true;  //[true!] allows to create and connect a ndoe clicking with the third button (wheel)
 LiteGraph.release_link_on_empty_shows_menu = true; //[true!] dragging a link to empty space will open a menu, add from list, search or defaults
-LiteGraph.pointerevents_method = "mouse"; // "mouse"|"pointer" use mouse for compatibility issues, touch will work only with pointer 
+// OLD setting: this is always pointer on this version :: LiteGraph.pointerevents_method = "pointer"; // "mouse"|"pointer" use mouse for compatibility issues, touch will work only with pointer 
 LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 LiteGraph.backspace_delete = false;  // [false!] delete key is enough, don't mess with text edit and custom
 
