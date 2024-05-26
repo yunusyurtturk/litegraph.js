@@ -203,13 +203,13 @@ export var LiteGraph = new class {
 
     // set logging debug_level
     // from -1 (none), 0 (error), .. to 4 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
-    // could be set higher to enable excessive logging
+    // could be set higher to enable verbose logging
     logging_set_level(v) {
         this.debug_level = Number(v);
     }
 
     // entrypoint to debug log
-    // pass 0 (error) to 4 (debug), (or more for excessive logging)
+    // pass 0 (error) to 4 (debug), (or more for verbose logging)
     logging(lvl/**/) { // arguments
 
         if(!this.debug && this.debug_level>0) {
@@ -253,7 +253,7 @@ export var LiteGraph = new class {
     log_debug() {
         this.logging(4,...arguments);
     }
-    log_excessive() {
+    log_verbose() {
         this.logging(5,...arguments);
     }
 

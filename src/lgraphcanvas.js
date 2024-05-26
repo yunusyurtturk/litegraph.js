@@ -6558,11 +6558,11 @@ export class LGraphCanvas {
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for(let i_srch of a_srch_parts){
-                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // verbose debug, make new higher level
                         if(i_srch.trim() === "") continue;
                         if(str_node.indexOf(i_srch) == -1){
                             passTextSearch = false;
-                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // verbose debug, make new higher level
                             break;
                         }
                     }
@@ -6648,11 +6648,11 @@ export class LGraphCanvas {
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for(let i_srch of a_srch_parts){
-                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // verbose debug, make new higher level
                         if(i_srch.trim() === "") continue;
                         if(str_node.indexOf(i_srch) == -1){
                             passTextSearch = false;
-                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // verbose debug, make new higher level
                             break;
                         }
                     }
