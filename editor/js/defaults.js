@@ -1,12 +1,10 @@
-
 import { LiteGraph } from "../../src/litegraph.js";
 
-// LiteGraph.debug_level = 4; // -1 to disable all, now shows up to index of console['error','warning','info','log','debug']
-LiteGraph.logging_set_level(4); // -1 to disable all, 4 is all on
+LiteGraph.logging_set_level(2); // -1 to disable all, 4 is all on : will set LiteGraph.debug_level
 
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;
-LiteGraph.allow_scripts = false; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
+LiteGraph.allow_scripts = true; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
 
 LiteGraph.searchbox_extras = {}; //used to add extra features to the search box
 LiteGraph.auto_sort_node_types = true; // [true!] If set to true; will automatically sort node types / categories in the context menus

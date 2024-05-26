@@ -1,5 +1,7 @@
+import { LiteGraph } from "../../src/litegraph.js";
 
-LiteGraph.debug = false;
+LiteGraph.logging_set_level(0); // -1 to disable all, 4 is all on : will set LiteGraph.debug_level
+
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;
 LiteGraph.allow_scripts = false; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
