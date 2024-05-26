@@ -198,22 +198,29 @@ export var LiteGraph = new class {
         this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
         // this.loggingSetup();
 
-        // this.debug = 1; // has custom get set, in this.debug_level is stored the actual numeric value
+        this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
         // this.debug_level = 1;
         this.logging_set_level(2);
     }
 
     // get and set debug (log)level
     // from -1 (none), 0 (error), .. to 4 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
+    // could be set higher to enable excessive logging
     logging_set_level(v) {
         this.debug_level = Number(v);
     }
 
     // entrypoint to debug log
+    // pass 0 (error) to 4 (debug), (or more for excessive logging)
     logging(lvl/**/) { // arguments
 
+        if(!this.debug && this.debug_level>0) {
+            // force onnly errors
+            this.debug_level = 0;
+        }
+        
         if(lvl > this.debug_level)
-            return; // -- break, debug only below or equal current --
+            return; // -- break, log only below or equal current --
 
         function clean_args(args) {
             let aRet = [];
@@ -248,6 +255,9 @@ export var LiteGraph = new class {
     log_debug() {
         this.logging(4,...arguments);
     }
+    log_excessive() {
+        this.logging(5,...arguments);
+    }
 
     /**
      * Register a node class so it can be listed when the user wants to create a new one
@@ -261,7 +271,7 @@ export var LiteGraph = new class {
         }
         base_class.type = type;
 
-        this.debug?.("registerNodeType","start",type);
+        this.log_debug("registerNodeType","start",type);
 
         const classname = base_class.name;
 
@@ -285,7 +295,7 @@ export var LiteGraph = new class {
 
         const prev = this.registered_node_types[type];
         if(prev) {
-            this.debug?.("registerNodeType","replacing node type",type,prev);
+            this.log_debug("registerNodeType","replacing node type",type,prev);
         }
         if( !Object.prototype.hasOwnProperty.call( base_class.prototype, "shape") ) {
             Object.defineProperty(base_class.prototype, "shape", {
@@ -354,10 +364,10 @@ export var LiteGraph = new class {
             }
         }
 
-        this.debug?.("registerNodeType","type registered",type);
+        this.log_debug("registerNodeType","type registered",type);
 
         if (this.auto_load_slot_types){
-            this.debug?.("registerNodeType","auto_load_slot_types, create empy tmp node",type);
+            this.log_debug("registerNodeType","auto_load_slot_types, create empy tmp node",type);
             new base_class(base_class.title ?? "tmpnode");
         }
     }
@@ -574,7 +584,7 @@ export var LiteGraph = new class {
             try {
                 node = new base_class(title);
             } catch (err) {
-                this.error?.(err);
+                this.log_error("createNode",err);
                 return null;
             }
         } else {
@@ -812,7 +822,7 @@ export var LiteGraph = new class {
                         on_complete(data);
                 })
                 .catch((error) => {
-                    this.error?.("error fetching file:",url);
+                    this.log_error("error fetching file:",url);
                     if(on_error)
                         on_error(error);
                 });
@@ -1026,8 +1036,8 @@ export var LiteGraph = new class {
         return a > v ? a : b < v ? b : v;
     };
 
-    // @BUG: Re-add these
-    pointerAddListener = () => {
+    // @BUG checking
+    /* pointerAddListener = () => {
         console.error?.("Removed and being re-integrated sorta");
     };
     pointerRemoveListener = () => {
@@ -1038,7 +1048,7 @@ export var LiteGraph = new class {
     }
     get pointerevents_method() {
         console.error?.("Removed and being re-integrated sorta");
-    }
+    } */
 
     closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
