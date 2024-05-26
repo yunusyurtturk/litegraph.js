@@ -165,7 +165,7 @@ export var LiteGraph = new class {
         this.ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
         this.actionHistory_enabled = false; // cntrlZ, cntrlY
-        this.actionHistoryMaxSave = 40;
+        this.actionHistoryMaxSave = 300;
 
         /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
         this.refreshAncestorsOnTriggers = false; // [true!]
@@ -181,8 +181,6 @@ export var LiteGraph = new class {
 
         // ,"editor_alpha" //= 1; //used for transition
 
-        this.actionHistoryMaxSave = 40;
-
         this.canRemoveSlots = true;
         this.canRemoveSlots_onlyOptional = true;
         this.canRenameSlots = true;
@@ -195,7 +193,6 @@ export var LiteGraph = new class {
         this.ensureUniqueExecutionAndActionCall = true; // NEW ensure single event execution
 
         this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
-
 
         this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
         // this.loggingSetup();

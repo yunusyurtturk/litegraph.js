@@ -1552,9 +1552,10 @@ export class LGraph {
             LiteGraph.debug?.("Graph change, no action",opts);
         }
 
+        // TAG: EXTENSION, COULD extract and MOVE history to feature ?
         if(opts.doSave && LiteGraph.actionHistory_enabled) {
 
-            LiteGraph.debug?.("onGraphChanged SAVE :: "+opts.action); // debug history
+            LiteGraph.debug?.("LG_history","onGraphChanged SAVE :: "+opts.action); // debug history
 
             var oHistory = { actionName: opts.action };
             if(opts.doSaveGraph) {
@@ -1566,13 +1567,13 @@ export class LGraph {
 
             // check if pointer has gone back: remove newest
             while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1) {
-                LiteGraph.debug?.("popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
+                LiteGraph.debug?.("LG_history","popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
                 obH.actionHistoryVersions.pop();
             }
             // check if maximum saves
             if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave) {
                 var olderSave = obH.actionHistoryVersions.shift();
-                LiteGraph.debug?.("maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
+                LiteGraph.debug?.("LG_history","maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
                 obH.actionHistory[olderSave] = false; // unset
             }
 
@@ -1583,7 +1584,7 @@ export class LGraph {
             // save to pointer
             obH.actionHistory[obH.actionHistoryPtr] = oHistory;
 
-            LiteGraph.debug?.("history saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
+            LiteGraph.debug?.("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
         }
     }
 
@@ -1600,19 +1601,19 @@ export class LGraph {
 
         if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0) {
             obH.actionHistoryPtr--;
-            LiteGraph.debug?.("history step back: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.debug?.("LG_history","step back: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                LiteGraph.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.warn?.("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr++;
                 return false;
             }else{
-                LiteGraph.debug?.("history loaded back: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.debug?.("LG_history","loaded back: "+obH.actionHistoryPtr); // debug history
                 LiteGraph.debug?.(this.history);
                 return true;
             }
         }else{
-            LiteGraph.debug?.("history is already at older state");
+            LiteGraph.debug?.("LG_history","is already at older state");
             return false;
         }
     }
@@ -1630,18 +1631,18 @@ export class LGraph {
 
         if (obH.actionHistoryPtr<obH.actionHistoryVersions.length) {
             obH.actionHistoryPtr++;
-            LiteGraph.debug?.("history step forward: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.debug?.("LG_history","step forward: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                LiteGraph.warn?.("historyLoad failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.warn?.("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr--;
                 return false;
             }else{
-                LiteGraph.debug?.("history loaded forward: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.debug?.("LG_history","loaded forward: "+obH.actionHistoryPtr); // debug history
                 return true;
             }
         }else{
-            LiteGraph.debug?.("history is already at newer state");
+            LiteGraph.debug?.("LG_history","is already at newer state");
             return false;
         }
     }
