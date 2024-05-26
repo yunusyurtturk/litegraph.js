@@ -196,14 +196,12 @@ export var LiteGraph = new class {
         this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
 
         this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
-        // this.loggingSetup();
 
         this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
-        // this.debug_level = 1;
         this.logging_set_level(2);
     }
 
-    // get and set debug (log)level
+    // set logging debug_level
     // from -1 (none), 0 (error), .. to 4 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
     // could be set higher to enable excessive logging
     logging_set_level(v) {

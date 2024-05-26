@@ -350,7 +350,7 @@ export class LGraphCanvas {
 
     // used in some events to capture them
     _doNothing(e) {
-        // LiteGraph.log_debug("pointerevents: _doNothing "+e.type);
+        // DBG LiteGraph.log_debug("pointerevents: _doNothing "+e.type);
         e.preventDefault();
         return false;
     }
@@ -577,7 +577,7 @@ export class LGraphCanvas {
 
         if (e.button !== undefined) {
             this.userInput_button = e.button;
-            // LiteGraph.log_debug("input button ",e.button);
+            // DBG LiteGraph.log_debug("input button ",e.button);
             switch(e.button) {
                 case -1: // no changes since last event
                 case 0: // Left Mouse, Touch Contact, Pen contact
@@ -591,7 +591,7 @@ export class LGraphCanvas {
         }
         if (e.buttons !== undefined) {
             this.userInput_button_s = e.buttons;
-            // LiteGraph.log_debug("input button_S ",e.buttons);
+            // DBG LiteGraph.log_debug("input button_S ",e.buttons);
         }
 
         this.userInput_touches = (e.changedTouches!==undefined && e.changedTouches.length!==undefined) ? e.changedTouches : false;
@@ -618,7 +618,7 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        // LiteGraph.log?.(y,this.viewport);
+        // DBG LiteGraph.log?.(y,this.viewport);
         LiteGraph.log?.("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
 
         this.ds.viewport = this.viewport;
@@ -648,7 +648,7 @@ export class LGraphCanvas {
 
         if (this.pointer_is_down && is_primary ) {
             this.pointer_is_double = true;
-            // LiteGraph.log?.("pointerevents: pointer_is_double start");
+            // DBG LiteGraph.log?.("pointerevents: pointer_is_double start");
         }else{
             this.pointer_is_double = false;
         }
@@ -976,7 +976,7 @@ export class LGraphCanvas {
             }
 
             if (!skip_action && clicking_canvas_bg && this.allow_dragcanvas) {
-                // LiteGraph.log?.("pointerevents: dragging_canvas start");
+                // DBG LiteGraph.log?.("pointerevents: dragging_canvas start");
                 this.dragging_canvas = true;
             }
 
@@ -1021,7 +1021,7 @@ export class LGraphCanvas {
                                 }
                             }
                         }
-                        // LiteGraph.log?.("middleClickSlots? "+mClikSlot+" & "+(mClikSlot_index!==false));
+                        // DBG LiteGraph.log?.("middleClickSlots? "+mClikSlot+" & "+(mClikSlot_index!==false));
                         if (mClikSlot && mClikSlot_index!==false) {
 
                             var alphaPosY = 0.5-((mClikSlot_index+1)/((mClikSlot_isOut?node.outputs.length:node.inputs.length)));
@@ -1046,7 +1046,7 @@ export class LGraphCanvas {
                     }
                 }
             } else if (!skip_action && this.allow_dragcanvas) {
-                // LiteGraph.log?.("pointerevents: dragging_canvas start from middle button");
+                // DBG LiteGraph.log?.("pointerevents: dragging_canvas start from middle button");
                 this.dragging_canvas = true;
             }
 
@@ -1135,10 +1135,10 @@ export class LGraphCanvas {
         this.graph_mouse[0] = e.canvasX;
         this.graph_mouse[1] = e.canvasY;
 
-        // LiteGraph.log?.("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
+        // DBG LiteGraph.log?.("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
 
         if(this.block_click) {
-            // LiteGraph.log?.("pointerevents: processMouseMove block_click");
+            // DBG LiteGraph.log?.("pointerevents: processMouseMove block_click");
             e.preventDefault();
             return false;
         }
@@ -1316,7 +1316,7 @@ export class LGraphCanvas {
 
             // node being dragged
             if (this.node_dragged && !this.live_mode) {
-                // LiteGraph.log?.("draggin!",this.selected_nodes);
+                // DBG LiteGraph.log?.("draggin!",this.selected_nodes);
                 for (let i in this.selected_nodes) {
                     let n = this.selected_nodes[i];
                     n.pos[0] += delta[0] / this.ds.scale;
@@ -1361,11 +1361,11 @@ export class LGraphCanvas {
         if(!is_primary) {
             /* e.stopPropagation();
             e.preventDefault();*/
-            // LiteGraph.log?.("pointerevents: processMouseUp pointerN_stop "+e.pointerId+" "+e.isPrimary);
+            // DBG LiteGraph.log?.("pointerevents: processMouseUp pointerN_stop "+e.pointerId+" "+e.isPrimary);
             return false;
         }
 
-        // LiteGraph.log?.("pointerevents: processMouseUp "+e.pointerId+" "+e.isPrimary+" :: "+e.clientX+" "+e.clientY);
+        // DBG LiteGraph.log?.("pointerevents: processMouseUp "+e.pointerId+" "+e.isPrimary+" :: "+e.clientX+" "+e.clientY);
 
         if( this.set_canvas_dirty_on_mouse_event )
             this.dirty_canvas = true;
@@ -1379,7 +1379,7 @@ export class LGraphCanvas {
 
         // restore the mousemove event back to the canvas
         if(!this.options.skip_events) {
-            // LiteGraph.log?.("pointerevents: processMouseUp adjustEventListener");
+            // DBG LiteGraph.log?.("pointerevents: processMouseUp adjustEventListener");
             document.removeEventListener("pointermove", this._mousemove_callback,true);
             this.canvas.addEventListener("pointermove", this._mousemove_callback,true);
             document.removeEventListener("pointerup", this._mouseup_callback,true);
@@ -1392,11 +1392,11 @@ export class LGraphCanvas {
         this.last_click_position = null;
 
         if(this.block_click) {
-            // LiteGraph.log?.("pointerevents: processMouseUp block_clicks");
+            // DBG LiteGraph.log?.("pointerevents: processMouseUp block_clicks");
             this.block_click = false; // used to avoid sending twice a click in a immediate button
         }
 
-        // LiteGraph.log?.("pointerevents: processMouseUp which: "+e.which);
+        // DBG LiteGraph.log?.("pointerevents: processMouseUp which: "+e.which);
 
         if (e.which == 1) {
 
@@ -1648,7 +1648,7 @@ export class LGraphCanvas {
 
         this.graph.change();
 
-        // LiteGraph.log?.("pointerevents: processMouseUp stopPropagation");
+        // DBG LiteGraph.log?.("pointerevents: processMouseUp stopPropagation");
         e.stopPropagation();
         e.preventDefault();
         return false;
@@ -1801,7 +1801,7 @@ export class LGraphCanvas {
         }
 
         var block_default = false;
-        // LiteGraph.log?.(e); //debug
+        // DBG LiteGraph.log?.(e); //debug
 
         if (e.target.localName == "input") {
             return;
@@ -2081,7 +2081,7 @@ export class LGraphCanvas {
                         // prepare reader
                         var reader = new FileReader();
                         reader.onload = function(event) {
-                            // LiteGraph.log?.(event.target);
+                            // DBG LiteGraph.log?.(event.target);
                             var data = event.target.result;
                             node.onDropData(data, filename, file);
                         };
@@ -2321,7 +2321,7 @@ export class LGraphCanvas {
         e.canvasX = clientX_rel / this.ds.scale - this.ds.offset[0];
         e.canvasY = clientY_rel / this.ds.scale - this.ds.offset[1];
 
-        // LiteGraph.log?.("pointerevents: adjustMouseEvent "+e.clientX+":"+e.clientY+" "+clientX_rel+":"+clientY_rel+" "+e.canvasX+":"+e.canvasY);
+        // DBG LiteGraph.log?.("pointerevents: adjustMouseEvent "+e.clientX+":"+e.clientY+" "+clientX_rel+":"+clientY_rel+" "+e.canvasX+":"+e.canvasY);
     }
 
     /**
@@ -5608,7 +5608,7 @@ export class LGraphCanvas {
 
     showLinkMenu(link, e) {
         var that = this;
-        // LiteGraph.log?.(link);
+        // DBG LiteGraph.log?.(link);
         var node_left = that.graph.getNodeById( link.origin_id );
         var node_right = that.graph.getNodeById( link.target_id );
         var fromType = false;
@@ -5729,7 +5729,7 @@ export class LGraphCanvas {
                 for(var typeX in slotTypesDefault[fromSlotType]) {
                     if (opts.nodeType == slotTypesDefault[fromSlotType][typeX] || opts.nodeType == "AUTO") {
                         nodeNewType = slotTypesDefault[fromSlotType][typeX];
-                        // LiteGraph.log?.("opts.nodeType == slotTypesDefault[fromSlotType][typeX] :: "+opts.nodeType);
+                        // DBG LiteGraph.log?.("opts.nodeType == slotTypesDefault[fromSlotType][typeX] :: "+opts.nodeType);
                         break; // --------
                     }
                 }
@@ -6140,7 +6140,7 @@ export class LGraphCanvas {
         };
         options = Object.assign(def_options, options || {});
 
-        // LiteGraph.log?.(options);
+        // DBG LiteGraph.log?.(options);
 
         var that = this;
         var graphcanvas = LGraphCanvas.active_canvas;
@@ -6301,9 +6301,9 @@ export class LGraphCanvas {
                     if(options.type_filter_in !==false && (options.type_filter_in+"").toLowerCase() == (aSlots[iK]+"").toLowerCase()) {
                         // selIn.selectedIndex ..
                         opt.selected = true;
-                        // LiteGraph.log?.("comparing IN "+options.type_filter_in+" :: "+aSlots[iK]);
+                        // DBG LiteGraph.log?.("comparing IN "+options.type_filter_in+" :: "+aSlots[iK]);
                     }else{
-                        // LiteGraph.log?.("comparing OUT "+options.type_filter_in+" :: "+aSlots[iK]);
+                        // DBG LiteGraph.log?.("comparing OUT "+options.type_filter_in+" :: "+aSlots[iK]);
                     }
                 }
                 selIn.addEventListener("change",function() {
@@ -6454,7 +6454,7 @@ export class LGraphCanvas {
                                 options.node_from.connectByType( iS, node, options.node_from.outputs[iS].type );
                             }
                         }else{
-                            // LiteGraph.log_warn("cant find slot " + options.slot_from);
+                            // DBG LiteGraph.log_warn("cant find slot " + options.slot_from);
                         }
                     }
                     if (options.node_to) {
@@ -6483,7 +6483,7 @@ export class LGraphCanvas {
                                 options.node_to.connectByTypeOutput(iS,node,options.node_to.inputs[iS].type);
                             }
                         }else{
-                            // LiteGraph.log_warn("cant find slot_nodeTO " + options.slot_from);
+                            // DBG LiteGraph.log_warn("cant find slot_nodeTO " + options.slot_from);
                         }
                     }
 
@@ -6558,11 +6558,11 @@ export class LGraphCanvas {
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for(let i_srch of a_srch_parts){
-                        // LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
                         if(i_srch.trim() === "") continue;
                         if(str_node.indexOf(i_srch) == -1){
                             passTextSearch = false;
-                            // LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
                             break;
                         }
                     }
@@ -6648,11 +6648,11 @@ export class LGraphCanvas {
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for(let i_srch of a_srch_parts){
-                        // LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        // DBG LiteGraph.log_debug("search","check",i_srch,str_node); // excessive debug, make new higher level
                         if(i_srch.trim() === "") continue;
                         if(str_node.indexOf(i_srch) == -1){
                             passTextSearch = false;
-                            // LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            // DBG LiteGraph.log_debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
                             break;
                         }
                     }
@@ -6670,15 +6670,14 @@ export class LGraphCanvas {
                         // if (sV.toLowerCase() == "_event_") sV = LiteGraph.EVENT; // -1
 
                         if(sIn && sV) {
-                            // LiteGraph.log?.("will check filter against "+sV);
+                            // DBG LiteGraph.log?.("will check filter against "+sV);
                             if (LiteGraph.registered_slot_in_types[sV] && LiteGraph.registered_slot_in_types[sV].nodes) { // type is stored
-                                // LiteGraph.log_debug("check "+sType+" in "+LiteGraph.registered_slot_in_types[sV].nodes);
+                                // DBG LiteGraph.log_debug("check "+sType+" in "+LiteGraph.registered_slot_in_types[sV].nodes);
                                 doesInc = LiteGraph.registered_slot_in_types[sV].nodes.includes(sType);
                                 if (doesInc!==false) {
-                                    // LiteGraph.log?.(sType+" HAS "+sV);
+                                    // DBG LiteGraph.log?.(sType+" HAS "+sV);
                                 }else{
-                                    /* LiteGraph.log_debug(LiteGraph.registered_slot_in_types[sV]);
-                                    LiteGraph.log?.(+" DONT includes "+type);*/
+                                    // DBG LiteGraph.log_debug(LiteGraph.registered_slot_in_types[sV]," DONT includes "+type);
                                     return false;
                                 }
                             }
@@ -6691,15 +6690,14 @@ export class LGraphCanvas {
                         // if (sV.toLowerCase() == "_event_") sV = LiteGraph.EVENT; // -1
 
                         if(sOut && sV) {
-                            // LiteGraph.log?.("search will check filter against "+sV);
+                            // DBG LiteGraph.log?.("search will check filter against "+sV);
                             if (LiteGraph.registered_slot_out_types[sV] && LiteGraph.registered_slot_out_types[sV].nodes) { // type is stored
-                                // LiteGraph.log_debug("check "+sType+" in "+LiteGraph.registered_slot_out_types[sV].nodes);
+                                // DBG LiteGraph.log_debug("check "+sType+" in "+LiteGraph.registered_slot_out_types[sV].nodes);
                                 doesInc = LiteGraph.registered_slot_out_types[sV].nodes.includes(sType);
                                 if (doesInc!==false) {
-                                    // LiteGraph.log?.(sType+" HAS "+sV);
+                                    // DBG LiteGraph.log?.(sType+" HAS "+sV);
                                 }else{
-                                    /* LiteGraph.log_debug(LiteGraph.registered_slot_out_types[sV]);
-                                    LiteGraph.log?.(+" DONT includes "+type);*/
+                                    // DBG LiteGraph.log_debug(LiteGraph.registered_slot_out_types[sV]," DONT includes "+type);
                                     return false;
                                 }
                             }
@@ -7242,14 +7240,14 @@ export class LGraphCanvas {
                         LiteGraph.log_debug(options);
                         break;*/
                     default:
-                        // LiteGraph.log_debug("want to update graph options: "+name+": "+value);
+                        // DBG LiteGraph.log_debug("want to update graph options: "+name+": "+value);
                         if (options && options.key) {
                             name = options.key;
                         }
                         if (options.values) {
                             value = Object.values(options.values).indexOf(value);
                         }
-                        // LiteGraph.log_debug("update graph option: "+name+": "+value);
+                        // DBG LiteGraph.log_debug("update graph option: "+name+": "+value);
                         graphcanvas[name] = value;
                         break;
                 }
@@ -7483,7 +7481,7 @@ export class LGraphCanvas {
 
     showSubgraphPropertiesDialogRight(node) {
 
-        // LiteGraph.log?.("showing subgraph properties dialog");
+        // DBG LiteGraph.log?.("showing subgraph properties dialog");
 
         // old_panel if old_panel is exist close it
         var old_panel = this.canvas.parentNode.querySelector(".subgraph_dialog");
