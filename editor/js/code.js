@@ -49,55 +49,80 @@ LiteGraph.allow_scripts = true;
 //test
 //editor.graphcanvas.viewport = [200,200,400,400];
 
-//create scene selector
-var elem = document.createElement("span");
-elem.id = "LGEditorTopBarSelector";
-elem.className = "selector";
-elem.innerHTML = "";
-elem.innerHTML += "Demo <select><option>Empty</option></select> <button class='btn' id='save'>Save</button><button class='btn' id='load'>Load</button><button class='btn' id='download'>Download</button> | <button class='btn' id='webgl'>WebGL</button> <button class='btn' id='multiview'>Multiview</button>";
-editor.tools.appendChild(elem);
-var select = elem.querySelector("select");
-select.addEventListener("change", function(e){
-	var option = this.options[this.selectedIndex];
-	var url = option.dataset["url"];
-	
-	if(url)
-		graph.load( url );
-	else if(option.callback)
-		option.callback();
-	else
-		graph.clear();
+var dom_demo_select;
+
+window.addEventListener("load", (event) => {
+		
+	//create scene selector
+	var elem = document.createElement("span");
+	elem.id = "LGEditorTopBarSelector";
+	elem.className = "selector";
+	elem.innerHTML = "";
+	elem.innerHTML += "Demo <select><option>Empty</option></select> <button class='btn' id='save'>Save</button><button class='btn' id='load'>Load</button><button class='btn' id='download'>Download</button> | <button class='btn' id='webgl'>WebGL</button> <button class='btn' id='multiview'>Multiview</button>";
+	editor.tools.appendChild(elem);
+	dom_demo_select = elem.querySelector("select");
+	dom_demo_select.addEventListener("change", function(e){
+		var option = this.options[this.selectedIndex];
+		var url = option.dataset["url"];
+		
+		if(url){
+			LiteGraph.info("Editor:","Loading",url);
+			graph.load( url );
+		}else if(option.callback){
+			LiteGraph.info("Editor:","callback");
+			option.callback();
+		}else{
+			LiteGraph.info("Editor:","Clearing");
+			graph.clear();
+		}
+	});
+
+	elem.querySelector("#save").addEventListener("click",function(){
+		console.log?.("saved");
+		localStorage.setItem( "graphdemo_save", JSON.stringify( graph.serialize() ) );
+	});
+
+	elem.querySelector("#load").addEventListener("click",function(){
+		var data = localStorage.getItem( "graphdemo_save" );
+		if(data)
+			graph.configure( JSON.parse( data ) );
+		console.log?.("loaded");
+	});
+
+	elem.querySelector("#download").addEventListener("click",function(){
+		var data = JSON.stringify( graph.serialize() );
+		var file = new Blob( [ data ] );
+		var url = URL.createObjectURL( file );
+		var element = document.createElement("a");
+		element.setAttribute('href', url);
+		element.setAttribute('download', "graph.JSON" );
+		element.style.display = 'none';
+		document.body.appendChild(element);
+		element.click();
+		document.body.removeChild(element);
+		setTimeout( function(){ URL.revokeObjectURL( url ); }, 1000*60 ); //wait one minute to revoke url	
+	});
+
+	elem.querySelector("#webgl").addEventListener("click", enableWebGL );
+	elem.querySelector("#multiview").addEventListener("click", function(){ editor.addMultiview()  } );
+
+	//some examples
+	addDemo("Features", "examples/features.json");
+	addDemo("Benchmark", "examples/benchmark.json");
+	addDemo("Subgraph", "examples/subgraph.json");
+	addDemo("Audio", "examples/audio.json");
+	addDemo("Audio Delay", "examples/audio_delay.json");
+	addDemo("Audio Reverb", "examples/audio_reverb.json");
+	addDemo("MIDI Generation", "examples/midi_generation.json");
+	addDemo("Copy Paste", "examples/copypaste.json");
+	addDemo("autobackup", function(){
+		var data = localStorage.getItem("litegraphg demo backup");
+		if(!data)
+			return;
+		var graph_data = JSON.parse(data);
+		graph.configure( graph_data );
+	});
 });
-
-elem.querySelector("#save").addEventListener("click",function(){
-	console.log?.("saved");
-	localStorage.setItem( "graphdemo_save", JSON.stringify( graph.serialize() ) );
-});
-
-elem.querySelector("#load").addEventListener("click",function(){
-	var data = localStorage.getItem( "graphdemo_save" );
-	if(data)
-		graph.configure( JSON.parse( data ) );
-	console.log?.("loaded");
-});
-
-elem.querySelector("#download").addEventListener("click",function(){
-	var data = JSON.stringify( graph.serialize() );
-	var file = new Blob( [ data ] );
-	var url = URL.createObjectURL( file );
-	var element = document.createElement("a");
-	element.setAttribute('href', url);
-	element.setAttribute('download', "graph.JSON" );
-	element.style.display = 'none';
-	document.body.appendChild(element);
-	element.click();
-	document.body.removeChild(element);
-	setTimeout( function(){ URL.revokeObjectURL( url ); }, 1000*60 ); //wait one minute to revoke url	
-});
-
-elem.querySelector("#webgl").addEventListener("click", enableWebGL );
-elem.querySelector("#multiview").addEventListener("click", function(){ editor.addMultiview()  } );
-
 
 function addDemo( name, url ) {
 	var option = document.createElement("option");
@@ -106,25 +131,10 @@ function addDemo( name, url ) {
 	else
 		option.callback = url;
 	option.innerHTML = name;
-	select.appendChild( option );
+	if(dom_demo_select) dom_demo_select.appendChild( option );
+	LiteGraph.info("Editor:","Add demo",name,url);
 }
 
-//some examples
-addDemo("Features", "examples/features.json");
-addDemo("Benchmark", "examples/benchmark.json");
-addDemo("Subgraph", "examples/subgraph.json");
-addDemo("Audio", "examples/audio.json");
-addDemo("Audio Delay", "examples/audio_delay.json");
-addDemo("Audio Reverb", "examples/audio_reverb.json");
-addDemo("MIDI Generation", "examples/midi_generation.json");
-addDemo("Copy Paste", "examples/copypaste.json");
-addDemo("autobackup", function(){
-	var data = localStorage.getItem("litegraphg demo backup");
-	if(!data)
-		return;
-	var graph_data = JSON.parse(data);
-	graph.configure( graph_data );
-});
 
 //allows to use the WebGL nodes like textures
 function enableWebGL() {
