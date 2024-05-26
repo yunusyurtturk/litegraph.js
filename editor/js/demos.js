@@ -271,12 +271,11 @@ function TestPropertyEditorsNode()
 
 TestPropertyEditorsNode.title = "Properties";
 
-
 LiteGraph.registerNodeType("features/properties_editor", TestPropertyEditorsNode );
 
 
 
-//Show value inside the debug console
+// demostrate large input and copy paste + shift
 function LargeInputNode()
 {
 	this.addInput("in 1","number");

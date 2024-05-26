@@ -77,7 +77,7 @@ export var LiteGraph = new class {
         this.EVENT = -1; // for outputs
         this.ACTION = -1; // for inputs
 
-        this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper, will add "On Request" and more in the future
+        this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper
         this.NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
         this.ALWAYS = 0;
         this.ON_EVENT = 1;
@@ -107,7 +107,7 @@ export var LiteGraph = new class {
 
         this.catch_exceptions = true;
         this.throw_errors = true;
-        this.allow_scripts = false; // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
+        this.allow_scripts = false; // nodes should be check this value before executing unsafe code :: does not prevent anything in the main library, implement in nodes :: if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
         this.use_deferred_actions = true; // executes actions during the graph execution flow
         this.registered_node_types = {}; // nodetypes by string
         this.node_types_by_file_extension = {}; // used for dropping files in the canvas
@@ -388,9 +388,10 @@ export var LiteGraph = new class {
 
         this.debug?.("registerNodeType","type registered",type);
 
-        if (this.auto_load_slot_types)
-            this.debug?.("registerNodeType","do auto_load_slot_types",type);
-        new base_class(base_class.title ?? "tmpnode");
+        if (this.auto_load_slot_types){
+            this.debug?.("registerNodeType","auto_load_slot_types, create empy tmp node",type);
+            new base_class(base_class.title ?? "tmpnode");
+        }
     }
 
     /**
