@@ -179,36 +179,6 @@ export var LiteGraph = new class {
         // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
         this.context_menu_filter_enabled = false; // FIX event handler removal
 
-        this.showCanvasOptions = false; // [true!] customize availableCanvasOptions
-        this.availableCanvasOptions = [
-            "allow_addOutSlot_onExecuted",
-            "free_resize",
-            "highquality_render",
-            "use_gradients", // set to true to render titlebar with gradients
-            "pause_rendering",
-            "clear_background",
-            "read_only", // if set to true users cannot modify the graph
-            // "render_only_selected", // not implemented
-            "live_mode",
-            "show_info",
-            "allow_dragcanvas",
-            "allow_dragnodes",
-            "allow_interaction", // allow to control widgets, buttons, collapse, etc
-            "allow_searchbox",
-            "move_destination_link_without_shift", // rename: old allow_reconnect_links //allows to change a connection, no need to hold shift
-            "set_canvas_dirty_on_mouse_event", // forces to redraw the canvas if the mouse does anything
-            "always_render_background",
-            "render_shadows",
-            "render_canvas_border",
-            "render_connections_shadows", // too much cpu
-            "render_connections_border",
-            // ,"render_curved_connections", // always on, or specific fixed graph
-            "render_connection_arrows",
-            "render_collapsed_slots",
-            "render_execution_order",
-            "render_title_colored",
-            "render_link_tooltip",
-        ];
         // ,"editor_alpha" //= 1; //used for transition
 
         this.actionHistoryMaxSave = 40;

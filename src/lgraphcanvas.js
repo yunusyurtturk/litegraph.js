@@ -1817,7 +1817,6 @@ export class LGraphCanvas {
             if (e.keyCode == 27) {
                 // esc
                 if(this.node_panel) this.node_panel.close();
-                if(this.options_panel) this.options_panel.close();
                 block_default = true;
             }
 
@@ -7793,9 +7792,6 @@ export class LGraphCanvas {
                 // { content: "Arrange", callback: that.graph.arrange },
                 // {content:"Collapse All", callback: LGraphCanvas.onMenuCollapseAll }
             ];
-            if (LiteGraph.showCanvasOptions) {
-                options.push({ content: "Options", callback: this.showShowGraphOptionsPanel });
-            }
 
             if (Object.keys(this.selected_nodes).length > 1) {
                 options.push({
