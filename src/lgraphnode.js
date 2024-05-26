@@ -104,9 +104,14 @@ export class LGraphNode {
      */
     configure(info) {
         /* @TODO: Atlasan has this commented, not sure if it stays that way
+            -> reply -> this has been moved after configuration completed, adding new nodeBeforeConfigure
         if(this.graph)
             this.graph.onGraphChanged({action: "nodeConfigure", doSave: false});
         */
+        LiteGraph.debug("node configure",this,info);
+
+       if(this.graph)
+           this.graph.onGraphChanged({action: "nodeBeforeConfigure", doSave: false});
 
         Object.entries(info).forEach(([key, value]) => {
             if (key === "properties") {
@@ -145,8 +150,9 @@ export class LGraphNode {
         this.outputs?.forEach((output, i) => {
             if (!output.links)
                 return;
-            output.links.forEach(() => {
-                const link_info = this.graph; // ?.links[link] || null; // as per Atlasan
+            output.links.forEach((link, i) => {
+                const link_info = this.graph?.links[link] || null; // fixed
+                LiteGraph.debug("node configure","cycle outputlinks",link,i,link_info);
                 this.onConnectionsChange?.(LiteGraph.OUTPUT, i, true, link_info, output);
             });
             this.onOutputAdded?.(output);
@@ -170,6 +176,7 @@ export class LGraphNode {
         }
         this.onConfigure?.(info);
         this.graph?.onGraphChanged({action: "nodeConfigure", doSave: false});
+        LiteGraph.debug("node configure complete",this);
     }
 
     /**
@@ -2448,7 +2455,7 @@ export class LGraphNode {
             typesOnly: [],
         };
         var aAncestors = this.graph.getAncestors(this,optsAncestors);
-        for(iN in aAncestors) {
+        for(var iN in aAncestors) {
             aAncestors[iN].doExecute(opts.param, opts.options);
             this.graph.node_ancestorsCalculated[aAncestors[iN].id] = true;
         }
