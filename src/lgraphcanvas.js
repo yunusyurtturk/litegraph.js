@@ -435,15 +435,13 @@ export class LGraphCanvas {
     }
 
     static getFileExtension(url) {
-        const urlObj = new URL(url);
-        const path = urlObj.pathname;
-        const lastDotIndex = path.lastIndexOf(".");
-
-        if (lastDotIndex === -1) {
-            return "";
-        }
-
-        return path.slice(lastDotIndex + 1).toLowerCase();
+        // const urlObj = new URL(url);
+        // const path = urlObj.pathname;
+        // const lastDotIndex = path.lastIndexOf(".");
+        // if (lastDotIndex === -1) return "";
+        // return path.slice(lastDotIndex + 1).toLowerCase();
+        url = url ? url+"" : "";
+        return url.slice((url.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
     }
 
     /**
@@ -2033,26 +2031,28 @@ export class LGraphCanvas {
     processDrop = (e) => {
         e.preventDefault();
         this.adjustMouseEvent(e);
+
         var x = e.clientX;
         var y = e.clientY;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
         if(!is_inside) {
+            LiteGraph.debug("graphcanvas processDrop","Outside viewport (client)",x,y);
             return;
-            // --- BREAK ---
         }
 
         x = e.localX;
         y = e.localY;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
         if(!is_inside) {
+            LiteGraph.debug("graphcanvas processDrop","Outside viewport (local)",x,y);
             return;
-            // --- BREAK ---
         }
 
         var pos = [e.canvasX, e.canvasY];
-
-
+        
         var node = this.graph ? this.graph.getNodeOnPos(pos[0], pos[1]) : null;
+        
+        LiteGraph.debug("graphcanvas processDrop","going to process",pos,node);
 
         if (!node) {
             var r = null;
@@ -2071,7 +2071,8 @@ export class LGraphCanvas {
                 for (let i = 0; i < files.length; i++) {
                     var file = e.dataTransfer.files[0];
                     var filename = file.name;
-                    // LiteGraph.log?.(file);
+                    
+                    LiteGraph.log("graphcanvas processDrop","file on node",file);
 
                     if (node.onDropFile) {
                         node.onDropFile(file);
@@ -2110,6 +2111,8 @@ export class LGraphCanvas {
             return this.onDropItem(event);
         }
 
+        LiteGraph.debug("graphcanvas processDrop","ended (nothing returned?)");
+
         return false;
     }
 
@@ -2117,7 +2120,7 @@ export class LGraphCanvas {
     checkDropItem(e) {
         if (e.dataTransfer.files.length) {
             var file = e.dataTransfer.files[0];
-            var ext = LGraphCanvas.getFileExtension(file.name).toLowerCase();
+            var ext = LGraphCanvas.getFileExtension(file.name);
             var nodetype = LiteGraph.node_types_by_file_extension[ext];
             if (nodetype) {
                 this.graph.beforeChange();
