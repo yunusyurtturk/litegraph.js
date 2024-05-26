@@ -6134,6 +6134,7 @@ export class LGraphCanvas {
             show_general_if_none_on_typefilter: true,
             show_general_after_typefiltered: true,
             hide_on_mouse_leave: LiteGraph.search_hide_on_mouse_leave,
+            hide_on_mouse_leave_time: LiteGraph.search_hide_on_mouse_leave_time,
             show_all_if_empty: true,
             show_all_on_open: LiteGraph.search_show_all_on_open,
         };
@@ -6205,7 +6206,7 @@ export class LGraphCanvas {
                 }
                 timeout_close = setTimeout(function() {
                     dialog.close();
-                }, 500);
+                }, options.hide_on_mouse_leave_time);
             });
             // if filtering, check focus changed to comboboxes and prevent closing
             if (options.do_type_filter) {
@@ -6552,7 +6553,20 @@ export class LGraphCanvas {
                 // extras
                 for (let i in LiteGraph.searchbox_extras) {
                     var extra = LiteGraph.searchbox_extras[i];
-                    if ((!options.show_all_if_empty || str) && extra.desc.toLowerCase().indexOf(str) === -1) {
+                    // var passTextSearch = extra.desc.toLowerCase().indexOf(str) !== -1;
+                    let str_node = extra.desc.toLowerCase();
+                    let a_srch_parts = str.toLowerCase().split(" ");
+                    let passTextSearch = true;
+                    for(let i_srch of a_srch_parts){
+                        // LiteGraph.debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        if(i_srch.trim() === "") continue;
+                        if(str_node.indexOf(i_srch) == -1){
+                            passTextSearch = false;
+                            // LiteGraph.debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            break;
+                        }
+                    }
+                    if ((!options.show_all_if_empty || str) && !passTextSearch) {
                         continue;
                     }
                     var ctor = LiteGraph.registered_node_types[extra.type];
@@ -6629,7 +6643,21 @@ export class LGraphCanvas {
                     var ctor = LiteGraph.registered_node_types[type];
                     if(filter && ctor.filter != filter )
                         return false;
-                    if ((!options.show_all_if_empty || str) && type.toLowerCase().indexOf(str) === -1)
+                    
+                    let str_node = type.toLowerCase();
+                    let a_srch_parts = str.toLowerCase().split(" ");
+                    let passTextSearch = true;
+                    for(let i_srch of a_srch_parts){
+                        // LiteGraph.debug("search","check",i_srch,str_node); // excessive debug, make new higher level
+                        if(i_srch.trim() === "") continue;
+                        if(str_node.indexOf(i_srch) == -1){
+                            passTextSearch = false;
+                            // LiteGraph.debug("search","do not pass",i_srch,str_node); // excessive debug, make new higher level
+                            break;
+                        }
+                    }
+
+                    if ((!options.show_all_if_empty || str) && !passTextSearch)
                         return false;
 
                     // filter by slot IN, OUT types

@@ -126,8 +126,9 @@ export var LiteGraph = new class {
         this.shift_click_do_break_link_from = false; // [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys
         this.click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
 
-        this.search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
         this.search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
+        this.search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+        this.search_hide_on_mouse_leave_time = 1200; // time before hiding
         this.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
 
         this.show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
