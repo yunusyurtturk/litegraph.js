@@ -2,23 +2,33 @@ import { LiteGraph } from "../litegraph.js";
 
 class LGAudio {
 
+    static audios_connected = {};
+
     static getAudioContext() {
         if (!this._audio_context) {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            console.debug("LGAudio","init _audio_context",window.AudioContext);
             if (!window.AudioContext) {
                 console.error?.("AudioContext not supported by browser");
                 return null;
             }
-            this._audio_context = new AudioContext();
-            this._audio_context.onmessage = function (msg) {
-                console.log?.("msg", msg);
-            };
-            this._audio_context.onended = function (msg) {
-                console.log?.("ended", msg);
-            };
-            this._audio_context.oncomplete = function (msg) {
-                console.log?.("complete", msg);
-            };
+            try {
+                this._audio_context = new AudioContext();
+            }catch(e){
+                console.error("LGAudio","_audio_context failed",this._audio_context);
+                this._audio_context = false;
+            }
+            if(this._audio_context) {
+                this._audio_context.onmessage = function (msg) {
+                    console.log?.("msg", msg);
+                };
+                this._audio_context.onended = function (msg) {
+                    console.log?.("ended", msg);
+                };
+                this._audio_context.oncomplete = function (msg) {
+                    console.log?.("complete", msg);
+                };
+            }
         }
 
         // in case it crashes
@@ -30,16 +40,24 @@ class LGAudio {
     static connect(audionodeA, audionodeB) {
         try {
             audionodeA.connect(audionodeB);
+            this.audios_connected[audionodeA] = audionodeB;
+            console.debug("LGraphAudio:","audioNodesConnected", audionodeA, audionodeB);
         } catch (err) {
-            console.warn?.("LGraphAudio:", err);
+            console.warn?.("LGraphAudio:","connect", err);
         }
     }
 
     static disconnect(audionodeA, audionodeB) {
         try {
-            audionodeA.disconnect(audionodeB);
+            if(this.audios_connected[audionodeA]){
+                audionodeA.disconnect(audionodeB);
+                this.audios_connected[audionodeA] = false;
+                console.debug("LGraphAudio:","audioNodesDisconnected", audionodeA, audionodeB);
+            }else{
+                console.debug("LGraphAudio:","Not disconnecting unexisting connection",this.audios_connected, audionodeA, audionodeB);
+            }
         } catch (err) {
-            console.warn?.("LGraphAudio:", err);
+            console.warn?.("LGraphAudio:","disconnect", err);
         }
     }
 
@@ -112,8 +130,11 @@ class LGAudio {
 
     // used by many nodes
     static onConnectionsChange(connection, slot, connected, link_info) {
+        console.debug("LGAudio","onConnectionsChange",connection, slot, connected, link_info);
+
         // only process the outputs events
         if (connection != LiteGraph.OUTPUT) {
+            console.warn("LGAudio","onConnectionsChange","skip cheking INPUT");
             return;
         }
 
@@ -123,6 +144,7 @@ class LGAudio {
         }
 
         if (!target_node) {
+            console.warn("LGAudio","onConnectionsChange","no target_node");
             return;
         }
 
@@ -145,8 +167,10 @@ class LGAudio {
         // do the connection/disconnection
         if (connected) {
             LGAudio.connect(local_audionode, target_audionode);
+            console.debug("LGAudio","onConnectionsChange","CONNECT");
         } else {
             LGAudio.disconnect(local_audionode, target_audionode);
+            console.debug("LGAudio","onConnectionsChange","DISCONNECT");
         }
     }
 
@@ -175,6 +199,9 @@ class LGAudio {
         };
 
         class_object.prototype.onConnectionsChange = LGAudio.onConnectionsChange;
+        class_object.prototype.onConfigure = function(that){
+            console.debug(that.type,that.id,"audio node configured");
+        };
     }
 
     // contains the samples decoded of the loaded audios in AudioBuffer format
