@@ -189,6 +189,14 @@ class objPropertyWidget {
         this.setOutputData(0, this._value);
     }
 
+    onConnectionChanged(connection, slot, connected, link_info) {
+        // only process the inputs
+        if (connection != LiteGraph.INPUT) {
+            return;
+        }
+        this.updateFromInput();
+    }
+
     onExecute() {
         this.updateFromInput();
     }
@@ -432,7 +440,12 @@ class objEvalGlo {
 
     onPropertyChanged(name, value) {
         if (name == "obj_eval" && LiteGraph.allow_scripts)
-            this.compileCode(value);
+            if(this.compileCode(value)){
+                this.title = value;
+            }else{
+                this.title = "";
+                console.warn?.("Compiling failed",value);
+            }
         else
             console.warn?.("Obj string not evaluated, LiteGraph.allow_scripts is false");
     }
@@ -459,11 +472,13 @@ class objEvalGlo {
             // }
             try {
                 this._func = new Function("DATA", "node", code_eval);
+                return true;
             } catch (err) {
                 console.error?.("Error parsing obj evaluation");
                 console.error?.(err);
             }
         }
+        return false;
     }
 
     onExecute() {

@@ -6740,7 +6740,7 @@ export class LGraphCanvas {
 
         let input_html;
 
-        if (type == "string" || type == "number" || type == "array" || type == "object") {
+        if (type == "string" || type == "number" || type == "array" || type == "object" || type == "code") {
             input_html = "<input autofocus type='text' class='value'/>";
         } else if ( (type == "enum" || type == "combo") && info.values) {
             LiteGraph.log_debug("CREATING showEditPropertyValue ENUM COMBO",input,type,dialog);
@@ -6766,7 +6766,7 @@ export class LGraphCanvas {
                 (node.properties[property] ? "checked" : "") +
                 "/>";
         } else {
-            LiteGraph.log_warn("unknown type: " + type);
+            LiteGraph.log_warn("showEditPropertyValue","unknown type",type);
             return;
         }
 

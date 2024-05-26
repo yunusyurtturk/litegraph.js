@@ -413,6 +413,7 @@ export class LGraphNode {
         var link = this.graph.links[link_id];
         if (!link) {
             // bug: weird case but it happens sometimes
+            LiteGraph.log_warn("node getInputData","No link", link_id, slot, this);
             return null;
         }
 
@@ -423,17 +424,19 @@ export class LGraphNode {
         // special case: used to extract data from the incoming connection before the graph has been executed
         var node = this.graph.getNodeById(link.origin_id);
         if (!node) {
+            LiteGraph.log_debug("node getInputData","No origin node, return the link data", link.data, link, slot, this);
             return link.data;
         }
 
         // atlasan: refactor: This is a basic, but seems working, version. Consider moving this out of here and use a single ancestorsCalculation (for each event?)
         if (refresh_tree) {
+            LiteGraph.log_debug("node getInputData","Refreshing ancestors tree", link, slot, this);
             var uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
             var optsAncestors = {action: uIdRand, options: {action_call: uIdRand}};
             this.refreshAncestors(optsAncestors);
         }
 
-        if (node.updateOutputData) {
+        if (node.updateOutputData) { // tag: node event entrypoint
             node.updateOutputData(link.origin_slot);
         } else {
             node.doExecute?.();

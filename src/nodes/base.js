@@ -1508,6 +1508,14 @@ class Watch {
         this.value = 0;
     }
 
+    onConnectionChanged(connection, slot, connected, link_info) {
+        // only process the inputs
+        if (connection != LiteGraph.INPUT) {
+            return;
+        }
+        this.value = this.getInputData(0,true); // force update
+    }
+
     onExecute() {
         if (this.inputs[0]) {
             this.value = this.getInputData(0);
