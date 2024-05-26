@@ -37,7 +37,12 @@ This fork takes the 2011-2014 code for LiteGraph and renews it.
 * Removed LiteGraph.pointerRemoveListener in favor of removeEventListener()
 * Removed some unused/blank methods
 * Removed Mesh.compile in favor of Mesh.upload
+
 * Removed LiteGraph.pointerevents_method
+* that was a property ("mouse"|"pointer") intended for retrocompatibility moving towards verified stable
+* used trickly like : e.type == LiteGraph.pointerevents_method+"down" : mousedown pointerdown
+* ? what does this break ?
+
 * All mouse events are now *pointer* events
 
 # For 0.10.x/master
