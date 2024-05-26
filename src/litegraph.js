@@ -233,19 +233,19 @@ export var LiteGraph = new class {
 
         console[lvl_txt]("[LG]",...clean_args(arguments));
     }
-    error() {
+    log_error() {
         this.logging(0,...arguments);
     }
-    warn() {
+    log_warn() {
         this.logging(1,...arguments);
     }
-    info() {
+    log_info() {
         this.logging(2,...arguments);
     }
-    log() {
+    log_log() {
         this.logging(3,...arguments);
     }
-    debug() {
+    log_debug() {
         this.logging(4,...arguments);
     }
 
@@ -340,7 +340,7 @@ export var LiteGraph = new class {
 
         // warnings
         if (base_class.prototype.onPropertyChange) {
-            LiteGraph.warn("LiteGraph node class " +
+            LiteGraph.log_warn("LiteGraph node class " +
                     type +
                     " has onPropertyChange method, it must be called onPropertyChanged with d at the end");
         }
@@ -1041,7 +1041,7 @@ export var LiteGraph = new class {
     }
 
     closeAllContextMenus = () => {
-        LiteGraph.warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
+        LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenu.closeAll();
     };
 }

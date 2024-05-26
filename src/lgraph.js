@@ -434,7 +434,7 @@ export class LGraph {
         }
 
         if (L.length != this._nodes.length && LiteGraph.debug) {
-            LiteGraph.warn?.("something went wrong, nodes missing");
+            LiteGraph.log_warn("something went wrong, nodes missing");
         }
 
         var l = L.length;
@@ -711,7 +711,7 @@ export class LGraph {
 
         // nodes
         if (node.id != -1 && this._nodes_by_id[node.id] != null) {
-            LiteGraph.warn?.("LiteGraph: there is already a node with this ID, changing it");
+            LiteGraph.log_warn("LiteGraph: there is already a node with this ID, changing it");
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
             } else {
@@ -1048,7 +1048,7 @@ export class LGraph {
         }
 
         if (this.inputs[name]) {
-            LiteGraph.error?.("there is already one input with that name");
+            LiteGraph.log_error("there is already one input with that name");
             return false;
         }
 
@@ -1158,7 +1158,7 @@ export class LGraph {
         }
 
         if (this.outputs[name]) {
-            LiteGraph.error?.("there is already one output with that name");
+            LiteGraph.log_error("there is already one output with that name");
             return false;
         }
 
@@ -1348,7 +1348,7 @@ export class LGraph {
             var link = this.links[i];
             if (!link.serialize) {
                 // weird bug I havent solved yet
-                LiteGraph.warn?.("weird LLink bug, link info is not a LLink but a regular object");
+                LiteGraph.log_warn("weird LLink bug, link info is not a LLink but a regular object");
                 var link2 = new LiteGraph.LLink();
                 for (var j in link) {
                     link2[j] = link[j];
@@ -1399,7 +1399,7 @@ export class LGraph {
             for (var i = 0; i < data.links.length; ++i) {
                 var link_data = data.links[i];
                 if(!link_data) { // @BUG: "weird bug" originally
-                    LiteGraph.warn?.("serialized graph link data contains errors, skipping.");
+                    LiteGraph.log_warn("serialized graph link data contains errors, skipping.");
                     continue;
                 }
                 var link = new LiteGraph.LLink();
@@ -1464,7 +1464,7 @@ export class LGraph {
         if (!data._version) {
             this.onGraphChanged({action: "graphConfigure", doSave: false}); // this._version++;
         } else {
-            LiteGraph.debug?.("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
+            LiteGraph.log_debug("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
         }
         this.setDirtyCanvas(true, true);
         return error;
@@ -1496,7 +1496,7 @@ export class LGraph {
         req.send(null);
         req.onload = (_event) => {
             if (req.status !== 200) {
-                LiteGraph.error?.("Error loading graph:", req.status, req.response);
+                LiteGraph.log_error("Error loading graph:", req.status, req.response);
                 return;
             }
             var data = JSON.parse( req.response );
@@ -1504,7 +1504,7 @@ export class LGraph {
             callback?.();
         };
         req.onerror = (err) => {
-            LiteGraph.error?.("Error loading graph:", err);
+            LiteGraph.log_error("Error loading graph:", err);
         };
     }
 
@@ -1547,15 +1547,15 @@ export class LGraph {
         this._version++;
 
         if(opts.action) {
-            LiteGraph.debug?.("Graph change",opts.action);
+            LiteGraph.log_debug("Graph change",opts.action);
         } else {
-            LiteGraph.debug?.("Graph change, no action",opts);
+            LiteGraph.log_debug("Graph change, no action",opts);
         }
 
         // TAG: EXTENSION, COULD extract and MOVE history to feature ?
         if(opts.doSave && LiteGraph.actionHistory_enabled) {
 
-            LiteGraph.debug?.("LG_history","onGraphChanged SAVE :: "+opts.action); // debug history
+            LiteGraph.log_debug("LG_history","onGraphChanged SAVE :: "+opts.action); // debug history
 
             var oHistory = { actionName: opts.action };
             if(opts.doSaveGraph) {
@@ -1567,13 +1567,13 @@ export class LGraph {
 
             // check if pointer has gone back: remove newest
             while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1) {
-                LiteGraph.debug?.("LG_history","popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
+                LiteGraph.log_debug("LG_history","popping: gone back? "+(obH.actionHistoryPtr+" < "+(obH.actionHistoryVersions.length-1))); // debug history
                 obH.actionHistoryVersions.pop();
             }
             // check if maximum saves
             if(obH.actionHistoryVersions.length>=LiteGraph.actionHistoryMaxSave) {
                 var olderSave = obH.actionHistoryVersions.shift();
-                LiteGraph.debug?.("LG_history","maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
+                LiteGraph.log_debug("LG_history","maximum saves reached: "+obH.actionHistoryVersions.length+", remove older: "+olderSave); // debug history
                 obH.actionHistory[olderSave] = false; // unset
             }
 
@@ -1584,7 +1584,7 @@ export class LGraph {
             // save to pointer
             obH.actionHistory[obH.actionHistoryPtr] = oHistory;
 
-            LiteGraph.debug?.("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
+            LiteGraph.log_debug("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
         }
     }
 
@@ -1601,19 +1601,19 @@ export class LGraph {
 
         if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0) {
             obH.actionHistoryPtr--;
-            LiteGraph.debug?.("LG_history","step back: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.log_debug("LG_history","step back: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                LiteGraph.warn?.("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.log_warn("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr++;
                 return false;
             }else{
-                LiteGraph.debug?.("LG_history","loaded back: "+obH.actionHistoryPtr); // debug history
-                LiteGraph.debug?.(this.history);
+                LiteGraph.log_debug("LG_history","loaded back: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.log_debug(this.history);
                 return true;
             }
         }else{
-            LiteGraph.debug?.("LG_history","is already at older state");
+            LiteGraph.log_debug("LG_history","is already at older state");
             return false;
         }
     }
@@ -1631,18 +1631,18 @@ export class LGraph {
 
         if (obH.actionHistoryPtr<obH.actionHistoryVersions.length) {
             obH.actionHistoryPtr++;
-            LiteGraph.debug?.("LG_history","step forward: "+obH.actionHistoryPtr); // debug history
+            LiteGraph.log_debug("LG_history","step forward: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
-                LiteGraph.warn?.("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
+                LiteGraph.log_warn("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
                 obH.actionHistoryPtr--;
                 return false;
             }else{
-                LiteGraph.debug?.("LG_history","loaded forward: "+obH.actionHistoryPtr); // debug history
+                LiteGraph.log_debug("LG_history","loaded forward: "+obH.actionHistoryPtr); // debug history
                 return true;
             }
         }else{
-            LiteGraph.debug?.("LG_history","is already at newer state");
+            LiteGraph.log_debug("LG_history","is already at newer state");
             return false;
         }
     }
@@ -1665,7 +1665,7 @@ export class LGraph {
             var tmpHistory = JSON.stringify(this.history);
             this.configure( obH.actionHistory[opts.iVersion].graphSave );
             this.history = JSON.parse(tmpHistory);
-            LiteGraph.debug?.("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
+            LiteGraph.log_debug("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
             // no: this.onGraphLoaded();
             return true;
         }else{

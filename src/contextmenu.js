@@ -89,7 +89,7 @@ export class ContextMenu {
         if (!parentMenu)
             return;
         if (parentMenu.constructor !== this.constructor) {
-            LiteGraph.error?.("parentMenu must be of class ContextMenu, ignoring it");
+            LiteGraph.log_error("parentMenu must be of class ContextMenu, ignoring it");
             this.options.parentMenu = null;
             return;
         }
@@ -108,7 +108,7 @@ export class ContextMenu {
             eventClass !== "CustomEvent" &&
             eventClass !== "PointerEvent"
         ) {
-            LiteGraph.error?.(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
+            LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
             this.options.event = null;
         }
     }
@@ -164,10 +164,10 @@ export class ContextMenu {
                     root.f_textfilter = false;
                 }
                 root.f_textfilter = function(e) {
-                    // LiteGraph.debug?.("keyPressInsideContext",e,that,this,options);
+                    // LiteGraph.log_debug("keyPressInsideContext",e,that,this,options);
                     if(that.current_submenu) {
                         // removing listeners is buggy, this prevent parent menus to process the key event
-                        LiteGraph.debug?.("Prevent filtering on ParentMenu",that);
+                        LiteGraph.log_debug("Prevent filtering on ParentMenu",that);
                         return;
                     }
                     if(!that.allOptions) {
@@ -243,13 +243,13 @@ export class ContextMenu {
                                 if(that.selectedOption !== false) {
 
                                     if(that.allOptions[that.selectedOption]) {
-                                        LiteGraph.debug?.("ContextElement simCLICK",that.allOptions[iO]);
+                                        LiteGraph.log_debug("ContextElement simCLICK",that.allOptions[iO]);
                                         // checking because of bad event removal :: FIX
                                         if(that.allOptions[that.selectedOption].do_click) {
                                             that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                         }
                                     }else{
-                                        LiteGraph.debug?.("ContextElement selection wrong",that.selectedOption);
+                                        LiteGraph.log_debug("ContextElement selection wrong",that.selectedOption);
                                         // selection fix when filtering
                                         that.selectedOption = that.selectedOption!==false
                                             ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
@@ -264,13 +264,13 @@ export class ContextMenu {
                                                 // && that.allOptions[iO].textContent !== "Add Node"
                                                 && that.allOptions[iO].textContent !== "Search"
                                             ) {
-                                                LiteGraph.debug?.("ContextElement simCLICK",that.allOptions[iO]);
+                                                LiteGraph.log_debug("ContextElement simCLICK",that.allOptions[iO]);
                                                 // try cleaning parent listeners
                                                 if(root.f_textfilter) {
                                                     if(doc) {
                                                         doc.removeEventListener('keydown',root.f_textfilter,false);
                                                         doc.removeEventListener('keydown',root.f_textfilter,true);
-                                                        LiteGraph.debug?.("Cleaned ParentContextMenu listener",doc,that);
+                                                        LiteGraph.log_debug("Cleaned ParentContextMenu listener",doc,that);
                                                     }
                                                 }
                                                 var ignore_parent_menu = false; // ?
@@ -284,7 +284,7 @@ export class ContextMenu {
                                 kdone = true;
                                 break;
                             default:
-                                LiteGraph.debug?.("ContextMenu filter: keyEvent",e.keyCode,e.key);
+                                LiteGraph.log_debug("ContextMenu filter: keyEvent",e.keyCode,e.key);
                                 if (String.fromCharCode(e.key).match(/(\w|\s)/g)) {
                                     // pressed key is a char
                                 } else {
@@ -366,10 +366,10 @@ export class ContextMenu {
                     // process selection (up down)
                     var hasSelected = that.selectedOption !== false;
                     if(hasSelected) {
-                        LiteGraph.debug?.("ContextMenu selection: ",that.selectedOption);
+                        LiteGraph.log_debug("ContextMenu selection: ",that.selectedOption);
                         for(let iO in that.allOptions) {
                             var isSelected = that.selectedOption+"" === iO+"";
-                            // LiteGraph.debug?.("ContextMenu check sel: ",that.selectedOption,iO);
+                            // LiteGraph.log_debug("ContextMenu check sel: ",that.selectedOption,iO);
                             if(isSelected) {
                                 // that.allOptions[iO].style.backgroundColor = "#333";
                                 that.allOptions[iO].classList.add("selected");
@@ -402,7 +402,7 @@ export class ContextMenu {
                     ,true,
                 );
             }else{
-                LiteGraph.warn?.("NO root document to add context menu and event",doc,options);
+                LiteGraph.log_warn("NO root document to add context menu and event",doc,options);
             }
         }
 
@@ -434,7 +434,7 @@ export class ContextMenu {
             const body_rect = document.body.getBoundingClientRect();
             const root_rect = root.getBoundingClientRect();
             if(body_rect.height === 0)
-                LiteGraph.error?.("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
+                LiteGraph.log_error("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
 
             if (body_rect.width && left > body_rect.width - root_rect.width - 10) {
                 left = body_rect.width - root_rect.width - 10;
@@ -515,14 +515,14 @@ export class ContextMenu {
             const value = this.value;
             let closeParent = true;
 
-            LiteGraph.debug?.("ContextMenu handleMenuItemClick",value,options,closeParent,this.current_submenu,this);
+            LiteGraph.log_debug("ContextMenu handleMenuItemClick",value,options,closeParent,this.current_submenu,this);
 
             // Close any current submenu
             that.current_submenu?.close(event);
 
             // Execute global callback
             if (options.callback) {
-                LiteGraph.debug?.("ContextMenu handleMenuItemClick callback",this,value,options,event,that,options.node);
+                LiteGraph.log_debug("ContextMenu handleMenuItemClick callback",this,value,options,event,that,options.node);
 
                 const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
                 if (globalCallbackResult === true) {
@@ -534,14 +534,14 @@ export class ContextMenu {
             if (value) {
                 if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
 
-                    LiteGraph.debug?.("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,event,that,options.node);
+                    LiteGraph.log_debug("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,event,that,options.node);
                     const itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
                     if (itemCallbackResult === true) {
                         closeParent = false;
                     }
                 }
                 if (value.submenu) {
-                    LiteGraph.debug?.("ContextMenu SUBMENU",this,value,value.submenu.options,event,that,options);
+                    LiteGraph.log_debug("ContextMenu SUBMENU",this,value,value.submenu.options,event,that,options);
 
                     if (!value.submenu.options) {
                         throw new Error("ContextMenu submenu needs options");

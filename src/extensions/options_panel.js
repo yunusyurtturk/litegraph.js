@@ -54,9 +54,9 @@ LGraphCanvas.showShowGraphOptionsPanel = function(refOpts, obEv) {
     if(this.constructor && this.constructor.name == "HTMLDivElement") {
         // assume coming from the menu event click
         if (! obEv?.event?.target?.lgraphcanvas) {
-            LiteGraph.warn?.("References not found to add optionPanel",refOpts, obEv); // need a ref to canvas obj
+            LiteGraph.log_warn("References not found to add optionPanel",refOpts, obEv); // need a ref to canvas obj
             if (LiteGraph.debug)
-                LiteGraph.debug?.("!obEv || !obEv.event || !obEv.event.target || !obEv.event.target.lgraphcanvas",obEv,obEv.event,obEv.event.target,obEv.event.target.lgraphcanvas);
+                LiteGraph.log_debug("!obEv || !obEv.event || !obEv.event.target || !obEv.event.target.lgraphcanvas",obEv,obEv.event,obEv.event.target,obEv.event.target.lgraphcanvas);
             return;
         }
         graphcanvas = obEv.event.target.lgraphcanvas;
@@ -92,24 +92,24 @@ LGraphCanvas.showShowGraphOptionsPanel = function(refOpts, obEv) {
                     if (options.values && options.key){
                         var kV = Object.values(options.values).indexOf(value);
                         if (kV>=0 && options.values[kV]){
-                            LiteGraph.debug?.("update graph options: "+options.key+": "+kV);
+                            LiteGraph.log_debug("update graph options: "+options.key+": "+kV);
                             graphcanvas[options.key] = kV;
-                            //LiteGraph.debug?.(graphcanvas);
+                            //LiteGraph.log_debug(graphcanvas);
                             break;
                         }
                     }
-                    LiteGraph.warn?.("unexpected options");
-                    LiteGraph.debug?.(options);
+                    LiteGraph.log_warn("unexpected options");
+                    LiteGraph.log_debug(options);
                     break;*/
                 default:
-                    // LiteGraph.debug?.("want to update graph options: "+name+": "+value);
+                    // LiteGraph.log_debug("want to update graph options: "+name+": "+value);
                     if (options && options.key) {
                         name = options.key;
                     }
                     if (options.values) {
                         value = Object.values(options.values).indexOf(value);
                     }
-                    // LiteGraph.debug?.("update graph option: "+name+": "+value);
+                    // LiteGraph.log_debug("update graph option: "+name+": "+value);
                     graphcanvas[name] = value;
                     break;
             }

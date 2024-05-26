@@ -8,7 +8,7 @@ export var gl = null; // webgl_canvas
 if (typeof(global)=="object") global.LiteGraph = LiteGraph;
 if (typeof(window)=="object") window.LiteGraph = LiteGraph;
 
-LiteGraph.info?.("LiteGraph included");
+LiteGraph.log_info("LiteGraph included");
 
 var webgl_canvas = null;
 
@@ -66,13 +66,13 @@ window.addEventListener("load", (event) => {
 		var url = option.dataset["url"];
 		
 		if(url){
-			LiteGraph.info("Editor:","Loading",url);
+			LiteGraph.log_info("Editor:","Loading",url);
 			graph.load( url );
 		}else if(option.callback){
-			LiteGraph.info("Editor:","callback");
+			LiteGraph.log_info("Editor:","callback");
 			option.callback();
 		}else{
-			LiteGraph.info("Editor:","Clearing");
+			LiteGraph.log_info("Editor:","Clearing");
 			graph.clear();
 		}
 	});
@@ -132,7 +132,7 @@ function addDemo( name, url ) {
 		option.callback = url;
 	option.innerHTML = name;
 	if(dom_demo_select) dom_demo_select.appendChild( option );
-	LiteGraph.info("Editor:","Add demo",name,url);
+	LiteGraph.log_info("Editor:","Add demo",name,url);
 }
 
 
@@ -164,7 +164,7 @@ function enableWebGL() {
 	const on_ready = () => {
 		console.log?.(this.src);
 		if(!window.GL) {
-			LiteGraph.warn?.("GL doesn't exist");
+			LiteGraph.log_warn("GL doesn't exist");
 			return;
 		}
 		webgl_canvas = document.createElement("canvas");
@@ -191,7 +191,7 @@ function enableWebGL() {
 		parent.appendChild( webgl_canvas );
 		gl = GL.create({ canvas: webgl_canvas });
 		if(!gl) {
-			LiteGraph.warn?.("gl doesn't exist");
+			LiteGraph.log_warn("gl doesn't exist");
 			return;
 		}
 		libs = [
