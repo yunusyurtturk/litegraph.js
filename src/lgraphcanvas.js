@@ -372,7 +372,7 @@ export class LGraphCanvas {
         this._events_binded = true;
         var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
-        var document = ref_window.document; // hack used when moving canvas between windows
+        var document = ref_window.document; // multiwindows
 
         // Pointer
         this._mousedown_callback = this.processMouseDown.bind(this);
@@ -5614,8 +5614,7 @@ export class LGraphCanvas {
         var destType = false;
         if (node_right && node_right.outputs && node_right.outputs[link.target_slot]) destType = node_right.inputs[link.target_slot].type;
 
-        // @TODO: See if deleting this is a bug:
-        // var options = ["Add Node",null,"Delete",null];
+        var options = ["Add Node",null,"Delete",null];
 
 
         var menu = new LiteGraph.ContextMenu(options, {
