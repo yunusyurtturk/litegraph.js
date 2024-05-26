@@ -9,8 +9,11 @@ window.addEventListener("load", (event) => {
         var domLGEditorTopBarSelector = document.getElementById("LGEditorTopBarSelector");
         // inject button
         if(domLGEditorTopBarSelector){
-            domLGEditorTopBarSelector.innerHTML = 	"<button class='btn' id='btn_console'>Console</button> "
-                                                    +domLGEditorTopBarSelector.innerHTML;
+            let newel = document.createElement("button");
+            newel.textContent = "Console";
+            newel.id = "btn_console";
+            newel.classList.add("btn");
+            domLGEditorTopBarSelector.prepend(newel);
         }else{
             console.warn("LGEditor:","element not found LGEditorTopBarSelector");
         }
