@@ -199,6 +199,8 @@ export var LiteGraph = new class {
 
         this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
         this.logging_set_level(2);
+
+        this.callbacks_handlers = {};
     }
 
     // set logging debug_level
@@ -1054,6 +1056,56 @@ export var LiteGraph = new class {
     closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenu.closeAll();
+    };
+
+    // WIP
+    // intended to replace direct (single) assignment of callbacks [ event entrypoint ]
+    registerCallbackHandler = (name, callback, opts) => {
+        if(!opts || typeof(opts)!=="object") opts = {};
+        const def_opts = {priority: 0};
+        opts = Object.assign(def_opts, opts);
+        
+        if(typeof(this.callbacks_handlers[name]) === "undefined"){
+            this.callbacks_handlers[name] = {last_id: 0, handlers:{}};
+        }
+        const h_id = this.callbacks_handlers[name].last_id+1;
+
+        LiteGraph.log_info("registerCallbackHandler","new callback",name,h_id);
+
+        this.callbacks_handlers[name].handlers[h_id] = {priority: opts.priority, callback: callback};
+
+        // sort descending
+        this.callbacks_handlers[name].handlers[h_id].sort((a, b) => b.priority - a.priority);
+
+        LiteGraph.log_info("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
+
+        return h_id; // return the cbhandle id
+    };
+    unregisterCallbackHandler = (name, h_id) => {
+        if(typeof(this.callbacks_handlers[name]) !== "undefined"){
+            if(typeof(this.callbacks_handlers[name][h_id]) !== "undefined"){
+                LiteGraph.log_info("unregisterCallbackHandler",name,h_id,this.callbacks_handlers[name]);
+                delete this.callbacks_handlers[name][h_id];
+                LiteGraph.log_info("unregisterCallbackHandler","removed",h_id,this.callbacks_handlers[name]);
+                return true;
+            }
+        }
+        return false;
+    };
+    processCallbackHandlers = (name,opts) => {
+        if(!opts || typeof(opts)!=="object") opts = {};
+        const def_opts = {
+            // WIP :: think try and setup
+            // return: "first", skip_null_return: true, append_last_return: false
+        };
+        opts = Object.assign(def_opts, opts);
+
+        if(typeof(this.callbacks_handlers[name]) !== "undefined"){
+            for(let cbhX of this.callbacks_handlers[name]){
+                LiteGraph.log_info("processCallbackHandlers",name,cbhX);
+                cbhX(...(arguments.slice(2)));
+            }
+        }
     };
 }
 
