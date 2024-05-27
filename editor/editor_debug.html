@@ -40,6 +40,54 @@
     <script type="module" src="js/demos.js"></script>
 	<script type="module" src="js/code.js"></script>
 
+	<script>
+		window.addEventListener("load", (event) => {
+
+			let cbh1 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("CB1",arguments);
+			});
+			let cbh2 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("CB2",arguments);
+			});
+			let cbh3 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("CB3",arguments);
+			});
+			LiteGraph.onNodeTypeRegistered = function(){
+				console.info("CB_standard",arguments);
+			}
+
+			// testing
+			function TestRegister() {
+				this.addInput("in 1","number");
+			}
+			TestRegister.title = "Test Callbacks";
+			LiteGraph.registerNodeType("features/test_callbacks", TestRegister);
+
+			// remove handler
+			// unregister
+			if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh1)){
+				console.info("Callback 1 unregistered");
+			}else{
+				console.warn("FAILED Callback 1 unregister");
+			}
+			if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh2)){
+				console.info("Callback 2 unregistered");
+			}else{
+				console.warn("FAILED Callback 2 unregister");
+			}
+			// leave callback 3
+
+			// testing 2
+			function TestRegister2() {
+				this.addInput("in 1","number");
+			}
+			TestRegister2.title = "Test Callbacks";
+			LiteGraph.registerNodeType("features/test_callbacks2", TestRegister2);
+
+
+		});
+
+	</script>
 
 	<!--  htmlConsole use to debug on mobile, include and set editorUseHtmlConsole in defaults.js -->
 	<!-- enable console style, html, js enabling/disabling this comment here->  -->
