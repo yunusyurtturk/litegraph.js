@@ -202,7 +202,7 @@ export var LiteGraph = new class {
     }
 
     // set logging debug_level
-    // from -1 (none), 0 (error), .. to 4 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
+    // from -1 (none), 0 (error), .. to 5 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
     // could be set higher to enable verbose logging
     logging_set_level(v) {
         this.debug_level = Number(v);
@@ -213,15 +213,18 @@ export var LiteGraph = new class {
     logging(lvl/**/) { // arguments
 
         if(!this.debug && this.debug_level>0) {
-            // force onnly errors
+            // force only errors
             this.debug_level = 0;
         }
         
-        if(lvl > this.debug_level)
+        if(lvl > this.debug_level){
             return; // -- break, log only below or equal current --
+        }
 
         function clean_args(args) {
             let aRet = [];
+            if(lvl<0 || lvl>4)
+                aRet.push("loglvl:"+lvl); // include not standard log level
             for(let iA=1; iA<args.length; iA++) {
                 if(typeof(args[iA])!=="undefined") aRet.push(args[iA]);
             }
@@ -229,7 +232,7 @@ export var LiteGraph = new class {
         }
 
         let lvl_txt = "debug";
-        if(lvl>=0&&lvl<=4) lvl_txt = ['error', 'warn', 'info', 'log', 'debug'][lvl];
+        if(lvl>=0 && lvl<=4) lvl_txt = ['error', 'warn', 'info', 'log', 'debug'][lvl];
 
         if(typeof(console[lvl_txt])!=="function") {
             console.warn("[LG-log] invalid console method",lvl_txt,clean_args(arguments));

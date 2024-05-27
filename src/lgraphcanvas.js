@@ -1681,8 +1681,11 @@ export class LGraphCanvas {
             scale *= 1 / 1.1;
         }
 
-        // this.setZoom( scale, [ e.clientX, e.clientY ] );
-        this.ds.changeScale(scale, [e.clientX, e.clientY]);
+        var rect = e.target.getBoundingClientRect();
+        this.setZoom( scale, [ e.clientX - rect.left, e.clientY - rect.top ] );
+        // TODO should detect container offset, atm seems using global coordinates
+        // this.setZoom( scale, [ e.localX, e.localY ] );
+        // this.ds.changeScale(scale, [e.clientX, e.clientY]);
 
         this.graph.change();
 
@@ -2330,25 +2333,26 @@ export class LGraphCanvas {
      **/
     setZoom(value, zooming_center) {
         this.ds.changeScale(value, zooming_center);
+        
         /*
-    if(!zooming_center && this.canvas)
-        zooming_center = [this.canvas.width * 0.5,this.canvas.height * 0.5];
+        if(!zooming_center && this.canvas)
+            zooming_center = [this.canvas.width * 0.5,this.canvas.height * 0.5];
 
-    var center = this.convertOffsetToCanvas( zooming_center );
+        var center = this.convertOffsetToCanvas( zooming_center );
 
-    this.ds.scale = value;
+        this.ds.scale = value;
 
-    if(this.scale > this.max_zoom)
-        this.scale = this.max_zoom;
-    else if(this.scale < this.min_zoom)
-        this.scale = this.min_zoom;
+        if(this.scale > this.max_zoom)
+            this.scale = this.max_zoom;
+        else if(this.scale < this.min_zoom)
+            this.scale = this.min_zoom;
 
-    var new_center = this.convertOffsetToCanvas( zooming_center );
-    var delta_offset = [new_center[0] - center[0], new_center[1] - center[1]];
+        var new_center = this.convertOffsetToCanvas( zooming_center );
+        var delta_offset = [new_center[0] - center[0], new_center[1] - center[1]];
 
-    this.offset[0] += delta_offset[0];
-    this.offset[1] += delta_offset[1];
-    */
+        this.offset[0] += delta_offset[0];
+        this.offset[1] += delta_offset[1];
+        */
 
         this.dirty_canvas = true;
         this.dirty_bgcanvas = true;
@@ -4974,6 +4978,9 @@ export class LGraphCanvas {
             var parent = this.canvas.parentNode;
             width = parent.offsetWidth;
             height = parent.offsetHeight;
+            LiteGraph.log_debug("lgraphcanvas","resize","not passed: AUTO",parent,width,height);
+        }else{
+            LiteGraph.log_debug("lgraphcanvas","resize","passed",width,height,parent);
         }
 
         if (this.canvas.width == width && this.canvas.height == height) {

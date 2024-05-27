@@ -193,6 +193,8 @@ export class DragAndScale {
      */
     changeScale(value, zooming_center) {
 
+        LiteGraph.log_debug("dragandscale","changeScale",value,zooming_center);
+
         value = LiteGraph.clamp(value, this.min_scale, this.max_scale);
 
         if (value == this.scale || !this.element) {
@@ -209,16 +211,20 @@ export class DragAndScale {
         ];
 
         var center = this.convertCanvasToOffset(zooming_center);
+        LiteGraph.log_debug("dragandscale","changeScale","center",center);
         this.scale = value;
         if (Math.abs(this.scale - 1) < 0.01) {
             this.scale = 1;
         }
-
+        
         var new_center = this.convertCanvasToOffset(zooming_center);
+        LiteGraph.log_debug("dragandscale","changeScale","new center",new_center);
         var delta_offset = [
             new_center[0] - center[0],
             new_center[1] - center[1],
         ];
+
+        LiteGraph.log_debug("dragandscale","changeScale",value,zooming_center);
 
         this.offset[0] += delta_offset[0];
         this.offset[1] += delta_offset[1];

@@ -1,7 +1,7 @@
 import { LiteGraph } from "../../src/litegraph.js";
 
 LiteGraph.debug = true; // enable logging
-LiteGraph.logging_set_level(5); // -1 is none, 0 is error level, 4 is all up to debug, more is for excessive : will set LiteGraph.debug_level
+LiteGraph.logging_set_level(6); // -1 is none, 0 is error level, 5 is all up to debug, more is for verbose : will set LiteGraph.debug_level
 
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;

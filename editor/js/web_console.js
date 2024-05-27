@@ -51,7 +51,9 @@ window.addEventListener("load", (event) => {
             var objDiv = document.getElementById("console-container");
             objDiv.scrollTop = objDiv.scrollHeight;
         }
-        console.debug = console.log;
+
+        // removed :: do better if needed
+        // !!! console.debug = console.log;
         
         console.log("going into html console");
         
