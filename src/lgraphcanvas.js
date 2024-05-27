@@ -1681,11 +1681,11 @@ export class LGraphCanvas {
             scale *= 1 / 1.1;
         }
 
+        // TODO check this, probably should use DragAndScale instead
+        // should check too that target is always the correct element when getting buondingBox
+        // this.ds.changeScale(scale, [e.clientX, e.clientY]);
         var rect = e.target.getBoundingClientRect();
         this.setZoom( scale, [ e.clientX - rect.left, e.clientY - rect.top ] );
-        // TODO should detect container offset, atm seems using global coordinates
-        // this.setZoom( scale, [ e.localX, e.localY ] );
-        // this.ds.changeScale(scale, [e.clientX, e.clientY]);
 
         this.graph.change();
 
