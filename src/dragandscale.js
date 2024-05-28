@@ -216,7 +216,7 @@ export class DragAndScale {
         if (Math.abs(this.scale - 1) < 0.01) {
             this.scale = 1;
         }
-        
+
         var new_center = this.convertCanvasToOffset(zooming_center);
         LiteGraph.log_debug("dragandscale","changeScale","new center",new_center);
         var delta_offset = [

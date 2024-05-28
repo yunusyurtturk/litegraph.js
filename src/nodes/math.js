@@ -626,6 +626,9 @@ class MathAverageFilter {
         if (value < 1) {
             value = 1;
         }
+        if (name == "formula") {
+            this.code_widget.value = value;
+        }
         this.properties.samples = Math.round(value);
         var old = this._values;
 
@@ -637,11 +640,6 @@ class MathAverageFilter {
         }
     }
 
-    onPropertyChanged(name, value) {
-        if (name == "formula") {
-            this.code_widget.value = value;
-        }
-    }
 }
 LiteGraph.registerNodeType("math/average", MathAverageFilter);
 

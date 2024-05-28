@@ -345,8 +345,7 @@ export class ContextMenu {
                         // selection clamp fix when filtering
                         that.selectedOption = that.selectedOption!==false
                             ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
-                            : 0
-                        ;
+                            : 0 ;
                         // fix first filtered pos
                         if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden && that.currentOptions.length) {
                             that.selectedOption = that.currentOptions[0].menu_index;
@@ -382,8 +381,8 @@ export class ContextMenu {
                     }
 
                     // height reset
-                    var body_rect = document.body.getBoundingClientRect();
-                    var root_rect = root.getBoundingClientRect();
+                    // var body_rect = document.body.getBoundingClientRect();
+                    // var root_rect = root.getBoundingClientRect();
                     root.style.top = that.top_original + "px";
                     // if (body_rect.height && top > body_rect.height - root_rect.height - 10) {
                     // var new_top = body_rect.height - root_rect.height - 10;

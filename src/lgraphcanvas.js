@@ -1011,10 +1011,10 @@ export class LGraphCanvas {
                         // search for inputs
                         if (node.inputs) {
                             for ( let i = 0, l = node.inputs.length; i < l; ++i ) {
-                                var input = node.inputs[i];
+                                let input_clk = node.inputs[i];
                                 let link_pos = node.getConnectionPos(true, i);
                                 if (LiteGraph.isInsideRectangle(e.canvasX,e.canvasY,link_pos[0] - 15,link_pos[1] - 10,30,20)) {
-                                    mClikSlot = input;
+                                    mClikSlot = input_clk;
                                     mClikSlot_index = i;
                                     mClikSlot_isOut = false;
                                     break;
@@ -2044,16 +2044,15 @@ export class LGraphCanvas {
 
         x = e.localX;
         y = e.localY;
-        var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
+        is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
         if(!is_inside) {
             LiteGraph.log_debug("graphcanvas processDrop","Outside viewport (local)",x,y);
             return;
         }
 
         var pos = [e.canvasX, e.canvasY];
-        
         var node = this.graph ? this.graph.getNodeOnPos(pos[0], pos[1]) : null;
-        
+
         LiteGraph.log_debug("graphcanvas processDrop","going to process",pos,node);
 
         if (!node) {
@@ -3498,21 +3497,21 @@ export class LGraphCanvas {
             // get first connected slot to render
             if (node.inputs) {
                 for (let i = 0; i < node.inputs.length; i++) {
-                    var slot = node.inputs[i];
+                    var slot_i = node.inputs[i];
                     if (slot.link == null) {
                         continue;
                     }
-                    input_slot = slot;
+                    input_slot = slot_i;
                     break;
                 }
             }
             if (node.outputs) {
                 for (let i = 0; i < node.outputs.length; i++) {
-                    var slot = node.outputs[i];
+                    var slot_o = node.outputs[i];
                     if (!slot.links || !slot.links.length) {
                         continue;
                     }
-                    output_slot = slot;
+                    output_slot = slot_o;
                 }
             }
 
@@ -3602,7 +3601,7 @@ export class LGraphCanvas {
         // node.ttip_oTMultiRet is not set or false the first time
 
         ctx.font = "14px Courier New";
-        var info = ctx.measureText(text);
+        // var info = ctx.measureText(text);
         var w = Math.max(node.size[0],160) + 20; // info.width + 20;
         var h = node.ttip_oTMultiRet ? node.ttip_oTMultiRet.height + 15 : 21;
 
@@ -4807,6 +4806,14 @@ export class LGraphCanvas {
                                 w.value = index;
                         } else { // combo clicked
                             var text_values = values != values_list ? Object.values(values) : values;
+                            let inner_clicked = function(v) {
+                                if(values != values_list)
+                                    v = text_values.indexOf(v);
+                                this.value = v;
+                                inner_value_change(this, v, old_value);
+                                that.dirty_canvas = true;
+                                return false;
+                            }
                             new LiteGraph.ContextMenu(
                                 text_values, {
                                     scale: Math.max(1, this.ds.scale),
@@ -4816,16 +4823,6 @@ export class LGraphCanvas {
                                 },
                                 ref_window,
                             );
-
-                            // @TODO: Excise this, bound to w above
-                            function inner_clicked(v) {
-                                if(values != values_list)
-                                    v = text_values.indexOf(v);
-                                this.value = v;
-                                inner_value_change(this, v, old_value);
-                                that.dirty_canvas = true;
-                                return false;
-                            }
                         }
                         // end mousedown
                     } else if(event.type == "pointerup" && w.type == "number") {
@@ -6610,7 +6607,7 @@ export class LGraphCanvas {
                 if (options.show_general_after_typefiltered
                     && (sIn.value || sOut.value)
                 ) {
-                    var filtered_extra = [];
+                    let filtered_extra = [];
                     for (let i in LiteGraph.registered_node_types) {
                         if( inner_test_filter(i, {inTypeOverride: sIn&&sIn.value?"*":false, outTypeOverride: sOut&&sOut.value?"*":false}) )
                             filtered_extra.push(i);
@@ -6627,7 +6624,7 @@ export class LGraphCanvas {
                 if ((sIn.value || sOut.value) &&
                     ( (helper.childNodes.length == 0 && options.show_general_if_none_on_typefilter) )
                 ) {
-                    var filtered_extra = [];
+                    let filtered_extra = [];
                     for (let i in LiteGraph.registered_node_types) {
                         if( inner_test_filter(i, {skipFilter: true}) )
                             filtered_extra.push(i);

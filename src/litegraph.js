@@ -1025,7 +1025,7 @@ export var LiteGraph = new class {
     }
 
     // used to create nodes from wrapping functions
-    getParameterNames = (func) => { // split & filter [""]
+    getParameterNames = function(func) {
         return (func + "")
             .replace(/[/][/].*$/gm, "") // strip single-line comments
             .replace(/\s+/g, "") // strip white space
@@ -1034,8 +1034,8 @@ export var LiteGraph = new class {
             .replace(/^[^(]*[(]/, "") // extract the parameters
             .replace(/=[^,]+/g, "") // strip any ES6 defaults
             .split(",")
-            .filter(Boolean);
-    }
+            .filter(Boolean); // split & filter [""]
+    };
 
     clamp = (v, a, b) => {
         return a > v ? a : b < v ? b : v;
@@ -1062,7 +1062,7 @@ export var LiteGraph = new class {
 
     // WIP
     // intended to replace direct (single) assignment of callbacks [ event entrypoint ]
-    registerCallbackHandler(name, callback, opts){
+    registerCallbackHandler = function(name, callback, opts){
         if(!opts || typeof(opts)!=="object") opts = {};
         const def_opts = {priority: 0};
         opts = Object.assign(def_opts, opts);
@@ -1077,7 +1077,7 @@ export var LiteGraph = new class {
         }
         const h_id = this.callbacks_handlers[name].last_id++;
 
-        LiteGraph.log_info("registerCallbackHandler","new callback",name,h_id);
+        LiteGraph.log_info("registerCallbackHandler","new callback handler",name,h_id);
 
         this.callbacks_handlers[name].handlers.push({id: h_id, priority: opts.priority, callback: callback});
 
@@ -1102,7 +1102,7 @@ export var LiteGraph = new class {
             }
         }
         return false;
-    };
+    }
     processCallbackHandlers(name,opts){
         if(!opts || typeof(opts)!=="object") opts = {};
         const def_opts = {
@@ -1125,7 +1125,7 @@ export var LiteGraph = new class {
                 cbhX.callback(...(clean_args(arguments).slice(2)));
             }
         }
-    };
+    }
 }
 
 // timer that works everywhere

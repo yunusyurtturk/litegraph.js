@@ -139,7 +139,7 @@ export class LGraph {
      * @param {GraphCanvas} graph_canvas
      */
     attachCanvas(graphcanvas) {
-        if (! graphcanvas instanceof LiteGraph.LGraphCanvas) {
+        if ( ! (graphcanvas instanceof LiteGraph.LGraphCanvas) ) {
             throw new Error("attachCanvas expects a LiteGraph.LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
@@ -1517,6 +1517,8 @@ export class LGraph {
         var optsDef = {};
         var opts = Object.assign(optsDef,optsIn);
 
+        LiteGraph.log_debug("onGraphSaved",opts);
+
         this.savedVersion = this._version;
     }
 
@@ -1528,6 +1530,9 @@ export class LGraph {
     onGraphLoaded(optsIn = {}) {
         var optsDef = {};
         var opts = Object.assign(optsDef,optsIn);
+
+        LiteGraph.log_debug("onGraphLoaded",opts);
+
         this.savedVersion = this._version;
     }
 
@@ -1559,8 +1564,8 @@ export class LGraph {
 
             var oHistory = { actionName: opts.action };
             if(opts.doSaveGraph) {
-                oHistory = Object.assign(oHistory, { graphSave: this.serialize() }, // this is a heavy method, but the alternative is way more complex: every action has to have its contrary
-                );
+                // this seems a heavy method, but the alternative is way more complex: every action has to have its contrary
+                oHistory = Object.assign(oHistory, { graphSave: this.serialize() });
             }
 
             var obH = this.history;
@@ -1584,6 +1589,8 @@ export class LGraph {
             // save to pointer
             obH.actionHistory[obH.actionHistoryPtr] = oHistory;
 
+            this.onGraphSaved({ iVersion: obH.actionHistoryPtr });
+
             LiteGraph.log_debug("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
         }
     }
@@ -1594,18 +1601,18 @@ export class LGraph {
     * @param {object} optsIn options
     */
     actionHistoryBack(optsIn = {}) {
-        var optsDef = {};
+        var optsDef = { steps: 1 };
         var opts = Object.assign(optsDef,optsIn);
 
         var obH = this.history;
 
         if (obH.actionHistoryPtr != undefined && obH.actionHistoryPtr >= 0) {
-            obH.actionHistoryPtr--;
+            obH.actionHistoryPtr -= opts.steps;
             LiteGraph.log_debug("LG_history","step back: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
                 LiteGraph.log_warn("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
-                obH.actionHistoryPtr++;
+                obH.actionHistoryPtr += steps;
                 return false;
             }else{
                 LiteGraph.log_debug("LG_history","loaded back: "+obH.actionHistoryPtr); // debug history
@@ -1624,18 +1631,18 @@ export class LGraph {
     * @param {object} optsIn options
     */
     actionHistoryForward(optsIn = {}) {
-        var optsDef = {};
+        var optsDef = { steps: 1 };
         var opts = Object.assign(optsDef,optsIn);
 
         var obH = this.history;
 
         if (obH.actionHistoryPtr<obH.actionHistoryVersions.length) {
-            obH.actionHistoryPtr++;
+            obH.actionHistoryPtr += opts.steps;
             LiteGraph.log_debug("LG_history","step forward: "+obH.actionHistoryPtr); // debug history
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
                 LiteGraph.log_warn("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
-                obH.actionHistoryPtr--;
+                obH.actionHistoryPtr -= opts.steps;
                 return false;
             }else{
                 LiteGraph.log_debug("LG_history","loaded forward: "+obH.actionHistoryPtr); // debug history
@@ -1666,7 +1673,7 @@ export class LGraph {
             this.configure( obH.actionHistory[opts.iVersion].graphSave );
             this.history = JSON.parse(tmpHistory);
             LiteGraph.log_debug("history loaded: "+opts.iVersion,obH.actionHistory[opts.iVersion].actionName); // debug history
-            // no: this.onGraphLoaded();
+            this.onGraphLoaded({ iVersion: opts.iVersion });
             return true;
         }else{
             return false;

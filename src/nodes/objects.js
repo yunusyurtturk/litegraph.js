@@ -498,3 +498,37 @@ class objEvalGlo {
     // };
 }
 LiteGraph.registerNodeType("objects/evaluate", objEvalGlo);
+
+
+// eval a Global object
+class EventAsFunction {
+
+    static title = "Event Function";
+    static desc = "Get a function binded to an event";
+
+    constructor() {
+        this.size = [60, 30];
+        this.addOutput("fun", "function");
+        this.addOutput("executed", LiteGraph.EVENT);
+        var that = this;
+        this._func = function(){
+            that.triggerSlot(1);
+            // add arguments on slot
+        };
+        this.setOutputData("fun",this._func);
+        this.data = {};
+    }
+
+    onConfigure(o) {
+        this.setOutputData("fun",this._func);
+    }
+
+    onExecute() {
+        if (!this._func) {
+            return;
+        }
+        this.setOutputData("fun",this._func);
+    }
+
+}
+LiteGraph.registerNodeType("objects/event_function", EventAsFunction);
