@@ -1,4 +1,5 @@
 import { LiteGraph } from "./litegraph.js";
+import { CallbackHandler } from "./callbackhandler.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -18,6 +19,9 @@ export class LGraphCanvas {
             clip_all_nodes: false,
         };
         this.options = options;
+        
+        // register CallbackHandler methods on this
+        this.callbackhandler_setup();
 
         // if(graph === undefined)
         //	throw new Error("No graph assigned");
@@ -136,6 +140,17 @@ export class LGraphCanvas {
         if (!this.skip_render && !options.skip_render) {
             this.startRendering();
         }
+
+        // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
+        this.callbackhandler_setup(this);
+    }
+
+    callbackhandler_setup(){
+        this.cb_handler = new CallbackHandler();
+        // register CallbackHandler methods on this // Should move as class standard class methods?
+        this.registerCallbackHandler = function(){ this.cb_handler.registerCallbackHandler(...arguments); };
+        this.unregisterCallbackHandler = function(){ this.cb_handler.unregisterCallbackHandler(...arguments); };
+        this.processCallbackHandlers = function(){ this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
     /**

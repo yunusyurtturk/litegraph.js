@@ -1,4 +1,5 @@
 import { LiteGraph } from "./litegraph.js";
+import { CallbackHandler } from "./callbackhandler.js";
 
 /*
 title: string
@@ -59,7 +60,10 @@ supported callbacks:
 
 export class LGraphNode {
 
-    constructor(title = "Unnamed") {
+    constructor(title = "") {
+
+        // register CallbackHandler methods on this
+        this.callbackhandler_setup();
 
         this.title = title;
         this.size = [LiteGraph.NODE_WIDTH, 60];
@@ -84,6 +88,16 @@ export class LGraphNode {
         this.properties_info = []; // for the info
 
         this.flags = {};
+
+        this.callbackhandler_setup(this);
+    }
+
+    callbackhandler_setup(){
+        this.cb_handler = new CallbackHandler();
+        // register CallbackHandler methods on this // Should move as class standard class methods?
+        this.registerCallbackHandler = function(){ this.cb_handler.registerCallbackHandler(...arguments); };
+        this.unregisterCallbackHandler = function(){ this.cb_handler.unregisterCallbackHandler(...arguments); };
+        this.processCallbackHandlers = function(){ this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
     set pos(v) {
