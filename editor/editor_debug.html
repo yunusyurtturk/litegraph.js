@@ -43,24 +43,58 @@
 	<script>
 		window.addEventListener("load", (event) => {
 
-			let cbh1 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
-				console.info("CB1",arguments);
+			var cbh1 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("**CB1**",...arguments);
+				return {	return_value: "ResCB1"
+							,result_priority: 1
+							// ,prevent_default: false
+							// ,stop_replication: false
+					};
 			},{priority: 1});
-			let cbh2 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
-				console.info("CB2",arguments);
+			var cbh2 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("**CB2**",...arguments);
+				return {	return_value: "ResCB2"
+							,result_priority: 2
+							// ,prevent_default: false
+							// ,stop_replication: false
+					};
 			},{priority: 9}); // higher priority test
-			let cbh3 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
-				console.info("CB3",arguments);
+			var cbh3 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("**CB3**",...arguments);
+				return {	return_value: "ResCB3"
+							,result_priority: 3
+							,prevent_default: true
+							// ,stop_replication: false
+					};
 			},{priority: 3});
+			var cbh4 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
+				console.info("**CB4**",...arguments);
+				return {	return_value: "ResCB4"
+							// ,result_priority: 0
+							// ,prevent_default: false
+							// ,stop_replication: false
+					};
+			},{priority: -1});
+
+			// set classic callback
 			LiteGraph.onNodeTypeRegistered = function(){
-				console.info("CB_standard",arguments);
+				// eventually never called if some set prevent_default to false
+				console.info("**CB_standard**",...arguments);
 			}
 
+			console.info("Callbacks registered",cbh1,cbh2,cbh3);
+			
+			// trigger event
 			// testing
-			function TestRegister() {
-				this.addInput("in 1","number");
+			class TestRegister {
+				static title = "Test Callbacks";
+				constructor() {
+					this.addInput("in 1","number");
+				}
+				onNodeCreated = function(){
+					console.info("** NODE CB_standard **",...arguments);
+				}
 			}
-			TestRegister.title = "Test Callbacks";
 			LiteGraph.registerNodeType("features/test_callbacks", TestRegister);
 
 			// remove handler
@@ -70,12 +104,12 @@
 			}else{
 				console.warn("FAILED Callback 1 unregister");
 			}
-			// if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh2)){
-			// 	console.info("Callback 2 unregistered");
-			// }else{
-			// 	console.warn("FAILED Callback 2 unregister");
-			// }
-			// // leave callback 3
+			if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh2)){
+				console.info("Callback 2 unregistered");
+			}else{
+				console.warn("FAILED Callback 2 unregister");
+			}
+			// leave callback 3
 
 			// // testing 2
 			// function TestRegister2() {

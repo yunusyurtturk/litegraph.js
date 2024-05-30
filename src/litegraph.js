@@ -202,15 +202,15 @@ export var LiteGraph = new class {
         this.logging_set_level(2);
         
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
-        this.callbackhandler_setup(this);
+        this.callbackhandler_setup();
     }
 
     callbackhandler_setup(){
-        this.cb_handler = new CallbackHandler();
+        this.cb_handler = new CallbackHandler(this);
         // register CallbackHandler methods on this // Should move as class standard class methods?
-        this.registerCallbackHandler = function(){ this.cb_handler.registerCallbackHandler(...arguments); };
-        this.unregisterCallbackHandler = function(){ this.cb_handler.unregisterCallbackHandler(...arguments); };
-        this.processCallbackHandlers = function(){ this.cb_handler.processCallbackHandlers(...arguments); };
+        this.registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
+        this.unregisterCallbackHandler = function(){ return this.cb_handler.unregisterCallbackHandler(...arguments); };
+        this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
     // registerCallbackHandler(){
@@ -366,11 +366,15 @@ export var LiteGraph = new class {
         if (base_class.constructor.name) {
             this.Nodes[classname] = base_class;
         }
-        LiteGraph.onNodeTypeRegistered?.(type, base_class);
-        LiteGraph.processCallbackHandlers("onNodeTypeRegistered");
+
+        LiteGraph.processCallbackHandlers("onNodeTypeRegistered",{
+            def_cb: LiteGraph.onNodeTypeRegistered
+        }, type, base_class);
+
         if (prev) {
-            LiteGraph.onNodeTypeReplaced?.(type, base_class, prev);
-            LiteGraph.processCallbackHandlers("onNodeTypeReplaced");
+            LiteGraph.processCallbackHandlers("onNodeTypeReplaced",{
+                def_cb: LiteGraph.onNodeTypeReplaced
+            }, type, base_class, prev);
         }
 
         // warnings
@@ -551,6 +555,7 @@ export var LiteGraph = new class {
             const result = func.apply(this, params);
             this.setOutputData(0, result);
         };
+        // TODO: should probably set onConfigure or INIT too the value set ??
 
         this.registerNodeType(name, classObj);
 
@@ -628,8 +633,10 @@ export var LiteGraph = new class {
         // extra options
         Object.assign(node, options);
 
-        // callback
-        node.onNodeCreated?.();
+        // callback event entrypoint
+        node.processCallbackHandlers("onNodeCreated",{
+            def_cb: node.onNodeCreated
+        });
         return node;
     }
 

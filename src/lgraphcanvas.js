@@ -142,15 +142,15 @@ export class LGraphCanvas {
         }
 
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
-        this.callbackhandler_setup(this);
+        this.callbackhandler_setup();
     }
 
     callbackhandler_setup(){
-        this.cb_handler = new CallbackHandler();
+        this.cb_handler = new CallbackHandler(this);
         // register CallbackHandler methods on this // Should move as class standard class methods?
-        this.registerCallbackHandler = function(){ this.cb_handler.registerCallbackHandler(...arguments); };
-        this.unregisterCallbackHandler = function(){ this.cb_handler.unregisterCallbackHandler(...arguments); };
-        this.processCallbackHandlers = function(){ this.cb_handler.processCallbackHandlers(...arguments); };
+        this.registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
+        this.unregisterCallbackHandler = function(){ return this.cb_handler.unregisterCallbackHandler(...arguments); };
+        this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
     /**
