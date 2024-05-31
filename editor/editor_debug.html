@@ -47,7 +47,6 @@
 				console.info("**CB1**",...arguments);
 				return {	return_value: "ResCB1"
 							,result_priority: 1
-							// ,prevent_default: false
 							// ,stop_replication: false
 					};
 			},{priority: 1});
@@ -55,15 +54,13 @@
 				console.info("**CB2**",...arguments);
 				return {	return_value: "ResCB2"
 							,result_priority: 2
-							// ,prevent_default: false
-							// ,stop_replication: false
 					};
 			},{priority: 9}); // higher priority test
 			var cbh3 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
 				console.info("**CB3**",...arguments);
 				return {	return_value: "ResCB3"
 							,result_priority: 3
-							,prevent_default: true
+							// ,prevent_default: true // !!!
 							// ,stop_replication: false
 					};
 			},{priority: 3});
@@ -118,6 +115,12 @@
 			// TestRegister2.title = "Test Callbacks";
 			// LiteGraph.registerNodeType("features/test_callbacks2", TestRegister2);
 
+
+			// CANVAS Callbacks
+			// NO : LiteGraph.LGraphCanvas.registerCallbackHandler("onDropItem",function(){
+			graphcanvas.registerCallbackHandler("onDropItem",function(){
+				console.info("*** CUSTOM onDropItem handler ***",...arguments);
+			});
 
 		});
 

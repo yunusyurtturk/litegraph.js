@@ -148,10 +148,23 @@ export class LGraphCanvas {
     callbackhandler_setup(){
         this.cb_handler = new CallbackHandler(this);
         // register CallbackHandler methods on this // Should move as class standard class methods?
-        this.registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
-        this.unregisterCallbackHandler = function(){ return this.cb_handler.unregisterCallbackHandler(...arguments); };
-        this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
+        // this.registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
+        // this.unregisterCallbackHandler = function(){ return this.cb_handler.unregisterCallbackHandler(...arguments); };
+        // this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
     }
+
+    registerCallbackHandler(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.registerCallbackHandler(...arguments);
+    };
+    unregisterCallbackHandler(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.unregisterCallbackHandler(...arguments);
+    };
+    processCallbackHandlers(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.processCallbackHandlers(...arguments);
+    };
 
     /**
      * clears all the data inside
@@ -195,7 +208,10 @@ export class LGraphCanvas {
         this.pointer_is_double = false;
         this.visible_area.set([0, 0, 0, 0]);
 
-        this.onClear?.();
+        // TAG callback graphrenderer event entrypoint
+        this.processCallbackHandlers("onClear",{
+            def_cb: this.onClear
+        });
     }
 
     /**
@@ -671,8 +687,17 @@ export class LGraphCanvas {
         this.canvas.focus();
         LiteGraph.ContextMenu.closeAll(ref_window);
 
-        if (this.onMouse?.(e))
+        // if (this.onMouse?.(e))
+        //     return;
+
+        // TAG callback graphrenderer event entrypoint
+        var retCb = this.processCallbackHandlers("onClear",{
+            def_cb: this.onMouse
+        }, e );
+        if(retCb === false || (typeof(retCb)=="object" && retCb.return_value === false)){
+            LiteGraph.info("graph processMouseDown","callback prevents continue");
             return;
+        }
 
         // left button mouse / single finger
         if (e.which == 1 && !this.userInput_isNotPrimary) {
@@ -798,9 +823,15 @@ export class LGraphCanvas {
                                     }
 
                                     if (is_double_click) {
-                                        node.onOutputDblClick?.(i, e);
+                                        // TAG callback node event entrypoint
+                                        node.processCallbackHandlers("onOutputDblClick",{
+                                            def_cb: node.onOutputDblClick
+                                        }, i, e );
                                     } else {
-                                        node.onOutputClick?.(i, e);
+                                        // TAG callback node event entrypoint
+                                        node.processCallbackHandlers("onOutputClick",{
+                                            def_cb: node.onOutputClick
+                                        }, i, e );
                                     }
 
                                     skip_action = true;
@@ -825,9 +856,15 @@ export class LGraphCanvas {
                                     )
                                 ) {
                                     if (is_double_click) {
-                                        node.onInputDblClick?.(i, e);
+                                        // TAG callback node event entrypoint
+                                        node.processCallbackHandlers("onInputDblClick",{
+                                            def_cb: node.onInputDblClick
+                                        }, i, e );
                                     } else {
-                                        node.onInputClick?.(i, e);
+                                        // TAG callback node event entrypoint
+                                        node.processCallbackHandlers("onInputClick",{
+                                            def_cb: node.onInputDblClick
+                                        }, i, e );
                                     }
 
                                     if (input.link !== null) {
@@ -900,13 +937,21 @@ export class LGraphCanvas {
 
                     // double clicking
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
-                        node.onDblClick?.( e, pos, this );
+                        // TAG callback node event entrypoint
+                        node.processCallbackHandlers("onDblClick",{
+                            def_cb: node.onDblClick
+                        }, e, pos, this );
                         this.processNodeDblClicked(node);
                         block_drag_node = true;
                     }
 
+                    // TAG callback node event entrypoint
+                    var cbRet = node.processCallbackHandlers("onMouseDown",{
+                        def_cb: node.onMouseDown
+                    }, e, pos, this );
+                    
                     // if do not capture mouse
-                    if ( node.onMouseDown && node.onMouseDown( e, pos, this ) ) {
+                    if ( cbRet || (typeof(cbRet)=="object" && cbRet.block_drag_node) ) {
                         block_drag_node = true;
                     } else {
                         // open subgraph button
@@ -930,7 +975,7 @@ export class LGraphCanvas {
                             this.node_dragged = node;
                         }
                         this.processNodeSelected(node, e);
-                    } else { // double-click
+                    } else {
                         /**
                          * Don't call the function if the block is already selected.
                          * Otherwise, it could cause the block to be unselected while its panel is open.
@@ -1100,24 +1145,26 @@ export class LGraphCanvas {
         this.last_mouse_dragging = true;
 
         /*
-    if( (this.dirty_canvas || this.dirty_bgcanvas) && this.rendering_timer_id == null)
-        this.draw();
-    */
+        if( (this.dirty_canvas || this.dirty_bgcanvas) && this.rendering_timer_id == null)
+            this.draw();
+        */
 
         this.graph.change();
 
         // this is to ensure to defocus(blur) if a text input element is on focus
         if (
             !ref_window.document.activeElement ||
-            (ref_window.document.activeElement.nodeName.toLowerCase() !=
-                "input" &&
-                ref_window.document.activeElement.nodeName.toLowerCase() !=
-                    "textarea")
+            (   ref_window.document.activeElement.nodeName.toLowerCase() != "input"
+                && ref_window.document.activeElement.nodeName.toLowerCase() != "textarea"
+            )
         ) {
             e.preventDefault();
         }
         e.stopPropagation();
-        this.onMouseDown?.(e);
+        // TAG callback graphrenderer event entrypoint
+        this.processCallbackHandlers("onMouseDown",{
+            def_cb: this.onMouseDown
+        }, e );
         return false;
     }
 
@@ -1209,8 +1256,11 @@ export class LGraphCanvas {
                 if (this.graph._nodes[i].mouseOver && node != this.graph._nodes[i] ) {
                     // mouse leave
                     this.graph._nodes[i].mouseOver = false;
-                    if (this.node_over && this.node_over.onMouseLeave) {
-                        this.node_over.onMouseLeave(e);
+                    if (this.node_over) {
+                        // TAG callback node event entrypoint
+                        this.node_over.processCallbackHandlers("onMouseLeave",{
+                            def_cb: this.node_over.onMouseLeave
+                        }, e );
                     }
                     this.node_over = null;
                     this.dirty_canvas = true;
@@ -1229,11 +1279,17 @@ export class LGraphCanvas {
                     node.mouseOver = true;
                     this.node_over = node;
                     this.dirty_canvas = true;
-                    node.onMouseEnter?.(e);
+                    // TAG callback node event entrypoint
+                    node.processCallbackHandlers("onMouseEnter",{
+                        def_cb: node.onMouseEnter
+                    }, e );
                 }
 
                 // in case the node wants to do something
-                node.onMouseMove?.( e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this );
+                // TAG callback node event entrypoint
+                node.processCallbackHandlers("onMouseMove",{
+                    def_cb: node.onMouseMove
+                }, e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this );
 
                 // if dragging a link
                 if (this.connecting_node) {
@@ -1325,8 +1381,11 @@ export class LGraphCanvas {
             } // end
 
             // send event to node if capturing input (used with widgets that allow drag outside of the area of the node)
-            if ( this.node_capturing_input && this.node_capturing_input != node && this.node_capturing_input.onMouseMove ) {
-                this.node_capturing_input.onMouseMove(e,[e.canvasX - this.node_capturing_input.pos[0],e.canvasY - this.node_capturing_input.pos[1]], this);
+            if ( this.node_capturing_input && this.node_capturing_input != node ) {
+                // TAG callback node event entrypoint
+                this.node_capturing_input.processCallbackHandlers("onMouseMove",{
+                    def_cb: this.node_capturing_input.onMouseMove
+                }, e,[e.canvasX - this.node_capturing_input.pos[0],e.canvasY - this.node_capturing_input.pos[1]], this );
             }
 
             // node being dragged
@@ -1607,7 +1666,10 @@ export class LGraphCanvas {
                 if (this.graph.config.align_to_grid || this.align_to_grid ) {
                     this.node_dragged.alignToGrid();
                 }
-                this.onNodeMoved?.( this.node_dragged );
+                // TAG callback graphrenderer event entrypoint
+                this.processCallbackHandlers("onNodeMoved",{
+                    def_cb: this.onNodeMoved
+                }, this.node_dragged );
                 this.graph.onGraphChanged({action: "nodeDrag", doSave: true});
                 this.graph.afterChange(this.node_dragged);
                 this.node_dragged = null;
@@ -1626,17 +1688,17 @@ export class LGraphCanvas {
                 this.dirty_canvas = true;
                 this.dragging_canvas = false;
 
-                if (this.node_over && this.node_over.onMouseUp) {
-                    this.node_over.onMouseUp( e, [ e.canvasX - this.node_over.pos[0], e.canvasY - this.node_over.pos[1] ], this );
+                if (this.node_over) {
+                    // TAG callback node event entrypoint
+                    this.node_over.processCallbackHandlers("onMouseUp",{
+                        def_cb: this.node_over.onMouseUp
+                    }, e, [ e.canvasX - this.node_over.pos[0], e.canvasY - this.node_over.pos[1] ], this );
                 }
-                if (
-                    this.node_capturing_input &&
-                    this.node_capturing_input.onMouseUp
-                ) {
-                    this.node_capturing_input.onMouseUp(e, [
-                        e.canvasX - this.node_capturing_input.pos[0],
-                        e.canvasY - this.node_capturing_input.pos[1],
-                    ]);
+                if ( this.node_capturing_input ) {
+                    // TAG callback node event entrypoint
+                    this.node_capturing_input.processCallbackHandlers("onMouseUp",{
+                        def_cb: this.node_capturing_input.onMouseUp
+                    }, e, [ e.canvasX - this.node_capturing_input.pos[0], e.canvasY - this.node_capturing_input.pos[1], ] );
                 }
             }
         } else if (e.which == 2) {
@@ -1883,10 +1945,12 @@ export class LGraphCanvas {
             }
             LiteGraph.log_debug("Canvas keydown "+e.keyCode); // debug keydown
 
-            // TODO
             if (this.selected_nodes) {
                 for (let i in this.selected_nodes) {
-                    this.selected_nodes[i].onKeyDown?.(e);
+                    // TAG callback node event entrypoint
+                    this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
+                        def_cb: this.selected_nodes[i].onKeyDown
+                    }, e );
                 }
             }
         } else if (e.type == "keyup") {
@@ -1897,7 +1961,10 @@ export class LGraphCanvas {
 
             if (this.selected_nodes) {
                 for (let i in this.selected_nodes) {
-                    this.selected_nodes[i].onKeyUp?.(e);
+                    // TAG callback node event entrypoint
+                    this.selected_nodes[i].processCallbackHandlers("onKeyUp",{
+                        def_cb: this.selected_nodes[i].onKeyUp
+                    }, e );
                 }
             }
         }
@@ -1961,10 +2028,8 @@ export class LGraphCanvas {
                 }
             }
         }
-        localStorage.setItem(
-            "litegrapheditor_clipboard",
-            JSON.stringify(clipboard_info),
-        );
+        LiteGraph.log_verbose("copyToClipboard",clipboard_info);
+        localStorage.setItem( "litegrapheditor_clipboard", JSON.stringify(clipboard_info), );
     }
 
     pasteFromClipboard(isConnectUnselected = false) {
@@ -1977,7 +2042,7 @@ export class LGraphCanvas {
             return;
         }
 
-        this.graph.beforeChange();
+        this.graph.beforeChange(); // TODO check and investigate beforeChange afterChange
 
         // create nodes
         var clipboard_info = JSON.parse(data);
@@ -2038,7 +2103,7 @@ export class LGraphCanvas {
 
         this.selectNodes(nodes);
         this.graph.onGraphChanged({action: "paste", doSave: true});
-        this.graph.afterChange();
+        this.graph.afterChange(); // TODO investigate and revise afterChange
     }
 
     /**
@@ -2048,6 +2113,8 @@ export class LGraphCanvas {
     processDrop = (e) => {
         e.preventDefault();
         this.adjustMouseEvent(e);
+
+        let r = null;
 
         var x = e.clientX;
         var y = e.clientY;
@@ -2068,39 +2135,52 @@ export class LGraphCanvas {
         var pos = [e.canvasX, e.canvasY];
         var node = this.graph ? this.graph.getNodeOnPos(pos[0], pos[1]) : null;
 
-        LiteGraph.log_debug("graphcanvas processDrop","going to process",pos,node);
+        LiteGraph.log_verbose("graphcanvas processDrop","going to process",pos,node);
 
         if (!node) {
-            var r = null;
-            if (this.onDropItem) {
-                r = this.onDropItem(event);
-            }
-            if (!r) {
+
+            LiteGraph.log_verbose("lgraphcanvas", "processDrop", "look for drop implemetation in CANVAS", e);
+            
+            r = this.processCallbackHandlers("onDropItem",{
+                def_cb: this.onDropItem
+            }, e);
+            if(!r || (typeof(r)=="object" && !r.return_value)){
+                LiteGraph.log_verbose("lgraphcanvas", "processDrop", "running default implementation", e);
                 this.checkDropItem(e);
             }
-            return;
-        }
 
-        if (node.onDropFile || node.onDropData) {
+            return r.return_value;
+
+        }else{
+            
+            // has dropped on node
+
+            // check for dropped files
             var files = e.dataTransfer.files;
             if (files && files.length) {
                 for (let i = 0; i < files.length; i++) {
                     var file = e.dataTransfer.files[0];
                     var filename = file.name;
                     
-                    LiteGraph.log("graphcanvas processDrop","file on node",file);
+                    LiteGraph.log_debug("lgraphcanvas", "processDrop", "file on node", file);
 
-                    if (node.onDropFile) {
-                        node.onDropFile(file);
-                    }
+                    // execute onDropFile on node
+                    r = node.processCallbackHandlers("onDropFile",{
+                        def_cb: node.onDropFile
+                    }, file);
 
-                    if (node.onDropData) {
+                    // if not getting a positive result, process file as data and call onDropData
+                    if(!r || (typeof(r)=="object" && !r.return_value)){
+                            
                         // prepare reader
                         var reader = new FileReader();
                         reader.onload = function(event) {
-                            // DBG LiteGraph.log?.(event.target);
                             var data = event.target.result;
-                            node.onDropData(data, filename, file);
+                            LiteGraph.log_debug("lgraphcanvas", "processDrop", "data on node", data, filename, file);
+                            // execute onDropData on node
+                            node.processCallbackHandlers("onDropData",{
+                                def_cb: node.onDropData
+                            }, data, filename, file);
                         };
 
                         // read data
@@ -2112,24 +2192,34 @@ export class LGraphCanvas {
                         } else {
                             reader.readAsArrayBuffer(file);
                         }
+                        
                     }
+
                 }
             }
-        }
 
-        if (node.onDropItem) {
-            if (node.onDropItem(event)) {
+            // execute onDropItem on NODE
+            r = node.processCallbackHandlers("onDropItem",{
+                def_cb: node.onDropItem
+            }, e);
+            // if getting a positive result, return
+            if(r === true || (typeof(r)=="object" && r.return_value)){
                 return true;
             }
+
+            // execute onDropItem on CANVAS
+            r = this.processCallbackHandlers("onDropItem",{
+                def_cb: this.onDropItem
+            }, e);
+            // if getting a positive result, return
+            if(r === true || (typeof(r)=="object" && r.return_value)){
+                return true;
+            }
+
+            LiteGraph.log_info("lgraphcanvas", "processDrop", "neither node and canvas has processed the drop");
+
+            return false;
         }
-
-        if (this.onDropItem) {
-            return this.onDropItem(event);
-        }
-
-        LiteGraph.log_debug("graphcanvas processDrop","ended (nothing returned?)");
-
-        return false;
     }
 
     // called if the graph doesn't have a default drop item behaviour
@@ -2143,7 +2233,9 @@ export class LGraphCanvas {
                 var node = LiteGraph.createNode(nodetype.type);
                 node.pos = [e.canvasX, e.canvasY];
                 this.graph.add(node, false, {doProcessChange: false});
-                node.onDropFile?.(file);
+                node.processCallbackHandlers("onDropFile",{
+                    def_cb: node.onDropFile
+                }, file);
                 this.graph.onGraphChanged({action: "fileDrop", doSave: true});
                 this.graph.afterChange();
             }
@@ -2151,6 +2243,13 @@ export class LGraphCanvas {
     }
 
     processNodeDblClicked(n) {
+        
+        /** RESTART FROM HERE
+         *  let r = this.processCallbackHandlers("onShowNodePanel",{
+                def_cb: this.onShowNodePanel
+            }, file);
+         */
+
         if (this.onShowNodePanel) {
             this.onShowNodePanel(n);
         } else {

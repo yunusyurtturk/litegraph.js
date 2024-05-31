@@ -60,10 +60,13 @@ supported callbacks:
 
 export class LGraphNode {
 
-    constructor(title = "") {
+    cb_handler = false;
 
-        // register CallbackHandler methods on this
-        this.callbackhandler_setup();
+    // TODO check when is this called: a default node from the ones included will have his constructor
+    // should every node extend this istead of 
+    constructor(title = "") {
+        // a custom registered node will have his custom constructor
+        console.verbose("NODE ORIGINAL constructor",this,title);
 
         this.title = title;
         this.size = [LiteGraph.NODE_WIDTH, 60];
@@ -89,6 +92,12 @@ export class LGraphNode {
 
         this.flags = {};
 
+        this.post_constructor(...arguments);
+    }
+
+    post_constructor(){
+        LiteGraph.log_verbose("NODE postconstruct",this,...arguments);
+        // register CallbackHandler methods on this
         this.callbackhandler_setup();
     }
 
@@ -100,9 +109,18 @@ export class LGraphNode {
         // this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
-    registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
-    unregisterCallbackHandler = function(){ return this.cb_handler.unregisterCallbackHandler(...arguments); };
-    processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
+    registerCallbackHandler(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.registerCallbackHandler(...arguments);
+    };
+    unregisterCallbackHandler(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.unregisterCallbackHandler(...arguments);
+    };
+    processCallbackHandlers(){
+        // if(!this.cb_handler) this.callbackhandler_setup();
+        return this.cb_handler.processCallbackHandlers(...arguments);
+    };
 
     set pos(v) {
         if (!v || v.length < 2) {
@@ -121,11 +139,7 @@ export class LGraphNode {
      * @method configure
      */
     configure(info) {
-        /* @TODO: Atlasan has this commented, not sure if it stays that way
-            -> reply -> this has been moved after configuration completed, adding new nodeBeforeConfigure
-        if(this.graph)
-            this.graph.onGraphChanged({action: "nodeConfigure", doSave: false});
-        */
+        
         LiteGraph.log_debug("node configure",this,info);
 
        if(this.graph)
@@ -170,7 +184,7 @@ export class LGraphNode {
                 return;
             output.links.forEach((link, i) => {
                 const link_info = this.graph?.links[link] || null; // fixed
-                LiteGraph.log_debug("node configure","cycle outputlinks",link,i,link_info);
+                LiteGraph.log_verbose("node configure","cycle outputlinks",link,i,link_info);
                 this.onConnectionsChange?.(LiteGraph.OUTPUT, i, true, link_info, output);
             });
             this.onOutputAdded?.(output);

@@ -1,5 +1,6 @@
 import { LGraphCanvas } from "./lgraphcanvas.js";
 import { LGraph } from "./lgraph.js";
+import { LiteGraph } from "./litegraph.js";
 
 // Creates an interface to access extra features from a graph (like play, stop, live, etc)
 export class Editor {
@@ -187,6 +188,11 @@ export class Editor {
 
     onDropItem(e) {
         var that = this;
+        if(!e.dataTransfer){
+            LiteGraph.log_warn("LGEditor","onDropItem","no dataTransfer on event",e,this);
+            return;
+        }
+        LiteGraph.log_info("LGEditor","onDropItem","processing dataTransfer",e.dataTransfer);
         for(var i = 0; i < e.dataTransfer.files.length; ++i) {
             var file = e.dataTransfer.files[i];
             var ext = LGraphCanvas.getFileExtension(file.name);

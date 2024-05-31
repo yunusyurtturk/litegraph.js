@@ -307,12 +307,26 @@ export var LiteGraph = new class {
 
         const propertyDescriptors = Object.getOwnPropertyDescriptors(LGraphNode.prototype);
 
+        // WIP BAD
+        // extend constructor instead of copy properties :: WANTED to have originalconstructor too
+        // using manual constructor (?)
+        // if(base_class.prototype.hasOwnProperty("constructor")){
+        //     var base_constructor = base_class.prototype.constructor;
+        //     function extendedConstructor(that){
+        //         LGraphNode.prototype.constructor.bind(that);
+        //         base_constructor.bind(that);
+        //     }
+        //     base_class.prototype.constructor = extendedConstructor(this);
+        //     base_class.constructor = extendedConstructor(this);
+        // }
+
         // Iterate over each property descriptor
         Object.keys(propertyDescriptors).forEach((propertyName) => {
             // Check if the property already exists on the target prototype
             if (!base_class.prototype.hasOwnProperty(propertyName)) {
                 // If the property doesn't exist, copy it from the source to the target
                 Object.defineProperty(base_class.prototype, propertyName, propertyDescriptors[propertyName]);
+                // TOO MUCH VERBOSE :: this.log_verbose("registerNodeType","defineProperty",type,base_class.prototype, propertyName, propertyDescriptors[propertyName]);
             }
         });
 
@@ -396,8 +410,11 @@ export var LiteGraph = new class {
         this.log_debug("registerNodeType","type registered",type);
 
         if (this.auto_load_slot_types){
+            // auto_load_slot_types should be used when not specifing slot type to LiteGraph
+            // good for testing: this will create a temporary node for each type
             this.log_debug("registerNodeType","auto_load_slot_types, create empy tmp node",type);
-            new base_class(base_class.title ?? "tmpnode");
+            let tmpnode = new base_class(base_class.title ?? "tmpnode");
+            tmpnode.post_constructor(base_class.title ?? "tmpnode"); // could not call, but eventually checking for errors in the chain ?
         }
     }
 
@@ -606,6 +623,8 @@ export var LiteGraph = new class {
             return null;
         }
 
+        LiteGraph.log_verbose("createNode",type,title,options,base_class);
+
         title = title ?? base_class.title ?? type;
 
         let node = null;
@@ -621,6 +640,9 @@ export var LiteGraph = new class {
             node = new base_class(title);
         }
 
+        // extend constructor with the extended always executed (custom class or lgraphnode)
+        node.post_constructor();
+
         node.type = type;
         node.title ??= title;
         node.properties ??= {};
@@ -633,7 +655,9 @@ export var LiteGraph = new class {
         // extra options
         Object.assign(node, options);
 
-        // callback event entrypoint
+        LiteGraph.log_verbose("createNode","created",node,node.processCallbackHandlers);
+
+        // callback node event entrypoint
         node.processCallbackHandlers("onNodeCreated",{
             def_cb: node.onNodeCreated
         });

@@ -98,14 +98,17 @@ export class CallbackHandler {
 
         if(typeof(this.callbacks_handlers[name]) !== "undefined"){
             
+            LiteGraph.log_debug("Will make clean arguments",arguments);
             var aArgs = ([].slice.call(arguments)).slice(2);
             // function clean_args(args) {
             //     let aRet = [];
-            //     for(let iA=0; iA<args.length; iA++) {
-            //         if(typeof(args[iA])!=="undefined") aRet.push(args[iA]);
+            //     for(let iA=2; iA<args.length; iA++) {
+            //         // if(typeof(args[iA])!=="undefined")
+            //         aRet.push(args[iA]);
             //     }
             //     return aRet;
             // }
+            // var aArgs = clean_args(arguments);
 
             var stepRet = null;         // incremental final result 
             var cbRet = null;
@@ -118,6 +121,7 @@ export class CallbackHandler {
             var executeDefaultCb = function(){
                 if(!preventDefCb && typeof(opts.def_cb)=="function"){
                     // execute default callback
+                    LiteGraph.log_verbose("Calling DEFAULT w Args",...aArgs);
                     stepRet = opts.def_cb(...aArgs); // could pass more data
                     LiteGraph.log_debug("processCallbackHandlers","default callback executed",stepRet);
                     aResChain.push(stepRet); // cache result
