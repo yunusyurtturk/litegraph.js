@@ -1,4 +1,5 @@
 import { LiteGraph } from "./litegraph.js";
+import { CallbackHandler } from "./callbackhandler.js";
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -20,14 +21,31 @@ export class LGraph {
      * @param {Object} o data from previous serialization [optional]} o
      */
     constructor(o) {
-        LiteGraph.log?.("Graph created");
+        LiteGraph.log_debug("Graph created",o);
         this.list_of_graphcanvas = null;
+
+        this.callbackhandler_setup();
+
         this.clear();
 
         if (o) {
             this.configure(o);
         }
     }
+
+    callbackhandler_setup(){
+        this.cb_handler = new CallbackHandler(this);
+    }
+
+    registerCallbackHandler(){
+        return this.cb_handler.registerCallbackHandler(...arguments);
+    };
+    unregisterCallbackHandler(){
+        return this.cb_handler.unregisterCallbackHandler(...arguments);
+    };
+    processCallbackHandlers(){
+        return this.cb_handler.processCallbackHandlers(...arguments);
+    };
 
     /**
      * Gets the supported types of the LGraph class, falling back to the default supported types if not defined for the instance.

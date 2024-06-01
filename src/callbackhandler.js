@@ -9,7 +9,8 @@ export class CallbackHandler {
     constructor(ref){
         this.callbacks_handlers = {};
         this.ob_ref = ref;
-        // LiteGraph.log_debug("CallbackHandler Initialize callbacks",ref);
+        this.debug = false;
+        // if(this.debug) LiteGraph.log_debug("CallbackHandler Initialize callbacks",ref);
     }
 
     /**
@@ -37,7 +38,7 @@ export class CallbackHandler {
         }
         const h_id = this.callbacks_handlers[name].last_id++;
 
-        LiteGraph.log_debug("registerCallbackHandler","new callback handler",name,h_id);
+        if(this.debug) LiteGraph.log_debug("registerCallbackHandler","new callback handler",name,h_id);
 
         this.callbacks_handlers[name].handlers.push({
             id: h_id,
@@ -49,7 +50,7 @@ export class CallbackHandler {
         // sort descending
         this.callbacks_handlers[name].handlers.sort((a, b) => b.priority - a.priority);
 
-        // LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
+        // if(this.debug) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
 
         return h_id; // return the cbhandle id
     };
@@ -60,11 +61,11 @@ export class CallbackHandler {
      * @returns {boolean} true if found
      */
     unregisterCallbackHandler(name, h_id){
-        // LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
+        // if(this.debug) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
         if(typeof(this.callbacks_handlers[name]) !== "undefined"){
             const nHandlers = this.callbacks_handlers[name].handlers.length;
             this.callbacks_handlers[name].handlers = this.callbacks_handlers[name].handlers.filter(function( obj ) {
-                // LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
+                // if(this.debug) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
                 if(obj.id === h_id){
                     LiteGraph.log_info("unregisterCallbackHandler",name,h_id);
                 }
@@ -98,13 +99,13 @@ export class CallbackHandler {
         opts = Object.assign(def_opts, opts);
         var that = this;
 
-        LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
+        if(this.debug) LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
 
         if(typeof(this.callbacks_handlers[name]) == "undefined"){
             this.callbacks_handlers[name] = {last_id: 0, handlers:[]}; // initialize empty
         }
         
-        LiteGraph.log_debug("Will make clean arguments",arguments);
+        if(this.debug) LiteGraph.log_debug("Will make clean arguments",arguments);
         var aArgs = ([].slice.call(arguments)).slice(2);
         // function clean_args(args) {
         //     let aRet = [];
@@ -128,14 +129,14 @@ export class CallbackHandler {
         var executeDefaultCb = function(){
             if(!preventDefCb && typeof(opts.def_cb)=="function"){
                 // execute default callback
-                LiteGraph.log_verbose("Calling DEFAULT w Args",...aArgs);
+                if(that.debug) LiteGraph.log_verbose("Calling DEFAULT w Args",...aArgs);
                 // stepRet = opts.def_cb(...aArgs); // OLD, not working because of bas THIS 
                 // call method on ref object (LiteGraph, LGraphNode, LGraphCanvas, ...) in othe method `this` will than correctly set
                 stepRet = opts.def_cb.call(that.ob_ref, ...aArgs); // could pass more data
-                LiteGraph.log_debug("processCallbackHandlers","default callback executed",stepRet);
+                if(that.debug) LiteGraph.log_debug("processCallbackHandlers","default callback executed",stepRet);
                 checkStepRet();
             }else{
-                LiteGraph.log_debug("processCallbackHandlers","preventing default passed",opts.def_cb);
+                if(that.debug) LiteGraph.log_debug("processCallbackHandlers","preventing default passed",opts.def_cb);
             }
             defCbChecked = true;
         }
@@ -156,7 +157,7 @@ export class CallbackHandler {
                     preventDefCb = true;
                 }
                 if(typeof(stepRet.stop_replication)!=="undefined" && stepRet.stop_replication){
-                    LiteGraph.log_verbose("processCallbackHandlers","stop_replication",oCbInfo);
+                    if(that.debug) LiteGraph.log_verbose("processCallbackHandlers","stop_replication",oCbInfo);
                     breakCycle = true;
                     return; // will break;
                 }
@@ -165,7 +166,7 @@ export class CallbackHandler {
                         || cbResPriority <= stepRet.result_priority
                         || (typeof(stepRet.result_priority)=="undefined" && (!cbResPriority || cbResPriority <= 0))
                     ){
-                        LiteGraph.log_verbose("processCallbackHandlers","set result",stepRet,oCbInfo);
+                        if(that.debug) LiteGraph.log_verbose("processCallbackHandlers","set result",stepRet,oCbInfo);
                         cbRet = stepRet;
                     }
                 }
@@ -180,13 +181,13 @@ export class CallbackHandler {
 
             // eventually prevent cb marked as default
             if(preventDefCb && cbhX.is_default){
-                LiteGraph.log_verbose("processCallbackHandlers","preventing default registered",cbhX);
+                if(this.debug) LiteGraph.log_verbose("processCallbackHandlers","preventing default registered",cbhX);
                 continue;
             }
             
             // execute default if already processed the ones >= 0
             if(cbhX.priority<0 && !defCbChecked){
-                LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
+                if(this.debug) LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
                 executeDefaultCb();
                 if(breakCycle) break;
             }
@@ -205,7 +206,7 @@ export class CallbackHandler {
             // call method on ref object (LiteGraph, LGraphNode, LGraphCanvas, ...) in the method `this` will than correctly set
             stepRet = cbhX.callback.call(this.ob_ref, oCbInfo, ...aArgs);
 
-            LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
+            if(this.debug) LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
 
             // push result
             checkStepRet();
