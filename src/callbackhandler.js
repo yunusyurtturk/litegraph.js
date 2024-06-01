@@ -96,7 +96,11 @@ export class CallbackHandler {
         };
         opts = Object.assign(def_opts, opts);
 
-        if(typeof(this.callbacks_handlers[name]) !== "undefined"){
+        LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
+
+        if(typeof(this.callbacks_handlers[name]) == "undefined"){
+            this.callbacks_handlers[name] = {last_id: 0, handlers:[]}; // initialize empty
+        }
             
             LiteGraph.log_debug("Will make clean arguments",arguments);
             var aArgs = ([].slice.call(arguments)).slice(2);
@@ -139,77 +143,76 @@ export class CallbackHandler {
                 }
                 
                 // execute default if already processed the ones >= 0
-                if(cbhX.priority<0 && !defCbChecked){
-                    LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
-                    executeDefaultCb();
-                }
-
-                oCbInfo = {
-                    name: name // name of the handler
-                    ,id: cbhX.id // id of the handler for the name
-                    ,current_return_value: cbRet // current temporary value (if >= second call and previous return a value) 
-                    ,data: cbhX.data // pass the priority and the additional data passed
-                    ,results_chain: aResChain
-                    // opts: def_opts
-                };
-                // execute callback
-                stepRet = cbhX.callback(oCbInfo,...aArgs);
-
-                LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
-
-                aResChain.push(stepRet); // cache result
-
-                // results should be structured a object (to try to return a final value or change chain execution behavior)
-                /**
-                 * @prop {*} return_value assign the return ( could be overriden )
-                 * @prop {number} result_priority assign proper values to allow handlers with higher priority to have not their return_value overridden 
-                 * @prop {boolean} prevent_default stop default execution ( force only when really needed )
-                 * @prop {boolean} stop_replication stop the execution chain
-                 */
-
-                // check result for structured object
-                if(typeof(stepRet)=="object"){
-                    if(typeof(stepRet.prevent_default)!=="undefined" && stepRet.prevent_default){
-                        preventDefCb = true;
-                    }
-                    if(typeof(stepRet.stop_replication)!=="undefined" && stepRet.stop_replication){
-                        LiteGraph.log_verbose("processCallbackHandlers","stop_replication",oCbInfo);
-                        break;
-                    }
-                    if(typeof(stepRet.return_value)!=="undefined"){
-                        if( !cbResPriority
-                            || cbResPriority <= stepRet.result_priority
-                            || (typeof(stepRet.result_priority)=="undefined" && (!cbResPriority || cbResPriority <= 0))
-                        ){
-                            LiteGraph.log_verbose("processCallbackHandlers","set result",stepRet,oCbInfo);
-                            cbRet = stepRet;
-                        }
-                    }
-                }else{
-                    // leave null
-                    // could use boolean false to ? return false ? stop execution too ?
-                    // could specify directly return value if not null ? better not to prevent inaccidental override of other handlers
-                    if(cbRet === false){
-                        cbRet = false; // TODO maybe to remove, leave for current stability
-                    }
-                }
-
-            } // end cycle
-            
-            // recheck for default cb passed after cycling
-            if(!defCbChecked){
+            if(cbhX.priority<0 && !defCbChecked){
+                LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
                 executeDefaultCb();
             }
 
-            if(cbRet===null){
-                // return default true if no callbacks specified a return value
-                // [ some original LG callback execution checks for boolean return ]
-                cbRet = true;
+            oCbInfo = {
+                name: name // name of the handler
+                ,id: cbhX.id // id of the handler for the name
+                ,current_return_value: cbRet // current temporary value (if >= second call and previous return a value) 
+                ,data: cbhX.data // pass the priority and the additional data passed
+                ,results_chain: aResChain
+                // opts: def_opts
+            };
+            // execute callback
+            stepRet = cbhX.callback(oCbInfo,...aArgs);
+
+            LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
+
+            aResChain.push(stepRet); // cache result
+
+            // results should be structured a object (to try to return a final value or change chain execution behavior)
+            /**
+             * @prop {*} return_value assign the return ( could be overriden )
+             * @prop {number} result_priority assign proper values to allow handlers with higher priority to have not their return_value overridden 
+             * @prop {boolean} prevent_default stop default execution ( force only when really needed )
+             * @prop {boolean} stop_replication stop the execution chain
+             */
+
+            // check result for structured object
+            if(typeof(stepRet)=="object"){
+                if(typeof(stepRet.prevent_default)!=="undefined" && stepRet.prevent_default){
+                    preventDefCb = true;
+                }
+                if(typeof(stepRet.stop_replication)!=="undefined" && stepRet.stop_replication){
+                    LiteGraph.log_verbose("processCallbackHandlers","stop_replication",oCbInfo);
+                    break;
+                }
+                if(typeof(stepRet.return_value)!=="undefined"){
+                    if( !cbResPriority
+                        || cbResPriority <= stepRet.result_priority
+                        || (typeof(stepRet.result_priority)=="undefined" && (!cbResPriority || cbResPriority <= 0))
+                    ){
+                        LiteGraph.log_verbose("processCallbackHandlers","set result",stepRet,oCbInfo);
+                        cbRet = stepRet;
+                    }
+                }
+            }else{
+                // leave null
+                // could use boolean false to ? return false ? stop execution too ?
+                // could specify directly return value if not null ? better not to prevent inaccidental override of other handlers
+                if(cbRet === false){
+                    cbRet = false; // TODO maybe to remove, leave for current stability
+                }
             }
-            return cbRet;
+
+        } // end cycle
+        
+        // recheck for default cb passed after cycling
+        if(!defCbChecked){
+            executeDefaultCb();
         }
 
+        // if(cbRet===null){
+        //     // return default true if no callbacks specified a return value
+        //     // [ some original LG callback execution checks for boolean return ]
+        //     cbRet = true;
+        // }
+        return cbRet;
+
         // could return obj instead and there check for values, etc ..
-        return true;
+        // return true;
     }
 }

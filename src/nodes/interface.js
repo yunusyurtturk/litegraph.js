@@ -57,16 +57,20 @@ class WidgetButton {
     }
 
     onMouseDown(e, local_pos) {
+        console.warn("DBG","WidgetButton","onMouseDown",this);
         if (
             local_pos[0] > 1 &&
             local_pos[1] > 1 &&
             local_pos[0] < this.size[0] - 2 &&
             local_pos[1] < this.size[1] - 2
         ) {
+            LiteGraph.log_verbose("WidgetButton","clicked inside");
             this.clicked = true;
             this.setOutputData(1, this.clicked);
             this.triggerSlot(0, this.properties.message);
             return true;
+        }else{
+            LiteGraph.log_verbose("WidgetButton","clicked outside");
         }
     }
 
