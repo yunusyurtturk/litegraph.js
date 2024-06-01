@@ -956,10 +956,9 @@ export class LGraphCanvas {
                         block_drag_node = true;
                     }
 
-                    // node.onMouseDown(e, pos, this);
                     // TAG callback node event entrypoint
                     var cbRet = node.processCallbackHandlers("onMouseDown",{
-                        def_cb: function(){ node.onMouseDown(e, pos, this); }
+                        def_cb: node.onMouseDown
                     }, e, pos, this );
                     
                     // if do not capture mouse
@@ -1589,21 +1588,6 @@ export class LGraphCanvas {
 
                 // node below mouse
                 if (node) {
-
-                    /* @TODO: Excise?
-                    // no need to condition on event type.. just another type
-                    if (
-                        connType == LiteGraph.EVENT &&
-                        this.isOverNodeBox(node, e.canvasX, e.canvasY)
-                    ) {
-
-                        this.connecting_node.connect(
-                            this.connecting_slot,
-                            node,
-                            LiteGraph.EVENT
-                        );
-
-                    } else {*/
 
                     // slot below mouse? connect
                     let slot;

@@ -64,13 +64,13 @@ class WidgetButton {
             local_pos[0] < this.size[0] - 2 &&
             local_pos[1] < this.size[1] - 2
         ) {
-            LiteGraph.log_verbose("WidgetButton","clicked inside");
+            LiteGraph.log_info("WidgetButton","clicked inside");
             this.clicked = true;
             this.setOutputData(1, this.clicked);
             this.triggerSlot(0, this.properties.message);
             return true;
         }else{
-            LiteGraph.log_verbose("WidgetButton","clicked outside");
+            LiteGraph.log_info("WidgetButton","clicked outside");
         }
     }
 
@@ -80,6 +80,7 @@ class WidgetButton {
 
     onMouseUp(_e) {
         this.clicked = false;
+        LiteGraph.log_info("WidgetButton","mouse up");
     }
 
     static font = "Arial";
