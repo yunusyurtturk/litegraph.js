@@ -43,6 +43,15 @@
 	<script>
 		window.addEventListener("load", (event) => {
 
+			/**
+			 * TESTING CallbackHandlers
+			 * 
+			 * register a callback, can specify priority (higher executed before, lower executed after, default is 0 executed after default [default is original direct assignment on event name eg. node.onGetInputs] )
+			 * final return is the last callback (lower piority) than returned something
+			 * can return and object where specify the result priority (overriding only if grater than the last result priority, default is 0)
+			 *
+			 */
+
 			var cbh1 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
 				console.info("**CB1**",...arguments);
 				return {	return_value: "ResCB1"
