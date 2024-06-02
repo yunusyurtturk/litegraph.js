@@ -1694,7 +1694,6 @@ export class LGraphCanvas {
                 this.dragging_canvas = false;
 
                 if (this.node_over) {
-                    console.warn("calling mouseUp",this.node_over);
                     // TAG callback node event entrypoint
                     this.node_over.processCallbackHandlers("onMouseUp",{
                         def_cb: this.node_over.onMouseUp

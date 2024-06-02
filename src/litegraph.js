@@ -414,7 +414,7 @@ export var LiteGraph = new class {
             // good for testing: this will create a temporary node for each type
             this.log_debug("registerNodeType","auto_load_slot_types, create empy tmp node",type);
             let tmpnode = new base_class(base_class.title ?? "tmpnode");
-            tmpnode.post_constructor(base_class.title ?? "tmpnode"); // could not call, but eventually checking for errors in the chain ?
+            tmpnode.post_constructor(); // could not call, but eventually checking for errors in the chain ?
         }
     }
 
