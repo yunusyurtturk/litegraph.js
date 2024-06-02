@@ -2248,17 +2248,11 @@ export class LGraphCanvas {
     }
 
     processNodeDblClicked(n) {
-        
-        /** RESTART FROM HERE
-         *  let r = this.processCallbackHandlers("onShowNodePanel",{
-                def_cb: this.onShowNodePanel
-            }, file);
-         */
 
         let r = this.processCallbackHandlers("onShowNodePanel",{
             def_cb: this.onShowNodePanel
         }, n);
-        if(r!==null && (r === false || (typeof(r)=="object" && r.return_value === false))){
+        if(r===null || ((typeof(r)=="object" && (r.return_value === null || !r.return_value)))){
             this.showShowNodePanel(n); // use onShowNodePanel, this is an only local method
         }
 
