@@ -7,7 +7,6 @@ export class LGraphGroup {
      * @param {string} [title="Group"] - The title of the group.
      */
     constructor(title = "Group") {
-
         this.title = title;
         this.font_size = 24;
         this.color = LiteGraph.LGraphCanvas.node_colors.pale_blue?.groupcolor ?? "#AAA";
@@ -38,7 +37,7 @@ export class LGraphGroup {
         const v0 = typeof(v[0])=="undefined" ? v[0] : v["0"];
         const v1 = typeof(v[1])=="undefined" ? v[1] : v["1"];
         this._size[0] = Math.max(140, v0);
-        this._size[1] = Math.max(80, v0);
+        this._size[1] = Math.max(80, v1);
     }
     get size() {
         return this._size;
