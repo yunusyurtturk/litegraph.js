@@ -21,10 +21,8 @@ export class LGraphGroup {
         if (!v || v.length < 2) {
             return;
         }
-        const v0 = typeof(v[0])=="undefined" ? v[0] : v["0"];
-        const v1 = typeof(v[1])=="undefined" ? v[1] : v["1"];
-        this._pos[0] = v0;
-        this._pos[1] = v1;
+        this._pos[0] = v[0];
+        this._pos[1] = v[1];
     }
     get pos() {
         return this._pos;
@@ -34,10 +32,8 @@ export class LGraphGroup {
         if (!v || v.length < 2) {
             return;
         }
-        const v0 = typeof(v[0])=="undefined" ? v[0] : v["0"];
-        const v1 = typeof(v[1])=="undefined" ? v[1] : v["1"];
-        this._size[0] = Math.max(140, v0);
-        this._size[1] = Math.max(80, v1);
+        this._size[0] = Math.max(140, v[0]);
+        this._size[1] = Math.max(80, v[1]);
     }
     get size() {
         return this._size;
@@ -53,7 +49,8 @@ export class LGraphGroup {
      */
     configure(o) {
         this.title = o.title;
-        this._bounding.set(o.bounding);
+        // this._bounding.set(o.bounding);
+        this._bounding = LiteGraph.cloneObject(o.bounding, this._bounding);
         this.color = o.color;
         if(o.font_size)
             this.font_size = o.font_size;

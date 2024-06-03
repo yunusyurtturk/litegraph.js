@@ -159,12 +159,15 @@ export class LGraphNode {
             if (value === null) {
                 return;
             } else if (typeof value === "object") {
-                if (this[key] && this[key].configure) {
+                if (this[key] && typeof(this[key].configure)=="function") {
                     this[key].configure(value);
+                    LiteGraph.log_verbose("lgraphnode","configure","use var internal configure method",key,value);
                 } else {
+                    LiteGraph.log_verbose("lgraphnode","configure","set ob var key",key,value,this[key]);
                     this[key] = LiteGraph.cloneObject(value, this[key]);
                 }
             } else {
+                LiteGraph.log_verbose("lgraphnode","configure","set node var",key,value);
                 this[key] = value;
             }
         });
