@@ -108,11 +108,13 @@
 			if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh1)){
 				console.info("Callback 1 unregistered");
 			}else{
+				// should not pass here
 				console.warn("FAILED Callback 1 unregister");
 			}
 			if(LiteGraph.unregisterCallbackHandler("onNodeTypeRegistered", cbh2)){
 				console.info("Callback 2 unregistered");
 			}else{
+				// should not pass here
 				console.warn("FAILED Callback 2 unregister");
 			}
 			// leave callback 3

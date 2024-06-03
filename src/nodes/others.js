@@ -59,8 +59,10 @@ LiteGraph.slot_types_default_out["object"] = [
     "objects/property_widget",
     "objects/method_widget",
     "objects/properties",
-    "basic/object_property",
-    "basic/keys",
+    "objects/get_property",
+    "objects/object_keys",
+    "objects/set_property",
+    "objects/merge_objects",
     "string/toString",
     "basic/watch",
 ];

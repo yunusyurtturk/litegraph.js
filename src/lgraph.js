@@ -1630,7 +1630,7 @@ export class LGraph {
             if (!this.actionHistoryLoad({iVersion: obH.actionHistoryPtr})) {
                 LiteGraph.log_warn("LG_history","Load failed, restore pointer? "+obH.actionHistoryPtr); // debug history
                 // history not found?
-                obH.actionHistoryPtr += steps;
+                obH.actionHistoryPtr += opts.steps;
                 return false;
             }else{
                 LiteGraph.log_debug("LG_history","loaded back: "+obH.actionHistoryPtr); // debug history

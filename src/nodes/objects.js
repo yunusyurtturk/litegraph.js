@@ -23,7 +23,7 @@ import { LiteGraph } from "../litegraph.js";
 // mMETHOD.prototype.onGetOutputs = function() {
 //     //return [["optional slot out", 0]];
 // };
-// LiteGraph.registerNodeType("basic/egnode", mMETHOD);
+// LiteGraph.registerNodeType("objects/egnode", mMETHOD);
 
 // --------------------------
 
@@ -532,3 +532,125 @@ class EventAsFunction {
 
 }
 LiteGraph.registerNodeType("objects/event_function", EventAsFunction);
+
+
+class ObjectProperty {
+
+    static title = "Object property";
+    static desc = "Outputs the property of an object";
+
+    constructor() {
+        this.addInput("obj", "object");
+        this.addOutput("property", 0);
+        this.addProperty("value", 0);
+        this.widget = this.addWidget("text", "prop.", "", this.setValue.bind(this));
+        this.widgets_up = true;
+        this.size = [140, 30];
+        this._value = null;
+    }
+
+    setValue(v) {
+        this.properties.value = v;
+        this.widget.value = v;
+    }
+
+    getTitle() {
+        if (this.flags.collapsed) {
+            return "in." + this.properties.value;
+        }
+        return this.title;
+    }
+
+    onPropertyChanged(name, value) {
+        this.widget.value = value;
+    }
+
+    onExecute() {
+        var data = this.getInputData(0);
+        if (data != null) {
+            this.setOutputData(0, data[this.properties.value]);
+        }
+    }
+}
+LiteGraph.registerNodeType("objects/get_property", ObjectProperty);
+
+
+class ObjectKeys {
+    static title = "Object keys";
+    static desc = "Outputs an array with the keys of an object";
+    constructor() {
+        this.addInput("obj", "object");
+        this.addOutput("keys", "array");
+        this.size = [140, 30];
+    }
+
+    onExecute() {
+        var data = this.getInputData(0);
+        if (data != null) {
+            this.setOutputData(0, Object.keys(data));
+        }
+    }
+}
+LiteGraph.registerNodeType("objects/object_keys", ObjectKeys);
+
+
+class SetObject {
+
+    static title = "Set property";
+    static desc = "Set property of object";
+
+    constructor() {
+        this.addInput("obj", "object");
+        this.addInput("value", "");
+        this.addOutput("obj", "object");
+        this.properties = { property: "" };
+        this.name_widget = this.addWidget(
+            "text",
+            "prop.",
+            this.properties.property,
+            "property",
+        );
+    }
+    onExecute() {
+        var obj = this.getInputData(0);
+        if (!obj) return;
+        var v = this.getInputData(1);
+        if (v === undefined) return;
+        if (this.properties.property) obj[this.properties.property] = v;
+        this.setOutputData(0, obj);
+    }
+}
+LiteGraph.registerNodeType("objects/set_property", SetObject);
+
+
+class MergeObjects {
+
+    static title = "Merge Objects";
+    static desc = "Creates an object copying properties from others";
+
+    constructor() {
+        this.addInput("A", "object");
+        this.addInput("B", "object");
+        this.addOutput("out", "object");
+        this._result = {};
+        var that = this;
+        this.addWidget("button", "clear", "", function () {
+            that._result = {};
+        });
+        this.size = this.computeSize();
+    }
+
+    onExecute() {
+        var A = this.getInputData(0);
+        var B = this.getInputData(1);
+        var C = this._result;
+        if (A)
+            for (let i in A)
+                C[i] = A[i];
+        if (B)
+            for (let i in B)
+                C[i] = B[i];
+        this.setOutputData(0, C);
+    }
+}
+LiteGraph.registerNodeType("objects/merge_objects", MergeObjects);
