@@ -1358,6 +1358,11 @@ export class LGraph {
      */
     serialize() {
         const nodesInfo = this._nodes.map((node) => node.serialize());
+        // TODO ensure and remove
+        // var nodesInfo = [];
+        // for (var i = 0, l = this._nodes.length; i < l; ++i) {
+        //     nodesInfo.push(this._nodes[i].serialize());
+        // }
 
         // pack link info into a non-verbose format
         var links = [];
@@ -1379,6 +1384,11 @@ export class LGraph {
         }
 
         const groupsInfo = this._groups.map((group) => group.serialize());
+        // TODO ensure and remove
+        // var groupsInfo = [];
+        // for (var i = 0; i < this._groups.length; ++i) {
+        //     groupsInfo.push(this._groups[i].serialize());
+        // }
 
         var data = {
             last_node_id: this.last_node_id,
@@ -1391,6 +1401,9 @@ export class LGraph {
             version: LiteGraph.VERSION,
         };
         this.onSerialize?.(data);
+        
+        LiteGraph.log_verbose("lgraph","serialize",data);
+
         return data;
     }
 

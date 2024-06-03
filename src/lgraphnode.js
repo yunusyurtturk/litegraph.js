@@ -287,6 +287,8 @@ export class LGraphNode {
         let r = this.processCallbackHandlers("onSerialize",{
             def_cb: this.onSerialize
         }, o);
+        LiteGraph.log_verbose("lgraphnode", "serialize", "onSerialize", o, r);
+
         if(r!==null && (typeof(r)=="object" && r.return_value!==null)){
             LiteGraph.log_warn("lgraphnode", "onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter");
         }

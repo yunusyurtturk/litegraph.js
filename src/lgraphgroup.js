@@ -22,8 +22,10 @@ export class LGraphGroup {
         if (!v || v.length < 2) {
             return;
         }
-        this._pos[0] = v[0];
-        this._pos[1] = v[1];
+        const v0 = typeof(v[0])=="undefined" ? v[0] : v["0"];
+        const v1 = typeof(v[1])=="undefined" ? v[1] : v["1"];
+        this._pos[0] = v0;
+        this._pos[1] = v1;
     }
     get pos() {
         return this._pos;
@@ -33,8 +35,10 @@ export class LGraphGroup {
         if (!v || v.length < 2) {
             return;
         }
-        this._size[0] = Math.max(140, v[0]);
-        this._size[1] = Math.max(80, v[1]);
+        const v0 = typeof(v[0])=="undefined" ? v[0] : v["0"];
+        const v1 = typeof(v[1])=="undefined" ? v[1] : v["1"];
+        this._size[0] = Math.max(140, v0);
+        this._size[1] = Math.max(80, v0);
     }
     get size() {
         return this._size;

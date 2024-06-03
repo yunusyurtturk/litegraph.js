@@ -2180,12 +2180,13 @@ export class LGraphCanvas {
             r = this.processCallbackHandlers("onDropItem",{
                 def_cb: this.onDropItem
             }, e);
-            if(!r || (typeof(r)=="object" && !r.return_value)){
+            if(r===null || !r || (typeof(r)=="object" && !r.return_value)){
                 LiteGraph.log_verbose("lgraphcanvas", "processDrop", "running default implementation", e);
                 this.checkDropItem(e);
+                return r===null ? r : (typeof(r)=="object" ? r.return_value : r); // this is probably ignored
+            }else{
+                return r; // this is probably ignored
             }
-
-            return r.return_value;
 
         }else{
             
@@ -3276,6 +3277,7 @@ export class LGraphCanvas {
             this.processCallbackHandlers("onDrawBackground",{
                 def_cb: this.onDrawBackground
             }, ctx, this.visible_area);
+
             if (this.onBackgroundRender) {
                 // LEGACY
                 LiteGraph.log_error("WARNING! onBackgroundRender deprecated, now is named onDrawBackground ");
@@ -3939,6 +3941,7 @@ export class LGraphCanvas {
             }
         }
         ctx.shadowColor = "transparent";
+        
         node.processCallbackHandlers("onDrawBackground",{
             def_cb: node.onDrawBackground
         }, ctx, this, this.canvas, this.graph_mouse);
