@@ -94,19 +94,24 @@ export class CallbackHandler {
             // WIP :: think try and implement options
             // process: "all", return: "first_result", skip_null_return: true, append_last_return: false
             // min_piority: false, max_priority: false
-            def_cb: false
+            def_cb: false // the [default] callback : in LG this is the previous(current) function called when an event is executed, can be undefined or null
         };
         opts = Object.assign(def_opts, opts);
         var that = this;
 
         if(this.debug) LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
 
+        // ensure callback name is present on this
         if(typeof(this.callbacks_handlers[name]) == "undefined"){
-            this.callbacks_handlers[name] = {last_id: 0, handlers:[]}; // initialize empty
+            this.callbacks_handlers[name] = {last_id: 0, handlers:[]};
         }
         
         if(this.debug) LiteGraph.log_debug("Will make clean arguments",arguments);
         var aArgs = ([].slice.call(arguments)).slice(2);
+
+        // previous implementation of converting arguments
+        // using shorter ([].slice.call(arguments)).slice(2)
+        // can clean when checked works fine
         // function clean_args(args) {
         //     let aRet = [];
         //     for(let iA=2; iA<args.length; iA++) {
@@ -117,14 +122,14 @@ export class CallbackHandler {
         // }
         // var aArgs = clean_args(arguments);
 
-        var stepRet = null;         // incremental final result 
-        var cbRet = null;
-        var aResChain = [];
-        var oCbInfo = {};
-        var cbResPriority = 0;
-        var defCbChecked = false;
-        var preventDefCb = false;
-        var breakCycle = false;
+        var stepRet = null;         // temp step specific result 
+        var cbRet = null;           // progressive final result
+        var aResChain = [];         // progressive results chain
+        var oCbInfo = {};           // info passed to the callback
+        var cbResPriority = 0;      // incremental result priority
+        var defCbChecked = false;   // flag activated when executed the [default] callback
+        var preventDefCb = false;   // if to prevent the [default] callback execution (set eventually by some callback result)
+        var breakCycle = false;     // if to stop callback execution (set eventually by some callback result)
 
         var executeDefaultCb = function(){
             if(!preventDefCb && typeof(opts.def_cb)=="function"){
@@ -140,17 +145,22 @@ export class CallbackHandler {
             }
             defCbChecked = true;
         }
+        // results should be structured a object (to try to return a final value or change chain execution behavior)
+        /**
+         * @prop {*} return_value assign the return ( could be overriden )
+         * @prop {number} result_priority assign proper values to allow handlers with higher priority to have not their return_value overridden 
+         * @prop {boolean} prevent_default stop default execution ( force only when really needed )
+         * @prop {boolean} stop_replication stop the execution chain
+         */
+        var buildRetObj = function(){
+            // TODO: implement object return construction :: THAN replace all result checking in the libs to easier object ensured checks
+        }
+        /**
+         * called for each callback to push and merge results
+         * void
+         */
         var checkStepRet = function(){
-            aResChain.push(stepRet); // cache result
-
-            // results should be structured a object (to try to return a final value or change chain execution behavior)
-            /**
-             * @prop {*} return_value assign the return ( could be overriden )
-             * @prop {number} result_priority assign proper values to allow handlers with higher priority to have not their return_value overridden 
-             * @prop {boolean} prevent_default stop default execution ( force only when really needed )
-             * @prop {boolean} stop_replication stop the execution chain
-             */
-
+            aResChain.push(stepRet); // cache result            
             // check result for structured object
             if(typeof(stepRet)=="object"){
                 if(typeof(stepRet.prevent_default)!=="undefined" && stepRet.prevent_default){
@@ -227,6 +237,6 @@ export class CallbackHandler {
         return cbRet;
 
         // could return obj instead and there check for values, etc ..
-        // return true;
+        // TODO would be probably better to always return an object to than check for result and make easier code in implementation
     }
 }
