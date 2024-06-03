@@ -1194,13 +1194,14 @@ export class LGraphCanvas {
      **/
     processMouseMove(e) {
         if (this.autoresize) {
-            this.resize();
+            this.resize(); // ? really ? every mouse move ? TODO move this
         }
 
         if( this.set_canvas_dirty_on_mouse_event )
             this.dirty_canvas = true;
 
         if (!this.graph) {
+            LiteGraph.log_warn("lgraphcanvas", "processMouseMove", "no canvas ref");
             return;
         }
 
@@ -1220,7 +1221,7 @@ export class LGraphCanvas {
         // DBG EXCESS LiteGraph.log_verbose("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
 
         if(this.block_click) {
-            LiteGraph.log_verbose("pointerevents: processMouseMove block_click");
+            LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "block_click");
             e.preventDefault();
             return false;
         }
@@ -1241,27 +1242,35 @@ export class LGraphCanvas {
         var node = this.graph.getNodeOnPos(e.canvasX,e.canvasY,this.visible_nodes);
 
         if (this.dragging_rectangle) {
+            LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "making rectangle");
             this.dragging_rectangle[2] = e.canvasX - this.dragging_rectangle[0];
             this.dragging_rectangle[3] = e.canvasY - this.dragging_rectangle[1];
             this.dirty_canvas = true;
         } else if (this.selected_group && !this.read_only) {
             // moving/resizing a group
             if (this.selected_group_resizing) {
+                LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "resizing group");
                 this.selected_group.size = [
                     e.canvasX - this.selected_group.pos[0],
                     e.canvasY - this.selected_group.pos[1],
                 ];
             } else {
+                LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "dragging group");
                 var deltax = delta[0] / this.ds.scale;
                 var deltay = delta[1] / this.ds.scale;
                 this.selected_group.move(deltax, deltay, e.ctrlKey);
                 if (this.selected_group._nodes.length) {
                     this.dirty_canvas = true;
                 }
+                if(deltax || deltay){
+                    this.processCallbackHandlers("onGroupMoving",{
+                        def_cb: this.onGroupMoving
+                    }, this.selected_group, deltax, deltay );
+                }
             }
             this.dirty_bgcanvas = true;
         } else if (this.dragging_canvas) {
-            // //LiteGraph.log_debug("pointerevents: processMouseMove is dragging_canvas");
+            LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "dragging_canvas");
             this.ds.offset[0] += delta[0] / this.ds.scale;
             this.ds.offset[1] += delta[1] / this.ds.scale;
             this.dirty_canvas = true;
@@ -1410,7 +1419,7 @@ export class LGraphCanvas {
 
             // node being dragged
             if (this.node_dragged && !this.live_mode) {
-                LiteGraph.log_verbose("draggin!",this.selected_nodes);
+                LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "draggin!",this.selected_nodes);
                 for (let i in this.selected_nodes) {
                     let n = this.selected_nodes[i];
                     n.pos[0] += delta[0] / this.ds.scale;
@@ -1437,6 +1446,13 @@ export class LGraphCanvas {
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
             }
+        }else{
+            if(this.read_only){
+                LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "canvas is read only", this);
+            }else{
+                // interaction not allowed
+                LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "interaction not allowed (nor canvas and node)", this.allow_interaction, node.flags);
+            } 
         }
 
         e.preventDefault();
@@ -1513,6 +1529,21 @@ export class LGraphCanvas {
                 this.selected_group.pos[1] = Math.round(this.selected_group.pos[1]);
                 if (this.selected_group._nodes.length) {
                     this.dirty_canvas = true;
+                }
+                if(this.selected_group_resizing){
+                    this.processCallbackHandlers("onGroupResized",{
+                        def_cb: this.onGroupResized
+                    }, this.selected_group );
+                    this.graph.onGraphChanged({action: "groupResize", doSave: true});
+                    this.graph.afterChange(); // this.selected_group
+                }else{
+                    if(diffx || diffy){
+                        this.processCallbackHandlers("onGroupMoved",{
+                            def_cb: this.onGroupMoved
+                        }, this.selected_group );
+                        this.graph.onGraphChanged({action: "groupMove", doSave: true});
+                        this.graph.afterChange(); // this.selected_group
+                    }
                 }
                 this.selected_group = null;
             }
