@@ -5589,7 +5589,7 @@ export class LGraphCanvas {
         var ref_window = canvas.getCanvasWindow();
 
         options = node.optional_outputs;
-        r = node.processCallbackHandlers("onGetOutputs",{
+        let r = node.processCallbackHandlers("onGetOutputs",{
             def_cb: node.onGetOutputs
         });
         if(r!==null && (typeof(r)=="object")){
