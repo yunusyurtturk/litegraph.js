@@ -2,6 +2,10 @@ import { LiteGraph } from "./litegraph.js";
 
 export class LGraphGroup {
 
+    static opts = {
+        inclusion_distance: 36 // distance to border to consider included inside the group 
+    }
+
     /**
      * Constructor for the LGraphGroup class.
      * @param {string} [title="Group"] - The title of the group.
@@ -49,7 +53,8 @@ export class LGraphGroup {
      */
     configure(o) {
         this.title = o.title;
-        // this._bounding.set(o.bounding);
+        // this._bounding.set(o.bounding); // TODO original, will remove this comment: Happens that arrays are sometimes (strangely) exported as object with keyed strings: eg. [v0, v1] to {"0": v0, "1": v1}
+        // this._bounding = LiteGraph.parseStringifyObject(o.bounding, this._bounding); // tried specific cleaner implementation, reverted to cloneObject
         this._bounding = LiteGraph.cloneObject(o.bounding, this._bounding);
         this.color = o.color;
         if(o.font_size)
@@ -109,7 +114,8 @@ export class LGraphGroup {
 
         this._nodes = nodes.filter((node) => {
             node.getBounding(node_bounding);
-            return LiteGraph.overlapBounding(this._bounding, node_bounding);
+
+            return LiteGraph.overlapBounding(this._bounding, node_bounding, -LGraphGroup.opts.inclusion_distance);
         });
     }
 

@@ -17,6 +17,17 @@ export class LGraphCanvas {
             skip_render: false,
             autoresize: false,
             clip_all_nodes: false,
+
+            groups_alpha: 0.21,
+            groups_border_alpha: 0.45,
+            groups_triangle_handler_size: 15,
+            groups_title_font: "Arial",
+            groups_title_alignment: "left",
+            groups_title_font_size: 24, // group font size is actually a lgraphgroup property, and the default is in LiteGraph
+            groups_title_wrap: true,
+            groups_add_around_selected: true,
+            groups_add_default_spacing: 15,
+
         };
         this.options = options;
         
@@ -1005,7 +1016,8 @@ export class LGraphCanvas {
             } else { // clicked outside of nodes
                 LiteGraph.log_debug("graph processMouseDown","clicked outside nodes");
                 if (!skip_action) {
-                    // search for link connector
+
+                    // search for mouseDown on LINKS
                     if(!this.read_only) {
                         for (let i = 0; i < this.visible_links.length; ++i) {
                             var link = this.visible_links[i];
@@ -1027,6 +1039,7 @@ export class LGraphCanvas {
                         }
                     }
 
+                    // search for mouseDown on GROUPS
                     this.selected_group = this.graph.getGroupOnPos( e.canvasX, e.canvasY );
                     this.selected_group_resizing = false;
                     if (this.selected_group && !this.read_only ) {
@@ -1036,7 +1049,7 @@ export class LGraphCanvas {
                         }
 
                         var dist = LiteGraph.distance( [e.canvasX, e.canvasY], [ this.selected_group.pos[0] + this.selected_group.size[0], this.selected_group.pos[1] + this.selected_group.size[1] ] );
-                        if (dist * this.ds.scale < 10) {
+                        if (dist * this.ds.scale < this.options.groups_triangle_handler_size) {
                             this.selected_group_resizing = true;
                         } else {
                             this.selected_group.recomputeInsideNodes();
@@ -3812,7 +3825,7 @@ export class LGraphCanvas {
         ctx.globalAlpha = this.editor_alpha;
 
         // ctx.fillText(text, pos[0] + size[0]/2, pos[1] - 15 - h * 0.3);
-        var oTMultiRet = LiteGraph.canvasFillTextMultiline(ctx, text, pos[0] + size[0]/2, pos[1] - (h), w, 14);
+        const oTMultiRet = LiteGraph.canvasFillTextMultiline(ctx, text, pos[0] + size[0]/2, pos[1] - (h), w, 14);
 
         node.ttip_oTMultiRet = oTMultiRet;
 
@@ -5132,7 +5145,6 @@ export class LGraphCanvas {
         var groups = this.graph._groups;
 
         ctx.save();
-        ctx.globalAlpha = 0.5 * this.editor_alpha;
 
         for (let i = 0; i < groups.length; ++i) {
             var group = groups[i];
@@ -5143,9 +5155,14 @@ export class LGraphCanvas {
 
             ctx.fillStyle = group.color || "#335";
             ctx.strokeStyle = group.color || "#335";
+            if(this.options.groups_border_alpha>=0){
+                if(ctx.setStrokeColor){ // only webkit
+                    ctx.setStrokeColor(ctx.strokeStyle, this.options.groups_border_alpha);
+                }
+            }
             var pos = group._pos;
             var size = group._size;
-            ctx.globalAlpha = 0.25 * this.editor_alpha;
+            ctx.globalAlpha = this.options.groups_alpha * this.editor_alpha; // check, not affecting
             ctx.beginPath();
             ctx.rect(pos[0] + 0.5, pos[1] + 0.5, size[0], size[1]);
             ctx.fill();
@@ -5154,15 +5171,18 @@ export class LGraphCanvas {
 
             ctx.beginPath();
             ctx.moveTo(pos[0] + size[0], pos[1] + size[1]);
-            ctx.lineTo(pos[0] + size[0] - 10, pos[1] + size[1]);
-            ctx.lineTo(pos[0] + size[0], pos[1] + size[1] - 10);
+            ctx.lineTo(pos[0] + size[0] - this.options.groups_triangle_handler_size, pos[1] + size[1]);
+            ctx.lineTo(pos[0] + size[0], pos[1] + size[1] - this.options.groups_triangle_handler_size);
             ctx.fill();
 
-            var font_size =
-                group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
-            ctx.font = font_size + "px Arial";
-            ctx.textAlign = "left";
-            ctx.fillText(group.title, pos[0] + 4, pos[1] + font_size);
+            var font_size = group.font_size || this.options.groups_title_font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
+            ctx.font = font_size + "px "+this.options.groups_title_font;
+            ctx.textAlign = this.options.groups_title_alignment;
+            if(this.options.groups_title_wrap){
+                LiteGraph.canvasFillTextMultiline(ctx, group.title, pos[0] + 4, pos[1] + font_size, size[0], font_size);
+            }else{
+                ctx.fillText(group.title, pos[0] + 4, pos[1] + font_size);
+            }
         }
 
         ctx.restore();
@@ -5307,7 +5327,24 @@ export class LGraphCanvas {
     static onGroupAdd(info, entry, mouse_event) {
         var canvas = LGraphCanvas.active_canvas;
         var group = new LiteGraph.LGraphGroup();
-        group.pos = canvas.convertEventToCanvasOffset(mouse_event);
+        if(canvas.options.groups_add_around_selected && Object.keys(canvas.selected_nodes).length){
+            const coord = canvas.getBoundaryForSelection();
+            if(coord){ 
+                const spacing = canvas.options.groups_add_default_spacing;
+                const titleSpace = canvas.options.groups_title_font_size*1.5;
+                group.pos = [   coord[0] - spacing
+                                ,coord[1] - titleSpace - spacing
+                            ];
+                group.size = [  coord[2] + (spacing*2)
+                                ,coord[3]+ titleSpace + (spacing*2)
+                            ];
+                LiteGraph.log_debug("lgraphcanvas","onGroupAdd","groups_add_around_selected",coord,group);
+            }else{
+                group.pos = canvas.convertEventToCanvasOffset(mouse_event); // as default
+            }
+        }else{
+            group.pos = canvas.convertEventToCanvasOffset(mouse_event);
+        }
         canvas.graph.add(group);
     }
 
@@ -5354,6 +5391,21 @@ export class LGraphCanvas {
      */
     boundaryNodesForSelection() {
         return LGraphCanvas.getBoundaryNodes(Object.values(this.selected_nodes));
+    }
+
+    // returns x, y, w, h
+    getBoundaryForSelection(){
+        const nodesBounds = this.boundaryNodesForSelection();
+        if(!nodesBounds || nodesBounds.left===null) return false;
+        const ln = nodesBounds.left.getBounding();
+        const tn = nodesBounds.top.getBounding();
+        const rn = nodesBounds.right.getBounding();
+        const bn = nodesBounds.bottom.getBounding();
+        return [ ln[0]
+                ,tn[1]
+                ,rn[0]+rn[2] - ln[0]
+                ,bn[1]+bn[3] - tn[1]
+            ];
     }
 
     /**

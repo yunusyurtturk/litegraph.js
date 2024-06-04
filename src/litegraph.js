@@ -762,14 +762,35 @@ export var LiteGraph = new class {
         this.log_debug("Nodes reloaded");
     }
 
-    // separated just to improve if it doesn't work
+    /**
+     * This is a cleaner helper to .configure methods that rely on json import
+     * Happens that arrays are sometimes (strangely) exported as object with keyed strings: eg. [v0, v1] to {"0": v0, "1": v1}
+     * This method successfully convert those to back to accessible by key numbers {0: v0, 1:v1} - note this is an object not an array as eventually was in origin
+     * This eg. happens with groups ._bounding and nodes .position, but could happen anywere, advised implementation of parseStringifyObject to sanitize
+     * @param {object} obj the object to parse clean
+     * @returns the cleaned object
+     */
+    parseStringifyObject(obj, target) {
+        // method 1: not working
+        // return JSON.parse(JSON.stringify(obj));
+
+        // method 2: working
+        // for (const key in obj) {
+        //     if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        //         target[key] = obj[key];
+        //     }
+        // }
+        // return target;
+
+        // just use cloneObject, original solution
+        return this.cloneObject(obj, target);
+    }
+
     cloneObject(obj, target) {
         if (obj == null) {
             return null;
         }
-
         const clonedObj = JSON.parse(JSON.stringify(obj));
-
         if (!target) {
             return clonedObj;
         }
@@ -987,11 +1008,11 @@ export var LiteGraph = new class {
     }
 
     // bounding overlap, format: [ startx, starty, width, height ]
-    overlapBounding(a, b) {
-        const A_end_x = a[0] + a[2];
-        const A_end_y = a[1] + a[3];
-        const B_end_x = b[0] + b[2];
-        const B_end_y = b[1] + b[3];
+    overlapBounding(a, b, add) {
+        const A_end_x = a[0] + a[2] - add;
+        const A_end_y = a[1] + a[3] - add;
+        const B_end_x = b[0] + b[2] + add;
+        const B_end_y = b[1] + b[3] + add;
 
         return !(a[0] > B_end_x || a[1] > B_end_y || A_end_x < b[0] || A_end_y < b[1]);
     }
