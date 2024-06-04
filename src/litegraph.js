@@ -619,7 +619,7 @@ export var LiteGraph = new class {
         const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
-            this.log?.(`GraphNode type "${type}" not registered.`);
+            this.log_debug(`GraphNode type "${type}" not registered.`);
             return null;
         }
 
@@ -746,7 +746,7 @@ export var LiteGraph = new class {
             }
 
             try {
-                this.log?.("Reloading: " + src);
+                this.log_debug("Reloading: " + src);
                 var dynamicScript = document.createElement("script");
                 dynamicScript.type = "text/javascript";
                 dynamicScript.src = src;
@@ -756,10 +756,10 @@ export var LiteGraph = new class {
                 if (LiteGraph.throw_errors) {
                     throw err;
                 }
-                this.log?.("Error while reloading " + src);
+                this.log_debug("Error while reloading " + src);
             }
         }
-        this.log?.("Nodes reloaded");
+        this.log_debug("Nodes reloaded");
     }
 
     // separated just to improve if it doesn't work

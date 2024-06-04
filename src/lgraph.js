@@ -70,7 +70,9 @@ export class LGraph {
 
         // safe clear
         this._nodes?.forEach((node) => {
-            node.onRemoved?.();
+            node.processCallbackHandlers("onRemoved",{
+                def_db: node.onRemoved
+            });
         });
 
         // nodes
@@ -198,7 +200,9 @@ export class LGraph {
         }
 
         this.status = LGraph.STATUS_RUNNING;
-        this.onPlayEvent?.();
+        this.processCallbackHandlers("onPlayEvent",{
+            def_db: this.onPlayEvent
+        });
         this.sendEventToAllNodes("onStart");
 
         this.starttime = LiteGraph.getTime();
@@ -209,9 +213,13 @@ export class LGraph {
                 return;
             }
             window.requestAnimationFrame(onAnimationFrame);
-            this.onBeforeStep?.();
+            this.processCallbackHandlers("onBeforeStep",{
+                def_db: this.onBeforeStep
+            });
             this.runStep(1, !this.catch_errors);
-            this.onAfterStep?.();
+            this.processCallbackHandlers("onAfterStep",{
+                def_db: this.onAfterStep
+            });
         };
 
         if (interval === 0 && typeof window === "object" && window.requestAnimationFrame) {
@@ -219,9 +227,13 @@ export class LGraph {
             onAnimationFrame();
         } else {
             this.execution_timer_id = setInterval(() => {
-                this.onBeforeStep?.();
+                this.processCallbackHandlers("onBeforeStep",{
+                    def_db: this.onBeforeStep
+                });
                 this.runStep(1, !this.catch_errors);
-                this.onAfterStep?.();
+                this.processCallbackHandlers("onAfterStep",{
+                    def_db: this.onAfterStep
+                });
             }, interval);
         }
     }
@@ -235,7 +247,9 @@ export class LGraph {
             return;
         }
         this.status = LGraph.STATUS_STOPPED;
-        this.onStopEvent?.();
+        this.processCallbackHandlers("onStopEvent",{
+            def_db: this.onStopEvent
+        });
         if (this.execution_timer_id != null) {
             if (this.execution_timer_id != -1) {
                 clearInterval(this.execution_timer_id);
@@ -276,9 +290,13 @@ export class LGraph {
                 });
 
                 this.fixedtime += this.fixedtime_lapse;
-                this.onExecuteStep?.();
+                this.processCallbackHandlers("onExecuteStep",{
+                    def_db: this.onExecuteStep
+                });
             }
-            this.onAfterExecute?.();
+            this.processCallbackHandlers("onAfterExecute",{
+                def_db: this.onAfterExecute
+            });
         } else { // catch errors
             try {
                 for (let i = 0; i < num; i++) {
@@ -293,10 +311,14 @@ export class LGraph {
                     });
 
                     this.fixedtime += this.fixedtime_lapse;
-                    this.onExecuteStep?.();
+                    this.processCallbackHandlers("onExecuteStep",{
+                        def_db: this.onExecuteStep
+                    });
                 }
 
-                this.onAfterExecute?.();
+                this.processCallbackHandlers("onAfterExecute",{
+                    def_db: this.onAfterExecute
+                });
                 this.errors_in_execution = false;
             } catch (err) {
 
@@ -304,7 +326,7 @@ export class LGraph {
                 if (LiteGraph.throw_errors) {
                     throw err;
                 }
-                LiteGraph.log?.(`Error during execution: ${err}`);
+                LiteGraph.log_warn("lgraph","Error during execution",err);
                 this.stop();
             }
         }
@@ -452,7 +474,7 @@ export class LGraph {
         }
 
         if (L.length != this._nodes.length && LiteGraph.debug) {
-            LiteGraph.log_warn("something went wrong, nodes missing");
+            LiteGraph.log_warn("lgraph", "computeExecutionOrder", "something went wrong, nodes missing");
         }
 
         var l = L.length;
@@ -518,13 +540,13 @@ export class LGraph {
                 // mode check
                 if (opts.modesSkip && opts.modesSkip.length) {
                     if (opts.modesSkip.indexOf(current.mode) != -1) {
-                        // DBG("mode skip "+current.id+":"+current.order+" :: "+current.mode);
+                        // DBG EXCESS (keep) LiteGraph.log_verbose("mode skip "+current.id+":"+current.order+" :: "+current.mode);
                         continue;
                     }
                 }
                 if (opts.modesOnly && opts.modesOnly.length) {
                     if (opts.modesOnly.indexOf(current.mode) == -1) {
-                        // DBG("mode only "+current.id+":"+current.order+" :: "+current.mode);
+                        // DBG EXCESS (keep) LiteGraph.log_verbose("mode only "+current.id+":"+current.order+" :: "+current.mode);
                         continue;
                     }
                 }
@@ -532,7 +554,7 @@ export class LGraph {
                 if (ancestorsIds.indexOf(current.id) == -1) {
                     ancestors.push(current);
                     ancestorsIds.push(current.id);
-                    // DBG("push current "+current.id+":"+current.order);
+                    // DBG EXCESS (keep) LiteGraph.log_verbose("push current "+current.id+":"+current.order);
                 }
 
             }
@@ -551,23 +573,23 @@ export class LGraph {
                 // type check
                 if (opts.typesSkip && opts.typesSkip.length) {
                     if (opts.typesSkip.indexOf(inputType) != -1) {
-                        // DBG("type skip "+input.id+":"+input.order+" :: "+inputType);
+                        // DBG EXCESS (keep) LiteGraph.log_verbose("type skip "+input.id+":"+input.order+" :: "+inputType);
                         continue;
                     }
                 }
                 if (opts.typesOnly && opts.typesOnly.length) {
                     if (opts.typesOnly.indexOf(input.mode) == -1) {
-                        // DBG("type only "+input.id+":"+input.order+" :: "+inputType);
+                        // DBG EXCESS (keep) LiteGraph.log_verbose("type only "+input.id+":"+input.order+" :: "+inputType);
                         continue;
                     }
                 }
 
-                // DBG("input "+i+" "+input.id+":"+input.order);
+                // DBG EXCESS (keep) LiteGraph.log_verbose("input "+i+" "+input.id+":"+input.order);
                 // push em in
                 if (ancestorsIds.indexOf(input.id) == -1) {
                     if(!visited[input.id]) {
                         pending.push(input);
-                        // DBG("push input "+input.id+":"+input.order);
+                        // DBG EXCESS (keep) LiteGraph.log_verbose("push input "+input.id+":"+input.order);
                     }
                 }
             }
@@ -670,7 +692,7 @@ export class LGraph {
                 continue;
             }
 
-            if (!node[eventname] || node.mode !== mode) {
+            if (typeof(node[eventname])!=="function" || node.mode !== mode) {
                 continue;
             }
             if (params === undefined) {
@@ -694,7 +716,7 @@ export class LGraph {
         }
 
         for (const c of this.list_of_graphcanvas) {
-            if (c[action] && params) {
+            if (typeof(c[action])=="function" && c[action] && params) {
                 c[action](...params);
             }
         }
@@ -729,7 +751,7 @@ export class LGraph {
 
         // nodes
         if (node.id != -1 && this._nodes_by_id[node.id] != null) {
-            LiteGraph.log_warn("LiteGraph: there is already a node with this ID, changing it");
+            LiteGraph.log_debug("lgraph", "add", "there is already a node with this ID, changing it", node);
             if (LiteGraph.use_uuids) {
                 node.id = LiteGraph.uuidv4();
             } else {
@@ -737,8 +759,10 @@ export class LGraph {
             }
         }
 
-        if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
-            throw new Error("LiteGraph: max number of nodes in a graph reached");
+        if (LiteGraph.MAX_NUMBER_OF_NODES > 0 && this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
+            LiteGraph.log_error("lgraph", "add", "max number of nodes in a graph reached", LiteGraph.MAX_NUMBER_OF_NODES);
+            return;
+            // throw new Error("LiteGraph: max number of nodes in a graph reached");
         }
 
         // give him an id
@@ -759,7 +783,9 @@ export class LGraph {
         this._nodes.push(node);
         this._nodes_by_id[node.id] = node;
 
-        node.onAdded?.(this);
+        node.processCallbackHandlers("onAdded",{
+            def_db: node.onAdded
+        }, this);
 
         if (this.config.align_to_grid) {
             node.alignToGrid();
@@ -769,7 +795,9 @@ export class LGraph {
             this.updateExecutionOrder();
         }
 
-        this.onNodeAdded?.(node);
+        this.processCallbackHandlers("onNodeAdded",{
+            def_db: this.onNodeAdded
+        }, node);
 
         if (opts.doCalcSize) {
             node.setSize( node.computeSize() );
@@ -831,9 +859,11 @@ export class LGraph {
         // node.id = -1; //why?
 
         // callback
-        node.onRemoved?.();
+        node.processCallbackHandlers("onRemoved",{
+            def_db: node.onRemoved
+        }, this);
+
         node.graph = null;
-        this.onGraphChanged({action: "nodeRemove"});
 
         // remove from canvas render
         if (this.list_of_graphcanvas) {
@@ -855,7 +885,11 @@ export class LGraph {
         }
         delete this._nodes_by_id[node.id];
 
-        this.onNodeRemoved?.(node);
+        this.processCallbackHandlers("onNodeRemoved",{
+            def_db: this.onNodeRemoved
+        }, node);
+
+        this.onGraphChanged({action: "nodeRemove"});
 
         // close panels
         this.sendActionToCanvas("checkPanels");
@@ -957,8 +991,7 @@ export class LGraph {
             if (node.constructor == ctor) {
                 continue;
             }
-            if(LiteGraph.debug)
-                LiteGraph.log?.(`node being replaced by newer version: ${node.type}`);
+            LiteGraph.log_debug("lgraph", "checkNodeTypes", "node being replaced by newer version", node.type);
             var newnode = LiteGraph.createNode(node.type);
             this._nodes[i] = newnode;
             newnode.configure(node.serialize());
@@ -997,7 +1030,10 @@ export class LGraph {
     }
 
     trigger(action, param) {
-        this.onTrigger?.(action, param);
+        // this.onTrigger?.(action, param);
+        this.processCallbackHandlers("onTrigger",{
+            def_db: this.onTrigger
+        }, action, param);
     }
 
     /**
@@ -1018,8 +1054,12 @@ export class LGraph {
         this.inputs[name] = { name: name, type: type, value: value };
         this.onGraphChanged({action: "addInput"});
         this.afterChange();
-        this.onInputAdded?.(name, type);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onInputAdded",{
+            def_db: this.onInputAdded
+        }, name, type);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1066,7 +1106,7 @@ export class LGraph {
         }
 
         if (this.inputs[name]) {
-            LiteGraph.log_error("there is already one input with that name");
+            LiteGraph.log_error("lgraph", "renameInut", "there is already one input with that name");
             return false;
         }
 
@@ -1074,8 +1114,12 @@ export class LGraph {
         delete this.inputs[old_name];
         this.onGraphChanged({action: "renameInput"});
 
-        this.onInputRenamed?.(old_name, name);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onInputRenamed",{
+            def_db: this.onInputRenamed
+        }, old_name, name);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1099,7 +1143,12 @@ export class LGraph {
 
         this.inputs[name].type = type;
         this.onGraphChanged({action: "changeInputType"});
-        this.onInputTypeChanged?.(name, type);
+        this.processCallbackHandlers("onInputTypeChanged",{
+            def_db: this.onInputTypeChanged
+        }, name, type);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1116,8 +1165,12 @@ export class LGraph {
         delete this.inputs[name];
         this.onGraphChanged({action: "graphRemoveInput"});
 
-        this.onInputRemoved?.(name);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onInputRemoved",{
+            def_db: this.onInputRemoved
+        }, name);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
         return true;
     }
 
@@ -1132,8 +1185,12 @@ export class LGraph {
         this.outputs[name] = { name: name, type: type, value: value };
         this.onGraphChanged({action: "addOutput"});
 
-        this.onOutputAdded?.(name, type);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onOutputAdded",{
+            def_db: this.onOutputAdded
+        }, name, type);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1176,7 +1233,7 @@ export class LGraph {
         }
 
         if (this.outputs[name]) {
-            LiteGraph.log_error("there is already one output with that name");
+            LiteGraph.log_error("lgraph", "renameOutput", "there is already one output with that name");
             return false;
         }
 
@@ -1184,8 +1241,12 @@ export class LGraph {
         delete this.outputs[old_name];
         this._version++;
 
-        this.onOutputRenamed?.(old_name, name);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onOutputRenamed",{
+            def_db: this.onOutputRenamed
+        }, old_name, name);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1209,7 +1270,12 @@ export class LGraph {
 
         this.outputs[name].type = type;
         this.onGraphChanged({action: "changeOutputType"});
-        this.onOutputTypeChanged?.(name, type);
+        this.processCallbackHandlers("onOutputTypeChanged",{
+            def_db: this.onOutputTypeChanged
+        }, name, type);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
     }
 
     /**
@@ -1224,8 +1290,12 @@ export class LGraph {
         delete this.outputs[name];
         this.onGraphChanged({action: "removeOutput"});
 
-        this.onOutputRemoved?.(name);
-        this.onInputsOutputsChange?.();
+        this.processCallbackHandlers("onOutputRemoved",{
+            def_db: this.onOutputRemoved
+        }, name);
+        this.processCallbackHandlers("onInputsOutputsChange",{
+            def_db: this.onInputsOutputsChange
+        });
         return true;
     }
 
@@ -1259,7 +1329,9 @@ export class LGraph {
      * @param {object} info - The information detail about the change.
      */
     beforeChange(info) {
-        this.onBeforeChange?.(this,info);
+        this.processCallbackHandlers("onBeforeChange",{
+            def_db: this.onBeforeChange
+        }, this, info);
         this.sendActionToCanvas("onBeforeChange", this);
     }
 
@@ -1269,7 +1341,9 @@ export class LGraph {
      * @param {object} info - The information detail about the change.
      */
     afterChange(info) {
-        this.onAfterChange?.(this,info);
+        this.processCallbackHandlers("onAfterChange",{
+            def_db: this.onAfterChange
+        }, this, info);
         this.sendActionToCanvas("onAfterChange", this);
     }
 
@@ -1281,7 +1355,9 @@ export class LGraph {
      */
     connectionChange(node) {
         this.updateExecutionOrder();
-        this.onConnectionChange?.(node);
+        this.processCallbackHandlers("onConnectionChange",{
+            def_db: this.onConnectionChange
+        }, node);
         this.onGraphChanged({action: "connectionChange", doSave: false});
         this.sendActionToCanvas("onConnectionChange");
     }
@@ -1324,9 +1400,11 @@ export class LGraph {
      * @method change
      */
     change() {
-        LiteGraph.log?.("Graph visually changed");
+        LiteGraph.log_debug("lgraph", "change", "Graph visually changed");
         this.sendActionToCanvas("setDirty", [true, true]);
-        this.on_change?.(this);
+        this.processCallbackHandlers("on_change",{ // name refactor ? is this being used ?
+            def_db: this.on_change
+        }, this);
     }
 
     setDirtyCanvas(fg, bg) {
@@ -1371,7 +1449,7 @@ export class LGraph {
             var link = this.links[i];
             if (!link.serialize) {
                 // weird bug I havent solved yet
-                LiteGraph.log_warn("weird LLink bug, link info is not a LLink but a regular object");
+                LiteGraph.log_warn("lgraph", "serialize", "weird LLink bug, link info is not a LLink but a regular object");
                 var link2 = new LiteGraph.LLink();
                 for (var j in link) {
                     link2[j] = link[j];
@@ -1400,7 +1478,9 @@ export class LGraph {
             extra: this.extra,
             version: LiteGraph.VERSION,
         };
-        this.onSerialize?.(data);
+        this.processCallbackHandlers("onSerialize",{
+            def_db: this.onSerialize
+        }, data);
         
         LiteGraph.log_verbose("lgraph","serialize",data);
 
@@ -1430,7 +1510,7 @@ export class LGraph {
             for (var i = 0; i < data.links.length; ++i) {
                 var link_data = data.links[i];
                 if(!link_data) { // @BUG: "weird bug" originally
-                    LiteGraph.log_warn("serialized graph link data contains errors, skipping.");
+                    LiteGraph.log_warn("lgraph", "configure", "serialized graph link data contains errors, skipping.",link_data,i,data.links);
                     continue;
                 }
                 var link = new LiteGraph.LLink();
@@ -1455,7 +1535,7 @@ export class LGraph {
                 var n_info = nodes[i]; // stored info
                 var node = LiteGraph.createNode(n_info.type, n_info.title);
                 if (!node) {
-                    LiteGraph.log?.(`Node not found or has errors: ${n_info.type}`);
+                    LiteGraph.log_warn("lgraph", "configure", "Node not found or has errors", n_info.type, n_info);
 
                     // in case of error we create a replacement node to avoid losing info
                     node = new LiteGraph.LGraphNode();
@@ -1490,12 +1570,15 @@ export class LGraph {
 
         this.extra = data.extra ?? {};
 
-        this.onConfigure?.(data);
+        this.processCallbackHandlers("onConfigure",{
+            def_db: this.onConfigure
+        }, data);
+
         // TODO implement: when loading (configuring) a whole graph, skip calling graphChanged on every single configure
         if (!data._version) {
             this.onGraphChanged({action: "graphConfigure", doSave: false}); // this._version++;
         } else {
-            LiteGraph.log_debug("skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
+            LiteGraph.log_debug("lgraph", "configure", "skip onGraphChanged when configure passing version too!"); // atlasan DEBUG REMOVE
         }
         this.setDirtyCanvas(true, true);
         return error;
@@ -1568,7 +1651,7 @@ export class LGraph {
     }
 
     /**
-    * Ment to be the history and prevent-exit mechanism, call to change _version
+    * Ment to be track down every change annotating the action, the history and prevent-exit mechanism, call to change _version
     * @method onGraphChanged
     * @param {object} optsIn options
     */
