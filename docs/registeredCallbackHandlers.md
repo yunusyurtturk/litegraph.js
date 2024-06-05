@@ -4,6 +4,8 @@ Clean and use this list to reprocess implemented callbacks available for each cl
 
 Document and test
 
+TODO: repeat export process as lgraph was not implemented and some mods been made
+
 
 litegraph.js (8 hits)
 	Line  384:         LiteGraph.processCallbackHandlers("onNodeTypeRegistered",{

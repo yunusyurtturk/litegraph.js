@@ -27,6 +27,7 @@ export var LiteGraph = new class {
         this.LGraphCanvas = LGraphCanvas;
         this.DragAndScale = DragAndScale;
         this.ContextMenu = ContextMenu;
+        this.CallbackHandler = CallbackHandler;
 
         this.CANVAS_GRID_SIZE = 10;
         this.NODE_TITLE_HEIGHT = 30;

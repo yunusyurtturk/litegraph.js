@@ -1997,7 +1997,7 @@ export class LGraphCanvas {
             }
             LiteGraph.log_debug("Canvas keydown "+e.keyCode); // debug keydown
 
-            if (this.selected_nodes) {
+            if (Object.keys(this.selected_nodes).length) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
                     this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
@@ -2005,6 +2005,12 @@ export class LGraphCanvas {
                     }, e );
                 }
             }
+
+            // TAG callback GRAPHCANVAS event entrypoint
+            this.processCallbackHandlers("onKeyDown",{
+                def_cb: this.onKeyDown
+            }, e );
+
         } else if (e.type == "keyup") {
             if (e.keyCode == 32) {
                 // space
@@ -2477,6 +2483,28 @@ export class LGraphCanvas {
         this.setDirty(true, true);
     }
 
+    getMouseCoordinates(){
+        return this.graph_mouse;
+    }
+
+    // getAdjustedMouseCoordinates(pos){
+    //     var clientX_rel = 0;
+    //     var clientY_rel = 0;
+
+    //     if (this.canvas) {
+    //         var b = this.canvas.getBoundingClientRect();
+    //         clientX_rel = pos[0] - b.left;
+    //         clientY_rel = pos[1] - b.top;
+    //     } else {
+    //         clientX_rel = pos[0];
+    //         clientY_rel = pos[1];
+    //     }
+        
+    //     return [clientX_rel / this.ds.scale - this.ds.offset[0]
+    //             ,clientY_rel / this.ds.scale - this.ds.offset[1]
+    //         ];
+    // }
+
     /**
      * adds some useful properties to a mouse event, like the position in graph coordinates
      * @method adjustMouseEvent
@@ -2552,10 +2580,20 @@ export class LGraphCanvas {
     convertCanvasToOffset(pos, out) {
         return this.ds.convertCanvasToOffset(pos, out);
     }
+    
+    /**
+     * converts a coordinate from Canvas2D coordinates to global space
+     * @method convertCanvasToOffset
+     **/
+    convertCanvasToGlobal(pos, out) {
+        const rect = this.canvas.getBoundingClientRect();
+        const offsetPos = this.ds.convertCanvasToOffset(pos, out);
+        return [offsetPos[0] + rect.left, offsetPos[1] + rect.top];
+    }
 
     // converts event coordinates from canvas2D to graph coordinates
     convertEventToCanvasOffset(e) {
-        var rect = this.canvas.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
         return this.convertCanvasToOffset([
             e.clientX - rect.left,
             e.clientY - rect.top,
@@ -5409,6 +5447,10 @@ export class LGraphCanvas {
                 ,rn[0]+rn[2] - ln[0]
                 ,bn[1]+bn[3] - tn[1]
             ];
+    }
+
+    getCoordinateCenter(ob4v){
+        return [ ob4v[0]+(ob4v[2]/2), ob4v[1]+(ob4v[3]/2) ];
     }
 
     /**

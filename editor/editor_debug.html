@@ -40,6 +40,8 @@
     <script type="module" src="js/demos.js"></script>
 	<script type="module" src="js/code.js"></script>
 
+	<script type="module" src="../src/extensions/renamer.js"></script>
+
 	<script>
 		window.addEventListener("load", (event) => {
 
@@ -51,6 +53,9 @@
 			 * can return and object where specify the result priority (overriding only if grater than the last result priority, default is 0)
 			 *
 			 */
+
+			// enable only if debugging CallbackHandler itself
+			// LiteGraph.cb_handler.debug = true;
 
 			var cbh1 = LiteGraph.registerCallbackHandler("onNodeTypeRegistered", function(){
 				console.info("**CB1**",...arguments);
@@ -128,10 +133,20 @@
 
 
 			// CANVAS Callbacks
-			// NO : LiteGraph.LGraphCanvas.registerCallbackHandler("onDropItem",function(){
 			graphcanvas.registerCallbackHandler("onDropItem",function(){
 				console.info("*** CUSTOM onDropItem handler ***",...arguments);
 			});
+
+
+
+			// OFFSET AND SIZING OF CANVAS
+			const domMain = document.querySelector("#main");
+			console.info("-- init --","#main",domMain);
+			domMain.style.width = "600px";
+			domMain.style.height = "400px";
+			domMain.style.float = "right";
+			domMain.style.marginTop = "200px";
+			graphcanvas.resize();
 
 		});
 

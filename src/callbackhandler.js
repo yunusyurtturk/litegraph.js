@@ -106,8 +106,8 @@ export class CallbackHandler {
             this.callbacks_handlers[name] = {last_id: 0, handlers:[]};
         }
         
-        if(this.debug) LiteGraph.log_debug("Will make clean arguments",arguments);
         var aArgs = ([].slice.call(arguments)).slice(2);
+        if(this.debug) LiteGraph.log_debug("Cleaned arguments (slice 2)",aArgs,"original",arguments);
 
         // previous implementation of converting arguments
         // using shorter ([].slice.call(arguments)).slice(2)
