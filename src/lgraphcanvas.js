@@ -1543,6 +1543,9 @@ export class LGraphCanvas {
                 if (this.selected_group._nodes.length) {
                     this.dirty_canvas = true;
                 }
+                
+                this.selected_group.recomputeInsideNodes();
+
                 if(this.selected_group_resizing){
                     this.processCallbackHandlers("onGroupResized",{
                         def_cb: this.onGroupResized
@@ -8395,6 +8398,15 @@ export class LGraphCanvas {
                             extra: group,
                             options: this.getGroupMenuOptions(group),
                         },
+                    });
+                    menu_info.push(null, {
+                        content: "Select nodes",
+                        canvas: this,
+                        group: group,
+                        callback: function(this_mi, options, e, menu){
+                            console.warn(this_mi);
+                            this_mi.canvas.selectNodes(this_mi.group._nodes);
+                        }
                     });
                 }
             }
