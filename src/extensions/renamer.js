@@ -11,38 +11,54 @@ if(LiteGraph && graphcanvas){
         console.info("*** CUSTOM KEYDOWN handler ***",...arguments);
         switch(keyEvent.keyCode){
             case 113:
+                
+                // check selected nodes
                 let nSel = Object.keys(graphcanvas.selected_nodes).length;
+                
+                // simulate position via event (little hack, should implement that on prompt itself)
                 const mouseCoord = graphcanvas.getMouseCoordinates();
-                // const gloCoord = mouseCoord;
-                // const gloCoord = graphcanvas.ds.convertOffsetToCanvas(mouseCoord);
-                const gloCoord = graphcanvas.ds.convertCanvasToOffset(mouseCoord);
-                // const gloCoord = graphcanvas.convertCanvasToGlobal(mouseCoord);
+                const gloCoord = graphcanvas.convertOffsetToEditorArea(mouseCoord);
+                // need prompt to be absolute positioned relative to editor-area that needs relative positioning
+                keyEvent.clientX = gloCoord[0];
+                keyEvent.clientY = gloCoord[1];
+
                 if(nSel){
-                    // console.debug("dbg: will show prompt to rename");
-                    let actT = nSel == 1 ? graphcanvas.selected_nodes[Object.keys(graphcanvas.selected_nodes)[0]].title : "titleForMany";
+
+                    // get actual title
+                    let actT = nSel == 1
+                                ? graphcanvas.selected_nodes[Object.keys(graphcanvas.selected_nodes)[0]].title
+                                : "titleForMany";
+                    
+                    // set update function
                     var fCB = function(tIn){
                         for(let iN in graphcanvas.selected_nodes){
                             graphcanvas.selected_nodes[iN].title = tIn;
                         }
                     }
-                    // simulate position via event (little hack, should implement that on prompt itself)
-                    // getBoundaryForSelection()
-                    // getCoordinateCenter()
-                    keyEvent.clientX = gloCoord[0];
-                    keyEvent.clientY = gloCoord[1];
+                    
                     // open prompt
                     graphcanvas.prompt(
-                        "Title",actT,fCB,keyEvent
-                        // event,w.options ? w.options.multiline : false,
+                        "Title",actT,fCB,keyEvent //,w.options ? w.options.multiline : false,
                     );
+
                 }else{
                     
+                    // check is over Group (Note)
                     const groupOver = graphcanvas.graph.getGroupOnPos( mouseCoord[0], mouseCoord[1] );
-                    console.warn("dbg: group to rename",mouseCoord,groupOver);
                     if(groupOver){
                         console.warn("dbg: group to rename",groupOver);
+                        // set update function
+                        var fCB = function(tIn){
+                            groupOver.title = tIn;
+                        }
+                        // open prompt
+                        graphcanvas.prompt(
+                            "Title",groupOver.title,fCB,keyEvent //,w.options ? w.options.multiline : false,
+                        );
                     }else{
+
                         console.warn("dbg: nothing to rename");
+
                     }
                 }
             break;

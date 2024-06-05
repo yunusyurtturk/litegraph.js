@@ -2585,10 +2585,16 @@ export class LGraphCanvas {
      * converts a coordinate from Canvas2D coordinates to global space
      * @method convertCanvasToOffset
      **/
-    convertCanvasToGlobal(pos, out) {
+    convertOffsetToEditorArea(pos) {
+        // working actually for absolute positioning to editor-area eg. prompt with class graphdialog
         const rect = this.canvas.getBoundingClientRect();
-        const offsetPos = this.ds.convertCanvasToOffset(pos, out);
-        return [offsetPos[0] + rect.left, offsetPos[1] + rect.top];
+        const canvasPos = this.convertOffsetToCanvas(pos);
+        // return [canvasPos[0]+rect.left, canvasPos[1]+rect.top];
+        return [canvasPos[0]+rect.left, canvasPos[1]+rect.top];
+        // not working
+        // const canvasAbsPos = this.cumulativeOffset(this.canvas);
+        // const canvasPos = this.convertOffsetToCanvas(pos);
+        // return [canvasPos[0]+canvasAbsPos[0], pos[1]+canvasAbsPos[1]];
     }
 
     // converts event coordinates from canvas2D to graph coordinates
@@ -2598,6 +2604,17 @@ export class LGraphCanvas {
             e.clientX - rect.left,
             e.clientY - rect.top,
         ]);
+    }
+
+    cumulativeOffset(element) {
+        var top = 0, left = 0;
+        do {
+            top += element.offsetTop  || 0;
+            left += element.offsetLeft || 0;
+            element = element.offsetParent;
+        } while(element);
+        // return {top: top, left: left};
+        return [left, top];
     }
 
     /**
