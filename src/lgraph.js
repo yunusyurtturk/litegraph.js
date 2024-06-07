@@ -1798,13 +1798,25 @@ export class LGraph {
      * connect TWO nodes looking for matching types
      * @method autoConnectNodes
      **/
-    autoConnectNodes(node_from, node_to){
+    autoConnectNodes(node_from, node_to, optsIn = {}) {
+        var optsDef = {
+            keep_alredy_connected: true,
+        };
+        var opts = Object.assign(optsDef,optsIn);
+
         if(!node_from || !node_to || !node_from.outputs || !node_from.outputs.length || !node_to.inputs || !node_to.inputs.length){
             return false;
         }
         // cycle outputs
-        for(let iO in node_from.outputs){
-            node_from.connectByType(iO, node_to, node_from.outputs[iO].type,{
+        // for(let iO in node_from.outputs){ // WARNING THIS GETS INDEXES AS STRING : ARE THOSE SAVED AS STRING AND IF SO WHY?
+        for(let iO=0; iO<node_from.outputs.length; iO++){ // TODO: Check if outputs are keyed by string and when
+            let output = node_from.outputs[iO];
+            if(!opts.keep_alredy_connected){
+                if(output.links !== null && output.links.length > 0){
+                    continue;
+                }
+            }
+            node_from.connectByType(iO, node_to, output.type,{
                 preferFreeSlot: true
             });
         }

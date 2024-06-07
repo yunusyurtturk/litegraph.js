@@ -1642,10 +1642,10 @@ export class LGraphNode {
         }
     }
     getOutputSlot(index_or_name, returnObj = false){
-        return this.getSlot(false, index_or_name);
+        return this.getSlot(false, index_or_name, returnObj);
     }
     getInputSlot(index_or_name, returnObj = false){
-        return this.getSlot(true, index_or_name);
+        return this.getSlot(true, index_or_name, returnObj);
     }
 
     // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
@@ -1795,7 +1795,7 @@ export class LGraphNode {
     /**
      * connect this node output to the input of another node BY TYPE
      * @method connectByType
-     * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
+     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
      * @param {LGraphNode} node the target node
      * @param {string} target_type the input slot type of the target node
      * @return {Object} the link_info is created, otherwise null
@@ -1849,7 +1849,7 @@ export class LGraphNode {
     /**
      * connect this node input to the output of another node BY TYPE
      * @method connectByType
-     * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
+     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
      * @param {LGraphNode} node the target node
      * @param {string} target_type the output slot type of the target node
      * @return {Object} the link_info is created, otherwise null
@@ -1903,9 +1903,9 @@ export class LGraphNode {
     /**
      * connect this node output to the input of another node
      * @method connect
-     * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
+     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
      * @param {LGraphNode} node the target node
-     * @param {number_or_string} target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
+     * @param {number|string} target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
      * @return {Object} the link_info is created, otherwise null
      */
     connect(slot, target_node, target_slot = 0) {
@@ -2114,7 +2114,7 @@ export class LGraphNode {
     /**
      * disconnect one output to an specific node
      * @method disconnectOutput
-     * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
+     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
      * @param {LGraphNode} target_node the target node to which this slot is connected [Optional, if not target_node is specified all nodes will be disconnected]
      * @return {boolean} if it was disconnected successfully
      */
