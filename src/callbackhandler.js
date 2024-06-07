@@ -25,7 +25,7 @@ export class CallbackHandler {
      */
     registerCallbackHandler = function(name, callback, opts){
         if(!opts || typeof(opts)!=="object") opts = {};
-        const def_opts = {priority: 0, is_default: false};
+        const def_opts = {priority: 0, is_default: false, call_once: false};
         opts = Object.assign(def_opts, opts);
         
         if(typeof(callback)!=="function"){
@@ -221,6 +221,11 @@ export class CallbackHandler {
             // push result
             checkStepRet();
             if(breakCycle) break;
+
+            if(cbhX.data.call_once){
+                this.unregisterCallbackHandler(name, cbhX.id);
+                if(this.debug) LiteGraph.log_debug("processCallbackHandlers","unregistered call_once",oCbInfo);
+            }
 
         } // end cycle
     
