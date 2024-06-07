@@ -1594,6 +1594,7 @@ export class LGraphCanvas {
 
                     // test dragging rect size, if minimun simulate a click
                     if (!node || (w > 10 && h > 10 )) {
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "computing box selection for nodes", this.dragging_rectangle);
                         // test against all nodes (not visible because the rectangle maybe start outside
                         var to_select = [];
                         for (let i = 0; i < nodes.length; ++i) {
@@ -1610,6 +1611,7 @@ export class LGraphCanvas {
                             to_select.push(nodeX);
                         }
                         if (to_select.length) {
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "selecting nodes", to_select);
                             this.selectNodes(to_select,e.shiftKey); // add to selection with shift
                         }
                     }else{
@@ -1927,6 +1929,10 @@ export class LGraphCanvas {
      * process a key event
      * @method processKey
      **/
+    /**
+     * TODO : processKey save keys being down, fire single first keyDown instead of constantly pressed (use new event and promote that), clean on up
+     * TODO : processKey replace static keys for config values
+     */
     processKey = (e) => {
         if (!this.graph) {
             return;
@@ -1940,6 +1946,7 @@ export class LGraphCanvas {
         }
 
         if (e.type == "keydown") {
+            
             if (e.keyCode == 32) {
                 // space
                 this.dragging_canvas = true;
@@ -1985,9 +1992,9 @@ export class LGraphCanvas {
             // collapse
             // ...
 
-            // control Z, control Y, ctlrZ, ctlrY
+            // ctlr+Z, ctlr+Y (or ctlr+shift+Z)
             if (LiteGraph.actionHistory_enabled) {
-                if (e.keyCode == 89 && e.ctrlKey || (e.keyCode == 90 && e.ctrlKey && e.shiftKey)) {
+                if ((e.keyCode == 89 && e.ctrlKey) || (e.keyCode == 90 && e.ctrlKey && e.shiftKey)) {
                     // Y
                     this.graph.actionHistoryForward();
                 }else if (e.keyCode == 90 && e.ctrlKey) {
@@ -1995,11 +2002,13 @@ export class LGraphCanvas {
                     this.graph.actionHistoryBack();
                 }
             }
-            LiteGraph.log_debug("Canvas keydown "+e.keyCode); // debug keydown
+
+            LiteGraph.log_verbose("Canvas keydown "+e.keyCode); // debug keydown
 
             if (Object.keys(this.selected_nodes).length) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
+                    // SHOULD check return value (block canvasProcess? block_default?)
                     this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
                         def_cb: this.selected_nodes[i].onKeyDown
                     }, e );
@@ -2007,6 +2016,7 @@ export class LGraphCanvas {
             }
 
             // TAG callback GRAPHCANVAS event entrypoint
+            // SHOULD check return value (block_default?)
             this.processCallbackHandlers("onKeyDown",{
                 def_cb: this.onKeyDown
             }, e );
@@ -2020,6 +2030,7 @@ export class LGraphCanvas {
             if (this.selected_nodes) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
+                    // SHOULD check return value (block_default?)
                     this.selected_nodes[i].processCallbackHandlers("onKeyUp",{
                         def_cb: this.selected_nodes[i].onKeyUp
                     }, e );

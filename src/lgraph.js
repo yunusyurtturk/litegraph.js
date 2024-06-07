@@ -1400,7 +1400,7 @@ export class LGraph {
      * @method change
      */
     change() {
-        LiteGraph.log_debug("lgraph", "change", "Graph visually changed");
+        LiteGraph.log_verbose("lgraph", "change", "Graph visually changed");
         this.sendActionToCanvas("setDirty", [true, true]);
         this.processCallbackHandlers("on_change",{ // name refactor ? is this being used ?
             def_db: this.on_change

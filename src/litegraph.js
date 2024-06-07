@@ -1010,6 +1010,7 @@ export var LiteGraph = new class {
 
     // bounding overlap, format: [ startx, starty, width, height ]
     overlapBounding(a, b, add) {
+        add = add || 0;
         const A_end_x = a[0] + a[2] + add;
         const A_end_y = a[1] + a[3] + add;
         const B_end_x = b[0] + b[2] + add;

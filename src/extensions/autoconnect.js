@@ -4,18 +4,18 @@
  */
 
 
-if(LiteGraph && graphcanvas){
-
+if(LiteGraph && graphcanvas) (function(){
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
 
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
 
     let ext = "autoconnect";
+    let debug = false;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
-        console.info(ext, "*** onKeyDown handler ***", ...arguments);
+        if(debug) console.info(ext, "*** onKeyDown handler ***", ...arguments);
         switch(keyEvent.keyCode){
             case 65: // a
 
@@ -30,27 +30,27 @@ if(LiteGraph && graphcanvas){
                 }
                 
                 graphcanvas.registerCallbackHandler("onMouseDown",function(md_oCbInfo, e){
-                    console.info(ext, "*** onMouseDown handler ***", ...arguments);
+                    if(debug) console.info(ext, "*** onMouseDown handler ***", ...arguments);
 
                     let node_to = graphcanvas.graph.getNodeOnPos( e.canvasX, e.canvasY, graphcanvas.visible_nodes, 5 );
 
                     if(node_to){
-                        console.info(ext, "### dbg: clicked on DEST node, autoconnect", node_to, aNodesFrom);
+                        if(debug) console.info(ext, "### dbg: clicked on DEST node, autoconnect", node_to, aNodesFrom);
                         for(let node_from of aNodesFrom){
-                            console.info(ext, "### dbg: AUTOCONNECT", node_from, node_to);
+                            if(debug) console.info(ext, "### dbg: AUTOCONNECT", node_from, node_to);
                             graphcanvas.graph.autoConnectNodes(node_from, node_to);
                         }
                     }else{
-                        console.info(ext, "### dbg: not clicked on a node", node_to);
+                        if(debug) console.info(ext, "### dbg: not clicked on a node", node_to);
                     }
 
                 },{ call_once: true }); // register to call only once
 
             break;
             default:
-                console.debug(ext, "### dbg: ignore", keyEvent.keyCode);
+                if(debug) console.debug(ext, "### dbg: ignore key", keyEvent.keyCode);
             break;
         }
     });
 
-}
+})();
