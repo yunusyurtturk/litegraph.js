@@ -2446,6 +2446,9 @@ export class LGraphCanvas {
             if(node.block_delete)
                 continue;
 
+            // TODO make a better version
+            // TODO should be an option default off
+            // should use auto connect
             // autoconnect when possible (very basic, only takes into account first input-output)
             if(node.inputs && node.inputs.length && node.outputs && node.outputs.length && LiteGraph.isValidConnection( node.inputs[0].type, node.outputs[0].type ) && node.inputs[0].link && node.outputs[0].links && node.outputs[0].links.length ) {
                 var input_link = node.graph.links[node.inputs[0].link];
@@ -2455,6 +2458,7 @@ export class LGraphCanvas {
                 if(input_node && output_node)
                     input_node.connect( input_link.origin_slot, output_node, output_link.target_slot );
             }
+
             this.graph.remove(node);
             this.processCallbackHandlers("onNodeDeselected",{
                 def_cb: this.onNodeDeselected
@@ -7537,15 +7541,6 @@ export class LGraphCanvas {
         }
     }
 
-    closePanels() {
-        var panel = document.querySelector("#node-panel");
-        if(panel)
-            panel.close(); // ? panel.close.call(panel);
-        panel = document.querySelector("#option-panel");
-        if(panel)
-            panel.close(); // ? panel.close.call(panel);
-    }
-
     showShowGraphOptionsPanel(refOpts, obEv) {
         let graphcanvas;
         if(this.constructor && this.constructor.name == "HTMLDivElement") {
@@ -7899,6 +7894,23 @@ export class LGraphCanvas {
         return panel;
     }
 
+    /**
+     * will close node-panel and option-panel
+     * @returns void 
+     */
+    closePanels() {
+        var panel = document.querySelector("#node-panel");
+        if(panel)
+            panel.close(); // ? panel.close.call(panel);
+        panel = document.querySelector("#option-panel");
+        if(panel)
+            panel.close(); // ? panel.close.call(panel);
+    }
+
+    /**
+     * will close .litegraph.dialog
+     * @returns void
+     */
     checkPanels() {
         if(!this.canvas)
             return;

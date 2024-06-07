@@ -1793,4 +1793,20 @@ export class LGraph {
             return false;
         }
     }
+    
+    /**
+     * connect TWO nodes looking for matching types
+     * @method autoConnectNodes
+     **/
+    autoConnectNodes(node_from, node_to){
+        if(!node_from || !node_to || !node_from.outputs || !node_from.outputs.length || !node_to.inputs || !node_to.inputs.length){
+            return false;
+        }
+        // cycle outputs
+        for(let iO in node_from.outputs){
+            node_from.connectByType(iO, node_to, node_from.outputs[iO].type,{
+                preferFreeSlot: true
+            });
+        }
+    }
 }

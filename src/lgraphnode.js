@@ -396,12 +396,13 @@ export class LGraphNode {
             return;
         }
 
-        if(slot?.constructor === String) {
+        /* if(slot?.constructor === String) {
             // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
             slot = this.findOutputSlot(slot);
         }else if (slot == -1 || slot >= this.outputs.length) {
             return;
-        }
+        } */
+        slot = this.getOutputSlot(slot);
 
         var output_info = this.outputs[slot];
         if (!output_info) {
@@ -1586,7 +1587,7 @@ export class LGraphNode {
      * @method findInputSlot
      * @param {string} name the name of the slot
      * @param {boolean} returnObj if the obj itself wanted
-     * @return {number_or_object} the slot (-1 if not found)
+     * @return {number|object} the slot (-1 if not found)
      */
     findInputSlot(name, returnObj) {
         if (!this.inputs) {
@@ -1605,7 +1606,7 @@ export class LGraphNode {
      * @method findOutputSlot
      * @param {string} name the name of the slot
      * @param {boolean} returnObj if the obj itself wanted
-     * @return {number_or_object} the slot (-1 if not found)
+     * @return {number|object} the slot (-1 if not found)
      */
     findOutputSlot(name, returnObj = false) {
         if (!this.outputs) {
@@ -1619,13 +1620,41 @@ export class LGraphNode {
         return -1;
     }
 
+    /**
+     * Get a slot from his index or name
+     * @param {boolean} is_input use look for input / output 
+     * @param {number|string} slot_index_or_name 
+     * @returns 
+     */
+    getSlot(is_input, slot_index_or_name, returnObj = false){
+        if(!is_input || is_input===LiteGraph.OUTPUT){
+            if(this.outputs[slot_index_or_name]!=="undefined"){
+                return !returnObj ? slot_index_or_name : this.outputs[slot_index_or_name];
+            }else{
+                return this.findInputSlot(slot_index_or_name, returnObj);
+            }
+        }else{
+            if(this.inputs[slot_index_or_name]!=="undefined"){
+                return !returnObj ? slot_index_or_name : this.inputs[slot_index_or_name];
+            }else{
+                return this.findOutputSlot(slot_index_or_name, returnObj);
+            }
+        }
+    }
+    getOutputSlot(index_or_name, returnObj = false){
+        return this.getSlot(false, index_or_name);
+    }
+    getInputSlot(index_or_name, returnObj = false){
+        return this.getSlot(true, index_or_name);
+    }
+
     // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
 
     /**
      * returns the first free input slot, can filter by types
      * @method findInputSlotFree
      * @param {object} options
-     * @return {number_or_object} the slot (-1 if not found)
+     * @return {number|object} the slot (-1 if not found)
      */
     findInputSlotFree(optsIn = {}) {
         var optsDef = {
@@ -1652,7 +1681,7 @@ export class LGraphNode {
      * returns the first output slot free, can filter by types
      * @method findOutputSlotFree
      * @param {object} options
-     * @return {number_or_object} the slot (-1 if not found)
+     * @return {number|object} the slot (-1 if not found)
      */
     findOutputSlotFree(optsIn = {}) {
         var optsDef = {
@@ -1692,11 +1721,11 @@ export class LGraphNode {
     /**
      * returns the output (or input) slot with a given type, -1 if not found
      * @method findSlotByType
-     * @param {boolean} input uise inputs instead of outputs
-     * @param {string} type the type of the slot
+     * @param {boolean} input use inputs (true), or outputs (false)
+     * @param {string} type the type of the slot to look for (multi type by ,) 
      * @param {boolean} returnObj if the obj itself wanted
      * @param {boolean} preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
-     * @return {number_or_object} the slot (-1 if not found)
+     * @return {number|object} the slot (-1 if not found)
      */
     findSlotByType(
         input = false,
@@ -1710,11 +1739,15 @@ export class LGraphNode {
             return -1;
         }
         // !! empty string type is considered 0, * !!
-        if (type == "" || type == "*") type = 0;
+        if (!type || type == "" || type == "*") type = 0;
+        // cycle for this slots
         for (let i = 0, l = aSlots.length; i < l; ++i) {
             let aSource = (type+"").toLowerCase().split(",");
-            let aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
+            let aDest = aSlots[i].type=="0" || aSlots[i].type=="*"
+                            ? 0
+                            : aSlots[i].type;
             aDest = (aDest+"").toLowerCase().split(",");
+            // cycle for the slot types
             for(let sI=0;sI<aSource.length;sI++) {
                 for(let dI=0;dI<aDest.length;dI++) {
                     if (aSource[sI]=="_event_") aSource[sI] = LiteGraph.EVENT;
@@ -1722,13 +1755,24 @@ export class LGraphNode {
                     if (aSource[sI]=="*") aSource[sI] = 0;
                     if (aDest[sI]=="*") aDest[sI] = 0;
                     if (aSource[sI] == aDest[dI]) {
-                        if (preferFreeSlot && aSlots[i].links && aSlots[i].links !== null) continue;
+                        if (preferFreeSlot
+                            && (
+                                (aSlots[i].link && aSlots[i].link !== null)
+                                || (aSlots[i].links && aSlots[i].links !== null)
+                            )
+                        ){
+                            LiteGraph.log_verbose("lgraphnode","findSlotByType","preferFreeSlot but has link",aSource[sI],aDest[dI],"from types",type,"checked types",aSlots[i].type);
+                            continue;
+                        }
+                        LiteGraph.log_verbose("lgraphnode","findSlotByType","found right type",i,aSlots[i],"from types",type,"checked types",aSlots[i].type);
                         return !returnObj ? i : aSlots[i];
+                    }else{
+                        LiteGraph.log_verbose("lgraphnode","findSlotByType","slot not right type",aSource[sI],aDest[dI],"from types",type,"checked types",aSlots[i].type);
                     }
                 }
             }
         }
-        // if didnt find some, stop checking for free slots
+        // if didnt find some, checking if need to force on already placed ones
         if (preferFreeSlot && !doNotUseOccupied) {
             for (let i = 0, l = aSlots.length; i < l; ++i) {
                 let aSource = (type+"").toLowerCase().split(",");
@@ -1761,11 +1805,13 @@ export class LGraphNode {
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
             generalTypeInCase: true,
+            preferFreeSlot: false,
         };
         var opts = Object.assign(optsDef,optsIn);
         if (target_node && target_node.constructor === Number) {
             target_node = this.graph.getNodeById(target_node);
         }
+        // look for free slots
         var target_slot = target_node.findInputSlotByType(target_slotType, false, true);
         if (target_slot >= 0 && target_slot !== null) {
             LiteGraph.log_debug("lgraphnode","connectByType","type "+target_slotType+" for "+target_slot)
@@ -1872,7 +1918,7 @@ export class LGraphNode {
         let r = null;
 
         // seek for the output slot
-        if (slot.constructor === String) {
+        /* if (slot.constructor === String) {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
                 LiteGraph.log_warn("lgraphnode","connect", "Error, string slot not found",this,slot);
@@ -1880,6 +1926,11 @@ export class LGraphNode {
             }
         } else if (!this.outputs || slot >= this.outputs.length) {
             LiteGraph.log_warn("lgraphnode","connect", "Error, number slot not found",this,slot);
+            return null;
+        } */
+        slot = this.getOutputSlot(slot);
+        if(slot == -1){
+            LiteGraph.log_warn("lgraphnode","connect", "Slot not found",this,slot);
             return null;
         }
 
@@ -1899,14 +1950,7 @@ export class LGraphNode {
             return null;
         }
 
-        // you can specify the slot by name
-        if (target_slot.constructor === String) {
-            target_slot = target_node.findInputSlot(target_slot);
-            if (target_slot == -1) {
-                LiteGraph.log_warn("lgraphnode","connect", "Target string slot not found",target_slot);
-                return null;
-            }
-        } else if (target_slot === LiteGraph.EVENT) {
+        /* } else if (target_slot === LiteGraph.EVENT) {
 
             if (LiteGraph.do_add_triggers_slots) {
                 // search for first slot with event? :: NO this is done outside
@@ -1917,12 +1961,22 @@ export class LGraphNode {
                 LiteGraph.log_debug("lgraphnode","connect", "Created onTrigger slot",target_slot);
             }else{
                 return null; // -- break --
+            } */
+
+        // you can specify the slot by name
+        /* if (target_slot.constructor === String) {
+            target_slot = target_node.findInputSlot(target_slot);
+            if (target_slot == -1) {
+                LiteGraph.log_warn("lgraphnode","connect", "Target string slot not found",target_slot);
+                return null;
             }
-        } else if (
-            !target_node.inputs ||
-            target_slot >= target_node.inputs.length
+        } else */
+        target_slot = target_node.getInputSlot(target_slot);
+        if (
+            !target_node.inputs || target_slot == -1
+            // target_slot >= target_node.inputs.length
         ) {
-            LiteGraph.log_warn("lgraphnode","connect", "Target number slot not found",target_slot,target_node.inputs);
+            LiteGraph.log_warn("lgraphnode","connect", "Target slot not found",target_slot,target_node.inputs);
             return null;
         }
 
@@ -2068,7 +2122,7 @@ export class LGraphNode {
         var optsDef = { doProcessChange: true };
         var opts = Object.assign(optsDef,optsIn);
 
-        if (slot.constructor === String) {
+        /* if (slot.constructor === String) {
             slot = this.findOutputSlot(slot);
             if (slot == -1) {
                 LiteGraph.log_warn("lgraphnode","disconnectOutput","Error, string slot not found",slot);
@@ -2077,7 +2131,8 @@ export class LGraphNode {
         } else if (!this.outputs || slot >= this.outputs.length) {
             LiteGraph.log_warn("lgraphnode","disconnectOutput","Error, number slot not found",slot);
             return false;
-        }
+        } */
+        slot = this.getOutputSlot(slot);
 
         // get output slot
         var output = this.outputs[slot];
@@ -2183,7 +2238,7 @@ export class LGraphNode {
     /**
      * disconnect one input
      * @method disconnectInput
-     * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
+     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
      * @return {boolean} if it was disconnected successfully
      */
     disconnectInput(slot, optsIn = {}) {
@@ -2191,7 +2246,7 @@ export class LGraphNode {
         var opts = Object.assign(optsDef,optsIn);
 
         // seek for the output slot
-        if (slot.constructor === String) {
+        /* if (slot.constructor === String) {
             slot = this.findInputSlot(slot);
             if (slot == -1) {
                 LiteGraph.log_warn("lgraphnode", "disconnectInput", "Error, string slot not found",slot);
@@ -2200,7 +2255,8 @@ export class LGraphNode {
         } else if (!this.inputs || slot >= this.inputs.length) {
             LiteGraph.log_warn("lgraphnode", "disconnectInput", "Error, number slot not found",slot);
             return false;
-        }
+        } */
+        slot = this.getInputSlot(slot);
 
         var input = this.inputs[slot];
         if (!input) {
