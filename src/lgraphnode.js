@@ -1457,7 +1457,7 @@ export class LGraphNode {
      */
     getBounding(out = new Float32Array(4), compute_outer) {
         const nodePos = this.pos;
-        const isCollapsed = this.flags.collapsed;
+        const isCollapsed = this.flags?.collapsed;
         const nodeSize = this.size;
 
         let left_offset = 0;

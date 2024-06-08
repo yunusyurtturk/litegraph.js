@@ -988,6 +988,18 @@ export var LiteGraph = new class {
         return x > left && x < left + width && y > top && y < top + height;
     }
 
+    isBoundingInsideRectangle(bounding, left, top, width, height) {
+        let x = bounding[0];
+        let y = bounding[1];
+        if(!(x > left && x < left + width && y > top && y < top + height))
+            return false;
+        x = bounding[0] + bounding[2];
+        y = bounding[1] + bounding[3];
+        if(!(x > left && x < left + width && y > top && y < top + height))
+            return false;
+        return true;
+    }
+
     // [minx,miny,maxx,maxy]
     growBounding(bounding, x, y) {
         if (x < bounding[0]) {
