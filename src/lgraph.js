@@ -669,6 +669,7 @@ export class LGraph {
 
     /**
      * Sends an event to all the nodes, useful to trigger stuff
+     * TODO :: nice stuff !! check and improve
      * @method sendEventToAllNodes
      * @param {String} eventname the name of the event (function to be called)
      * @param {Array} params parameters in array format
@@ -1029,6 +1030,7 @@ export class LGraph {
         }
     }
 
+    * // TODO check this, investigate, _last_trigger_time ? who calls trigger ? who calls triggerInput ? who calls onTrigger ?
     trigger(action, param) {
         // this.onTrigger?.(action, param);
         this.processCallbackHandlers("onTrigger",{
@@ -1301,6 +1303,7 @@ export class LGraph {
 
     /**
      * Triggers the 'onTrigger' method on nodes with a specific title by passing a value to them.
+     * // TODO check this, investigate, _last_trigger_time ? who calls triggerInput ? who calls onTrigger ?
      * @param {string} name - The title of the nodes to trigger.
      * @param {any} value - The value to pass to the 'onTrigger' method of the nodes.
      */

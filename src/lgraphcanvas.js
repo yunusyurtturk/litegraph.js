@@ -7882,7 +7882,7 @@ export class LGraphCanvas {
         var html = " + <span class='label'>Name</span><input class='name'/><span class='label'>Type</span><input class='type'></input><button>+</button>";
         var elem = panel.addHTML(html, "subgraph_property extra", true);
         elem.querySelector(".name").addEventListener("keydown", function (_event) {
-            if (e.keyCode == 13) {
+            if (_event.keyCode == 13) {
                 addOutput.apply(this)
             }
         })

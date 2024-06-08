@@ -3,6 +3,7 @@ import { LGraph } from "./lgraph.js";
 import { LGraphNode } from "./lgraphnode.js";
 import { LGraphGroup } from "./lgraphgroup.js";
 import { LGraphCanvas } from "./lgraphcanvas.js";
+import { Subgraph, GraphInput, GraphOutput } from "./subgraph.js";
 import { DragAndScale } from "./dragandscale.js";
 import { ContextMenu } from "./contextmenu.js";
 import { CallbackHandler } from "./callbackhandler.js";
@@ -25,6 +26,9 @@ export var LiteGraph = new class {
         this.LGraphNode = LGraphNode;
         this.LGraphGroup = LGraphGroup;
         this.LGraphCanvas = LGraphCanvas;
+        this.Subgraph = Subgraph;
+        this.GraphInput = GraphInput;
+        this.GraphOutput = GraphOutput;
         this.DragAndScale = DragAndScale;
         this.ContextMenu = ContextMenu;
         this.CallbackHandler = CallbackHandler;
@@ -125,7 +129,7 @@ export var LiteGraph = new class {
         this.dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
         this.dialog_close_on_mouse_leave_delay = 500;
 
-        this.shift_click_do_break_link_from = false; // [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys
+        this.shift_click_do_break_link_from = true; // [false!] prefer false if too easy to break links - implement with ALT or TODO custom keys
         this.click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
 
         this.search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
@@ -204,6 +208,15 @@ export var LiteGraph = new class {
         
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
         this.callbackhandler_setup();
+
+        // base inclusion
+        this.includeBasicNodes();
+    }
+
+    includeBasicNodes(){
+        this.registerNodeType("graph/subgraph", Subgraph);
+        this.registerNodeType("graph/input", GraphInput);
+        this.registerNodeType("graph/output", GraphOutput);
     }
 
     callbackhandler_setup(){
@@ -382,13 +395,13 @@ export var LiteGraph = new class {
             this.Nodes[classname] = base_class;
         }
 
-        LiteGraph.processCallbackHandlers("onNodeTypeRegistered",{
-            def_cb: LiteGraph.onNodeTypeRegistered
+        this.processCallbackHandlers("onNodeTypeRegistered",{
+            def_cb: this.onNodeTypeRegistered
         }, type, base_class);
 
         if (prev) {
-            LiteGraph.processCallbackHandlers("onNodeTypeReplaced",{
-                def_cb: LiteGraph.onNodeTypeReplaced
+            this.processCallbackHandlers("onNodeTypeReplaced",{
+                def_cb: this.onNodeTypeReplaced
             }, type, base_class, prev);
         }
 

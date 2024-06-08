@@ -66,7 +66,7 @@ export class LGraphNode {
     // should every node extend this istead of 
     constructor(title = "") {
         // a custom registered node will have his custom constructor
-        console.verbose("lgraphNODE", "ORIGINAL constructor",this,title);
+        LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor",this,title);
 
         this.title = title;
         this.size = [LiteGraph.NODE_WIDTH, 60];
@@ -878,7 +878,7 @@ export class LGraphNode {
             if (LiteGraph.ensureUniqueExecutionAndActionCall) {
                 // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                    LiteGraph.log_debug("lgraphnode", "actionDo", "!! NODE already ACTION THIS STEP !! "+options.action_call);ç
+                    LiteGraph.log_debug("lgraphnode", "actionDo", "!! NODE already ACTION THIS STEP !! "+options.action_call);
                     return;
                 }
             }
@@ -917,10 +917,12 @@ export class LGraphNode {
             return;
         }
 
+        // TODO check this, investigate, _last_trigger_time ? who calls trigger ?
         this.graph && (this.graph._last_trigger_time = LiteGraph.getTime());
 
         this.outputs.forEach((output, i) => {
             if (output && output.type === LiteGraph.EVENT && (!action || output.name === action)) {
+                // TODO add callback handler onTriggerSlot
                 this.triggerSlot(i, param, null, options);
             }
         });
