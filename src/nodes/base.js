@@ -699,27 +699,25 @@ class Console {
         this.addInput("msg", 0);
     }
 
-    onAction(action, param) {
-        // param is the action
-        var msg = this.getInputData(1); // getInputDataByName("msg");
-        // if (msg == null || typeof msg == "undefined") return;
-        if (!msg) msg = this.properties.msg;
-        if (!msg) msg = "Event: " + param; // msg is undefined if the slot is lost?
-        if (action == "log") {
-            console.log?.(msg);
-        } else if (action == "warn") {
-            console.warn?.(msg);
-        } else if (action == "error") {
-            console.error?.(msg);
-        }
+    onAction(action, param, options, slot_index) {
+        this.onExecute(action, param, options);
     }
 
-    onExecute() {
-        var msg = this.getInputData(1); // getInputDataByName("msg");
+    onExecute(param, options) {
+        // param is the action
+        const action = param;
+        let msg = this.getInputData(1); // getInputDataByName("msg");
+        // if (msg == null || typeof msg == "undefined") return;
         if (!msg) msg = this.properties.msg;
-        if (msg != null && typeof msg != "undefined") {
-            this.properties.msg = msg;
-            console.log?.(msg);
+        if (!msg) msg = "ConsoleNode: " + param; // msg is undefined if the slot is lost?
+        if (action == "log") {
+            console.log(msg);
+        } else if (action == "warn") {
+            console.warn(msg);
+        } else if (action == "error") {
+            console.error(msg);
+        }else{
+            console.info("std",msg,options);
         }
     }
 

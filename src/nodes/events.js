@@ -10,9 +10,8 @@ class LogEvent {
         this.size = [60, 30];
         this.addInput("event", LiteGraph.ACTION);
     }
-
-    onAction(action, param) {
-        console.log?.(action, param);
+    onAction(action, param, options, slot_index) {
+        console.log("LogNode", action, param, options, slot_index);
     }
 }
 LiteGraph.registerNodeType("events/log", LogEvent);
