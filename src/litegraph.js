@@ -201,6 +201,8 @@ export var LiteGraph = new class {
 
         this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
 
+        this.context_menu_filter_enabled = false; // [WIP!]
+
         this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
         this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
