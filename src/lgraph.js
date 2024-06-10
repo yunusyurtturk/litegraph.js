@@ -1013,12 +1013,13 @@ export class LGraph {
      * @param {string} action - The name of the action to be executed on the GraphInput nodes.
      * @param {any} param - The parameter to pass to the action method.
      * @param {object} options - Additional options for the action.
-     */
-    onAction(action, param, options) {
-        this._input_nodes = this.findNodesByClass(
-            LiteGraph.GraphInput,
-            this._input_nodes,
+    */
+   onAction(action, param, options) {
+       this._input_nodes = this.findNodesByClass(
+           LiteGraph.GraphInput,
+           this._input_nodes,
         );
+        LiteGraph.log_debug("lgraph", "onAction", "will trigger actionDo on input nodes", this._input_nodes, "with name(?!)",action);
         for (var i = 0; i < this._input_nodes.length; ++i) {
             var node = this._input_nodes[i];
             if (node.properties.name != action) {
@@ -1032,6 +1033,7 @@ export class LGraph {
 
     * // TODO check this, investigate, _last_trigger_time ? who calls trigger ? who calls triggerInput ? who calls onTrigger ?
     trigger(action, param) {
+        LiteGraph.log_debug("lgraph","trigger",action, param);
         // this.onTrigger?.(action, param);
         this.processCallbackHandlers("onTrigger",{
             def_db: this.onTrigger
@@ -1316,6 +1318,7 @@ export class LGraph {
 
     /**
      * Sets a callback function on nodes with a specific title by invoking their 'setTrigger' method.
+     * // TODO check this, investigate, who calls setCallback, setTrigger, onTrigger ?
      * @param {string} name - The title of the nodes to set the callback function on.
      * @param {Function} func - The callback function to be set on the nodes.
      */

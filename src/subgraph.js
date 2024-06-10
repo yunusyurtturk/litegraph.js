@@ -27,14 +27,12 @@ export class Subgraph {
         // nodes input node added inside
         this.subgraph.onInputAdded = this.onSubgraphNewInput.bind(this);
         this.subgraph.onInputRenamed = this.onSubgraphRenamedInput.bind(this);
-        this.subgraph.onInputTypeChanged =
-            this.onSubgraphTypeChangeInput.bind(this);
+        this.subgraph.onInputTypeChanged = this.onSubgraphTypeChangeInput.bind(this);
         this.subgraph.onInputRemoved = this.onSubgraphRemovedInput.bind(this);
 
         this.subgraph.onOutputAdded = this.onSubgraphNewOutput.bind(this);
         this.subgraph.onOutputRenamed = this.onSubgraphRenamedOutput.bind(this);
-        this.subgraph.onOutputTypeChanged =
-            this.onSubgraphTypeChangeOutput.bind(this);
+        this.subgraph.onOutputTypeChanged = this.onSubgraphTypeChangeOutput.bind(this);
         this.subgraph.onOutputRemoved = this.onSubgraphRemovedOutput.bind(this);
     }
 
@@ -117,6 +115,7 @@ export class Subgraph {
 
     sendEventToAllNodes(eventname, param, mode) {
         if (this.enabled) {
+            LiteGraph.log_debug("subgraph","sendEventToAllNodes",...arguments);
             this.subgraph.sendEventToAllNodes(eventname, param, mode);
         }
     }
@@ -220,6 +219,7 @@ export class Subgraph {
 
     //* *** INPUTS ***********************************
     onSubgraphTrigger(event) {
+        LiteGraph.log_debug("subgraph","onSubgraphTrigger",...arguments);
         var slot = this.findOutputSlot(event);
         if (slot != -1) {
             this.triggerSlot(slot);
@@ -307,7 +307,7 @@ export class Subgraph {
     }
 
     onResize(size) {
-        size[1] += 20;
+        size[1] += 20; // TODO check and verify onResize callback :: using byRef! 
     }
 
     serialize() {
@@ -418,7 +418,7 @@ export class Subgraph {
 
         // mark inner nodes
         var ids = {};
-        // @BUG: these aren't currently used.  Examine and decide whether to excise.
+        // TODO: these aren't currently used.  Examine and decide whether to excise.
         //    var min_x = 0;
         //    var max_x = 0;
         for (let i = 0; i < nodes.length; ++i) {
@@ -604,6 +604,7 @@ export class GraphInput {
 
     onAction(action, param) {
         if (this.properties.type == LiteGraph.EVENT) {
+            LiteGraph.log_debug("GraphInput","onAction","triggering slot", action, param);
             this.triggerSlot(0, param);
         }
     }
@@ -748,10 +749,15 @@ export class GraphOutput {
 
     onAction(action, param) {
         if (this.properties.type == LiteGraph.ACTION) {
-            LiteGraph.log_warn("GraphOutput","onAction", ...arguments);
-            LiteGraph.log_warn("GraphOutput","onAction", "graphTrigger", this.properties.name, param);
+            LiteGraph.log_debug("GraphOutput","onAction", ...arguments);
+            LiteGraph.log_debug("GraphOutput","onAction", "graphTrigger", this.properties.name, param);
+            // ---> subgraph_node.trigger(this.properties.name, param);
+            this.triggerSlot(this.properties.name, param);
+            // this.onTrigger(this.properties.name, param);
             this.graph.trigger(this.properties.name, param);
             // node.doExecute?.() !!
+        }else{
+            LiteGraph.log_debug("GraphOutput","onAction","skipping not ACTION type", this.properties.type, this.properties);
         }
     }
 
