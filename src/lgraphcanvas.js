@@ -2529,6 +2529,15 @@ export class LGraphCanvas {
         var clientX_rel = 0;
         var clientY_rel = 0;
 
+        if(!e.clientX){
+            // simulate position via event (little hack)
+            const mouseCoord = this.getMouseCoordinates();
+            const gloCoord = this.convertOffsetToEditorArea(mouseCoord);
+            // need prompt to be absolute positioned relative to editor-area that needs relative positioning
+            e.clientX = gloCoord[0];
+            e.clientY = gloCoord[1];
+        }
+
         if (this.canvas) {
             var b = this.canvas.getBoundingClientRect();
             clientX_rel = e.clientX - b.left;
@@ -5563,7 +5572,7 @@ export class LGraphCanvas {
         if (!graph)
             return;
 
-        function inner_onMenuAdded(base_category ,prev_menu) {
+        function inner_onMenuAdded(base_category, prev_menu) {
 
             var categories = LiteGraph.getNodeTypesCategories(canvas.filter || graph.filter).filter(function(category) {
                 return category.startsWith(base_category)
@@ -5592,6 +5601,7 @@ export class LGraphCanvas {
                         content: name,
                         has_submenu: true,
                         callback: function(value, event, mouseEvent, contextMenu) {
+                            LiteGraph.log_debug("onMenuAdd","inner_onMenuAdded","categories callback",...arguments);
                             inner_onMenuAdded(value.value, contextMenu);
                         },
                     });
@@ -5613,12 +5623,14 @@ export class LGraphCanvas {
                         var first_event = contextMenu.getFirstEvent();
                         canvas.graph.beforeChange();
                         var node = LiteGraph.createNode(value.value);
+                        LiteGraph.log_debug("onMenuAdd","inner_onMenuAdded","node entry callback",first_event,...arguments);
                         if (node) {
                             node.pos = canvas.convertEventToCanvasOffset(first_event);
                             canvas.graph.add(node);
                         }
-                        if(callback)
+                        if(callback){
                             callback(node);
+                        }
                         canvas.graph.afterChange();
                     },
                 };
@@ -5627,7 +5639,11 @@ export class LGraphCanvas {
 
             });
 
-            new LiteGraph.ContextMenu( entries, { event: e, parentMenu: prev_menu }, ref_window );
+            const e_check = e ? e : options.event;
+            // LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", e, options);
+            LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", entries, { event: e_check, parentMenu: prev_menu }, ref_window);
+
+            new LiteGraph.ContextMenu( entries, { event: e_check, parentMenu: prev_menu }, ref_window );
 
         }
 
@@ -5995,11 +6011,12 @@ export class LGraphCanvas {
         function inner_clicked(v,options,e) {
             switch (v) {
                 case "Add Node":
+                    LiteGraph.log_debug("lgraphcanvas","showLinkMenu","inner_clicked","calling onMenuAdd");
                     LGraphCanvas.onMenuAdd(null, null, e, menu, function(node) {
                         if(!node.inputs || !node.inputs.length || !node.outputs || !node.outputs.length) {
                             return;
                         }
-                        LiteGraph.log_debug("lgraphcanvas","showLinkMenu","node autoconnect on add node on link");
+                        LiteGraph.log_debug("lgraphcanvas","showLinkMenu","inner_clicked","node autoconnect on add node on link");
                         // leave the connection type checking inside connectByType
                         if (node_left.connectByType( link.origin_slot, node, fromType )) {
                             node.connectByType( link.target_slot, node_right, destType );
@@ -6009,6 +6026,7 @@ export class LGraphCanvas {
                     break;
 
                 case "Delete":
+                    LiteGraph.log_debug("lgraphcanvas","showLinkMenu","inner_clicked","remove link");
                     that.graph.removeLink(link.id);
                     break;
                 default:
@@ -6184,6 +6202,7 @@ export class LGraphCanvas {
             nodeTo: null, // output
             slotTo: null, // output
             e: null,
+            isCustomEvent: false
         },optPass);
 
         var that = this;
@@ -6245,10 +6264,12 @@ export class LGraphCanvas {
         // build menu
         var menu = new LiteGraph.ContextMenu(options, {
             event: opts.e,
+            isCustomEvent: opts.isCustomEvent,
             title: (slotX && slotX.name!="" ? (slotX.name + (fromSlotType?" | ":"")) : "")+(slotX && fromSlotType ? fromSlotType : ""),
             callback: (v, options, e) => {
                 const cases = {
                     "Add Node": () => {
+                        LiteGraph.log_debug("lgraphcanvas","showConnectionMenu","callback","Add Node calling onMenuAdd",v,options,e);
                         LGraphCanvas.onMenuAdd(null, null, e, menu, (node) => {
                             isFrom ? opts.nodeFrom.connectByType(iSlotConn, node, fromSlotType) : opts.nodeTo.connectByTypeOutput(iSlotConn, node, fromSlotType);
                         });
@@ -6762,10 +6783,15 @@ export class LGraphCanvas {
 
                     graphcanvas.graph.beforeChange();
                     var node = LiteGraph.createNode(name);
-                    if (node) {
-                        node.pos = graphcanvas.convertEventToCanvasOffset(event);
-                        graphcanvas.graph.add(node, false, {doProcessChange: false});
+
+                    if(!node){
+                        LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "failed creating the node", node);s
+                        dialog.close();
+                        return false;
                     }
+
+                    node.pos = graphcanvas.convertEventToCanvasOffset(event);
+                    graphcanvas.graph.add(node, false, {doProcessChange: false});
 
                     if (extra && extra.data) {
                         if (extra.data.properties) {

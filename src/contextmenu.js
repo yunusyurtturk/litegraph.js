@@ -10,6 +10,7 @@ export class ContextMenu {
     * - callback: function to call when an option is clicked, it receives the item information
     * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
     * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
+    * - isCustomEvent: added to allow not default events
     *
     *   Rendering notes: This is only relevant to rendered graphs, and is rendered using HTML+CSS+JS.
     */
@@ -89,7 +90,7 @@ export class ContextMenu {
         if (!parentMenu)
             return;
         if (parentMenu.constructor !== this.constructor) {
-            LiteGraph.log_error("parentMenu must be of class ContextMenu, ignoring it");
+            LiteGraph.log_error("contextmenu", "linkToParent", "parentMenu must be of class ContextMenu, ignoring it");
             this.options.parentMenu = null;
             return;
         }
@@ -102,14 +103,19 @@ export class ContextMenu {
         if(!this.options.event)
             return;
 
+        if(this.options.isCustomEvent){
+            LiteGraph.log_verbose("contextmenu", "linkToParent", "Custom event for ContextMenu.", this.options.event);
+            return;
+        }
+
+        // why should we ignore other events ?
         // use strings because comparing classes between windows doesnt work
         const eventClass = this.options.event.constructor.name;
         if ( eventClass !== "MouseEvent" &&
             eventClass !== "CustomEvent" &&
             eventClass !== "PointerEvent"
         ) {
-            // LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
-            LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. WOULD LIKE TO IGNORE. (${eventClass})`);
+            LiteGraph.log_warn(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Was originally ignoring it. (${eventClass})`);
             // this.options.event = null;
         }
     }
@@ -156,9 +162,10 @@ export class ContextMenu {
         const root = this.root;
         const that = this;
 
+        // TEXT FILTER by KEYPRESS
+        // WIP
         if (LiteGraph.context_menu_filter_enabled) {
             if(doc) {
-                // TEXT FILTER by KEYPRESS
                 // TODO FIX THIS :: need to remove correctly events !! getting multiple
                 if(root.f_textfilter) {
                     doc.removeEventListener("keydown",root.f_textfilter,false);
@@ -249,6 +256,7 @@ export class ContextMenu {
                                         LiteGraph.log_debug("ContextElement simCLICK",that,that.allOptions[that.selectedOption]);
                                         // checking because of bad event removal :: FIX
                                         if(that.allOptions[that.selectedOption].do_click) {
+                                            // that.allOptions[that.selectedOption].do_click.call(that.allOptions[that.selectedOption], that.options.event, ignore_parent_menu);
                                             that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                         }
                                         // No
@@ -448,6 +456,8 @@ export class ContextMenu {
             if (body_rect.height && top > body_rect.height - root_rect.height - 10) {
                 top = body_rect.height - root_rect.height - 10;
             }
+        }else{
+            LiteGraph.log_debug("contextmenu", "calculateBestPosition", "has no event");
         }
 
         root.style.left = `${left}px`;
@@ -506,8 +516,15 @@ export class ContextMenu {
         if (!disabled) {
             element.addEventListener("click", handleMenuItemClick);
             element.do_click = function(event, ignore_parent_menu){
-                LiteGraph.log_warn("contextmenu", "addItem", "do_click", "handleMenuItemClick", "this", this, "thisItem", thisItem, "event", event, "ignore_parent_menu", ignore_parent_menu);
-                return handleMenuItemClick.call(thisItem, event, ignore_parent_menu);
+                // LiteGraph.log_verbose("contextmenu", "addItem", "do_click", "handleMenuItemClick", "this", this, "thisItem", thisItem, "event", event, "ignore_parent_menu", ignore_parent_menu);
+                if(!event){
+                    LiteGraph.log_warn("contextmenu", "addItem", "do_click", "has no event", ...arguments);
+                }else if(!event.clientX){
+                    LiteGraph.log_warn("contextmenu", "addItem", "do_click", "event has no clientX info", event);
+                }else{
+                    LiteGraph.log_verbose("contextmenu", "addItem", "do_click", "has clientX", event);
+                }
+                handleMenuItemClick.call(thisItem, event, ignore_parent_menu);
             };
         }
         if (!disabled && options.autoopen) {
@@ -527,17 +544,18 @@ export class ContextMenu {
             const value = this.value;
             let closeParent = true;
 
-            LiteGraph.log_debug("ContextMenu handleMenuItemClick",value,options,closeParent,this.current_submenu,this);
+            LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "process", value,event,options,closeParent,this.current_submenu,this);
 
             // Close any current submenu
             that.current_submenu?.close(event);
 
             // Execute global callback
             if (options.callback) {
-                LiteGraph.log_debug("ContextMenu handleMenuItemClick callback",this,value,options,event,that,options.node);
-
+                LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "global callback",this,value,options,event,that,options.node);
+                
                 const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
                 if (globalCallbackResult === true) {
+                    LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "global callback processed, will close parent", globalCallbackResult);
                     closeParent = false;
                 }
             }
@@ -546,17 +564,19 @@ export class ContextMenu {
             if (value) {
                 if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
 
-                    LiteGraph.log_debug("ContextMenu using value callback and !ignore_item_callbacks",this,value,options,event,that,options.node);
+                    LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "using value callback and !ignore_item_callbacks",this,value,options,event,that,options.node);
                     const itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
                     if (itemCallbackResult === true) {
                         closeParent = false;
                     }
                 }
                 if (value.submenu) {
-                    LiteGraph.log_debug("ContextMenu SUBMENU",this,value,value.submenu.options,event,that,options);
+                    LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "SUBMENU",this,value,value.submenu.options,event,that,options);
 
                     if (!value.submenu.options) {
-                        throw new Error("ContextMenu submenu needs options");
+                        // throw new Error("contextmenu", "handleMenuItemClick", "submenu needs options");
+                        LiteGraph.log_warn("contextmenu", "handleMenuItemClick", "SUBMENU", "submenu needs options");
+                        return;
                     }
                     // Recursively create submenu
                     new that.constructor(value.submenu.options, {
