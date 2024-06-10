@@ -34,6 +34,8 @@ if(LiteGraph && graphcanvas){
                     const gloCoord = graphcanvas.convertOffsetToEditorArea(nodeX.pos);
                     keyEvent.clientX = gloCoord[0] + nodeX.size[0] + 21;
                     keyEvent.clientY = gloCoord[1];
+                    keyEvent.canvasX = nodeX.pos[0] + nodeX.size[0] + 21;
+                    keyEvent.canvasY = nodeX.pos[1];
 
                     if(nodeX.outputs && nodeX.outputs[0]){
                         if(keyEvent.shiftKey){

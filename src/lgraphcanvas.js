@@ -6030,6 +6030,7 @@ export class LGraphCanvas {
                     that.graph.removeLink(link.id);
                     break;
                 default:
+                    LiteGraph.log_debug("lgraphcanvas","showLinkMenu","inner_clicked","node in the middle or other operation",...arguments);
                     /* var nodeCreated = createDefaultNodeForSlot({   nodeFrom: node_left
                                                                     ,slotFrom: link.origin_slot
                                                                     ,nodeTo: node
@@ -6278,7 +6279,10 @@ export class LGraphCanvas {
                         isFrom ? that.showSearchBox(e, {node_from: opts.nodeFrom, slot_from: slotX, type_filter_in: fromSlotType}) : that.showSearchBox(e, {node_to: opts.nodeTo, slot_from: slotX, type_filter_out: fromSlotType});
                     },
                     "default": () => {
-                        that.createDefaultNodeForSlot(Object.assign(opts, {position: [opts.e.canvasX, opts.e.canvasY], nodeType: v}));
+                        LiteGraph.log_debug("lgraphcanvas","showConnectionMenu","callback","createDefaultNodeForSlot",v,options,e);
+                        // const new_pos = this.convertOffsetToEditorArea([opts.e.clientX, opts.e.clientY]);
+                        const new_pos = [opts.e.canvasX, opts.e.canvasY];
+                        that.createDefaultNodeForSlot(Object.assign(opts, {position: new_pos, nodeType: v}));
                     },
                 };
 
