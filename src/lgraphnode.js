@@ -1950,7 +1950,7 @@ export class LGraphNode {
             return null;
         }
 
-        /* } else if (target_slot === LiteGraph.EVENT) {
+        if (target_slot === LiteGraph.EVENT) {
 
             if (LiteGraph.do_add_triggers_slots) {
                 // search for first slot with event? :: NO this is done outside
@@ -1961,7 +1961,11 @@ export class LGraphNode {
                 LiteGraph.log_debug("lgraphnode","connect", "Created onTrigger slot",target_slot);
             }else{
                 return null; // -- break --
-            } */
+            }
+            
+        }else{
+            target_slot = target_node.getInputSlot(target_slot);
+        }
 
         // you can specify the slot by name
         /* if (target_slot.constructor === String) {
@@ -1971,7 +1975,7 @@ export class LGraphNode {
                 return null;
             }
         } else */
-        target_slot = target_node.getInputSlot(target_slot);
+        
         if (
             !target_node.inputs || target_slot == -1
             // target_slot >= target_node.inputs.length

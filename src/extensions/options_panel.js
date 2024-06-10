@@ -10,7 +10,7 @@ import { LGraphCanvas } from "../lgraphcanvas.js";
 LiteGraph.showCanvasOptions = true; // [true!] customize availableCanvasOptions
 LiteGraph.availableCanvasOptions = [
     "allow_addOutSlot_onExecuted",
-    "free_resize",
+    "free_resize",  
     "highquality_render",
     "use_gradients", // set to true to render titlebar with gradients
     "pause_rendering",

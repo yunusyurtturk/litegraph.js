@@ -108,8 +108,9 @@ export class ContextMenu {
             eventClass !== "CustomEvent" &&
             eventClass !== "PointerEvent"
         ) {
-            LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
-            this.options.event = null;
+            // LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (${eventClass})`);
+            LiteGraph.log_error(`Event passed to ContextMenu is not of type MouseEvent or CustomEvent. WOULD LIKE TO IGNORE. (${eventClass})`);
+            // this.options.event = null;
         }
     }
 
