@@ -46,8 +46,10 @@ window.addEventListener("load", (event) => {
         jsConsole.log("Here is console.log!");
         
         // map console log-debug to jsConsole
-        console.log = function(par){
-            jsConsole.log(par);
+        window.console_log = console.log;
+        console.log = function(){
+            window.console_log(...arguments); // keep in console too
+            jsConsole.log(...arguments);
             var objDiv = document.getElementById("console-container");
             objDiv.scrollTop = objDiv.scrollHeight;
         }

@@ -144,7 +144,9 @@ export class ContextMenu {
             }
 
             let value = values[i];
-            this.menu_elements.push(this.addItem(name, value, this.options));
+            
+            // this.menu_elements.push(this.addItem(name, value, this.options));
+            this.addItem(name, value, this.options);
         }
     }
 
@@ -154,7 +156,6 @@ export class ContextMenu {
         const root = this.root;
         const that = this;
 
-        // Atlasan's code: @BUG: Variable names will mismatch
         if (LiteGraph.context_menu_filter_enabled) {
             if(doc) {
                 // TEXT FILTER by KEYPRESS
@@ -244,11 +245,16 @@ export class ContextMenu {
                                 if(that.selectedOption !== false) {
 
                                     if(that.allOptions[that.selectedOption]) {
-                                        LiteGraph.log_debug("ContextElement simCLICK",that.allOptions[iO]);
+
+                                        LiteGraph.log_debug("ContextElement simCLICK",that,that.allOptions[that.selectedOption]);
                                         // checking because of bad event removal :: FIX
                                         if(that.allOptions[that.selectedOption].do_click) {
                                             that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
                                         }
+                                        // No
+                                        // if(that.do_click) {
+                                            // that.do_click(that.options.event, ignore_parent_menu);
+                                        // }
                                     }else{
                                         LiteGraph.log_debug("ContextElement selection wrong",that.selectedOption);
                                         // selection fix when filtering
@@ -265,7 +271,7 @@ export class ContextMenu {
                                                 // && that.allOptions[iO].textContent !== "Add Node"
                                                 && that.allOptions[iO].textContent !== "Search"
                                             ) {
-                                                LiteGraph.log_debug("ContextElement simCLICK",that.allOptions[iO]);
+                                                LiteGraph.log_debug("ContextElement simCLICK - FIRST",that.allOptions[iO]);
                                                 // try cleaning parent listeners
                                                 if(root.f_textfilter) {
                                                     if(doc) {
@@ -465,6 +471,7 @@ export class ContextMenu {
         element.className = "litemenu-entry submenu";
 
         let disabled = false;
+        var thisItem = element;
 
         if (value === null) {
             element.classList.add("separator");
@@ -495,8 +502,13 @@ export class ContextMenu {
         }
 
         this.root.appendChild(element);
+
         if (!disabled) {
             element.addEventListener("click", handleMenuItemClick);
+            element.do_click = function(event, ignore_parent_menu){
+                LiteGraph.log_warn("contextmenu", "addItem", "do_click", "handleMenuItemClick", "this", this, "thisItem", thisItem, "event", event, "ignore_parent_menu", ignore_parent_menu);
+                return handleMenuItemClick.call(thisItem, event, ignore_parent_menu);
+            };
         }
         if (!disabled && options.autoopen) {
             element.addEventListener("pointerenter",(event) => {
@@ -565,6 +577,10 @@ export class ContextMenu {
                 that.close();
             }
         }
+        
+        // push to menu_elements here
+        this.menu_elements.push(element);
+
         return element;
     }
 

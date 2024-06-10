@@ -1,5 +1,5 @@
 
-if(LiteGraph && graphcanvas){
+if(LiteGraph && graphcanvas) (function(){
 
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
@@ -7,10 +7,11 @@ if(LiteGraph && graphcanvas){
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
 
     let ext = "renamer";
+    let debug = false;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
-        console.info(ext, "*** renamer onKeyDown handler ***",...arguments);
+        if(debug) console.info(ext, "*** renamer onKeyDown handler ***",...arguments);
         switch(keyEvent.keyCode){
             case 113: // F2
                 
@@ -48,7 +49,7 @@ if(LiteGraph && graphcanvas){
                     // check is over Group (Note)
                     const groupOver = graphcanvas.graph.getGroupOnPos( mouseCoord[0], mouseCoord[1] );
                     if(groupOver){
-                        console.warn(ext, "dbg: group to rename",groupOver);
+                        if(debug) console.warn(ext, "dbg: group to rename",groupOver);
                         // set update function
                         var fCB = function(tIn){
                             groupOver.title = tIn;
@@ -59,15 +60,15 @@ if(LiteGraph && graphcanvas){
                         );
                     }else{
 
-                        console.warn(ext, "dbg: nothing to rename");
+                        if(debug) console.warn(ext, "dbg: nothing to rename");
 
                     }
                 }
             break;
             default:
-                // console.debug("dbg: ignore",keyEvent.keyCode);
+                if(debug) console.debug("dbg: ignore key",keyEvent.keyCode);
             break;
         }
     });
 
-}
+})();

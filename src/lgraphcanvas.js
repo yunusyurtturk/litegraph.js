@@ -660,8 +660,8 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        LiteGraph.log_verbose(y,this.viewport);
-        LiteGraph.log_debug("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
+        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
+        LiteGraph.log_verbose("coordinates",x,y,this.viewport, "canvas coordinates", e.canvasX, e.canvasY);
 
         this.ds.viewport = this.viewport;
         var is_inside = !this.viewport || ( this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]) );
@@ -706,7 +706,7 @@ export class LGraphCanvas {
             def_cb: this.onMouse
         }, e );
         if((typeof(cbRet)!="undefined" && cbRet!==null) && (cbRet === false || (typeof(cbRet)=="object" && cbRet.return_value === false))){
-            LiteGraph.log_info("graph processMouseDown","callback prevents continue");
+            LiteGraph.log_info("lgraphcanvas", "processMouseDown", "callback prevents continue");
             return;
         }
 
@@ -714,7 +714,7 @@ export class LGraphCanvas {
         if (e.which == 1 && !this.userInput_isNotPrimary) {
 
             if (e.ctrlKey) {
-                LiteGraph.log_debug("graph processMouseDown","starting box selection");
+                LiteGraph.log_debug("lgraphcanvas", "processMouseDown","starting box selection");
                 this.dragging_rectangle = new Float32Array(4);
                 this.dragging_rectangle[0] = e.canvasX;
                 this.dragging_rectangle[1] = e.canvasY;
@@ -725,7 +725,7 @@ export class LGraphCanvas {
 
             // clone node ALT dragging
             if (LiteGraph.alt_drag_do_clone_nodes && e.altKey && node && this.allow_interaction && !skip_action && !this.read_only) {
-                LiteGraph.log_debug("graph processMouseDown","cloning node");
+                LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "cloning node");
                 let original_node = node;
                 let cloned = node.clone();
                 if (cloned) {
@@ -736,31 +736,32 @@ export class LGraphCanvas {
 
                     if( LiteGraph.alt_shift_drag_connect_clone_with_input && e.shiftKey ) {
                         // process links
-                        LiteGraph.log_verbose("altCloned",original_node,node);
+                        LiteGraph.log_verbose("lgraphcanvas", "processMouseDown", "altCloned",original_node,node);
                         if (original_node.inputs && original_node.inputs.length) {
                             // DBG("cycle original inputs",original_node.inputs);
                             for (var j = 0; j < original_node.inputs.length; ++j) {
                                 var input = original_node.inputs[j];
                                 if (!input || input.link == null) {
-                                    LiteGraph.log_verbose("not input link",input);
+                                    // DBG EXCESS LiteGraph.log_verbose("lgraphcanvas", "processMouseDown", "alt drag cloning", "not input link",input);
                                     continue;
                                 }
                                 var ob_link = this.graph.links[input.link];
                                 if (!ob_link) {
-                                    // DBG LiteGraph.log_warn("not graph link info",input);
+                                    LiteGraph.log_warn("lgraphcanvas", "processMouseDown", "not graph link info for input",input,original_node);
                                     continue;
                                 }
                                 if (ob_link.type === LiteGraph.EVENT) {
-                                    LiteGraph.log_verbose("skip moving events :: TODO put a sequencer in the middle or implement multi input",input);
+                                    // TODO put a sequencer in the middle or implement multi input
+                                    LiteGraph.log_info("lgraphcanvas", "processMouseDown", "alt drag cloning", "skip moving events",input);
                                     continue;
                                 }
-                                LiteGraph.log_verbose("find link node",ob_link);
                                 var source_node;
                                 if (ob_link.origin_id) {
                                     source_node = this.graph.getNodeById(ob_link.origin_id);
                                 }
                                 var target_node = node;
                                 if( source_node && target_node ) {
+                                    LiteGraph.log_verbose("lgraphcanvas", "processMouseDown", "alt drag cloning", "connect newly created",source_node,target_node,ob_link);
                                     // DBG LiteGraph.log_info("connect cloned node",ob_link.origin_slot, target_node, ob_link.target_slot);
                                     source_node.connect(ob_link.origin_slot, target_node, ob_link.target_slot);
                                 }
@@ -787,7 +788,7 @@ export class LGraphCanvas {
             // and it is not interactive
             // or action skipped or read_only
             if (node && (this.allow_interaction || node.flags.allow_interaction) && !skip_action && !this.read_only) {
-                LiteGraph.log_debug("graph processMouseDown","clicking on node");
+                LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicking on node");
                 if (!this.live_mode && !node.flags.pinned) {
                     this.bringToFront(node);
                 } // if it wasn't selected?
@@ -807,7 +808,7 @@ export class LGraphCanvas {
                             10,
                         )
                     ) {
-                        LiteGraph.log_debug("graph processMouseDown","start resizing node");
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "start resizing node");
                         this.graph.beforeChange();
                         this.resizing_node = node;
                         this.canvas.style.cursor = "se-resize";
@@ -833,7 +834,7 @@ export class LGraphCanvas {
                                     this.connecting_output.slot_index = i;
                                     this.connecting_pos = node.getConnectionPos( false, i );
                                     this.connecting_slot = i;
-                                    LiteGraph.log_debug("graph processMouseDown","clicked on output slot", node, output);
+                                    LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on output slot", node, output);
                                     
                                     if (LiteGraph.shift_click_do_break_link_from) {
                                         if (e.shiftKey) {
@@ -874,7 +875,7 @@ export class LGraphCanvas {
                                         20,
                                     )
                                 ) {
-                                    LiteGraph.log_debug("graph processMouseDown","clicked on input slot", node, input);
+                                    LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on input slot", node, input);
                                     if (is_double_click) {
                                         // TAG callback node event entrypoint
                                         node.processCallbackHandlers("onInputDblClick",{
@@ -945,7 +946,7 @@ export class LGraphCanvas {
 
                 // it wasn't clicked on the links boxes, nor on slots
                 if (!skip_action) {
-                    LiteGraph.log_debug("graph processMouseDown","check clicked on node", node);
+                    LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "check clicked on node", node);
                     var block_drag_node = false;
                     var pos = [e.canvasX - node.pos[0], e.canvasY - node.pos[1]];
 
@@ -958,7 +959,7 @@ export class LGraphCanvas {
 
                     // double clicking
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
-                        LiteGraph.log_debug("graph processMouseDown","double clicked on node", node);
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "double clicked on node", node);
                         // TAG callback node event entrypoint
                         node.processCallbackHandlers("onDblClick",{
                             def_cb: node.onDblClick
@@ -974,12 +975,12 @@ export class LGraphCanvas {
                     
                     // if do not capture mouse
                     if ( cbRet!==null && (cbRet === true || (typeof(cbRet)=="object" && cbRet.return_value)) ) {
-                        LiteGraph.log_debug("graph processMouseDown","dragging blocked");
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "dragging blocked");
                         block_drag_node = true;
                     } else {
                         // open subgraph button
                         if(node.subgraph && !node.skip_subgraph_button) {
-                            LiteGraph.log_debug("graph processMouseDown","clicked on subgraph");
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on subgraph");
                             if ( !node.flags.collapsed && pos[0] > node.size[0] - LiteGraph.NODE_TITLE_HEIGHT && pos[1] < 0 ) {
                                 setTimeout(() => {
                                     this.openSubgraph(node.subgraph);
@@ -995,7 +996,7 @@ export class LGraphCanvas {
 
                     if (!block_drag_node) {
                         if (this.allow_dragnodes) {
-                            LiteGraph.log_debug("graph processMouseDown","started dragging",node);
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "started dragging",node);
                             this.graph.beforeChange();
                             this.node_dragged = node;
                         }
@@ -1006,7 +1007,7 @@ export class LGraphCanvas {
                          * Otherwise, it could cause the block to be unselected while its panel is open.
                          */
                         if (!node.is_selected){
-                            LiteGraph.log_debug("graph processMouseDown","node selected",node);
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "node selected",node);
                             this.processNodeSelected(node, e);
                         }
                     }
@@ -1014,7 +1015,7 @@ export class LGraphCanvas {
                     this.dirty_canvas = true;
                 }
             } else { // clicked outside of nodes
-                LiteGraph.log_debug("graph processMouseDown","clicked outside nodes");
+                LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked outside nodes");
                 if (!skip_action) {
 
                     // search for mouseDown on LINKS
@@ -1031,7 +1032,7 @@ export class LGraphCanvas {
                             ) {
                                 continue;
                             }
-                            LiteGraph.log_debug("graph processMouseDown","clicked on link",link);
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on link",link);
                             // link clicked
                             this.showLinkMenu(link, e);
                             this.over_link_center = null; // clear tooltip
@@ -1043,7 +1044,7 @@ export class LGraphCanvas {
                     this.selected_group = this.graph.getGroupOnPos( e.canvasX, e.canvasY );
                     this.selected_group_resizing = false;
                     if (this.selected_group && !this.read_only ) {
-                        LiteGraph.log_debug("graph processMouseDown","clicked on group",link);
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on group",link);
                         if (e.ctrlKey) {
                             this.dragging_rectangle = null;
                         }
@@ -1057,7 +1058,7 @@ export class LGraphCanvas {
                     }
 
                     if (is_double_click && !this.read_only && this.allow_searchbox) {
-                        LiteGraph.log_debug("graph processMouseDown","showing search box");
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "showing search box");
                         this.showSearchBox(e);
                         e.preventDefault();
                         e.stopPropagation();
@@ -1069,7 +1070,7 @@ export class LGraphCanvas {
             }
 
             if (!skip_action && clicking_canvas_bg && this.allow_dragcanvas) {
-                LiteGraph.log_debug("graph processMouseDown","dragging_canvas start");
+                LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "dragging_canvas start");
                 this.dragging_canvas = true;
             }
 
@@ -1594,6 +1595,7 @@ export class LGraphCanvas {
 
                     // test dragging rect size, if minimun simulate a click
                     if (!node || (w > 10 && h > 10 )) {
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "computing box selection for nodes", this.dragging_rectangle);
                         // test against all nodes (not visible because the rectangle maybe start outside
                         var to_select = [];
                         for (let i = 0; i < nodes.length; ++i) {
@@ -1610,6 +1612,7 @@ export class LGraphCanvas {
                             to_select.push(nodeX);
                         }
                         if (to_select.length) {
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "selecting nodes", to_select);
                             this.selectNodes(to_select,e.shiftKey); // add to selection with shift
                         }
                     }else{
@@ -1927,6 +1930,10 @@ export class LGraphCanvas {
      * process a key event
      * @method processKey
      **/
+    /**
+     * TODO : processKey save keys being down, fire single first keyDown instead of constantly pressed (use new event and promote that), clean on up
+     * TODO : processKey replace static keys for config values
+     */
     processKey = (e) => {
         if (!this.graph) {
             return;
@@ -1940,6 +1947,7 @@ export class LGraphCanvas {
         }
 
         if (e.type == "keydown") {
+            
             if (e.keyCode == 32) {
                 // space
                 this.dragging_canvas = true;
@@ -1985,9 +1993,9 @@ export class LGraphCanvas {
             // collapse
             // ...
 
-            // control Z, control Y, ctlrZ, ctlrY
+            // ctlr+Z, ctlr+Y (or ctlr+shift+Z)
             if (LiteGraph.actionHistory_enabled) {
-                if (e.keyCode == 89 && e.ctrlKey || (e.keyCode == 90 && e.ctrlKey && e.shiftKey)) {
+                if ((e.keyCode == 89 && e.ctrlKey) || (e.keyCode == 90 && e.ctrlKey && e.shiftKey)) {
                     // Y
                     this.graph.actionHistoryForward();
                 }else if (e.keyCode == 90 && e.ctrlKey) {
@@ -1995,11 +2003,13 @@ export class LGraphCanvas {
                     this.graph.actionHistoryBack();
                 }
             }
-            LiteGraph.log_debug("Canvas keydown "+e.keyCode); // debug keydown
+
+            LiteGraph.log_verbose("Canvas keydown "+e.keyCode); // debug keydown
 
             if (Object.keys(this.selected_nodes).length) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
+                    // SHOULD check return value (block canvasProcess? block_default?)
                     this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
                         def_cb: this.selected_nodes[i].onKeyDown
                     }, e );
@@ -2007,6 +2017,7 @@ export class LGraphCanvas {
             }
 
             // TAG callback GRAPHCANVAS event entrypoint
+            // SHOULD check return value (block_default?)
             this.processCallbackHandlers("onKeyDown",{
                 def_cb: this.onKeyDown
             }, e );
@@ -2020,6 +2031,7 @@ export class LGraphCanvas {
             if (this.selected_nodes) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
+                    // SHOULD check return value (block_default?)
                     this.selected_nodes[i].processCallbackHandlers("onKeyUp",{
                         def_cb: this.selected_nodes[i].onKeyUp
                     }, e );
@@ -7870,7 +7882,7 @@ export class LGraphCanvas {
         var html = " + <span class='label'>Name</span><input class='name'/><span class='label'>Type</span><input class='type'></input><button>+</button>";
         var elem = panel.addHTML(html, "subgraph_property extra", true);
         elem.querySelector(".name").addEventListener("keydown", function (_event) {
-            if (e.keyCode == 13) {
+            if (_event.keyCode == 13) {
                 addOutput.apply(this)
             }
         })

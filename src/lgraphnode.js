@@ -66,7 +66,7 @@ export class LGraphNode {
     // should every node extend this istead of 
     constructor(title = "") {
         // a custom registered node will have his custom constructor
-        console.verbose("lgraphNODE", "ORIGINAL constructor",this,title);
+        LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor",this,title);
 
         this.title = title;
         this.size = [LiteGraph.NODE_WIDTH, 60];
@@ -878,7 +878,7 @@ export class LGraphNode {
             if (LiteGraph.ensureUniqueExecutionAndActionCall) {
                 // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
                 if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                    LiteGraph.log_debug("lgraphnode", "actionDo", "!! NODE already ACTION THIS STEP !! "+options.action_call);ç
+                    LiteGraph.log_debug("lgraphnode", "actionDo", "!! NODE already ACTION THIS STEP !! "+options.action_call);
                     return;
                 }
             }
@@ -917,13 +917,23 @@ export class LGraphNode {
             return;
         }
 
+        // TODO check this, investigate, _last_trigger_time ? who calls trigger ?
         this.graph && (this.graph._last_trigger_time = LiteGraph.getTime());
 
+        let triggered = 0;
         this.outputs.forEach((output, i) => {
             if (output && output.type === LiteGraph.EVENT && (!action || output.name === action)) {
+                // TODO add callback handler onTriggerSlot
+                LiteGraph.log_verbose("lgraphnode", "trigger", "triggering slot", i, param, options);
                 this.triggerSlot(i, param, null, options);
+                triggered++;
+            }else{
+                LiteGraph.log_verbose("lgraphnode", "trigger", "skip slot", output);
             }
         });
+        if(!triggered){
+            LiteGraph.log_debug("lgraphnode", "trigger", "nothing found", ...arguments);
+        }
     }
 
     /**
@@ -937,15 +947,14 @@ export class LGraphNode {
         if (!this.outputs) {
             return;
         }
-
-        if(slot == null) {
-            LiteGraph.log_error("lgraphnode", "triggerSlot","slot must be a number");
+        if(slot === null) {
+            LiteGraph.log_error("lgraphnode", "triggerSlot","wrong slot",slot);
             return;
         }
-
-        if(slot.constructor !== Number)
-            LiteGraph.log_warn("lgraphnode", "triggerSlot","slot must be a number, use node.trigger('name') if you want to use a string");
-
+        if(slot.constructor !== Number){
+            // LiteGraph.log_warn("lgraphnode", "triggerSlot","slot must be a number, use node.trigger('name') if you want to use a string");
+            slot = this.getOutputSlot(slot);
+        }
         var output = this.outputs[slot];
         if (!output) {
             return;
@@ -1000,9 +1009,7 @@ export class LGraphNode {
                 if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
                 // pass the action name
                 let target_connection = node.inputs[link_info.target_slot];
-
-                LiteGraph.log_debug("lgraphnode", "triggerSlot","will call onACTION: "+this.id+":"+this.order+" :: "+target_connection.name);
-
+                
                 // METHOD 1 ancestors
                 if (LiteGraph.refreshAncestorsOnActions)
                     node.refreshAncestors({action: target_connection.name, param: param, options: options});
@@ -1011,8 +1018,10 @@ export class LGraphNode {
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
                     node._waiting_actions ??= [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
+                    LiteGraph.log_debug("lgraphnode", "triggerSlot","push to deferred", target_connection.name, param, options, link_info.target_slot);//+this.id+":"+this.order+" :: "+target_connection.name);
                 } else {
                     // wrap node.onAction(target_connection.name, param);
+                    LiteGraph.log_debug("lgraphnode", "triggerSlot","call actionDo", node, target_connection.name, param, options, link_info.target_slot);
                     node.actionDo( target_connection.name, param, options, link_info.target_slot );
                 }
             }
@@ -1457,7 +1466,7 @@ export class LGraphNode {
      */
     getBounding(out = new Float32Array(4), compute_outer) {
         const nodePos = this.pos;
-        const isCollapsed = this.flags.collapsed;
+        const isCollapsed = this.flags?.collapsed;
         const nodeSize = this.size;
 
         let left_offset = 0;

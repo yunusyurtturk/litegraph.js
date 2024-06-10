@@ -52,3 +52,8 @@ LiteGraph.ensureUniqueExecutionAndActionCall = false; //[true!]
 
 /* METHOD 2 DEFERRED ACTIONS */
 LiteGraph.use_deferred_actions = true; //
+
+// CONTEXT MENU FILTERING
+// ---- WIP ----
+// i) ComfyUI has his own
+LiteGraph.context_menu_filter_enabled = false; // [WIP!]

@@ -1,7 +1,7 @@
 import { LiteGraph } from "../../src/litegraph.js";
 
 LiteGraph.debug = true; // enable logging
-LiteGraph.logging_set_level(6); // -1 is none, 0 is error level, 5 is all up to debug, more is for verbose : will set LiteGraph.debug_level
+LiteGraph.logging_set_level(4); // -1 is none, 0 is error level, 5 is all up to debug, more is for verbose : will set LiteGraph.debug_level
 
 LiteGraph.catch_exceptions = true;
 LiteGraph.throw_errors = true;
@@ -54,3 +54,9 @@ LiteGraph.ensureUniqueExecutionAndActionCall = true; //[true!]
 
 /* METHOD 2 DEFERRED ACTIONS */
 LiteGraph.use_deferred_actions = false; // disabling deferred
+
+
+// CONTEXT MENU FILTERING
+// ---- WIP ----
+// i) ComfyUI has his own
+LiteGraph.context_menu_filter_enabled = true; // [WIP!]

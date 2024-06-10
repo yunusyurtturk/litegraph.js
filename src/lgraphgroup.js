@@ -1,4 +1,5 @@
 import { LiteGraph } from "./litegraph.js";
+import { CallbackHandler } from "./callbackhandler.js";
 
 export class LGraphGroup {
 
@@ -18,8 +19,27 @@ export class LGraphGroup {
         this._pos = this._bounding.subarray(0, 2);
         this._size = this._bounding.subarray(2, 4);
         this._nodes = [];
+        this._groups = [];
         this.graph = null;
+        this.callbackhandler_setup();
     }
+
+    callbackhandler_setup(){
+        this.cb_handler = new CallbackHandler(this);
+    }
+
+    registerCallbackHandler(){
+        if(!this.cb_handler) this.callbackhandler_setup(); // needed if constructor calls callback events
+        return this.cb_handler.registerCallbackHandler(...arguments);
+    };
+    unregisterCallbackHandler(){
+        if(!this.cb_handler) this.callbackhandler_setup(); // needed if constructor calls callback events
+        return this.cb_handler.unregisterCallbackHandler(...arguments);
+    };
+    processCallbackHandlers(){
+        if(!this.cb_handler) this.callbackhandler_setup(); // needed if constructor calls callback events
+        return this.cb_handler.processCallbackHandlers(...arguments);
+    };
 
     set pos(v) {
         if (!v || v.length < 2) {
@@ -101,6 +121,10 @@ export class LGraphGroup {
             node.pos[0] += deltax;
             node.pos[1] += deltay;
         });
+        this._groups.forEach((group) => {
+            group.pos[0] += deltax;
+            group.pos[1] += deltay;
+        });
     }
 
     /**
@@ -114,11 +138,27 @@ export class LGraphGroup {
 
         this._nodes = nodes.filter((node) => {
             node.getBounding(node_bounding);
-
             return LiteGraph.overlapBounding(this._bounding, node_bounding, -LGraphGroup.opts.inclusion_distance);
+        });
+        this.recomputeInsideGroups();
+    }
+
+    /**
+     * Recomputes and updates the list of groups [LGraphGroup] inside this LGraphGroup based on their bounding boxes.
+     */
+    recomputeInsideGroups() {
+        this._groups.length = 0;
+        var groups = this.graph._groups;
+        var group_bounding = new Float32Array(4);
+
+        this._groups = groups.filter((group) => {
+            group.getBounding(group_bounding);
+            return LiteGraph.isBoundingInsideRectangle(group_bounding, ...this._bounding)
+            // return LiteGraph.overlapBounding(this._bounding, group_bounding, -LGraphGroup.opts.inclusion_distance);
         });
     }
 
+    getBounding = function(){ LiteGraph.LGraphNode.prototype.getBounding.call(this,...arguments); };
     isPointInside = LiteGraph.LGraphNode.prototype.isPointInside;
     setDirtyCanvas = LiteGraph.LGraphNode.prototype.setDirtyCanvas;
 }
