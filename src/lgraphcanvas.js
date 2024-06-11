@@ -1940,7 +1940,8 @@ export class LGraphCanvas {
         }
 
         var block_default = false;
-        LiteGraph.log_verbose(e); //debug
+        let r = null;
+        LiteGraph.log_verbose("lgraphcanvas","processKey",e);
 
         if (e.target.localName == "input") {
             return;
@@ -2004,23 +2005,30 @@ export class LGraphCanvas {
                 }
             }
 
-            LiteGraph.log_verbose("Canvas keydown "+e.keyCode); // debug keydown
-
             if (Object.keys(this.selected_nodes).length) {
                 for (let i in this.selected_nodes) {
                     // TAG callback node event entrypoint
                     // SHOULD check return value (block canvasProcess? block_default?)
-                    this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
+                    r = this.selected_nodes[i].processCallbackHandlers("onKeyDown",{
                         def_cb: this.selected_nodes[i].onKeyDown
                     }, e );
+                    // could a node stop replicating to the others ?
+                    if(r!==null && (r===true || (typeof(r)=="object" && r.return_value===true))){
+                        LiteGraph.log_debug("lgraphcanvas","processKey","onKeyDown has been processed with result true, prevent event bubbling");
+                        block_default = true;
+                    }
                 }
             }
 
             // TAG callback GRAPHCANVAS event entrypoint
             // SHOULD check return value (block_default?)
-            this.processCallbackHandlers("onKeyDown",{
+            r = this.processCallbackHandlers("onKeyDown",{
                 def_cb: this.onKeyDown
             }, e );
+            if(r!==null && (r===true || (typeof(r)=="object" && r.return_value===true))){
+                LiteGraph.log_debug("lgraphcanvas","processKey","onKeyDown has been processed with result true, prevent event bubbling");
+                block_default = true;
+            }
 
         } else if (e.type == "keyup") {
             if (e.keyCode == 32) {
@@ -2357,7 +2365,8 @@ export class LGraphCanvas {
         }
 
         nodes = nodes || this.graph._nodes;
-        if (typeof nodes == "string") nodes = [nodes];
+        if(typeof nodes === "string") nodes = [nodes];
+        if(typeof nodes.length === "undefined") nodes = [nodes];
         Object.values(nodes).forEach((node) => {
             if (node.is_selected) {
                 this.deselectNode(node);
@@ -2498,6 +2507,24 @@ export class LGraphCanvas {
             (this.canvas.height * 0.5) / this.ds.scale;
         this.setDirty(true, true);
     }
+    
+    // BAD WIP
+    // TODO check right scaling and positioning
+    /*centerOnSelection(){
+        // const canvas = LGraphCanvas.active_canvas;
+        const bounds = this.getBoundaryForSelection();
+        if(bounds){
+            const boundPos = [bounds[0], bounds[1]];
+            var canvasPos = this.convertCanvasToOffset(boundPos);
+            this.ds.offset[0] = canvasPos[0]; // - (this.canvas.width * 0.5) / this.ds.scale;
+            this.ds.offset[1] = canvasPos[1]; // - (this.canvas.height * 0.5) / this.ds.scale;
+            this.ds.changeScale(this.canvas.width/bounds[2]*2, [canvasPos[0]+bounds[2]/2,canvasPos[1]+bounds[3]/2]);
+            this.setDirty(true, true);
+            return true;
+        }else{
+            return false;
+        }
+    }*/
 
     getMouseCoordinates(){
         return this.graph_mouse;
@@ -5408,20 +5435,20 @@ export class LGraphCanvas {
     /* CONTEXT MENU ********************/
 
     static onGroupAdd(info, entry, mouse_event) {
-        var canvas = LGraphCanvas.active_canvas;
+        const canvas = LGraphCanvas.active_canvas;
         var group = new LiteGraph.LGraphGroup();
         if(canvas.options.groups_add_around_selected && Object.keys(canvas.selected_nodes).length){
-            const coord = canvas.getBoundaryForSelection();
-            if(coord){ 
+            const bounds = canvas.getBoundaryForSelection();
+            if(bounds){ 
                 const spacing = canvas.options.groups_add_default_spacing;
                 const titleSpace = canvas.options.groups_title_font_size*1.5;
-                group.pos = [   coord[0] - spacing
-                                ,coord[1] - titleSpace - spacing
+                group.pos = [   bounds[0] - spacing
+                                ,bounds[1] - titleSpace - spacing
                             ];
-                group.size = [  coord[2] + (spacing*2)
-                                ,coord[3]+ titleSpace + (spacing*2)
+                group.size = [  bounds[2] + (spacing*2)
+                                ,bounds[3]+ titleSpace + (spacing*2)
                             ];
-                LiteGraph.log_debug("lgraphcanvas","onGroupAdd","groups_add_around_selected",coord,group);
+                LiteGraph.log_debug("lgraphcanvas","onGroupAdd","groups_add_around_selected",bounds,group);
             }else{
                 group.pos = canvas.convertEventToCanvasOffset(mouse_event); // as default
             }
