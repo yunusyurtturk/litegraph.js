@@ -1436,12 +1436,14 @@ export class LGraphCanvas {
                 LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "draggin!",this.selected_nodes);
                 for (let i in this.selected_nodes) {
                     let n = this.selected_nodes[i];
-                    n.pos[0] += delta[0] / this.ds.scale;
-                    n.pos[1] += delta[1] / this.ds.scale;
-                    if (!n.is_selected) this.processNodeSelected(n, e); /*
-                        * Don't call the function if the block is already selected.
-                        * Otherwise, it could cause the block to be unselected while dragging.
-                        */
+                    let off = [delta[0] / this.ds.scale, delta[1] / this.ds.scale];
+                    n.pos[0] += off[0];
+                    n.pos[1] += off[1];
+                    if (!n.is_selected) this.processNodeSelected(n, e);
+                    // Don't call the function if the block is already selected. Otherwise, it could cause the block to be unselected while dragging.
+                    n.processCallbackHandlers("onDrag",{
+                        def_cb: n.onDrag
+                    }, off );
                 }
 
                 this.dirty_canvas = true;
@@ -1724,7 +1726,14 @@ export class LGraphCanvas {
                 // TAG callback graphrenderer event entrypoint
                 this.processCallbackHandlers("onNodeMoved",{
                     def_cb: this.onNodeMoved
-                }, this.node_dragged );
+                }, this.node_dragged, this.selected_nodes );
+                // multi nodes dragged ?
+                for (let i in this.selected_nodes) {
+                    let ndrg = this.selected_nodes[i];
+                    ndrg.processCallbackHandlers("onMoved",{
+                        def_cb: ndrg.onMoved
+                    }, this.node_dragged, this.selected_nodes );
+                }
                 this.graph.onGraphChanged({action: "nodeDrag", doSave: true});
                 this.graph.afterChange(this.node_dragged);
                 this.node_dragged = null;
@@ -6816,7 +6825,7 @@ export class LGraphCanvas {
                     var node = LiteGraph.createNode(name);
 
                     if(!node){
-                        LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "failed creating the node", node);s
+                        LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "failed creating the node", node);
                         dialog.close();
                         return false;
                     }

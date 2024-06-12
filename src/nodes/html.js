@@ -27,6 +27,106 @@ class DOMSelector {
 }
 LiteGraph.registerNodeType("html/dom_selector", DOMSelector);
 
+class HtmlNode {
+
+    static title = "Html Node";
+    static desc = "Have html inside a node";
+
+    constructor() {
+        this.addInput("content", "html");
+        this.addOutput("element", "htmlelement");
+        this.properties = { }; // scale_content: false
+        this._added = false;
+        this._el = false;
+    }
+
+    createElement(){
+        if(this._added) return;
+        if(typeof(graphcanvas)!=="undefined" && graphcanvas){
+            this._el = document.createElement("div");
+            this._el.style.position = "absolute";
+            this._el.style.backgroundColor = "green";
+            this._el.style.pointerEvents = "none";
+            graphcanvas.canvas.parentNode.appendChild(this._el);
+            this._el_cont = document.createElement("div");
+            this._el_cont.style.position = "relative";
+            this._el_cont.style.overflow = "auto";
+            this._el_cont.style.width = "100%";
+            this._el_cont.style.height = "100%";
+            this._el_cont.style.margin = "0px";
+            this._el_cont.style.padding = "0px";
+            this._el.appendChild(this._el_cont);
+            this._added = true;
+            this.refreshElement();
+        }else{
+            console.warn(this,"NO CANVAS");
+        }
+    }
+    refreshElement(){
+        if(!this._added){
+            this.createElement();
+        }
+        if(!this.pos) return;
+        if(!this.size) return;
+        const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
+        this._el.style.left = absPos[0] +"px";
+        this._el.style.top = absPos[1] +"px";
+        this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
+        this._el.style.height = Math.round(this.size[1]*graphcanvas.ds.scale) +"px";
+        // if(this.properties.scale_content){
+        //     const perc_size = 100/graphcanvas.ds.scale;
+        //     this._el_cont.style.width = perc_size+"%";
+        //     this._el_cont.style.height = perc_size+"%";
+        //     this._el_cont.style.left = (perc_size/2)+"%";
+        //     this._el_cont.style.top = (perc_size/2)+"%";
+        //     // this._el_cont.style.transform = "translate(-"+(perc_size/2)+"%,-"+(perc_size/2)+"%) scale("+(graphcanvas.ds.scale)+")";
+        //     // const new_scale = Math.min( 
+        //     //     availableWidth / contentWidth,
+        //     //     availableHeight / contentHeight 
+        //     // );
+        // }
+    }
+    // onAdded(){
+    //     this.refreshElement();
+    // }
+    // onConfigure(){
+    //     this.refreshElement();
+    // }
+    // onResize(){
+    //     this.refreshElement();
+    // }
+    // onDrag(){
+    //     this.refreshElement();
+    // }
+    // onMoved(){
+    //     this.refreshElement();
+    // }
+    onDrawForeground(){
+        this.refreshElement();
+    }
+    onSelected(){
+        if(this._el) this._el.style.pointerEvents = "";
+    }
+    onDeselected(){
+        if(this._el) this._el.style.pointerEvents = "none";
+    }
+    onExecute() {
+        // this.refreshElement();
+        var sHtml = this.getInputData(0);
+        var res = null;
+        if (sHtml) {
+            try{
+                this._html = sHtml;
+                this._el_cont.innerHTML = sHtml;
+            }catch(e) {
+                res = false;
+            }
+        }
+        this.setOutputData(0,this._el_cont);
+    }
+}
+LiteGraph.registerNodeType("html/node_html", HtmlNode);
+
 class DOMSelectorAll {
 
     static title = "DOMSelectorAll";

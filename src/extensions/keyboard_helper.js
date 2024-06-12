@@ -61,6 +61,9 @@ if(LiteGraph && graphcanvas){
                         for(let iN=0;iN<aNodesFrom.length;iN++){
                             aNodesFrom[iN].alignToGrid();
                             aNodesFrom[iN].pos[0] += LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
                         }
 
                     }
@@ -73,6 +76,9 @@ if(LiteGraph && graphcanvas){
                     for(let iN=0;iN<aNodesFrom.length;iN++){
                         aNodesFrom[iN].alignToGrid();
                         aNodesFrom[iN].pos[0] -= LiteGraph.CANVAS_GRID_SIZE;
+                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                            def_cb: aNodesFrom[iN].onMoved
+                        });
                     }
                 }
             break;
@@ -82,6 +88,9 @@ if(LiteGraph && graphcanvas){
                     for(let iN=0;iN<aNodesFrom.length;iN++){
                         aNodesFrom[iN].alignToGrid();
                         aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
+                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                            def_cb: aNodesFrom[iN].onMoved
+                        });
                     }
                 }
             break;
@@ -91,6 +100,9 @@ if(LiteGraph && graphcanvas){
                     for(let iN=0;iN<aNodesFrom.length;iN++){
                         aNodesFrom[iN].alignToGrid();
                         aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
+                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                            def_cb: aNodesFrom[iN].onMoved
+                        });
                     }
                 }
             break;
