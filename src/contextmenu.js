@@ -27,6 +27,9 @@ export class ContextMenu {
         this.addItems(values);
         this.#insertMenu();
         this.#calculateBestPosition();
+        if(LiteGraph.context_menu_filter_enabled){
+            this.createFilter(values, options);
+        }
     }
 
     #createRoot() {
@@ -120,6 +123,145 @@ export class ContextMenu {
         }
     }
 
+    createFilter(values, options){
+        const filter = document.createElement("input");
+        filter.classList.add("context-menu-filter");
+        filter.placeholder = "Filter list";
+        this.root.prepend(filter);
+
+        const items = Array.from(this.root.querySelectorAll(".litemenu-entry"));
+        let displayedItems = [...items];
+        let itemCount = displayedItems.length;
+
+        console.info(options);
+
+        // We must request an animation frame for the current node of the active canvas to update.
+        requestAnimationFrame(() => {
+            const currentNode = options.extra; //LGraphCanvas.active_canvas.current_node;
+            const clickedComboValue = currentNode?.widgets
+                ?.filter(w => w.type === "combo" && w.options.values.length === values.length)
+                .find(w => w.options.values.every((v, i) => v === values[i]))
+                ?.value;
+
+            let selectedIndex = clickedComboValue ? values.findIndex(v => v === clickedComboValue) : 0;
+            if (selectedIndex < 0) {
+                selectedIndex = 0;
+            } 
+            let selectedItem = displayedItems[selectedIndex];
+            updateSelected();
+
+            // Apply highlighting to the selected item
+            function updateSelected() {
+                selectedItem?.style.setProperty("background-color", "");
+                selectedItem?.style.setProperty("color", "");
+                selectedItem = displayedItems[selectedIndex];
+                selectedItem?.style.setProperty("background-color", "#ccc", "important");
+                selectedItem?.style.setProperty("color", "#000", "important");
+            }
+
+            const positionList = () => {
+                const rect = this.root.getBoundingClientRect();
+
+                // If the top is off-screen then shift the element with scaling applied
+                if (rect.top < 0) {
+                    const scale = 1 - this.root.getBoundingClientRect().height / this.root.clientHeight;
+                    const shift = (this.root.clientHeight * scale) / 2;
+                    this.root.style.top = -shift + "px";
+                }
+            }
+
+            // Arrow up/down to select items
+            filter.addEventListener("keydown", (event) => {
+                switch (event.key) {
+                    case "ArrowUp":
+                        event.preventDefault();
+                        if (selectedIndex === 0) {
+                            selectedIndex = itemCount - 1;
+                        } else {
+                            selectedIndex--;
+                        }
+                        updateSelected();
+                        break;
+                    case "ArrowRight":
+                        /* event.preventDefault();
+                        selectedIndex = itemCount - 1;
+                        updateSelected(); */
+                        selectedItem?.do_click(event); //click();
+                        break;
+                    case "ArrowDown":
+                        event.preventDefault();
+                        if (selectedIndex === itemCount - 1) {
+                            selectedIndex = 0;
+                        } else {
+                            selectedIndex++;
+                        }
+                        updateSelected();
+                        break;
+                    case "ArrowLeft":
+                        const parentMenu = this.parentMenu;
+                        this.close(event, true);
+                        if(parentMenu){
+                            const parentFilter = Array.from(parentMenu.root.querySelectorAll(".context-menu-filter"));
+                            if(parentFilter && parentFilter.length){
+                                parentFilter[0].style.display = "block";
+                                parentFilter[0].focus();
+                            }
+                        }
+                        /* event.preventDefault();
+                        selectedIndex = 0;
+                        updateSelected(); */
+                        break;
+                    case "Enter":
+                        selectedItem?.do_click(event); //click();
+                        break;
+                    case "Escape":
+                        this.close();
+                        break;
+                }
+            });
+
+            filter.addEventListener("input", () => {
+                // Hide all items that don't match our filter
+                const term = filter.value.toLocaleLowerCase();
+                // When filtering, recompute which items are visible for arrow up/down and maintain selection.
+                displayedItems = items.filter(item => {
+                    const isVisible = !term || item.textContent.toLocaleLowerCase().includes(term);
+                    item.style.display = isVisible ? "block" : "none";
+                    return isVisible;
+                });
+
+                selectedIndex = 0;
+                if (displayedItems.includes(selectedItem)) {
+                    selectedIndex = displayedItems.findIndex(d => d === selectedItem);
+                }
+                itemCount = displayedItems.length;
+
+                updateSelected();
+
+                // If we have an event then we can try and position the list under the source
+                if (options.event) {
+                    let top = options.event.clientY - 10;
+
+                    const bodyRect = document.body.getBoundingClientRect();
+                    const rootRect = this.root.getBoundingClientRect();
+                    if (bodyRect.height && top > bodyRect.height - rootRect.height - 10) {
+                        top = Math.max(0, bodyRect.height - rootRect.height - 10);
+                    }
+
+                    this.root.style.top = top + "px";
+                    positionList();
+                }
+            });
+
+            requestAnimationFrame(() => {
+                // Focus the filter box when opening
+                filter.focus();
+
+                positionList();
+            });
+        })
+    }
+    
     /**
      * Creates a title element if it doesn't have one.
      * Sets the title of the menu.
@@ -161,265 +303,6 @@ export class ContextMenu {
         const parent = doc.fullscreenElement ?? doc.body;
         const root = this.root;
         const that = this;
-
-        // TEXT FILTER by KEYPRESS
-        // WIP
-        if (LiteGraph.context_menu_filter_enabled) {
-            if(doc) {
-                // TODO FIX THIS :: need to remove correctly events !! getting multiple
-                if(root.f_textfilter) {
-                    doc.removeEventListener("keydown",root.f_textfilter,false);
-                    doc.removeEventListener("keydown",root.f_textfilter,true);
-                    root.f_textfilter = false;
-                }
-                root.f_textfilter = function(e) {
-                    // LiteGraph.log_debug("keyPressInsideContext",e,that,this,options);
-                    if(that.current_submenu) {
-                        // removing listeners is buggy, this prevent parent menus to process the key event
-                        LiteGraph.log_debug("Prevent filtering on ParentMenu",that);
-                        return;
-                    }
-                    if(!that.allOptions) {
-                        that.allOptions = that.menu_elements; // combo_options;
-                        that.selectedOption = false;
-                    }
-                    if(!that.currentOptions) {
-                        that.currentOptions = that.allOptions; // initialize filtered to all
-                    }
-                    if(!that.filteringText) {
-                        that.filteringText = "";
-                    }
-                    if(e.key) {
-                        var kdone = false;
-                        // DBG("KeyEv",e.key);
-                        switch(e.key) {
-                            case "Backspace":
-                                if(that.filteringText.length) {
-                                    that.filteringText = that.filteringText.substring(0,that.filteringText.length-1);
-                                    kdone = true;
-                                }
-                                break;
-                            case "Escape":
-                                // should close ContextMenu
-                                if(root.f_textfilter) {
-                                    doc.removeEventListener("keydown",root.f_textfilter,false);
-                                    doc.removeEventListener("keydown",root.f_textfilter,true);
-                                    root.f_textfilter = false;
-                                }
-                                that.close();
-                                break;
-                            case "ArrowDown":
-                                do{
-                                    that.selectedOption = that.selectedOption!==false
-                                        ? Math.min(Math.max(that.selectedOption+1, 0), that.allOptions.length-1) // currentOptions vs allOptions
-                                        : 0;
-                                } while(that.allOptions[that.selectedOption]
-                                        && that.allOptions[that.selectedOption].hidden
-                                        && that.selectedOption < that.allOptions.length-1
-                                );
-                                // fix last filtered pos
-                                if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden) {
-                                    that.selectedOption = that.currentOptions[that.currentOptions.length-1].menu_index;
-                                }
-                                kdone = true;
-                                break;
-                            case "ArrowUp":
-                                do{
-                                    that.selectedOption = that.selectedOption!==false
-                                        ? Math.min(Math.max(that.selectedOption-1, 0), that.allOptions.length-1)
-                                        : 0;
-                                } while(that.allOptions[that.selectedOption]
-                                        && that.allOptions[that.selectedOption].hidden
-                                        && that.selectedOption > 0
-                                );
-                                // fix first filtered pos
-                                if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden) {
-                                    if(that.currentOptions && that.currentOptions.length) {
-                                        that.selectedOption = that.currentOptions[0].menu_index;
-                                    }else{
-                                        that.selectedOption = false;
-                                    }
-                                }
-                                kdone = true;
-                                break;
-                            case "ArrowLeft":
-                                // should close submenu and jump back to parent
-                                // that.close(e, true);
-                                // NEED restoring events and resetting current_submenu on child close ?
-                                break;
-                            case "ArrowRight": // right do same as enter
-                            case "Enter":
-                                if(that.selectedOption !== false) {
-
-                                    if(that.allOptions[that.selectedOption]) {
-
-                                        LiteGraph.log_debug("ContextElement simCLICK",that,that.allOptions[that.selectedOption]);
-                                        // checking because of bad event removal :: FIX
-                                        if(that.allOptions[that.selectedOption].do_click) {
-                                            // that.allOptions[that.selectedOption].do_click.call(that.allOptions[that.selectedOption], that.options.event, ignore_parent_menu);
-                                            that.allOptions[that.selectedOption].do_click(that.options.event, ignore_parent_menu);
-                                        }
-                                        // No
-                                        // if(that.do_click) {
-                                            // that.do_click(that.options.event, ignore_parent_menu);
-                                        // }
-                                    }else{
-                                        LiteGraph.log_debug("ContextElement selection wrong",that.selectedOption);
-                                        // selection fix when filtering
-                                        that.selectedOption = that.selectedOption!==false
-                                            ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
-                                            : 0;
-                                    }
-
-                                }else{
-                                    if(that.filteringText.length) {
-                                        for(let iO in that.allOptions) {
-                                            if( that.allOptions[iO].style.display !== "none" // filtering for visible
-                                                && !(that.allOptions[iO].classList+"").includes("separator")
-                                                // && that.allOptions[iO].textContent !== "Add Node"
-                                                && that.allOptions[iO].textContent !== "Search"
-                                            ) {
-                                                LiteGraph.log_debug("ContextElement simCLICK - FIRST",that.allOptions[iO]);
-                                                // try cleaning parent listeners
-                                                if(root.f_textfilter) {
-                                                    if(doc) {
-                                                        doc.removeEventListener('keydown',root.f_textfilter,false);
-                                                        doc.removeEventListener('keydown',root.f_textfilter,true);
-                                                        LiteGraph.log_debug("Cleaned ParentContextMenu listener",doc,that);
-                                                    }
-                                                }
-                                                var ignore_parent_menu = false; // ?
-                                                that.allOptions[iO].do_click(e, ignore_parent_menu); // .click();
-                                                // return; //break;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                kdone = true;
-                                break;
-                            default:
-                                LiteGraph.log_debug("ContextMenu filter: keyEvent",e.keyCode,e.key);
-                                if (String.fromCharCode(e.key).match(/(\w|\s)/g)) {
-                                    // pressed key is a char
-                                } else {
-                                    // pressed key is a non-char
-                                    // DBG ("--not char break--")
-                                    // do not return
-                                    // ?? kdone = true;
-                                }
-                                break;
-                        }
-                        if(!kdone && e.key.length == 1) {
-                            that.filteringText += e.key;
-                            if(that.parentMenu) {
-                                // that.lock = true; // ??
-                                // that.parentMenu.close(e, true); // clean parent ?? lock ??
-                            }
-                        }
-                    }
-
-                    // process text filtering
-                    if(that.filteringText && that.filteringText!=="") {
-                        var aFilteredOpts = [];
-                        that.currentOptions = []; // reset filtered
-                        for(let iO in that.allOptions) {
-                            // if(that.allOptions[iO].textContent){ //.startWith(that.filteringText)){
-                            var txtCont = that.allOptions[iO].textContent;
-                            var doesContainW = txtCont.toLocaleLowerCase().includes(that.filteringText.toLocaleLowerCase());
-                            var isStartW = txtCont.toLocaleLowerCase().startsWith(that.filteringText.toLocaleLowerCase());
-                            var wSplits = txtCont.split("/");
-                            var isStartLast = false;
-                            // DBG("check splits",wSplits);
-                            isStartLast = ( (wSplits.length>1) && wSplits[wSplits.length-1].toLocaleLowerCase().startsWith(that.filteringText.toLocaleLowerCase()) )
-                                                || ( wSplits.length==1 && isStartW );
-                            var isExtra = (that.allOptions[iO].classList+"").includes("separator")
-                                                // || txtCont === "Add Node"
-                                                || txtCont === "Search";
-                            that.allOptions[iO].menu_index = iO; // original allOptions index
-                            if(doesContainW && !isExtra) {
-                                aFilteredOpts.push(that.allOptions[iO]);
-                                that.allOptions[iO].style.display = "block";
-                                that.allOptions[iO].hidden = false;
-                                that.currentOptions.push(that.allOptions[iO]); // push filtered options
-                                that.allOptions[iO].filtered_index = that.currentOptions.length-1; // filtered index
-                            }else{
-                                that.allOptions[iO].hidden = true;
-                                that.allOptions[iO].style.display = "none";
-                                that.allOptions[iO].filtered_index = false;
-                            }
-                            if (isStartLast) {
-                                // DBG("isStartLast"+that.filteringText,that.allOptions[iO].textContent);
-                                that.allOptions[iO].style.fontWeight = "bold";
-                            }else if(isStartW) {
-                                // DBG("isStartW"+that.filteringText,that.allOptions[iO].textContent);
-                                that.allOptions[iO].style.fontStyle = "italic";
-                            }
-                            // }
-                        }
-                        // selection clamp fix when filtering
-                        that.selectedOption = that.selectedOption!==false
-                            ? Math.min(Math.max(that.selectedOption, 0), that.allOptions.length-1) // currentOptions vs allOptions
-                            : 0 ;
-                        // fix first filtered pos
-                        if(that.allOptions[that.selectedOption] && that.allOptions[that.selectedOption].hidden && that.currentOptions.length) {
-                            that.selectedOption = that.currentOptions[0].menu_index;
-                        }
-                    }else{
-                        aFilteredOpts = that.allOptions; // combo_options
-                        that.currentOptions = that.allOptions; // no filtered options
-                        for(let iO in that.allOptions) {
-                            that.allOptions[iO].style.display = "block";
-                            that.allOptions[iO].style.fontStyle = "inherit";
-                            that.allOptions[iO].style.fontWeight = "inherit";
-                            that.allOptions[iO].hidden = false;
-                            that.allOptions[iO].filtered_index = false;
-                            that.allOptions[iO].menu_index = iO;
-                        }
-                    }
-                    // process selection (up down)
-                    var hasSelected = that.selectedOption !== false;
-                    if(hasSelected) {
-                        LiteGraph.log_debug("ContextMenu selection: ",that.selectedOption);
-                        for(let iO in that.allOptions) {
-                            var isSelected = that.selectedOption+"" === iO+"";
-                            // LiteGraph.log_debug("ContextMenu check sel: ",that.selectedOption,iO);
-                            if(isSelected) {
-                                // that.allOptions[iO].style.backgroundColor = "#333";
-                                that.allOptions[iO].classList.add("selected");
-                                // that.allOptions[iO].style.fontStyle = "italic";
-                            }else{
-                                that.allOptions[iO].classList.remove("selected");
-                                // that.allOptions[iO].style.backgroundColor = "none";
-                            }
-                        }
-                    }
-
-                    // height reset
-                    // var body_rect = document.body.getBoundingClientRect();
-                    // var root_rect = root.getBoundingClientRect();
-                    root.style.top = that.top_original + "px";
-                    // if (body_rect.height && top > body_rect.height - root_rect.height - 10) {
-                    // var new_top = body_rect.height - root_rect.height - 10;
-                    // root.style.top = this.top_original + "px";
-                    // }
-
-                    // DBG("filtered for ",that.filteringText);
-
-                    // do not return, do not prevent
-                    // e.preventDefault();
-                    // return false;
-                }
-                doc.addEventListener(
-                    "keydown"
-                    ,root.f_textfilter
-                    ,true,
-                );
-            }else{
-                LiteGraph.log_warn("NO root document to add context menu and event",doc,options);
-            }
-        }
-
         parent.appendChild(this.root);
     }
 
@@ -549,6 +432,12 @@ export class ContextMenu {
             // Close any current submenu
             that.current_submenu?.close(event);
 
+            // Hide filter
+            const thisFilter = Array.from(that.root.querySelectorAll(".context-menu-filter"));
+            if(thisFilter && thisFilter.length){
+                thisFilter[0].style.display = "none";
+            }
+
             // Execute global callback
             if (options.callback) {
                 LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "global callback",this,value,options,event,that,options.node);
@@ -612,21 +501,6 @@ export class ContextMenu {
      * @param {boolean} [ignore_parent_menu=false] - Whether to ignore the parent menu when closing.
      */
     close(e, ignore_parent_menu) {
-
-        if(this.root.f_textfilter) {
-            let doc = document;
-            doc.removeEventListener('keydown',this.root.f_textfilter,true);
-            doc.removeEventListener('keydown',this.root.f_textfilter,false);
-            if (e && e.target) {
-                doc = e.target.ownerDocument;
-            }
-            if (!doc) {
-                doc = document;
-            }
-            doc.removeEventListener('keydown',this.root.f_textfilter,true);
-            doc.removeEventListener('keydown',this.root.f_textfilter,false);
-        }
-
         if (this.parentMenu && !ignore_parent_menu) {
             this.parentMenu.lock = false;
             this.parentMenu.current_submenu = null;
