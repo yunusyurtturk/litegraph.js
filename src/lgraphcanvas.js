@@ -696,7 +696,11 @@ export class LGraphCanvas {
         }
         this.pointer_is_down = true;
         this.canvas.focus();
-        LiteGraph.ContextMenu.closeAll(ref_window);
+        
+        // ComfyUI compatibility
+        if(LiteGraph.ContextMenu.closeAll) LiteGraph.ContextMenu.closeAll(ref_window);
+        
+        LiteGraph.closeAllContextMenus(ref_window);
 
         // if (this.onMouse?.(e))
         //     return;
@@ -2570,6 +2574,8 @@ export class LGraphCanvas {
             const mouseCoord = this.getMouseCoordinates();
             const gloCoord = this.convertOffsetToEditorArea(mouseCoord);
             // need prompt to be absolute positioned relative to editor-area that needs relative positioning
+            
+            // TODO RESTART FROM HERE :: ERROR setting getter-only property
             e.clientX = gloCoord[0];
             e.clientY = gloCoord[1];
         }
@@ -3283,6 +3289,11 @@ export class LGraphCanvas {
      **/
     drawBackCanvas() {
         var canvas = this.bgcanvas;
+
+        // ComfyUI compatibility
+        // ensure correct sizing
+        this.bgcanvas.width = this.canvas.width;
+        this.bgcanvas.height = this.canvas.height;
 
         if (!this.bgctx) {
             this.bgctx = this.bgcanvas.getContext("2d");
@@ -5328,11 +5339,9 @@ export class LGraphCanvas {
         }else{
             LiteGraph.log_debug("lgraphcanvas","resize","passed",width,height,parent);
         }
-
         if (this.canvas.width == width && this.canvas.height == height) {
             return;
         }
-
         this.canvas.width = width;
         this.canvas.height = height;
         this.bgcanvas.width = this.canvas.width;
@@ -8676,6 +8685,7 @@ export class LGraphCanvas {
         }
         return false;
     }
+
 }
 
 /* LGraphCanvas render */

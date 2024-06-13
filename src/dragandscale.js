@@ -139,7 +139,9 @@ export class DragAndScale {
 
         const endx = startx + width / this.scale;
         const endy = starty + height / this.scale;
-        this.visible_area.set([startx, starty, endx - startx, endy - starty]);
+        const coords = [startx, starty, endx - startx, endy - starty];
+        this.visible_area.set(coords);
+        return coords;
     }
 
     /**
