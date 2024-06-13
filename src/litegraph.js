@@ -5,7 +5,7 @@ import { LGraphGroup } from "./lgraphgroup.js";
 import { LGraphCanvas } from "./lgraphcanvas.js";
 import { Subgraph, GraphInput, GraphOutput } from "./subgraph.js";
 import { DragAndScale } from "./dragandscale.js";
-import { ContextMenu } from "./contextmenu.js";
+import { ContextMenu as ContextMenuClass } from "./contextmenu.js";
 import { CallbackHandler } from "./callbackhandler.js";
 
 /**
@@ -16,11 +16,11 @@ import { CallbackHandler } from "./callbackhandler.js";
  * https://dzone.com/articles/singleton-anti-pattern
  */
 export var LiteGraph = new class {
+
     constructor() {
 
-        this.VERSION = "0.10.2";
+        this.VERSION = "a0.10.3";
 
-        // from OG LiteGraph, just bringing it back for compatibility
         this.LLink = LLink;
         this.LGraph = LGraph;
         this.LGraphNode = LGraphNode;
@@ -30,7 +30,8 @@ export var LiteGraph = new class {
         this.GraphInput = GraphInput;
         this.GraphOutput = GraphOutput;
         this.DragAndScale = DragAndScale;
-        this.ContextMenu = ContextMenu;
+        this.ContextMenuClass = ContextMenuClass;
+        this.ContextMenu = function(){ return new ContextMenuClass(...arguments); };
         this.CallbackHandler = CallbackHandler;
 
         this.CANVAS_GRID_SIZE = 10;
@@ -1180,7 +1181,7 @@ export var LiteGraph = new class {
 
     closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
-        ContextMenu.closeAll();
+        ContextMenuClass.closeAll();
     };
 
     

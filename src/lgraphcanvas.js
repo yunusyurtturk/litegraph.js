@@ -698,7 +698,7 @@ export class LGraphCanvas {
         this.canvas.focus();
         
         // ComfyUI compatibility
-        if(LiteGraph.ContextMenu.closeAll) LiteGraph.ContextMenu.closeAll(ref_window);
+        if(LiteGraph.ContextMenuClass.closeAll) LiteGraph.ContextMenuClass.closeAll(ref_window);
         
         LiteGraph.closeAllContextMenus(ref_window);
 
@@ -5167,7 +5167,7 @@ export class LGraphCanvas {
                                 that.dirty_canvas = true;
                                 return false;
                             }
-                            new LiteGraph.ContextMenu(
+                            LiteGraph.ContextMenu(
                                 text_values, {
                                     scale: Math.max(1, this.ds.scale),
                                     event: event,
@@ -5586,7 +5586,7 @@ export class LGraphCanvas {
     }
 
     static onNodeAlign(value, options, event, prev_menu, node) {
-        new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
+        LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
             event: event,
             callback: inner_clicked,
             parentMenu: prev_menu,
@@ -5598,7 +5598,7 @@ export class LGraphCanvas {
     }
 
     static onGroupAlign(value, options, event, prev_menu) {
-        new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
+        LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
             event: event,
             callback: inner_clicked,
             parentMenu: prev_menu,
@@ -5688,7 +5688,7 @@ export class LGraphCanvas {
             // LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", e, options);
             LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", entries, { event: e_check, parentMenu: prev_menu }, ref_window);
 
-            new LiteGraph.ContextMenu( entries, { event: e_check, parentMenu: prev_menu }, ref_window );
+            LiteGraph.ContextMenu( entries, { event: e_check, parentMenu: prev_menu }, ref_window );
 
         }
 
@@ -5766,7 +5766,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new LiteGraph.ContextMenu(
+        LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -5886,7 +5886,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new LiteGraph.ContextMenu(
+        LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -5921,7 +5921,7 @@ export class LGraphCanvas {
                 for (let i in value) {
                     entries.push({ content: i, value: value[i] });
                 }
-                new LiteGraph.ContextMenu(entries, {
+                LiteGraph.ContextMenu(entries, {
                     event: e,
                     callback: inner_clicked,
                     parentMenu: prev_menu,
@@ -5981,7 +5981,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new LiteGraph.ContextMenu(
+        LiteGraph.ContextMenu(
             entries,
             {
                 event: e,
@@ -6047,7 +6047,7 @@ export class LGraphCanvas {
         var options = ["Add Node",null,"Delete",null];
 
 
-        var menu = new LiteGraph.ContextMenu(options, {
+        var menu = LiteGraph.ContextMenu(options, {
             event: e,
             title: link.data != null ? link.data.constructor.name : null,
             callback: inner_clicked,
@@ -6308,7 +6308,7 @@ export class LGraphCanvas {
         }
 
         // build menu
-        var menu = new LiteGraph.ContextMenu(options, {
+        var menu = LiteGraph.ContextMenu(options, {
             event: opts.e,
             isCustomEvent: opts.isCustomEvent,
             title: (slotX && slotX.name!="" ? (slotX.name + (fromSlotType?" | ":"")) : "")+(slotX && fromSlotType ? fromSlotType : ""),
@@ -7571,7 +7571,7 @@ export class LGraphCanvas {
                     var values = options.values || [];
                     var propname = this.parentNode.dataset["property"];
                     var elem_that = this;
-                    new LiteGraph.ContextMenu(
+                    LiteGraph.ContextMenu(
                         values,{
                             event: event,
                             className: "dark",
@@ -8035,7 +8035,7 @@ export class LGraphCanvas {
     }
 
     static onMenuNodeMode(value, options, e, menu, node) {
-        new LiteGraph.ContextMenu(
+        LiteGraph.ContextMenu(
             LiteGraph.NODE_MODES,
             { event: e, callback: inner_clicked, parentMenu: menu, node: node },
         );
@@ -8097,7 +8097,7 @@ export class LGraphCanvas {
             };
             values.push(value);
         }
-        new LiteGraph.ContextMenu(values, {
+        LiteGraph.ContextMenu(values, {
             event: e,
             callback: inner_clicked,
             parentMenu: menu,
@@ -8148,7 +8148,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new LiteGraph.ContextMenu(LiteGraph.VALID_SHAPES, {
+        LiteGraph.ContextMenu(LiteGraph.VALID_SHAPES, {
             event: e,
             callback: inner_clicked,
             parentMenu: menu,
@@ -8575,7 +8575,7 @@ export class LGraphCanvas {
             return;
         }
 
-        new LiteGraph.ContextMenu(menu_info, options, ref_window);
+        LiteGraph.ContextMenu(menu_info, options, ref_window);
 
         function inner_option_clicked(v, options) {
             if (!v) {
