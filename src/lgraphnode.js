@@ -156,7 +156,11 @@ export class LGraphNode {
                 return;
             }
 
+            if(key === "inputs" || key === "outputs"){
+                // TODO do this aside, checking for name will fix node changes
+            }
             if (value === null) {
+                // CHECK should copy null value key? probably should
                 return;
             } else if (typeof value === "object") {
                 if (this[key] && typeof(this[key].configure)=="function") {
