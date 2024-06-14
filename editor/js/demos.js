@@ -236,7 +236,9 @@ LiteGraph.registerNodeType("features/shape", TestSpecialNode );
 //Show value inside the debug console
 function TestSlotsNode()
 {
+	this.addInput("A","number");
 	this.addInput("C","number");
+	this.addInput("D","number");
 	this.addOutput("A","number");
 	this.addOutput("B","number");
 	this.horizontal = true;

@@ -57,3 +57,6 @@ LiteGraph.use_deferred_actions = true; //
 // ---- WIP ----
 // i) ComfyUI has his own
 LiteGraph.context_menu_filter_enabled = false; // [WIP!]
+
+// !! DISABLED : TESTING node configure FIX SLOTS !!
+LiteGraph.reprocess_slot_while_node_configure = false;
