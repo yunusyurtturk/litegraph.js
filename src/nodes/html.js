@@ -33,11 +33,12 @@ class HtmlNode {
     static desc = "Have html inside a node";
 
     constructor() {
-        this.addInput("content", "html");
+        this.addInput("html", "html");
         this.addOutput("element", "htmlelement");
-        this.properties = { }; // scale_content: false
+        this.properties = { html: "" }; // scale_content: false
         this._added = false;
         this._el = false;
+        this.size = [210, 210/1.618];
     }
 
     createElement(){
@@ -45,15 +46,21 @@ class HtmlNode {
         if(typeof(graphcanvas)!=="undefined" && graphcanvas){
             this._el = document.createElement("div");
             this._el.style.position = "absolute";
-            this._el.style.backgroundColor = "green";
-            this._el.style.pointerEvents = "none";
+            // this._el.style.backgroundColor = "green";
+            this._el.style.pointerEvents = "";
             graphcanvas.canvas.parentNode.appendChild(this._el);
             this._el_cont = document.createElement("div");
-            this._el_cont.style.position = "relative";
+            this._el_cont.style.display = "flex";
+            this._el_cont.style.alignItems = "center";
+            this._el_cont.style.justifyContent = "center";
             this._el_cont.style.overflow = "auto";
+            this._el_cont.style.position = "relative";
             this._el_cont.style.width = "100%";
             this._el_cont.style.height = "100%";
+            // this._el_cont.style.display = "inline-block";
             this._el_cont.style.margin = "0px";
+            // this._el_cont.style.marginLeft = "auto";
+            // this._el_cont.style.marginRight = "auto";
             this._el_cont.style.padding = "0px";
             this._el.appendChild(this._el_cont);
             this._added = true;
@@ -70,9 +77,9 @@ class HtmlNode {
         if(!this.size) return;
         const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
         this._el.style.left = absPos[0] +"px";
-        this._el.style.top = absPos[1] +"px";
+        this._el.style.top = (absPos[1]+LiteGraph.NODE_SLOT_HEIGHT) +"px";
         this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
-        this._el.style.height = Math.round(this.size[1]*graphcanvas.ds.scale) +"px";
+        this._el.style.height = (Math.round(this.size[1]*graphcanvas.ds.scale)-LiteGraph.NODE_SLOT_HEIGHT) +"px";
         // if(this.properties.scale_content){
         //     const perc_size = 100/graphcanvas.ds.scale;
         //     this._el_cont.style.width = perc_size+"%";
@@ -89,9 +96,11 @@ class HtmlNode {
     // onAdded(){
     //     this.refreshElement();
     // }
-    // onConfigure(){
-    //     this.refreshElement();
-    // }
+    onConfigure(info){
+        console.info(this, "configure", info);
+        this.refreshElement();
+        this.refreshSlots();
+    }
     // onResize(){
     //     this.refreshElement();
     // }
@@ -105,24 +114,32 @@ class HtmlNode {
         this.refreshElement();
     }
     onSelected(){
-        if(this._el) this._el.style.pointerEvents = "";
-    }
-    onDeselected(){
         if(this._el) this._el.style.pointerEvents = "none";
     }
-    onExecute() {
-        // this.refreshElement();
-        var sHtml = this.getInputData(0);
-        var res = null;
+    onDeselected(){
+        if(this._el) this._el.style.pointerEvents = "";
+    }
+    refreshSlots(){
+        var sHtml = this.getInputOrProperty("html");
         if (sHtml) {
             try{
                 this._html = sHtml;
                 this._el_cont.innerHTML = sHtml;
             }catch(e) {
-                res = false;
+                console.log(this, "failed setting html content");
             }
         }
+        if(this.properties["html"] !== sHtml){
+            this.setProperty("html",sHtml);
+        }
         this.setOutputData(0,this._el_cont);
+    }
+    onPropertyChanged(){
+        this.refreshSlots();
+    }
+    onExecute() {
+        // this.refreshElement();
+        this.refreshSlots();
     }
 }
 LiteGraph.registerNodeType("html/node_html", HtmlNode);
