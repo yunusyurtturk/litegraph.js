@@ -760,6 +760,11 @@ export class LGraphNode {
         }
     }
 
+    // ComfyUI compatiblity
+    onResize(size){
+        // empty, will eventually implement
+    }
+
     changeMode(modeTo) {
         switch(modeTo) {
 
@@ -1975,7 +1980,7 @@ export class LGraphNode {
             }else{
                 return null; // -- break --
             }
-            
+
         }else{
             target_slot = target_node.getInputSlot(target_slot);
         }
