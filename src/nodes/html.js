@@ -45,6 +45,7 @@ class HtmlNode {
         if(this._added) return;
         if(typeof(graphcanvas)!=="undefined" && graphcanvas){
             this._el = document.createElement("div");
+            this._el.classList.add('lg-html-element');
             this._el.style.position = "absolute";
             // this._el.style.backgroundColor = "green";
             this._el.style.pointerEvents = "";
@@ -140,6 +141,9 @@ class HtmlNode {
     onExecute() {
         // this.refreshElement();
         this.refreshSlots();
+    }
+    onRemoved(){
+        this._el?.parentNode?.removeChilde(this._el);
     }
 }
 LiteGraph.registerNodeType("html/node_html", HtmlNode);
@@ -356,10 +360,12 @@ class HtmlCreateElement {
     constructor() {
         this.addInput("create", LiteGraph.ACTION);
         this.addInput("type", "string");
+        this.addInput("content", "html");
         this.addInput("id", "string");
         this.addInput("class", "string");
         this.addOutput("element","htmlelement");
         this.addProperty("type", "");
+        this.addProperty("content", "");
         this.addProperty("id", "");
         this.addProperty("class", "");
         this.addWidget("combo","type",this.properties["type"],"type",{values: ["div","a","span","input","form","br","hr","table","th","tr","td","h1","h2","h3","h4","h5","h6"]});
@@ -378,12 +384,14 @@ class HtmlCreateElement {
         var sType = this.getInputOrProperty("type"); // this.getInputData(1);
         var sId = this.getInputOrProperty("id"); // getInputData(2);
         var sClass = this.getInputOrProperty("class"); // getInputData(3);
+        var sContent = this.getInputOrProperty("class"); // getInputData(3);
         var res = null;
         if (sType) {
             var el = document.createElement(sType);
             if (el) {
                 if (sId) el.id = sId+"";
                 if (sClass) el.className = sClass+"";
+                if (sContent) el.innerHTML = sContent+"";
                 res = el;
             }
         }else{
