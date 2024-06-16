@@ -1944,8 +1944,9 @@ export class LGraphCanvas {
      * @method processKey
      **/
     /**
-     * TODO : processKey save keys being down, fire single first keyDown instead of constantly pressed (use new event and promote that), clean on up
      * TODO : processKey replace static keys for config values
+     * TODO : processKey save keys being down, fire single first keyDown instead of constantly pressed (use new event and promote that), clean on up
+     * NOTE should use event.repeat meanwhile
      */
     processKey = (e) => {
         if (!this.graph) {
@@ -2041,6 +2042,8 @@ export class LGraphCanvas {
             if(r!==null && (r===true || (typeof(r)=="object" && r.return_value===true))){
                 LiteGraph.log_debug("lgraphcanvas","processKey","onKeyDown has been processed with result true, prevent event bubbling");
                 block_default = true;
+            }else{
+                LiteGraph.log_verbose("lgraphcanvas","processKey","onKeyDown processed by CB handlers",r);
             }
 
         } else if (e.type == "keyup") {
@@ -8684,6 +8687,28 @@ export class LGraphCanvas {
             return this.low_quality_rendering_counter > this.low_quality_rendering_threshold;
         }
         return false;
+    }
+
+    /**
+     * Changes the background color of the canvas.
+     *
+     * @method updateBackground
+     * @param {image} String
+     * @param {clearBackgroundColor} String
+     * @
+     */
+    updateBackground(image, clearBackgroundColor) {
+        this._bg_img = new Image();
+        this._bg_img.name = image;
+        this._bg_img.src = image;
+        this._bg_img.onload = () => {
+            this.draw(true, true);
+        };
+        this.background_image = image;
+    
+        this.clear_background = true;
+        this.clear_background_color = clearBackgroundColor;
+        this._pattern = null
     }
 
 }

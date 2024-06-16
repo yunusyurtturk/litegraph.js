@@ -2641,7 +2641,7 @@ export class LGraphNode {
     }
 
     /**
- * syncObjectByProperty will ensure using the right index for node inputs and outputs when onConfigure (de-serializing) 
+    * syncObjectByProperty will ensure using the right index for node inputs and outputs when onConfigure (de-serializing) 
     * @param {*} ob_from 
     * @param {*} ob_dest 
     * @param {*} property 
