@@ -8,10 +8,11 @@ if(LiteGraph && graphcanvas){
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
 
     let ext = "key_helper";
+    let debug = false;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
-        console.info(ext, "*** onKeyDown handler ***",...arguments);
+        if(debug) console.info(ext, "*** onKeyDown handler ***",...arguments);
 
         let nSel = Object.keys(graphcanvas.selected_nodes).length;
         var aNodesFrom = [];
@@ -45,14 +46,14 @@ if(LiteGraph && graphcanvas){
 
                         if(nodeX.outputs && nodeX.outputs[0]){
                             if(keyEvent.shiftKey){
-                                console.debug(ext, "dbg: show search (using first slot)", nodeX, keyEvent);
+                                if(debug) console.debug(ext, "dbg: show search (using first slot)", nodeX, keyEvent);
                                 graphcanvas.showSearchBox(keyEvent, {node_from: nodeX, slot_from: nodeX.outputs[0], type_filter_in: nodeX.outputs[0].type});
                             }else if(keyEvent.ctrlKey){
-                                console.debug(ext, "dbg: show connection menu (using first slot)", nodeX, keyEvent);
+                                if(debug) console.debug(ext, "dbg: show connection menu (using first slot)", nodeX, keyEvent);
                                 graphcanvas.showConnectionMenu({nodeFrom: nodeX, slotFrom: nodeX.outputs[0], e: keyEvent, isCustomEvent: true});
                             }
                         }else{
-                            console.debug(ext, "dbg: no output for node");
+                            if(debug) console.debug(ext, "dbg: no output for node");
                         }
                         
                     }else{
@@ -132,7 +133,7 @@ if(LiteGraph && graphcanvas){
                 }
             break;
             default:
-                console.debug(ext, "dbg: ignore",keyEvent.keyCode);
+                if(debug) console.debug(ext, "dbg: ignore",keyEvent.keyCode);
             break;
         }
 
