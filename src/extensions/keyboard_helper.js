@@ -32,6 +32,11 @@ if(LiteGraph && graphcanvas){
                     // ---- ADD NEW NODE CONNECTED TO SELECTED ONE  ----
                     if(keyEvent.shiftKey || keyEvent.ctrlKey){
 
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+
                         // simulate position via event (little hack, should implement that on prompt itself)
                         /* const mouseCoord = graphcanvas.getMouseCoordinates();
                         const gloCoord = graphcanvas.convertOffsetToEditorArea(mouseCoord);
@@ -130,6 +135,8 @@ if(LiteGraph && graphcanvas){
                 if(nSel){
                     graphcanvas.centerOnNode(nodeX);
                     // TODO graphcanvas.centerOnSelection();
+                }else{
+                    graphcanvas.recenter();
                 }
             break;
             default:
