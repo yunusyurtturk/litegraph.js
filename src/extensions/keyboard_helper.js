@@ -100,6 +100,7 @@ if(LiteGraph && graphcanvas){
                         }
                         if(nodeX.inputs && nodeX.inputs.length){
                             const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
                             let found = false;
                             let foundNode = false;
                             for(let iO=parentNode.outputs.length-1; iO>=0; iO--){
@@ -150,6 +151,7 @@ if(LiteGraph && graphcanvas){
                         }
                         if(nodeX.inputs && nodeX.inputs.length){
                             const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
                             let found = false;
                             let foundNode = false;
                             for(let iO in parentNode.outputs){
