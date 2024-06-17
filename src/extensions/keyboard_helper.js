@@ -104,6 +104,7 @@ if(LiteGraph && graphcanvas){
                             let foundNode = false;
                             for(let iO=parentNode.outputs.length-1; iO>=0; iO--){
                                 let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
                                 for(let ioN=outNodes.length-1; ioN>=0; ioN--){
                                     if(found){
                                         // found prev cycle
