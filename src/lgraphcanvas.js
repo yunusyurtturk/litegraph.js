@@ -887,18 +887,14 @@ export class LGraphCanvas {
 
                                             if(aOLinks.length){
                                                 this.connecting = {inputs: aConnectingInputs};
+                                                LiteGraph.log_debug("lgraphcanvas","processMouseDown","moving links source slot",this.connecting);
+
                                                 let link_info = aOLinks[0];
                                                 this.connecting_node = this.graph._nodes_by_id[link_info.target_id];
                                                 this.connecting_slot = link_info.target_slot;
-                                                // this.connecting_output = this.connecting_node.outputs[this.connecting_slot];
                                                 this.connecting_input = this.connecting_node.inputs[this.connecting_slot];
-                                                this.connecting_input.slot_index = this.connecting_slot;
+                                                // this.connecting_input.slot_index = this.connecting_slot;
                                                 this.connecting_pos = this.connecting_node.getConnectionPos( true, this.connecting_slot );
-                                                LiteGraph.log_debug("lgraphcanvas","processMouseDown","moving link source slot"
-                                                    ,"connecting_node:",this.connecting_node
-                                                    ,"connecting_slot:",this.connecting_slot
-                                                    ,"connecting_input:",this.connecting_input
-                                                    ,"connecting_pos:",this.connecting_pos);
                                                 this.dirty_bgcanvas = true;
                                                 skip_action = true;
                                             }
