@@ -2652,9 +2652,9 @@ export class LGraphNode {
         var optsDef = {
             only_in_source: "append",
             // only_in_dest: "keep"
-            fallback_checks: [{
-                name: "type" //, dest_valid: "link"
-            }]
+            fallback_checks: [
+                {name: "type"}
+            ]
         };
         var opts = Object.assign({}, optsDef, optsIn);
         
@@ -2678,7 +2678,7 @@ export class LGraphNode {
             ob_from.forEach((sourceInput, sourceIndex) => {
                 if(foundInSource) return;
                 if(sourceUsedIds.includes(sourceIndex)){
-                    LiteGraph.log_verbose("syncObjectByProperty", "skip used slot", sourceInput, sourceIndex);
+                    LiteGraph.log_verbose("syncObjectByProperty", "skip used", sourceInput, sourceIndex);
                 }else if(sourceInput[property] === destInput[property]){
                     foundInSource = true;
                     sourceUsedIds.push(sourceIndex);
@@ -2688,11 +2688,11 @@ export class LGraphNode {
                         hasChangedIndex = true;
                         keys_remap[sourceIndex] = destIndex;
                     }else{
-                        LiteGraph.log_debug("syncObjectByProperty", "found same index", destInput[property], sourceInput, destIndex);
+                        LiteGraph.log_verbose("syncObjectByProperty", "found ok, same index", destInput[property], sourceInput, destIndex);
                     }
                 }
             });
-            if(!foundInSource && !hasChangedIndex){
+            if(!foundInSource){ //} && !hasChangedIndex){
                 aNotFoundInSource.push({ob: destInput, index: destIndex});
                 // TODO: should check link ?!
                 // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
@@ -2700,22 +2700,25 @@ export class LGraphNode {
         });
         if(aNotFoundInSource.length){
             if(!opts.fallback_checks.length){
-                aNotFoundInSource.forEach((destInput, destIndex) => {
-                    LiteGraph.log_debug("syncObjectByProperty", "push !foundInSource",destInput[property],destInput);
-                    new_dest[destIndex] = LiteGraph.cloneObject(destInput);
+                aNotFoundInSource.forEach((ob, i) => {
+                    LiteGraph.log_debug("syncObjectByProperty", "!using fallback checks", "push !foundInSource", ob.ob[property], ob);
+                    new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
                 });
             }else{
-                aNotFoundInSource.forEach((destInput, destIndex) => {
+                aNotFoundInSource.forEach((ob, i) => {
+                    let destInput = ob.ob;
+                    let destIndex = ob.index;
+                    // LiteGraph.log_warn("syncObjectByProperty", "CHECKING", destIndex, destInput);
                     let foundInSource = false;
+                    let hasChangedIndex = false;
                     opts.fallback_checks.forEach((checkX, ckI) => {
                         if(foundInSource) return;
-                        let hasChangedIndex = false;
                         ob_from.forEach((sourceInput, sourceIndex) => {
                             if(foundInSource) return;
                             if(sourceUsedIds.includes(sourceIndex)){
                                 LiteGraph.log_verbose("syncObjectByProperty", "aNotFoundInSource skip used slot", sourceInput, sourceIndex);
                             }else if(
-                                sourceInput[checkX] === destInput[checkX]
+                                sourceInput[checkX.name] === destInput[checkX.name]
                                 // && (!checkX.dest_valid || )
                             ){
                                 foundInSource = true;
@@ -2727,6 +2730,10 @@ export class LGraphNode {
                             }
                         });
                     });
+                    if(!foundInSource){
+                        LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource, push !foundInSource",ob.ob[property],ob);
+                        new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                    }
                 });
             }
         }
