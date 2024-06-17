@@ -89,26 +89,103 @@ if(LiteGraph && graphcanvas){
                 }
             break;
             case 38: // ArrowUp
-                // move nodes up
                 if(nSel){
-                    for(let iN=0;iN<aNodesFrom.length;iN++){
-                        aNodesFrom[iN].alignToGrid();
-                        aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
-                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
-                            def_cb: aNodesFrom[iN].onMoved
-                        });
+                    // move nodes up
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO=parentNode.outputs.length-1; iO>=0; iO--){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                for(let ioN=outNodes.length-1; ioN>=0; ioN--){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
                     }
                 }
             break;
             case 40: // ArrowDown
-                // move nodes down
                 if(nSel){
-                    for(let iN=0;iN<aNodesFrom.length;iN++){
-                        aNodesFrom[iN].alignToGrid();
-                        aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
-                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
-                            def_cb: aNodesFrom[iN].onMoved
-                        });
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO in parentNode.outputs){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
+                                for(let ioN in outNodes){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        // move nodes down
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
                     }
                 }
             break;
