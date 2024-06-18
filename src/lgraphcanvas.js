@@ -878,14 +878,14 @@ export class LGraphCanvas {
                                                 }
                                             }
 
-                                            // should disconnect output
-                                            node.disconnectOutput(i);
-                                            this.connecting_output = false;
-                                            
-                                            // TODO would need to implement multi links ....
-                                            // TODO use a trick for now: drag one and check ther rest later on
+                                            // WIP implemented multi links ....
+                                            // TODO use a trick for now: visually dragging one and check ther rest later on
 
                                             if(aOLinks.length){
+                                                // should disconnect output
+                                                node.disconnectOutput(i);
+                                                this.connecting_output = false;
+
                                                 this.connecting = {inputs: aConnectingInputs};
                                                 LiteGraph.log_debug("lgraphcanvas","processMouseDown","moving links source slot",this.connecting);
 

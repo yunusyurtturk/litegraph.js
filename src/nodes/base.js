@@ -313,15 +313,23 @@ class ConstantArray {
 
     constructor() {
         this._value = [];
-        this.addInput("json", "");
+        this.addInput("array", "");
         this.addOutput("arrayOut", "array");
         this.addOutput("length", "number");
         this.addProperty("value", "[]");
+        this.addProperty("persistent", false);
         this.widget = this.addWidget(
             "text",
             "array",
             this.properties.value,
             "value",
+        );
+        this.addWidget(
+            "combo",
+            "persistent",
+            this.properties.persistent,
+            false,
+            {values: [true, false]},
         );
         this.widgets_up = true;
         this.size = [140, 50];
@@ -343,16 +351,16 @@ class ConstantArray {
     }
 
     onExecute() {
-        var v = this.getInputData(0);
-        if (v && v.length) {
-            // clone
-            if (!this._value)
-                this._value = new Array();
-            this._value.length = v.length;
-            for (var i = 0; i < v.length; ++i)
-                this._value[i] = v[i];
-            this.changeOutputType("arrayOut", "array");
-        }
+        var v = this.getInputOrProperty("array"); //getInputData(0);
+        this._value = v;
+        // clone
+        if (!this._value || !this.properties.persistent || this.properties.persistent==="false")
+            this._value = new Array();
+        // this._value.length = v.length;
+        // for (var i = 0; i < v.length; ++i)
+        //     this._value[i] = v[i];
+        // this.changeOutputType("arrayOut", "array");
+        // TODO restart here, convert and reprocess ad array
         this.setOutputData(0, this._value);
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
     }
@@ -437,6 +445,29 @@ class ArrayElement {
     }
 }
 LiteGraph.registerNodeType("basic/array[]", ArrayElement);
+
+class ArrayAppend {
+    static title = "Array Append";
+    static desc = "Pushes an element to an array";
+
+    constructor() {
+        this.addInput("array", "array");
+        this.addInput("element", 0);
+        this.addOutput("success", "boolean");
+    }
+
+    onExecute() {
+        var array = this.getInputData(0);
+        var el = this.getInputData(1);
+        if(array !== null && array && typeof(array.push) == "function"){
+            array.push(el);
+            this.setOutputData(0, true);
+        }else{
+            this.setOutputData(0, false);
+        }
+    }
+}
+LiteGraph.registerNodeType("basic/array_append", ArrayAppend);
 
 
 class TableElement {
