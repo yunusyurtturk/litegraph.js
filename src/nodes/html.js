@@ -1,6 +1,73 @@
 
 import { LiteGraph } from "../litegraph.js";
 
+/**
+ * will extend a node class creating an html element for it available in this._el_cont, use this._html to set his content
+ * @param {object} nodeX
+ */
+function nodeEmpower_htmlElement(nodeX){
+    nodeX.htmlCreateElement = (function(){
+        if(this._added) return;
+        if(typeof(graphcanvas)!=="undefined" && graphcanvas){
+            this._el = document.createElement("div");
+            this._el.classList.add('lg-html-element');
+            this._el.style.position = "absolute";
+            // this._el.style.pointerEvents = "";
+            graphcanvas.canvas.parentNode.appendChild(this._el);
+            this._el_cont = document.createElement("div");
+            this._el_cont.style.display = "flex";
+            // this._el_cont.style.alignItems = "center";
+            this._el_cont.style.justifyContent = "center";
+            this._el_cont.style.overflow = "auto";
+            this._el_cont.style.position = "relative";
+            this._el_cont.style.width = "100%";
+            this._el_cont.style.height = "100%";
+            this._el_cont.style.margin = "0px";
+            this._el_cont.style.padding = "0px";
+            this._el.appendChild(this._el_cont);
+            this._added = true;
+            this.htmlRefreshElement();
+        }else{
+            console.warn(this,"NO CANVAS");
+        }
+    }).bind(nodeX);
+    nodeX.htmlRefreshElement = (function(){
+        if(!this._added){
+            this.htmlCreateElement();
+        }
+        if(!this.pos) return;
+        if(!this.size) return;
+        const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
+        this._el.style.left = absPos[0] +"px";
+        this._el.style.top = (absPos[1]+this.getSlotsHeight()) +"px";
+        this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
+        this._el.style.height = (Math.round(this.size[1]*graphcanvas.ds.scale)-this.getSlotsHeight()) +"px";
+        this._el_cont.innerHTML = this._html;
+    }).bind(nodeX);
+    nodeX.registerCallbackHandler("onConfigure",function(info){
+        console.info("empoweredHtmlNode",this,"onConfigure",...arguments);
+        console.info(this, "configure", info);
+        this.refreshSlots();
+        this.htmlRefreshElement();
+    });
+    nodeX.registerCallbackHandler("onDrawForeground",function(){
+        // console.info("empoweredHtmlNode",this,"onDrawForeground",...arguments);
+        this.htmlRefreshElement();
+    });
+    nodeX.registerCallbackHandler("onSelected",function(){
+        console.info("empoweredHtmlNode",this,"onSelected",...arguments);
+        // if(this._el) this._el.style.pointerEvents = "none";
+    });
+    nodeX.registerCallbackHandler("onDeselected",function(){
+        console.info("empoweredHtmlNode",this,"onDeselected",...arguments);
+        // if(this._el) this._el.style.pointerEvents = "";
+    });
+    nodeX.registerCallbackHandler("onRemoved",function(){
+        console.info("empoweredHtmlNode",this,"onRemoved",...arguments);
+        this._el?.parentNode?.removeChild(this._el);
+    });
+}
+
 class DOMSelector {
 
     static title = "DOMSelector";
@@ -37,116 +104,130 @@ class HtmlNode {
         this.addOutput("element", "htmlelement");
         this.properties = { html: "" }; // scale_content: false
         this._added = false;
-        this._el = false;
+        this._html = "";
         this.size = [210, 210/1.618];
     }
-
-    createElement(){
-        if(this._added) return;
-        if(typeof(graphcanvas)!=="undefined" && graphcanvas){
-            this._el = document.createElement("div");
-            this._el.classList.add('lg-html-element');
-            this._el.style.position = "absolute";
-            // this._el.style.backgroundColor = "green";
-            this._el.style.pointerEvents = "";
-            graphcanvas.canvas.parentNode.appendChild(this._el);
-            this._el_cont = document.createElement("div");
-            this._el_cont.style.display = "flex";
-            this._el_cont.style.alignItems = "center";
-            this._el_cont.style.justifyContent = "center";
-            this._el_cont.style.overflow = "auto";
-            this._el_cont.style.position = "relative";
-            this._el_cont.style.width = "100%";
-            this._el_cont.style.height = "100%";
-            // this._el_cont.style.display = "inline-block";
-            this._el_cont.style.margin = "0px";
-            // this._el_cont.style.marginLeft = "auto";
-            // this._el_cont.style.marginRight = "auto";
-            this._el_cont.style.padding = "0px";
-            this._el.appendChild(this._el_cont);
-            this._added = true;
-            this.refreshElement();
-        }else{
-            console.warn(this,"NO CANVAS");
-        }
-    }
-    refreshElement(){
-        if(!this._added){
-            this.createElement();
-        }
-        if(!this.pos) return;
-        if(!this.size) return;
-        const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
-        this._el.style.left = absPos[0] +"px";
-        this._el.style.top = (absPos[1]+LiteGraph.NODE_SLOT_HEIGHT) +"px";
-        this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
-        this._el.style.height = (Math.round(this.size[1]*graphcanvas.ds.scale)-LiteGraph.NODE_SLOT_HEIGHT) +"px";
-        // if(this.properties.scale_content){
-        //     const perc_size = 100/graphcanvas.ds.scale;
-        //     this._el_cont.style.width = perc_size+"%";
-        //     this._el_cont.style.height = perc_size+"%";
-        //     this._el_cont.style.left = (perc_size/2)+"%";
-        //     this._el_cont.style.top = (perc_size/2)+"%";
-        //     // this._el_cont.style.transform = "translate(-"+(perc_size/2)+"%,-"+(perc_size/2)+"%) scale("+(graphcanvas.ds.scale)+")";
-        //     // const new_scale = Math.min( 
-        //     //     availableWidth / contentWidth,
-        //     //     availableHeight / contentHeight 
-        //     // );
-        // }
-    }
-    // onAdded(){
-    //     this.refreshElement();
-    // }
-    onConfigure(info){
-        console.info(this, "configure", info);
-        this.refreshElement();
-        this.refreshSlots();
-    }
-    // onResize(){
-    //     this.refreshElement();
-    // }
-    // onDrag(){
-    //     this.refreshElement();
-    // }
-    // onMoved(){
-    //     this.refreshElement();
-    // }
-    onDrawForeground(){
-        this.refreshElement();
-    }
-    onSelected(){
-        if(this._el) this._el.style.pointerEvents = "none";
-    }
-    onDeselected(){
-        if(this._el) this._el.style.pointerEvents = "";
-    }
     refreshSlots(){
-        var sHtml = this.getInputOrProperty("html");
+        this._html = "";
+        var sHtml = this.getInputData(0);
         if (sHtml) {
             try{
                 this._html = sHtml;
-                this._el_cont.innerHTML = sHtml;
             }catch(e) {
                 console.log(this, "failed setting html content");
             }
         }
-        if(this.properties["html"] !== sHtml){
-            this.setProperty("html",sHtml);
-        }
-        this.setOutputData(0,this._el_cont);
+        this.setOutputData(0,this._el_cont?this._el_cont:false);
+        this.htmlRefreshElement?.();
     }
     onPropertyChanged(){
         this.refreshSlots();
     }
     onExecute() {
-        // this.refreshElement();
         this.refreshSlots();
     }
-    onRemoved(){
-        this._el?.parentNode?.removeChilde(this._el);
+    onPostConstruct(){
+        nodeEmpower_htmlElement(this);
     }
 }
 LiteGraph.registerNodeType("html/node_html", HtmlNode);
+
+class JsonViewerNode{
+    static title = "Json View";
+    static desc = "Show and navigate a value structure";
+    constructor() {
+        this.addInput("value", 0);
+        this.properties = { html: "" }; // scale_content: false
+        this._added = false;
+        this._html = "";
+        this.size = [210, 210/1.618];
+    }
+    onPostConstruct(){
+        nodeEmpower_htmlElement(this);
+    }
+    refreshSlots(){
+        this._html = "";
+        var sHtml = htmlJsonViewerHelper(this.getInputData(0));
+        if (sHtml) {
+            try{
+                this._html = sHtml;
+                // this._el_cont.innerHTML = sHtml;
+            }catch(e) {
+                console.log(this, "failed setting html content");
+            }
+        }
+        this.setOutputData(0,this._el_cont?this._el_cont:false);
+        this.htmlRefreshElement?.();
+    }
+    onPropertyChanged(){
+        this.refreshSlots();
+    }
+    onExecute() {
+        this.refreshSlots();
+    }
+}
+LiteGraph.registerNodeType("html/json_viewer", JsonViewerNode);
+// helper function 
+function htmlJsonViewerHelper(json, collapsible=false) {
+    var TEMPLATES = {
+        item: '<div class="json__item"><div class="json__key">%KEY%</div><div class="json__value json__value--%TYPE%">%VALUE%</div></div>',
+        itemCollapsible: '<label class="json__item json__item--collapsible"><input type="checkbox" class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>',
+        itemCollapsibleOpen: '<label class="json__item json__item--collapsible"><input type="checkbox" checked class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>'
+    };
+    function createItem(key, value, type){
+        var element = TEMPLATES.item.replace('%KEY%', key);
+        if(type == 'string') {
+            element = element.replace('%VALUE%', '"' + value + '"');
+        } else {
+            element = element.replace('%VALUE%', value);
+        }
+        element = element.replace('%TYPE%', type);
+        return element;
+    }
+    function createCollapsibleItem(key, value, type, children){
+        var tpl = 'itemCollapsible';   
+        if(collapsible) {
+            tpl = 'itemCollapsibleOpen';
+        }
+        var element = TEMPLATES[tpl].replace('%KEY%', key);
+        element = element.replace('%VALUE%', type);
+        element = element.replace('%TYPE%', type);
+        element = element.replace('%CHILDREN%', children);
+        return element;
+    }
+    function handleChildren(key, value, type) {
+        var html = '';
+        for(var item in value) { 
+            var _key = item,
+                _val = value[item];
+            html += handleItem(_key, _val);
+        }
+        return createCollapsibleItem(key, value, type, html);
+    }
+
+    function handleItem(key, value) {
+        var type = typeof value;
+        if(typeof value === 'object') {        
+            return handleChildren(key, value, type);
+        }
+        return createItem(key, value, type);
+    }
+
+    function parseObject(obj) {
+        var _result = '<div class="json">';
+        for(var item in obj) { 
+            var key = item,
+                value = obj[item];
+
+            _result += handleItem(key, value);
+        }
+        _result += '</div>';
+        return _result;
+    }
+    return parseObject(json);
+}
+
+
 
 class DOMSelectorAll {
 
