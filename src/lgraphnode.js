@@ -99,6 +99,10 @@ export class LGraphNode {
         // DBG EXCESS LiteGraph.log_verbose("lgraphNODE", "postconstruct",this,...arguments);
         // register CallbackHandler methods on this
         this.callbackhandler_setup();
+        // this cbhandler is probably not registered by a node that does not inherit default contructor, if that has not called callbackhandler_setup yet
+        this.processCallbackHandlers("onPostConstruct",{
+            def_cb: this.onPostConstruct
+        });
     }
 
     callbackhandler_setup(){
@@ -1329,15 +1333,7 @@ export class LGraphNode {
 
         // computeHeight
 
-        // minimum height calculated by slots or 1
-        const rowHeight = Math.max(
-            this.inputs ? this.inputs.length : 1,
-            this.outputs ? this.outputs.length : 1,
-            1,
-        ) * LiteGraph.NODE_SLOT_HEIGHT;
-
-        // add margin (should this be always?)
-        size[1] = rowHeight + (this.constructor.slot_start_y || 0);
+        size[1] = this.getSlotsHeight();
 
         // minimum height calculated by widgets
         let widgetsHeight = 0;
@@ -1367,6 +1363,17 @@ export class LGraphNode {
 
         size[1] += 6; // margin
         return size;
+    }
+
+    getSlotsHeight(){
+        // minimum height calculated by slots or 1
+        const rowHeight = Math.max(
+            this.inputs ? this.inputs.length : 1,
+            this.outputs ? this.outputs.length : 1,
+            1,
+        ) * LiteGraph.NODE_SLOT_HEIGHT;
+        // add margin (should this be always?)
+        return rowHeight + (this.constructor.slot_start_y || 0);
     }
 
     /**

@@ -806,10 +806,10 @@ export class LGraphCanvas {
                         LiteGraph.isInsideRectangle(
                             e.canvasX,
                             e.canvasY,
-                            node.pos[0] + node.size[0] - 5,
-                            node.pos[1] + node.size[1] - 5,
-                            10,
-                            10,
+                            node.pos[0] + node.size[0] - 9,
+                            node.pos[1] + node.size[1] - 9,
+                            18,
+                            18,
                         )
                     ) {
                         LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "start resizing node");
