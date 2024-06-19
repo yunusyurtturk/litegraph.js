@@ -202,6 +202,7 @@ export class LGraphCanvas {
         this.node_over = null;
         this.node_capturing_input = null;
         this.connecting_node = null;
+        this.connecting = false; // ment to progressively replace connecting_node
         this.highlighted_links = {};
 
         this.dragging_canvas = false;
@@ -841,8 +842,62 @@ export class LGraphCanvas {
                                     LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "clicked on output slot", node, output);
                                     
                                     if (LiteGraph.shift_click_do_break_link_from) {
+                                        // break with shift
                                         if (e.shiftKey) {
                                             node.disconnectOutput(i);
+                                        }
+                                    }else{
+                                        // move with shift
+                                        if (e.shiftKey) { // || this.move_source_link_without_shift
+                                            LiteGraph.log_debug("lgraphcanvas","processMouseDown","will move link source slot"
+                                                    ,this.connecting_node
+                                                    ,this.connecting_slot
+                                                    ,this.connecting_output
+                                                    ,this.connecting_pos);
+
+                                            // this.connecting_node
+                                            // this.connecting_output
+
+                                            var aOLinks = [];
+                                            var aONodes = [];
+                                            var aOSlots = [];
+                                            var aConnectingInputs = [];
+                                            if (output.links !== null && output.links.length) {
+                                                for(let il in output.links){
+                                                    let oNodeX = false;
+                                                    let oLnkX = this.graph.links[output.links[il]];
+                                                    if(oLnkX && this.graph._nodes_by_id[oLnkX.target_id]){
+                                                        oNodeX = this.graph._nodes_by_id[oLnkX.target_id];
+                                                        if(oNodeX){
+                                                            aOLinks.push(oLnkX);
+                                                            aONodes.push(oNodeX);
+                                                            aOSlots.push(oLnkX.target_slot);
+                                                            aConnectingInputs.push({node: oNodeX, slot: oLnkX.target_slot, link: oLnkX});
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // should disconnect output
+                                            node.disconnectOutput(i);
+                                            this.connecting_output = false;
+                                            
+                                            // TODO would need to implement multi links ....
+                                            // TODO use a trick for now: drag one and check ther rest later on
+
+                                            if(aOLinks.length){
+                                                this.connecting = {inputs: aConnectingInputs};
+                                                LiteGraph.log_debug("lgraphcanvas","processMouseDown","moving links source slot",this.connecting);
+
+                                                let link_info = aOLinks[0];
+                                                this.connecting_node = this.graph._nodes_by_id[link_info.target_id];
+                                                this.connecting_slot = link_info.target_slot;
+                                                this.connecting_input = this.connecting_node.inputs[this.connecting_slot];
+                                                // this.connecting_input.slot_index = this.connecting_slot;
+                                                this.connecting_pos = this.connecting_node.getConnectionPos( true, this.connecting_slot );
+                                                this.dirty_bgcanvas = true;
+                                                skip_action = true;
+                                            }
                                         }
                                     }
 
@@ -912,16 +967,11 @@ export class LGraphCanvas {
                                             if (!LiteGraph.click_do_break_link_to) {
                                                 node.disconnectInput(i);
                                             }
-                                            this.connecting_node = this.graph._nodes_by_id[
-                                                link_info.origin_id
-                                            ];
-                                            this.connecting_slot =
-                                                link_info.origin_slot;
-                                            this.connecting_output = this.connecting_node.outputs[
-                                                this.connecting_slot
-                                            ];
+                                            this.connecting_node = this.graph._nodes_by_id[link_info.origin_id];
+                                            this.connecting_slot = link_info.origin_slot;
+                                            this.connecting_output = this.connecting_node.outputs[this.connecting_slot];
                                             this.connecting_pos = this.connecting_node.getConnectionPos( false, this.connecting_slot );
-
+                                            LiteGraph.log_debug("lgraphcanvas","processMouseDown","moving link destination slot",this.connecting_node,this.connecting_slot,this.connecting_output,this.connecting_pos);
                                             this.dirty_bgcanvas = true;
                                             skip_action = true;
                                         }
@@ -1648,7 +1698,7 @@ export class LGraphCanvas {
                     // slot below mouse? connect
                     let slot;
                     if (this.connecting_output) {
-
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "connecting_output", this.connecting_output, "connecting_node", this.connecting_node, "connecting_slot", this.connecting_slot);
                         slot = this.isOverNodeInput(
                             node,
                             e.canvasX,
@@ -1663,7 +1713,7 @@ export class LGraphCanvas {
                         }
 
                     }else if (this.connecting_input) {
-
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseUp", "connecting_input", this.connecting_input, "connecting_node", this.connecting_node, "connecting_slot", this.connecting_slot);
                         slot = this.isOverNodeOutput(
                             node,
                             e.canvasX,
@@ -1671,7 +1721,17 @@ export class LGraphCanvas {
                         );
 
                         if (slot != -1) {
-                            node.connect(slot, this.connecting_node, this.connecting_slot); // this is inverted has output-input nature like
+
+                            if(this.connecting && this.connecting.inputs){
+                                // multi connect
+                                for(let iC in this.connecting.inputs){
+                                    node.connect(slot, this.connecting.inputs[iC].node, this.connecting.inputs[iC].slot);
+                                }
+                            }else{
+                                // default single connect
+                                node.connect(slot, this.connecting_node, this.connecting_slot); // this is inverted has output-input nature like
+                            }
+
                         } else {
                             // not on top of an input
                             // look for a good slot
@@ -1704,6 +1764,7 @@ export class LGraphCanvas {
                 this.connecting_pos = null;
                 this.connecting_node = null;
                 this.connecting_slot = -1;
+                this.connecting = false;
             } else if (this.resizing_node) { // not dragging connection
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
@@ -2521,6 +2582,12 @@ export class LGraphCanvas {
             -node.pos[1] -
             node.size[1] * 0.5 +
             (this.canvas.height * 0.5) / this.ds.scale;
+        this.setDirty(true, true);
+    }
+
+    recenter(){
+        this.ds.offset[0] = 0;
+        this.ds.offset[1] = 0;
         this.setDirty(true, true);
     }
     

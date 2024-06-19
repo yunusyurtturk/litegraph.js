@@ -2659,6 +2659,9 @@ export class LGraphNode {
         var optsDef = {
             only_in_source: "append",
             // only_in_dest: "keep"
+            fallback_checks: [
+                {name: "type"}
+            ]
         };
         var opts = Object.assign({}, optsDef, optsIn);
         
@@ -2674,6 +2677,7 @@ export class LGraphNode {
         } */
 
         let sourceUsedIds = [];
+        let aNotFoundInSource = [];
         // cycle dest, for each cycle source for matching
         ob_dest.forEach((destInput, destIndex) => {
             let hasChangedIndex = false;
@@ -2681,7 +2685,7 @@ export class LGraphNode {
             ob_from.forEach((sourceInput, sourceIndex) => {
                 if(foundInSource) return;
                 if(sourceUsedIds.includes(sourceIndex)){
-                    LiteGraph.log_verbose("syncObjectByProperty", "skip used slot", sourceInput, sourceIndex);
+                    LiteGraph.log_verbose("syncObjectByProperty", "skip used", sourceInput, sourceIndex);
                 }else if(sourceInput[property] === destInput[property]){
                     foundInSource = true;
                     sourceUsedIds.push(sourceIndex);
@@ -2691,15 +2695,55 @@ export class LGraphNode {
                         hasChangedIndex = true;
                         keys_remap[sourceIndex] = destIndex;
                     }else{
-                        LiteGraph.log_debug("syncObjectByProperty", "found same index", destInput[property], sourceInput, destIndex);
+                        LiteGraph.log_verbose("syncObjectByProperty", "found ok, same index", destInput[property], sourceInput, destIndex);
                     }
                 }
             });
-            if(!foundInSource && !hasChangedIndex){
-                LiteGraph.log_debug("syncObjectByProperty", "push !foundInSource",destInput[property],destInput);
-                new_dest[destIndex] = LiteGraph.cloneObject(destInput);
+            if(!foundInSource){ //} && !hasChangedIndex){
+                aNotFoundInSource.push({ob: destInput, index: destIndex});
+                // TODO: should check link ?!
+                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
             }
         });
+        if(aNotFoundInSource.length){
+            if(!opts.fallback_checks.length){
+                aNotFoundInSource.forEach((ob, i) => {
+                    LiteGraph.log_debug("syncObjectByProperty", "!using fallback checks", "push !foundInSource", ob.ob[property], ob);
+                    new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                });
+            }else{
+                aNotFoundInSource.forEach((ob, i) => {
+                    let destInput = ob.ob;
+                    let destIndex = ob.index;
+                    // LiteGraph.log_warn("syncObjectByProperty", "CHECKING", destIndex, destInput);
+                    let foundInSource = false;
+                    let hasChangedIndex = false;
+                    opts.fallback_checks.forEach((checkX, ckI) => {
+                        if(foundInSource) return;
+                        ob_from.forEach((sourceInput, sourceIndex) => {
+                            if(foundInSource) return;
+                            if(sourceUsedIds.includes(sourceIndex)){
+                                LiteGraph.log_verbose("syncObjectByProperty", "aNotFoundInSource skip used slot", sourceInput, sourceIndex);
+                            }else if(
+                                sourceInput[checkX.name] === destInput[checkX.name]
+                                // && (!checkX.dest_valid || )
+                            ){
+                                foundInSource = true;
+                                sourceUsedIds.push(sourceIndex);
+                                new_dest[destIndex] = LiteGraph.cloneObject(sourceInput);
+                                LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource", checkX, "push SHIFTED", destInput[checkX], destInput, sourceIndex, destIndex);
+                                hasChangedIndex = true;
+                                keys_remap[sourceIndex] = destIndex;
+                            }
+                        });
+                    });
+                    if(!foundInSource){
+                        LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource, push !foundInSource",ob.ob[property],ob);
+                        new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                    }
+                });
+            }
+        }
 
         // check only in source
         /* let only_in_source = ob_from.filter(input => !ob_dest.some(destInput => destInput[property] === input[property]));
@@ -2712,6 +2756,9 @@ export class LGraphNode {
         let only_in_source = [];
         ob_from.forEach((sourceInput, sourceIndex) => {
             let foundInDest = false;
+            if(sourceUsedIds.includes(sourceIndex)){
+                return;
+            }
             ob_dest.forEach((destInput, destIndex) => {
                 if(foundInDest) return;
                 if(destUsedIds.includes(destIndex)){
@@ -2722,7 +2769,8 @@ export class LGraphNode {
                 }
             });
             if(!foundInDest){
-                LiteGraph.log_debug("syncObjectByProperty", "push only_in_source",sourceInput[property],sourceInput);
+                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
+                LiteGraph.log_debug("syncObjectByProperty", "push only_in_source", sourceInput[property], sourceInput);
                 new_dest.push(LiteGraph.cloneObject(sourceInput));
                 keys_remap[sourceIndex] = new_dest.length-1;
                 only_in_source.push(sourceInput);

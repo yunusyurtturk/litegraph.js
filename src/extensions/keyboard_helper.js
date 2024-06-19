@@ -8,10 +8,11 @@ if(LiteGraph && graphcanvas){
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
 
     let ext = "key_helper";
+    let debug = false;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
-        console.info(ext, "*** onKeyDown handler ***",...arguments);
+        if(debug) console.info(ext, "*** onKeyDown handler ***",...arguments);
 
         let nSel = Object.keys(graphcanvas.selected_nodes).length;
         var aNodesFrom = [];
@@ -31,6 +32,11 @@ if(LiteGraph && graphcanvas){
                     // ---- ADD NEW NODE CONNECTED TO SELECTED ONE  ----
                     if(keyEvent.shiftKey || keyEvent.ctrlKey){
 
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+
                         // simulate position via event (little hack, should implement that on prompt itself)
                         /* const mouseCoord = graphcanvas.getMouseCoordinates();
                         const gloCoord = graphcanvas.convertOffsetToEditorArea(mouseCoord);
@@ -45,14 +51,14 @@ if(LiteGraph && graphcanvas){
 
                         if(nodeX.outputs && nodeX.outputs[0]){
                             if(keyEvent.shiftKey){
-                                console.debug(ext, "dbg: show search (using first slot)", nodeX, keyEvent);
+                                if(debug) console.debug(ext, "dbg: show search (using first slot)", nodeX, keyEvent);
                                 graphcanvas.showSearchBox(keyEvent, {node_from: nodeX, slot_from: nodeX.outputs[0], type_filter_in: nodeX.outputs[0].type});
                             }else if(keyEvent.ctrlKey){
-                                console.debug(ext, "dbg: show connection menu (using first slot)", nodeX, keyEvent);
+                                if(debug) console.debug(ext, "dbg: show connection menu (using first slot)", nodeX, keyEvent);
                                 graphcanvas.showConnectionMenu({nodeFrom: nodeX, slotFrom: nodeX.outputs[0], e: keyEvent, isCustomEvent: true});
                             }
                         }else{
-                            console.debug(ext, "dbg: no output for node");
+                            if(debug) console.debug(ext, "dbg: no output for node");
                         }
                         
                     }else{
@@ -83,26 +89,106 @@ if(LiteGraph && graphcanvas){
                 }
             break;
             case 38: // ArrowUp
-                // move nodes up
                 if(nSel){
-                    for(let iN=0;iN<aNodesFrom.length;iN++){
-                        aNodesFrom[iN].alignToGrid();
-                        aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
-                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
-                            def_cb: aNodesFrom[iN].onMoved
-                        });
+                    // move nodes up
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO=parentNode.outputs.length-1; iO>=0; iO--){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
+                                for(let ioN=outNodes.length-1; ioN>=0; ioN--){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
                     }
                 }
             break;
             case 40: // ArrowDown
-                // move nodes down
                 if(nSel){
-                    for(let iN=0;iN<aNodesFrom.length;iN++){
-                        aNodesFrom[iN].alignToGrid();
-                        aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
-                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
-                            def_cb: aNodesFrom[iN].onMoved
-                        });
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO in parentNode.outputs){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
+                                for(let ioN in outNodes){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        // move nodes down
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
                     }
                 }
             break;
@@ -129,10 +215,12 @@ if(LiteGraph && graphcanvas){
                 if(nSel){
                     graphcanvas.centerOnNode(nodeX);
                     // TODO graphcanvas.centerOnSelection();
+                }else{
+                    graphcanvas.recenter();
                 }
             break;
             default:
-                console.debug(ext, "dbg: ignore",keyEvent.keyCode);
+                if(debug) console.debug(ext, "dbg: ignore",keyEvent.keyCode);
             break;
         }
 

@@ -15,9 +15,21 @@ if(LiteGraph && graphcanvas) (function(){
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
+        
+        // skip from second event on
+        if(keyEvent.repeat){
+            return;
+        }
+
         if(debug) console.info(ext, "*** onKeyDown handler ***", ...arguments);
         switch(keyEvent.keyCode){
             case 65: // a
+            
+                // skip if shift o ctrl
+                if(keyEvent.shiftKey || keyEvent.ctrlKey){
+                    if(debug) console.verbose(ext, "skip shift or ctlr", ...arguments);
+                    break;
+                }
 
                 // check selected nodes
                 let nSel = Object.keys(graphcanvas.selected_nodes).length;

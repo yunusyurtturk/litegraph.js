@@ -15,6 +15,11 @@ if(LiteGraph && graphcanvas) (function(){
         switch(keyEvent.keyCode){
             case 113: // F2
                 
+                // skip from second event on
+                if(keyEvent.repeat){
+                    return;
+                }
+
                 // check selected nodes
                 let nSel = Object.keys(graphcanvas.selected_nodes).length;
                 
