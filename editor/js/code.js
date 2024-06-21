@@ -5,8 +5,10 @@ import { Editor } from "../../src/litegraph-editor.js";
 export var gl = null; // webgl_canvas
 
 // remove to prevent access from the console (why should?)
-if (typeof(global)=="object") global.LiteGraph = LiteGraph;
-if (typeof(window)=="object") window.LiteGraph = LiteGraph;
+// if (typeof(global)=="object") global.LiteGraph = LiteGraph;
+// if (typeof(window)=="object") window.LiteGraph = LiteGraph;
+
+LiteGraph.initialize();
 
 LiteGraph.log_info("LiteGraph included");
 

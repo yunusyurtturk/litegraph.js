@@ -5807,6 +5807,7 @@ export class LGraphCanvas {
                 }
 
                 entry[2].removable = true;
+                entry[2].optional = true;
                 var data = { content: label, value: entry };
                 if (entry[1] == LiteGraph.ACTION) {
                     data.className = "event";
@@ -5827,7 +5828,7 @@ export class LGraphCanvas {
 
         if (LiteGraph.do_add_triggers_slots) { // canvas.allow_addOutSlot_onExecuted
             if (node.findInputSlot("onTrigger") == -1) {
-                entries.push({content: "On Trigger", value: ["onTrigger", LiteGraph.EVENT, {nameLocked: true, removable: true}], className: "event"}); // , opts: {}
+                entries.push({content: "On Trigger", value: ["onTrigger", LiteGraph.EVENT, {nameLocked: true, removable: true, optional: true}], className: "event"}); // , opts: {}
             }
         }
 
@@ -5917,6 +5918,7 @@ export class LGraphCanvas {
                     label = entry[2].label;
                 }
                 entry[2].removable = true;
+                entry[2].optional = true;
                 var data = { content: label, value: entry };
                 if (entry[1] == LiteGraph.EVENT) {
                     data.className = "event";
@@ -5945,6 +5947,7 @@ export class LGraphCanvas {
                         {
                             nameLocked: true,
                             removable: true,
+                            optional: true,s
                         },
                     ],
                     className: "event",

@@ -3,6 +3,7 @@
  * press a than click on a node
  */
 
+import { LiteGraph } from "../litegraph.js";
 
 if(LiteGraph && graphcanvas) (function(){
     // enable only if debugging CallbackHandler itself

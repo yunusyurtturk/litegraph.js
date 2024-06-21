@@ -42,8 +42,12 @@ function nodeEmpower_htmlElement(nodeX){
         this._el.style.top = (absPos[1]+this.getSlotsHeight()) +"px";
         this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
         this._el.style.height = (Math.round(this.size[1]*graphcanvas.ds.scale)-this.getSlotsHeight()) +"px";
-        this._el_cont.innerHTML = this._html;
     }).bind(nodeX);
+    nodeX.setHtml = function(html){
+        this._html = html;
+        if(!this._el||!this._el_cont) this.htmlRefreshElement();
+        this._el_cont.innerHTML = this._html;
+    }
     nodeX.registerCallbackHandler("onConfigure",function(info){
         console.info("empoweredHtmlNode",this,"onConfigure",...arguments);
         console.info(this, "configure", info);
@@ -108,17 +112,19 @@ class HtmlNode {
         this.size = [210, 210/1.618];
     }
     refreshSlots(){
-        this._html = "";
+        this.htmlRefreshElement?.();
         var sHtml = this.getInputData(0);
         if (sHtml) {
             try{
-                this._html = sHtml;
+                this.setHtml?.(sHtml); // this._html = sHtml;
             }catch(e) {
                 console.log(this, "failed setting html content");
+                this.setHtml?.(""); // this._html = "";
             }
+        }else{
+            this.setHtml?.(""); // this._html = "";
         }
         this.setOutputData(0,this._el_cont?this._el_cont:false);
-        this.htmlRefreshElement?.();
     }
     onPropertyChanged(){
         this.refreshSlots();
@@ -146,18 +152,20 @@ class JsonViewerNode{
         nodeEmpower_htmlElement(this);
     }
     refreshSlots(){
-        this._html = "";
+        this.htmlRefreshElement?.();
         var sHtml = htmlJsonViewerHelper(this.getInputData(0));
         if (sHtml) {
             try{
-                this._html = sHtml;
+                this.setHtml?.(sHtml); // this._html = sHtml;
                 // this._el_cont.innerHTML = sHtml;
             }catch(e) {
+                this.setHtml?.("");
                 console.log(this, "failed setting html content");
             }
+        }else{
+            this.setHtml?.("");
         }
         this.setOutputData(0,this._el_cont?this._el_cont:false);
-        this.htmlRefreshElement?.();
     }
     onPropertyChanged(){
         this.refreshSlots();
@@ -170,9 +178,20 @@ LiteGraph.registerNodeType("html/json_viewer", JsonViewerNode);
 // helper function 
 function htmlJsonViewerHelper(json, collapsible=false) {
     var TEMPLATES = {
-        item: '<div class="json__item"><div class="json__key">%KEY%</div><div class="json__value json__value--%TYPE%">%VALUE%</div></div>',
-        itemCollapsible: '<label class="json__item json__item--collapsible"><input type="checkbox" class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>',
-        itemCollapsibleOpen: '<label class="json__item json__item--collapsible"><input type="checkbox" checked class="json__toggle"/><div class="json__key">%KEY%</div><div class="json__value json__value--type-%TYPE%">%VALUE%</div>%CHILDREN%</label>'
+        item:   '<div class="json__item">'
+                    +'<div class="json__key">%KEY%</div>'
+                    +'<div class="json__value json__value--%TYPE%">%VALUE%</div>'
+                +'</div>',
+        itemCollapsible:    '<label class="json__item json__item--collapsible">'
+                                +'<input type="checkbox" class="json__toggle"/><div class="json__key">%KEY%</div>'
+                                +'<div class="json__value json__value--type-%TYPE%">%VALUE%</div>'
+                                +'%CHILDREN%'
+                            +'</label>',
+        itemCollapsibleOpen:    '<label class="json__item json__item--collapsible">'
+                                    +'<input type="checkbox" checked class="json__toggle"/><div class="json__key">%KEY%</div>'
+                                    +'<div class="json__value json__value--type-%TYPE%">%VALUE%</div>'
+                                    +'%CHILDREN%'
+                                +'</label>'
     };
     function createItem(key, value, type){
         var element = TEMPLATES.item.replace('%KEY%', key);
@@ -214,7 +233,7 @@ function htmlJsonViewerHelper(json, collapsible=false) {
     }
 
     function parseObject(obj) {
-        var _result = '<div class="json">';
+        var _result = '<div class="html__json">';
         for(var item in obj) { 
             var key = item,
                 value = obj[item];

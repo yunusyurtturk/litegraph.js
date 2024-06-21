@@ -1,9 +1,9 @@
-.json {
+.html__json {
     font-family: monospace;
     font-size: 16px;
 }
 
-.json > .json__item {
+.html__json > .json__item {
     display: block;
 }
 
@@ -11,7 +11,7 @@
     display: none;
     margin-top: 10px;
     padding-left: 20px;
-    user-select: none;
+    /*user-select: none;*/
 }
 
 .json__item--collapsible {

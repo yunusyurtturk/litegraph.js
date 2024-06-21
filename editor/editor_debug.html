@@ -17,6 +17,7 @@
 
     <script type="module" src="../src/litegraph.js"></script>
     <script type="module" src="../src/litegraph-editor.js"></script>
+	<script type="module" src="js/code.js"></script>
     <script type="module" src="js/defaults_debug.js"></script>
 
     <script type="module" src="../src/nodes/base.js"></script>
@@ -39,13 +40,14 @@
 	<script type="module" src="../src/nodes/others.js"></script>
 
     <script type="module" src="js/demos.js"></script>
-	<script type="module" src="js/code.js"></script>
 
 	<script type="module" src="../src/extensions/renamer.js"></script>
 	<script type="module" src="../src/extensions/autoconnect.js"></script>
 	<script type="module" src="../src/extensions/keyboard_helper.js"></script>
 
-	<script>
+	<script type="module">
+		import { LiteGraph } from "../src/litegraph.js";
+
 		window.addEventListener("load", (event) => {
 
 			/**

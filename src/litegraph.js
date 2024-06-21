@@ -29,7 +29,7 @@ export class LiteGraph {
     static GraphOutput = GraphOutput;
     static DragAndScale = DragAndScale;
     static ContextMenuClass = ContextMenuClass;
-    // static ContextMenu = function(){ return new ContextMenuClass(...arguments); };
+    static ContextMenu = function(){}; // return new ContextMenuClass(...arguments); };
     static CallbackHandler = CallbackHandler;
 
     static CANVAS_GRID_SIZE = 10;
@@ -205,12 +205,14 @@ export class LiteGraph {
     static cb_handler = false;
     static debug = true; // WIP
 
-    constructor(){
+    static initialize(){
         this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
         this.logging_set_level(2);
         
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
         this.callbackhandler_setup();
+
+        this.ContextMenu = function(){ return new ContextMenuClass(...arguments); };
 
         // base inclusion
         this.includeBasicNodes();

@@ -332,7 +332,7 @@ LiteGraph.registerNodeType("math3d/vec3-dot", Math3DVec3Dot);
 
 
 // if glMatrix is installed...
-if (glMatrix) {
+if (typeof(glMatrix)!=="undefined") {
     class Math3DQuaternion {
 
         static title = "Quaternion";

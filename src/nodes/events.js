@@ -54,7 +54,7 @@ class TriggerEvent {
 LiteGraph.registerNodeType("events/trigger", TriggerEvent);
 
 // Sequence of events
-class Sequence {
+class EvSequence {
 
     static title = "Sequence";
     static desc = "Triggers a sequence of events when an event arrives";
@@ -102,7 +102,7 @@ class Sequence {
         }
     }
 }
-LiteGraph.registerNodeType("events/sequence", Sequence);
+LiteGraph.registerNodeType("events/sequence", EvSequence);
 
 
 // Sequence of events
