@@ -15,199 +15,197 @@ import { CallbackHandler } from "./callbackhandler.js";
  * Try to avoid adding things to this class.
  * https://dzone.com/articles/singleton-anti-pattern
  */
-export var LiteGraph = new class {
+export class LiteGraph {
 
-    constructor() {
+    static VERSION = "a0.11.0";
 
-        this.VERSION = "a0.10.3";
+    static LLink = LLink;
+    static LGraph = LGraph;
+    static LGraphNode = LGraphNode;
+    static LGraphGroup = LGraphGroup;
+    static LGraphCanvas = LGraphCanvas;
+    static Subgraph = Subgraph;
+    static GraphInput = GraphInput;
+    static GraphOutput = GraphOutput;
+    static DragAndScale = DragAndScale;
+    static ContextMenuClass = ContextMenuClass;
+    // static ContextMenu = function(){ return new ContextMenuClass(...arguments); };
+    static CallbackHandler = CallbackHandler;
 
-        this.LLink = LLink;
-        this.LGraph = LGraph;
-        this.LGraphNode = LGraphNode;
-        this.LGraphGroup = LGraphGroup;
-        this.LGraphCanvas = LGraphCanvas;
-        this.Subgraph = Subgraph;
-        this.GraphInput = GraphInput;
-        this.GraphOutput = GraphOutput;
-        this.DragAndScale = DragAndScale;
-        this.ContextMenuClass = ContextMenuClass;
-        this.ContextMenu = function(){ return new ContextMenuClass(...arguments); };
-        this.CallbackHandler = CallbackHandler;
+    static CANVAS_GRID_SIZE = 10;
+    static NODE_TITLE_HEIGHT = 30;
+    static NODE_TITLE_TEXT_Y = 20;
+    static NODE_SLOT_HEIGHT = 20;
+    static NODE_WIDGET_HEIGHT = 20;
+    static NODE_WIDTH = 140;
+    static NODE_MIN_WIDTH = 50;
+    static NODE_COLLAPSED_RADIUS = 10;
+    static NODE_COLLAPSED_WIDTH = 80;
+    static NODE_TITLE_COLOR = "#999";
+    static NODE_SELECTED_TITLE_COLOR = "#FFF";
+    static NODE_TEXT_SIZE = 14;
+    static NODE_TEXT_COLOR = "#AAA";
+    static NODE_SUBTEXT_SIZE = 12;
+    static NODE_DEFAULT_COLOR = "#333";
+    static NODE_DEFAULT_BGCOLOR = "#353535";
+    static NODE_DEFAULT_BOXCOLOR = "#666";
+    static NODE_DEFAULT_SHAPE = "box";
+    static NODE_BOX_OUTLINE_COLOR = "#FFF";
+    static DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
+    static DEFAULT_GROUP_FONT = 24;
 
-        this.CANVAS_GRID_SIZE = 10;
-        this.NODE_TITLE_HEIGHT = 30;
-        this.NODE_TITLE_TEXT_Y = 20;
-        this.NODE_SLOT_HEIGHT = 20;
-        this.NODE_WIDGET_HEIGHT = 20;
-        this.NODE_WIDTH = 140;
-        this.NODE_MIN_WIDTH = 50;
-        this.NODE_COLLAPSED_RADIUS = 10;
-        this.NODE_COLLAPSED_WIDTH = 80;
-        this.NODE_TITLE_COLOR = "#999";
-        this.NODE_SELECTED_TITLE_COLOR = "#FFF";
-        this.NODE_TEXT_SIZE = 14;
-        this.NODE_TEXT_COLOR = "#AAA";
-        this.NODE_SUBTEXT_SIZE = 12;
-        this.NODE_DEFAULT_COLOR = "#333";
-        this.NODE_DEFAULT_BGCOLOR = "#353535";
-        this.NODE_DEFAULT_BOXCOLOR = "#666";
-        this.NODE_DEFAULT_SHAPE = "box";
-        this.NODE_BOX_OUTLINE_COLOR = "#FFF";
-        this.DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
-        this.DEFAULT_GROUP_FONT = 24;
+    static WIDGET_BGCOLOR = "#222";
+    static WIDGET_OUTLINE_COLOR = "#666";
+    static WIDGET_TEXT_COLOR = "#DDD";
+    static WIDGET_SECONDARY_TEXT_COLOR = "#999";
 
-        this.WIDGET_BGCOLOR = "#222";
-        this.WIDGET_OUTLINE_COLOR = "#666";
-        this.WIDGET_TEXT_COLOR = "#DDD";
-        this.WIDGET_SECONDARY_TEXT_COLOR = "#999";
+    static LINK_COLOR = "#9A9";
+    static EVENT_LINK_COLOR = "#A86";
+    static CONNECTING_LINK_COLOR = "#AFA";
 
-        this.LINK_COLOR = "#9A9";
-        this.EVENT_LINK_COLOR = "#A86";
-        this.CONNECTING_LINK_COLOR = "#AFA";
+    static MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
+    static DEFAULT_POSITION = [100, 100]; // default node position
+    static VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
 
-        this.MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
-        this.DEFAULT_POSITION = [100, 100]; // default node position
-        this.VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
+    // shapes are used for nodes but also for slots
+    static BOX_SHAPE = 1;
+    static ROUND_SHAPE = 2;
+    static CIRCLE_SHAPE = 3;
+    static CARD_SHAPE = 4;
+    static ARROW_SHAPE = 5;
+    static GRID_SHAPE = 6; // intended for slot arrays
 
-        // shapes are used for nodes but also for slots
-        this.BOX_SHAPE = 1;
-        this.ROUND_SHAPE = 2;
-        this.CIRCLE_SHAPE = 3;
-        this.CARD_SHAPE = 4;
-        this.ARROW_SHAPE = 5;
-        this.GRID_SHAPE = 6; // intended for slot arrays
+    // enums
+    static INPUT = 1;
+    static OUTPUT = 2;
 
-        // enums
-        this.INPUT = 1;
-        this.OUTPUT = 2;
+    static EVENT = -1; // for outputs
+    static ACTION = -1; // for inputs
 
-        this.EVENT = -1; // for outputs
-        this.ACTION = -1; // for inputs
+    static NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper
+    static NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
+    static ALWAYS = 0;
+    static ON_EVENT = 1;
+    static NEVER = 2;
+    static ON_TRIGGER = 3;
+    static ON_REQUEST = 4; // used from event-based nodes, where ancestors are recursively executed on needed
 
-        this.NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper
-        this.NODE_MODES_COLORS = ["#666","#422","#333","#224","#626"]; // use with node_box_coloured_by_mode
-        this.ALWAYS = 0;
-        this.ON_EVENT = 1;
-        this.NEVER = 2;
-        this.ON_TRIGGER = 3;
-        this.ON_REQUEST = 4; // used from event-based nodes, where ancestors are recursively executed on needed
+    static UP = 1;
+    static DOWN = 2;
+    static LEFT = 3;
+    static RIGHT = 4;
+    static CENTER = 5;
 
-        this.UP = 1;
-        this.DOWN = 2;
-        this.LEFT = 3;
-        this.RIGHT = 4;
-        this.CENTER = 5;
+    static LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
+    static STRAIGHT_LINK = 0;
+    static LINEAR_LINK = 1;
+    static SPLINE_LINK = 2;
 
-        this.LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
-        this.STRAIGHT_LINK = 0;
-        this.LINEAR_LINK = 1;
-        this.SPLINE_LINK = 2;
+    static NORMAL_TITLE = 0;
+    static NO_TITLE = 1;
+    static TRANSPARENT_TITLE = 2;
+    static AUTOHIDE_TITLE = 3;
+    static VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
 
-        this.NORMAL_TITLE = 0;
-        this.NO_TITLE = 1;
-        this.TRANSPARENT_TITLE = 2;
-        this.AUTOHIDE_TITLE = 3;
-        this.VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
+    static proxy = null; // used to redirect calls
+    static node_images_path = "";
 
-        this.proxy = null; // used to redirect calls
-        this.node_images_path = "";
+    static catch_exceptions = true;
+    static throw_errors = true;
+    static allow_scripts = false; // nodes should be check this value before executing unsafe code :: does not prevent anything in the main library, implement in nodes :: if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
+    static use_deferred_actions = true; // executes actions during the graph execution flow
+    static registered_node_types = {}; // nodetypes by string
+    static node_types_by_file_extension = {}; // used for dropping files in the canvas
+    static Nodes = {}; // node types by classname
+    static Globals = {}; // used to store vars between graphs
 
-        this.catch_exceptions = true;
-        this.throw_errors = true;
-        this.allow_scripts = false; // nodes should be check this value before executing unsafe code :: does not prevent anything in the main library, implement in nodes :: if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
-        this.use_deferred_actions = true; // executes actions during the graph execution flow
-        this.registered_node_types = {}; // nodetypes by string
-        this.node_types_by_file_extension = {}; // used for dropping files in the canvas
-        this.Nodes = {}; // node types by classname
-        this.Globals = {}; // used to store vars between graphs
+    static searchbox_extras = {}; // used to add extra features to the search box
+    static auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
 
-        this.searchbox_extras = {}; // used to add extra features to the search box
-        this.auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
+    static node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
+    static node_box_coloured_by_mode = false; // [true!] nodebox based on node mode, visual feedback
 
-        this.node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
-        this.node_box_coloured_by_mode = false; // [true!] nodebox based on node mode, visual feedback
+    static dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+    static dialog_close_on_mouse_leave_delay = 500;
 
-        this.dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-        this.dialog_close_on_mouse_leave_delay = 500;
+    static shift_click_do_break_link_from = true; // [false!] prefer false if too easy to break links - implement with ALT or TODO custom keys
+    static click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
 
-        this.shift_click_do_break_link_from = true; // [false!] prefer false if too easy to break links - implement with ALT or TODO custom keys
-        this.click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
+    static search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
+    static search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+    static search_hide_on_mouse_leave_time = 1200; // time before hiding
+    static search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
 
-        this.search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
-        this.search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-        this.search_hide_on_mouse_leave_time = 1200; // time before hiding
-        this.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
+    static show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
+    static show_node_tooltip_use_descr_property = false; // enabled tooltip from desc when property tooltip not set
 
-        this.show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
-        this.show_node_tooltip_use_descr_property = false; // enabled tooltip from desc when property tooltip not set
+    static auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
 
-        this.auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
+    // set these values if not using auto_load_slot_types
+    static registered_slot_in_types = {}; // slot types for nodeclass
+    static registered_slot_out_types = {}; // slot types for nodeclass
+    static slot_types_in = []; // slot types IN
+    static slot_types_out = []; // slot types OUT
+    static slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
+    static slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
 
-        // set these values if not using auto_load_slot_types
-        this.registered_slot_in_types = {}; // slot types for nodeclass
-        this.registered_slot_out_types = {}; // slot types for nodeclass
-        this.slot_types_in = []; // slot types IN
-        this.slot_types_out = []; // slot types OUT
-        this.slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
-        this.slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
+    static graphDefaultConfig = {
+        align_to_grid: true,
+        links_ontop: false,
+    };
 
-        this.graphDefaultConfig = {
-            align_to_grid: true,
-            links_ontop: false,
-        };
+    static alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
+    static alt_shift_drag_connect_clone_with_input = true; // [true!] very handy, when cloning, keep input connections with SHIFT
 
-        this.alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
-        this.alt_shift_drag_connect_clone_with_input = true; // [true!] very handy, when cloning, keep input connections with SHIFT
+    static do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
 
-        this.do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
+    static allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
 
-        this.allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
+    static middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
 
-        this.middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
+    static release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
+    static two_fingers_opens_menu = false; // [true!] using pointer event isPrimary, when is not simulate right click
 
-        this.release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
-        this.two_fingers_opens_menu = false; // [true!] using pointer event isPrimary, when is not simulate right click
+    static backspace_delete = true; // [false!] delete key is enough, don't mess with text edit and custom
 
-        this.backspace_delete = true; // [false!] delete key is enough, don't mess with text edit and custom
+    static ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
-        this.ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+    static actionHistory_enabled = false; // cntrlZ, cntrlY
+    static actionHistoryMaxSave = 300;
 
-        this.actionHistory_enabled = false; // cntrlZ, cntrlY
-        this.actionHistoryMaxSave = 300;
+    /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
+    static refreshAncestorsOnTriggers = false; // [true!]
+    static refreshAncestorsOnActions = false; // [true!]
+    static ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
 
-        /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
-        this.refreshAncestorsOnTriggers = false; // [true!]
-        this.refreshAncestorsOnActions = false; // [true!]
-        this.ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
+    // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
+    // use this if you must have node IDs that are unique across all graphs and subgraphs.
+    static use_uuids = false;
 
-        // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
-        // use this if you must have node IDs that are unique across all graphs and subgraphs.
-        this.use_uuids = false;
+    // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
+    static context_menu_filter_enabled = false; // FIX event handler removal
 
-        // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
-        this.context_menu_filter_enabled = false; // FIX event handler removal
+    // ,"editor_alpha" //= 1; //used for transition
 
-        // ,"editor_alpha" //= 1; //used for transition
+    static canRemoveSlots = true;
+    static canRemoveSlots_onlyOptional = true;
+    static canRenameSlots = true;
+    static canRenameSlots_onlyOptional = true;
 
-        this.canRemoveSlots = true;
-        this.canRemoveSlots_onlyOptional = true;
-        this.canRenameSlots = true;
-        this.canRenameSlots_onlyOptional = true;
+    static ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
+    static ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
+    static preventAncestorRecalculation = false; // OLD(?) when calculating the ancestors, set a flag to prevent recalculate the subtree
 
-        this.ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
-        this.ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
-        this.preventAncestorRecalculation = false; // OLD(?) when calculating the ancestors, set a flag to prevent recalculate the subtree
+    static allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
 
-        this.ensureUniqueExecutionAndActionCall = true; // NEW ensure single event execution
+    static reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
 
-        this.allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
+    static log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
-        this.context_menu_filter_enabled = false; // [WIP!]
-        
-        this.reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
+    static cb_handler = false;
+    static debug = true; // WIP
 
-        this.log_methods = ['error', 'warn', 'info', 'log', 'debug'];
-
+    constructor(){
         this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
         this.logging_set_level(2);
         
@@ -218,13 +216,14 @@ export var LiteGraph = new class {
         this.includeBasicNodes();
     }
 
-    includeBasicNodes(){
+    static includeBasicNodes(){
         this.registerNodeType("graph/subgraph", Subgraph);
         this.registerNodeType("graph/input", GraphInput);
         this.registerNodeType("graph/output", GraphOutput);
     }
 
-    callbackhandler_setup(){
+    static callbackhandler_setup(){
+        if(this.cb_handler) return;
         this.cb_handler = new CallbackHandler(this);
         // register CallbackHandler methods on this // Should move as class standard class methods?
         this.registerCallbackHandler = function(){ return this.cb_handler.registerCallbackHandler(...arguments); };
@@ -232,26 +231,29 @@ export var LiteGraph = new class {
         this.processCallbackHandlers = function(){ return this.cb_handler.processCallbackHandlers(...arguments); };
     }
 
-    // registerCallbackHandler(){
-    //     this.cb_handler.registerCallbackHandler();
-    // }
-    // unregisterCallbackHandler(){
-    //     this.cb_handler.unregisterCallbackHandler();
-    // }
-    // processCallbackHandlers(){
-    //     this.cb_handler.processCallbackHandlers();
-    // }
+    static registerCallbackHandler(){
+        this.callbackhandler_setup();
+        this.cb_handler.registerCallbackHandler(...arguments);
+    }
+    static unregisterCallbackHandler(){
+        this.callbackhandler_setup();
+        this.cb_handler.unregisterCallbackHandler(...arguments);
+    }
+    static processCallbackHandlers(){
+        this.callbackhandler_setup();
+        this.cb_handler.processCallbackHandlers(...arguments);
+    }
 
     // set logging debug_level
     // from -1 (none), 0 (error), .. to 5 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
     // could be set higher to enable verbose logging
-    logging_set_level(v) {
+    static logging_set_level(v) {
         this.debug_level = Number(v);
     }
 
     // entrypoint to debug log
     // pass 0 (error) to 4 (debug), (or more for verbose logging)
-    logging(lvl/**/) { // arguments
+    static logging(lvl/**/) { // arguments
 
         if(!this.debug && this.debug_level>0) {
             // force only errors
@@ -282,22 +284,22 @@ export var LiteGraph = new class {
 
         console[lvl_txt]("[LG]",...clean_args(arguments));
     }
-    log_error() {
+    static log_error() {
         this.logging(0,...arguments);
     }
-    log_warn() {
+    static log_warn() {
         this.logging(1,...arguments);
     }
-    log_info() {
+    static log_info() {
         this.logging(2,...arguments);
     }
-    log_log() {
+    static log_log() {
         this.logging(3,...arguments);
     }
-    log_debug() {
+    static log_debug() {
         this.logging(4,...arguments);
     }
-    log_verbose() {
+    static log_verbose() {
         this.logging(5,...arguments);
     }
 
@@ -307,7 +309,7 @@ export var LiteGraph = new class {
      * @param {String} type name of the node and path
      * @param {Class} base_class class containing the structure of a node
      */
-    registerNodeType(type, base_class) {
+    static registerNodeType(type, base_class) {
         if (!base_class.prototype) {
             throw new Error("Cannot register a simple object, it must be a class with a prototype");
         }
@@ -442,7 +444,7 @@ export var LiteGraph = new class {
      * @method unregisterNodeType
      * @param {String|Object} type name of the node or the node constructor itself
      */
-    unregisterNodeType(type) {
+    static unregisterNodeType(type) {
         const base_class =
             type.constructor === String
                 ? this.registered_node_types[type]
@@ -462,7 +464,7 @@ export var LiteGraph = new class {
     * @param {String|Object} type name of the node or the node constructor itself
     * @param {String} slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
     */
-    registerNodeAndSlotType(type, slot_type, out = false) {
+    static registerNodeAndSlotType(type, slot_type, out = false) {
         const base_class =
             type.constructor === String &&
             this.registered_node_types[type] !== "anonymous"
@@ -517,7 +519,7 @@ export var LiteGraph = new class {
      * @param {String} name node name with namespace (p.e.: 'math/sum')
      * @param {Object} object methods expected onCreate, inputs, outputs, properties, onExecute
      */
-    buildNodeClassFromObject(
+    static buildNodeClassFromObject(
         name,
         object,
     ) {
@@ -566,7 +568,7 @@ export var LiteGraph = new class {
      * @param {String} return_type [optional] string with the return type, otherwise it will be generic
      * @param {Object} properties [optional] properties to be configurable
      */
-    wrapFunctionAsNode(name, func, param_types, return_type, properties) {
+    static wrapFunctionAsNode(name, func, param_types, return_type, properties) {
         const names = LiteGraph.getParameterNames(func);
 
         const code = names.map((name, i) => {
@@ -602,7 +604,7 @@ export var LiteGraph = new class {
     /**
      * Removes all previously registered node's types
      */
-    clearRegisteredTypes() {
+    static clearRegisteredTypes() {
         this.registered_node_types = {};
         this.node_types_by_file_extension = {};
         this.Nodes = {};
@@ -615,7 +617,7 @@ export var LiteGraph = new class {
      * @method addNodeMethod
      * @param {Function} func
      */
-    addNodeMethod(name, func) {
+    static addNodeMethod(name, func) {
         LGraphNode.prototype[name] = func;
         for (var i in this.registered_node_types) {
             var type = this.registered_node_types[i];
@@ -634,7 +636,7 @@ export var LiteGraph = new class {
      * @param {Object} options to set options
      */
 
-    createNode(type, title, options = {}) {
+    static createNode(type, title, options = {}) {
         const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
@@ -690,7 +692,7 @@ export var LiteGraph = new class {
      * @param {String} type full name of the node class. p.e. "math/sin"
      * @return {Class} the node class
      */
-    getNodeType(type) {
+    static getNodeType(type) {
         return this.registered_node_types[type];
     }
 
@@ -701,7 +703,7 @@ export var LiteGraph = new class {
      * @return {Array} array with all the node classes
      */
 
-    getNodeTypesInCategory(category, filter) {
+    static getNodeTypesInCategory(category, filter) {
         const filteredTypes = Object.values(this.registered_node_types).filter((type) => {
             if (type.filter !== filter) {
                 return false;
@@ -728,7 +730,7 @@ export var LiteGraph = new class {
      * @param {String} filter only nodes with ctor.filter equal can be shown
      * @return {Array} array with all the names of the categories
      */
-    getNodeTypesCategories(filter) {
+    static getNodeTypesCategories(filter) {
         const categories = { "": 1 };
 
         Object.values(this.registered_node_types).forEach((type) => {
@@ -744,7 +746,7 @@ export var LiteGraph = new class {
 
 
     // debug purposes: reloads all the js scripts that matches a wildcard
-    reloadNodes(folder_wildcard) {
+    static reloadNodes(folder_wildcard) {
         var tmp = document.getElementsByTagName("script");
         // weird, this array changes by its own, so we use a copy
         var script_files = [];
@@ -789,7 +791,7 @@ export var LiteGraph = new class {
      * @param {object} obj the object to parse clean
      * @returns the cleaned object
      */
-    parseStringifyObject(obj, target) {
+    static parseStringifyObject(obj, target) {
         // method 1: not working
         // return JSON.parse(JSON.stringify(obj));
 
@@ -805,7 +807,7 @@ export var LiteGraph = new class {
         return this.cloneObject(obj, target);
     }
 
-    cloneObject(obj, target) {
+    static cloneObject(obj, target) {
         if (obj == null) {
             return null;
         }
@@ -825,7 +827,7 @@ export var LiteGraph = new class {
     /*
         * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
         */
-    uuidv4() {
+    static uuidv4() {
         return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,(a) => (a^Math.random()*16>>a/4).toString(16));
     }
 
@@ -836,7 +838,7 @@ export var LiteGraph = new class {
      * @param {String} type_b
      * @return {Boolean} true if they can be connected
      */
-    isValidConnection(type_a, type_b) {
+    static isValidConnection(type_a, type_b) {
         if (type_a === "" || type_a === "*") type_a = 0;
         if (type_b === "" || type_b === "*") type_b = 0;
 
@@ -874,7 +876,7 @@ export var LiteGraph = new class {
      * @param {Object} data it could contain info of how the node should be configured
      * @return {Boolean} true if they can be connected
      */
-    registerSearchboxExtra(node_type, description, data) {
+    static registerSearchboxExtra(node_type, description, data) {
         this.searchbox_extras[description.toLowerCase()] = {
             type: node_type,
             desc: description,
@@ -891,7 +893,7 @@ export var LiteGraph = new class {
      * @param {Function} on_error in case of an error
      * @return {FileReader|Promise} returns the object used to
      */
-    fetchFile( url, type, on_complete, on_error ) {
+    static fetchFile( url, type, on_complete, on_error ) {
         if(!url)
             return null;
 
@@ -942,7 +944,7 @@ export var LiteGraph = new class {
     }
 
     // @TODO These weren't even directly bound, so could be used as free functions
-    compareObjects(a, b) {
+    static compareObjects(a, b) {
         const aKeys = Object.keys(a);
 
         if (aKeys.length !== Object.keys(b).length) {
@@ -952,15 +954,14 @@ export var LiteGraph = new class {
         return aKeys.every((key) => a[key] === b[key]);
     }
 
-    distance(a, b) {
+    static distance(a, b) {
         const [xA, yA] = a;
         const [xB, yB] = b;
 
         return Math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2);
     }
 
-
-    colorToString(c) {
+    static colorToString(c) {
         return (
             "rgba(" +
             Math.round(c[0] * 255).toFixed() +
@@ -974,7 +975,7 @@ export var LiteGraph = new class {
         );
     }
 
-    canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
+    static canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
         var words = (text+"").trim().split(' ');
         var line = '';
         var ret = {lines: [], maxW: 0, height: 0};
@@ -1002,11 +1003,11 @@ export var LiteGraph = new class {
         return ret;
     }
 
-    isInsideRectangle(x, y, left, top, width, height) {
+    static isInsideRectangle(x, y, left, top, width, height) {
         return x > left && x < left + width && y > top && y < top + height;
     }
 
-    isBoundingInsideRectangle(bounding, left, top, width, height) {
+    static isBoundingInsideRectangle(bounding, left, top, width, height) {
         let x = bounding[0];
         let y = bounding[1];
         if(!(x > left && x < left + width && y > top && y < top + height))
@@ -1019,7 +1020,7 @@ export var LiteGraph = new class {
     }
 
     // [minx,miny,maxx,maxy]
-    growBounding(bounding, x, y) {
+    static growBounding(bounding, x, y) {
         if (x < bounding[0]) {
             bounding[0] = x;
         } else if (x > bounding[2]) {
@@ -1034,12 +1035,12 @@ export var LiteGraph = new class {
     }
 
     // point inside bounding box
-    isInsideBounding(p, bb) {
+    static isInsideBounding(p, bb) {
         return p[0] >= bb[0][0] && p[1] >= bb[0][1] && p[0] <= bb[1][0] && p[1] <= bb[1][1];
     }
 
     // bounding overlap, format: [ startx, starty, width, height ]
-    overlapBounding(a, b, add) {
+    static overlapBounding(a, b, add) {
         add = add || 0;
         const A_end_x = a[0] + a[2] + add;
         const A_end_y = a[1] + a[3] + add;
@@ -1052,7 +1053,7 @@ export var LiteGraph = new class {
     // Convert a hex value to its decimal value - the inputted hex must be in the
     //	format of a hex triplet - the kind we use for HTML colours. The function
     //	will return an array with three values.
-    hex2num(hex) {
+    static hex2num(hex) {
         if (hex.charAt(0) == "#") {
             hex = hex.slice(1);
         } // Remove the '#' char - if there is one.
@@ -1072,7 +1073,7 @@ export var LiteGraph = new class {
 
     // Give a array with three values as the argument and the function will return
     //	the corresponding hex triplet.
-    num2hex(triplet) {
+    static num2hex(triplet) {
         var hex_alphabets = "0123456789ABCDEF";
         var hex = "#";
         var int1, int2;
@@ -1085,7 +1086,7 @@ export var LiteGraph = new class {
         return hex;
     }
 
-    closeAllContextMenus = function(ref_window) {
+    static  closeAllContextMenus = function(ref_window) {
         ref_window = ref_window || window;
 
         var elements = ref_window.document.querySelectorAll(".litecontextmenu");
@@ -1107,7 +1108,7 @@ export var LiteGraph = new class {
         }
     };
 
-    extendClass = (target, origin) => {
+    static extendClass = (target, origin) => {
         for (let i in origin) {
             // copy class properties
             if (target.hasOwnProperty(i)) {
@@ -1151,7 +1152,7 @@ export var LiteGraph = new class {
     }
 
     // used to create nodes from wrapping functions
-    getParameterNames = function(func) {
+    static getParameterNames = function(func) {
         return (func + "")
             .replace(/[/][/].*$/gm, "") // strip single-line comments
             .replace(/\s+/g, "") // strip white space
@@ -1163,7 +1164,7 @@ export var LiteGraph = new class {
             .filter(Boolean); // split & filter [""]
     };
 
-    clamp = (v, a, b) => {
+    static clamp = (v, a, b) => {
         return a > v ? a : b < v ? b : v;
     };
 
@@ -1181,7 +1182,7 @@ export var LiteGraph = new class {
         console.error?.("Removed and being re-integrated sorta");
     } */
 
-    closeAllContextMenus = () => {
+    static closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenuClass.closeAll();
     };
@@ -1189,6 +1190,7 @@ export var LiteGraph = new class {
     
 }
 
+// !¿ TODO MOVE THESE HELPERS ?!
 // timer that works everywhere
 if (typeof performance != "undefined") {
     LiteGraph.getTime = performance.now.bind(performance);
@@ -1205,6 +1207,7 @@ if (typeof performance != "undefined") {
     };
 }
 
+// @BROWSERONLY
 if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
     window.requestAnimationFrame =
         window.webkitRequestAnimationFrame ||
