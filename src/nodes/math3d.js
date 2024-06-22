@@ -1,10 +1,10 @@
 import { LiteGraph } from "../litegraph.js";
 
-const DEG2RAD = 0.0174532925;
-
 class Math3DMat4 {
 
     static title = "mat4";
+
+    DEG2RAD = 0.0174532925;
 
     constructor() {
         this.addInput("T", "vec3");
@@ -43,7 +43,7 @@ class Math3DMat4 {
             mat4.translate(M, M, T);
             if (this.properties.R_in_degrees) {
                 temp_vec3.set(R);
-                vec3.scale(temp_vec3, temp_vec3, DEG2RAD);
+                vec3.scale(temp_vec3, temp_vec3, this.DEG2RAD);
                 quat.fromEuler(Q, temp_vec3);
             } else quat.fromEuler(Q, R);
             mat4.fromQuat(temp_mat4, Q);
@@ -418,7 +418,7 @@ if (typeof(glMatrix)!=="undefined") {
             if (euler == null) {
                 euler = this.properties.euler;
             }
-            vec3.scale(this._degs, euler, DEG2RAD);
+            vec3.scale(this._degs, euler, this.DEG2RAD);
             if (this.properties.use_yaw_pitch_roll)
                 this._degs = [this._degs[2], this._degs[0], this._degs[1]];
             var R = quat.fromEuler(this._value, this._degs);
@@ -445,7 +445,7 @@ if (typeof(glMatrix)!=="undefined") {
             // @BUG: R is unused, but I don't know where it *should* be used because I don't know this math off the top
             // It *probably* goes in one of the next two lines
             var R = quat.toEuler(this._value, q);
-            vec3.scale(this._value, this._value, DEG2RAD);
+            vec3.scale(this._value, this._value, this.DEG2RAD);
             this.setOutputData(0, this._value);
         }
     }

@@ -1,5 +1,7 @@
 import { LiteGraph } from "./litegraph.js";
 import { CallbackHandler } from "./callbackhandler.js";
+import { LGraphCanvas } from "./lgraphcanvas.js";
+import { LLink } from "./llink.js";
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -159,7 +161,7 @@ export class LGraph {
      * @param {GraphCanvas} graph_canvas
      */
     attachCanvas(graphcanvas) {
-        if ( ! (graphcanvas instanceof LiteGraph.LGraphCanvas) ) {
+        if ( ! (graphcanvas instanceof LGraphCanvas) ) {
             throw new Error("attachCanvas expects a LiteGraph.LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
@@ -1456,7 +1458,7 @@ export class LGraph {
             if (!link.serialize) {
                 // weird bug I havent solved yet
                 LiteGraph.log_warn("lgraph", "serialize", "weird LLink bug, link info is not a LLink but a regular object");
-                var link2 = new LiteGraph.LLink();
+                var link2 = new LLink();
                 for (var j in link) {
                     link2[j] = link[j];
                 }
@@ -1519,7 +1521,7 @@ export class LGraph {
                     LiteGraph.log_warn("lgraph", "configure", "serialized graph link data contains errors, skipping.",link_data,i,data.links);
                     continue;
                 }
-                var link = new LiteGraph.LLink();
+                var link = new LLink();
                 link.configure(link_data);
                 links[link.id] = link;
             }

@@ -5,7 +5,7 @@ import { gl } from "../../editor/js/code.js";
 // TODO move this
 // LiteGraph.LGraphCanvas.link_type_colors["Texture"] = "#987";
 
-const DEG2RAD = 0.0174532925;
+let DEG2RAD = 0.0174532925;
 
 
 export class LGraphTexture {

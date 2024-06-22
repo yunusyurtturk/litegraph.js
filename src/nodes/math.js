@@ -217,6 +217,8 @@ class MathRand {
     }
 
     onExecute() {
+        
+        // CHECK THIS, simple mixed inputOrProperty
         if (this.inputs) {
             for (var i = 0; i < this.inputs.length; i++) {
                 var input = this.inputs[i];
@@ -833,20 +835,11 @@ class MathCompare {
     }
 
     onExecute() {
-        var A = this.getInputData(0);
-        var B = this.getInputData(1);
-        if (A !== undefined) {
-            this.properties["A"] = A;
-        } else {
-            A = this.properties["A"];
-        }
-
-        if (B !== undefined) {
-            this.properties["B"] = B;
-        } else {
-            B = this.properties["B"];
-        }
-
+        var A = Number(this.getInputOrProperty("A"));
+        var B = Number(this.getInputOrProperty("B"));
+        this.setProperty("A",A);
+        this.setProperty("B",B);
+        
         for (var i = 0, l = this.outputs.length; i < l; ++i) {
             var output = this.outputs[i];
             if (!output.links || !output.links.length) {

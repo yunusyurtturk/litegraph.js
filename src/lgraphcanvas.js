@@ -1,5 +1,7 @@
 import { LiteGraph } from "./litegraph.js";
 import { CallbackHandler } from "./callbackhandler.js";
+import { DragAndScale } from "./dragandscale.js";
+import { ContextMenu } from "./contextmenu.js";
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -42,7 +44,7 @@ export class LGraphCanvas {
             canvas = document.querySelector(canvas);
         }
 
-        this.ds = new LiteGraph.DragAndScale();
+        this.ds = new DragAndScale();
         this.zoom_modify_alpha = true; // otherwise it generates ugly patterns when scaling down too much
 
         this.title_text_font = `${LiteGraph.NODE_TEXT_SIZE}px Arial`;
@@ -699,7 +701,7 @@ export class LGraphCanvas {
         this.canvas.focus();
         
         // ComfyUI compatibility
-        if(LiteGraph.ContextMenuClass.closeAll) LiteGraph.ContextMenuClass.closeAll(ref_window);
+        if(LiteGraph.ContextMenu.closeAll) LiteGraph.ContextMenu.closeAll(ref_window);
         
         LiteGraph.closeAllContextMenus(ref_window);
 
@@ -5947,7 +5949,7 @@ export class LGraphCanvas {
                         {
                             nameLocked: true,
                             removable: true,
-                            optional: true,s
+                            optional: true,
                         },
                     ],
                     className: "event",

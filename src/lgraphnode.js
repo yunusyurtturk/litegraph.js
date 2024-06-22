@@ -2612,7 +2612,7 @@ export class LGraphNode {
         }
         if (LiteGraph.preventAncestorRecalculation) {
             if (this.graph.node_ancestorsCalculated && this.graph.node_ancestorsCalculated[this.id]) {
-                LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "already calculated subtree! Prevent! "+this.id+":"+this.order);
+                LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "already calculated subtree! Prevent! "+this.id+":"+this.order, this);
                 return;
             }
         }
@@ -2625,7 +2625,7 @@ export class LGraphNode {
             opts.options = {};
         opts.options = Object.assign({action_call: opts.action},opts.options);
 
-        LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "ancestors processing", this.id+":"+this.order+" "+opts.options.action_call);
+        LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "ancestors processing", this.id+":"+this.order+" "+opts.options.action_call, this);
 
         this.graph.ancestorsCall = true; // prevent triggering slots
 
@@ -2637,6 +2637,7 @@ export class LGraphNode {
         };
         var aAncestors = this.graph.getAncestors(this,optsAncestors);
         for(var iN in aAncestors) {
+            LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "doExecute ancestor", iN, aAncestors[iN], opts.param, opts.options);
             aAncestors[iN].doExecute(opts.param, opts.options);
             this.graph.node_ancestorsCalculated[aAncestors[iN].id] = true;
         }
