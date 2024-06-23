@@ -2638,27 +2638,39 @@ export class LGraphCanvas {
      * @method adjustMouseEvent
      **/
     adjustMouseEvent(e) {
-        var clientX_rel = 0;
-        var clientY_rel = 0;
+        let clientX_rel = 0;
+        let clientX = 0;
+        let clientY_rel = 0;
+        let clientY = 0;
 
         if(!e.clientX){
             // simulate position via event (little hack)
             const mouseCoord = this.getMouseCoordinates();
             const gloCoord = this.convertOffsetToEditorArea(mouseCoord);
+            
             // need prompt to be absolute positioned relative to editor-area that needs relative positioning
             
-            // TODO RESTART FROM HERE :: ERROR setting getter-only property
-            e.clientX = gloCoord[0];
-            e.clientY = gloCoord[1];
+            // prevent error for some read-only events: setting getter-only property
+            try{
+                e.clientX = gloCoord[0];
+                e.clientY = gloCoord[1];
+            }catch(e){
+                LiteGraph.log_debug("lgraphcanvas","adjustMouseEvent","failed set custom prop on event",e);
+            }
+            clientX = gloCoord[0];
+            clientY = gloCoord[1];
+        }else{
+            clientX = e.clientX;
+            clientY = e.clientY;
         }
 
         if (this.canvas) {
             var b = this.canvas.getBoundingClientRect();
-            clientX_rel = e.clientX - b.left;
-            clientY_rel = e.clientY - b.top;
+            clientX_rel = clientX - b.left;
+            clientY_rel = clientY - b.top;
         } else {
-            clientX_rel = e.clientX;
-            clientY_rel = e.clientY;
+            clientX_rel = clientX;
+            clientY_rel = clientY;
         }
 
         // e.deltaX = clientX_rel - this.last_mouse_position[0];
@@ -5789,6 +5801,8 @@ export class LGraphCanvas {
         if(r!==null && (typeof(r)=="object")){
             if(typeof(r.return_value)=="object"){
                 options = r.return_value;
+            }else if(typeof(r.length)!=="undefined"){
+                options = r;
             }
         }
 
@@ -5893,6 +5907,8 @@ export class LGraphCanvas {
         if(r!==null && (typeof(r)=="object")){
             if(typeof(r.return_value)=="object"){
                 options = r.return_value;
+            }else if(typeof(r.length)!=="undefined"){
+                options = r;
             }
         }
 
@@ -7079,14 +7095,15 @@ export class LGraphCanvas {
                     var extra = LiteGraph.searchbox_extras[i];
                     // var passTextSearch = extra.desc.toLowerCase().indexOf(str) !== -1;
                     let str_node = extra.desc.toLowerCase();
+                    let str_title = extra.title ? extra.title.toLowerCase() : "";
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for(let i_srch of a_srch_parts){
-                        LiteGraph.log_verbose("search","check",i_srch,str_node); // verbose debug, make new higher level
+                        // DBG EXCESS LiteGraph.log_verbose("search","check",i_srch,str_node); // verbose debug, make new higher level
                         if(i_srch.trim() === "") continue;
-                        if(str_node.indexOf(i_srch) == -1){
+                        if(str_node.indexOf(i_srch) == -1 && str_title.indexOf(i_srch) == -1){
                             passTextSearch = false;
-                            LiteGraph.log_verbose("search","do not pass",i_srch,str_node); // verbose debug, make new higher level
+                            // DBG EXCESS LiteGraph.log_verbose("search","do not pass",i_srch,str_node); // verbose debug, make new higher level
                             break;
                         }
                     }
@@ -7105,16 +7122,31 @@ export class LGraphCanvas {
                 }
 
                 var filtered = null;
+                // filter by nodetype
                 if (Array.prototype.filter) { // filter supported
                     let keys = Object.keys( LiteGraph.registered_node_types ); // types
                     filtered = keys.filter( inner_test_filter );
                 } else {
                     filtered = [];
                     for (let i in LiteGraph.registered_node_types) {
-                        if( inner_test_filter(i) )
+                        if( inner_test_filter(i) ){
                             filtered.push(i);
+                        }
                     }
                 }
+                // add filter by title and desc
+                // TODO
+                /* if (Array.prototype.filter) { // filter supported
+                    let keys = Object.keys( LiteGraph.registered_node_types ); // types
+                    filtered = keys.filter( inner_test_filter );
+                } else {
+                    filtered = [];
+                    for (let i in LiteGraph.registered_node_types) {
+                        if( inner_test_filter(i) ){
+                            filtered.push(i);
+                        }
+                    }
+                } */
 
                 for (let i = 0; i < filtered.length; i++) {
                     addResult(filtered[i]);
@@ -8473,6 +8505,8 @@ export class LGraphCanvas {
                 if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
                     options[0].disabled = false;
                 }
+            }else if(typeof(r.length)!=="undefined" && r.length){
+                options[0].disabled = false;
             }
         }
 
@@ -8484,6 +8518,8 @@ export class LGraphCanvas {
                 if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
                     options[1].disabled = false;
                 }
+            }else if(typeof(r.length)!=="undefined" && r.length){
+                options[0].disabled = false;
             }
         }
 

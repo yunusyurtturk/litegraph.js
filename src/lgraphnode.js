@@ -411,7 +411,7 @@ export class LGraphNode {
     /**
      * sets the output data
      * @method setOutputData
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {*} data
      */
     setOutputData(slot, data) {
@@ -419,12 +419,13 @@ export class LGraphNode {
             return;
         }
 
-        /* if(slot?.constructor === String) {
+        if(slot?.constructor === String) {
             // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
             slot = this.findOutputSlot(slot);
-        }else if (slot == -1 || slot >= this.outputs.length) {
+        }
+        if (slot == -1 || slot >= this.outputs.length) {
             return;
-        } */
+        }
         slot = this.getOutputSlot(slot);
 
         var output_info = this.outputs[slot];
@@ -447,12 +448,16 @@ export class LGraphNode {
     /**
      * sets the output data type, useful when you want to be able to overwrite the data type
      * @method setOutputDataType
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {String} datatype
      */
     setOutputDataType(slot, type) {
         if (!this.outputs) {
             return;
+        }
+        if(slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findOutputSlot(slot);
         }
         if (slot == -1 || slot >= this.outputs.length) {
             return;
@@ -475,7 +480,7 @@ export class LGraphNode {
     /**
      * Retrieves the input data (data traveling through the connection) from one slot
      * @method getInputData
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
      * @return {*} data or if it is not connected returns undefined
      */
@@ -484,7 +489,11 @@ export class LGraphNode {
             return;
         } // undefined;
 
-        if (slot >= this.inputs.length || this.inputs[slot].link == null) {
+        if(slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findInputSlot(slot);
+        }
+        if (slot == -1 || slot >= this.inputs.length) {
             return;
         }
 
@@ -527,14 +536,17 @@ export class LGraphNode {
     /**
      * Retrieves the input data type (in case this supports multiple input types)
      * @method getInputDataType
-     * @param {number} slot
+     * @param {number|string} slot
      * @return {String} datatype in string format
      */
     getInputDataType(slot) {
         if (!this.inputs) {
             return null;
         } // undefined;
-
+        if(slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findInputSlot(slot);
+        }
         if (slot >= this.inputs.length || this.inputs[slot].link == null) {
             return null;
         }
@@ -558,6 +570,7 @@ export class LGraphNode {
 
     /**
      * Retrieves the input data from one slot using its name instead of slot number
+     * OLD: IMPLEMENTED in getInputData,use that instead
      * @method getInputDataByName
      * @param {String} slot_name
      * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
@@ -967,7 +980,7 @@ export class LGraphNode {
     /**
      * Triggers a slot event in this node: cycle output slots and launch execute/action on connected nodes
      * @method triggerSlot
-     * @param {Number} slot the index of the output slot
+     * @param {Number|string} slot the output slot
      * @param {*} param
      * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
      */

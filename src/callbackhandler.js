@@ -178,9 +178,12 @@ export class CallbackHandler {
                         || (typeof(stepRet.result_priority)!=="undefined" && cbResPriority <= stepRet.result_priority)
                         || (typeof(stepRet.result_priority)==="undefined" && (!cbResPriority || cbResPriority <= 0))
                     ){
-                        if(cbHandle.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","checkStepRet","set result",stepRet,oCbInfo);
+                        if(cbHandle.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","checkStepRet","set result from object",stepRet,oCbInfo);
                         cbRet = stepRet;
                     }
+                }else{
+                    if(cbHandle.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","checkStepRet","set result, not object",stepRet,oCbInfo);
+                    cbRet = stepRet;
                 }
                 if(typeof(stepRet.stop_replication)!=="undefined" && stepRet.stop_replication){
                     if(cbHandle.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","checkStepRet","stop_replication",oCbInfo);
