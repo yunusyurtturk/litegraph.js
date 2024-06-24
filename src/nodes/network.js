@@ -61,6 +61,7 @@ class LGWebSocket {
 
             this._last_sent_data[i] = json;
             this._ws.send(json);
+            console.log?.("WS sent by execute",i,json);
         }
 
         for (let i = 1; i < this.outputs.length; ++i) {
@@ -79,59 +80,106 @@ class LGWebSocket {
             url = "ws://" + url;
         }
         this._ws = new WebSocket(url);
+    
         this._ws.onopen = function () {
-            console.log?.("ready");
+            console.log?.("WS ready");
             that.boxcolor = "#6C6";
         };
+    
         this._ws.onmessage = function (e) {
             that.boxcolor = "#AFA";
-            var data = JSON.parse(e.data);
-            if (data.room && data.room != that.properties.room) {
+            console.info("WS on message", e.data);
+    
+            var data = e.data;
+    
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (err) {
+                    // not JSON, keep it as a string
+                }
+            } else if (data instanceof ArrayBuffer) {
+                // Handling binary data
+                console.log("Received binary data");
+                var byteArray = new Uint8Array(data);
+                // Example: Convert binary data to a string (assuming UTF-8 encoding)
+                var binaryString = new TextDecoder('utf-8').decode(byteArray);
+                console.log("Binary data as string:", binaryString);
+                // Example: Convert binary data to a base64 string (useful for images)
+                var binaryBase64 = btoa(String.fromCharCode.apply(null, byteArray));
+                console.log("Binary data as base64:", binaryBase64);
+                data = binaryString; // or binaryBase64, depending on your use case
+            }
+    
+            if (typeof(data.room) !== "undefined" && data.room && data.room != that.properties.room) {
+                console.debug("WS : rec 0 BIS");
                 return;
             }
-            if (data.type == 1) {
+            
+            if (typeof(data.type) !== "undefined" && data.type == 1) {
                 if (data.data.object_class && LiteGraph[data.data.object_class]) {
                     var obj = null;
                     try {
                         obj = new LiteGraph[data.data.object_class](data.data);
                         that.triggerSlot(0, obj);
+                        console.debug("WS : rec 1");
                     } catch (err) {
+                        console.debug("WS : rec 1 BIS");
                         return;
                     }
                 } else {
-                    that.triggerSlot(0, data.data);
+                    if (typeof(data.data) !== "undefined") {
+                        that.triggerSlot(0, data.data);
+                        console.debug("WS : rec 2");
+                    } else {
+                        // that.triggerSlot(0, data);
+                        console.debug("WS : rec 2 BIS");
+                    }
                 }
             } else {
-                that._last_received_data[data.channel || 0] = data.data;
+                if (typeof(data.data) !== "undefined") {
+                    that._last_received_data[typeof(data.channel) !== "undefined" ? data.channel : 0] = data.data;
+                    console.debug("WS : rec 3");
+                } else {
+                    // that.triggerSlot(0);
+                    console.debug("WS : rec 3 BIS");
+                }
             }
         };
+    
         this._ws.onerror = function (_e) {
-            console.log?.("couldnt connect to websocket");
+            console.log?.("WS couldn't connect to websocket");
             that.boxcolor = "#E88";
         };
+    
         this._ws.onclose = function (_e) {
-            console.log?.("connection closed");
+            console.log?.("WS connection closed");
             that.boxcolor = "#000";
         };
     }
+    
 
     send(data) {
         if (!this._ws || this._ws.readyState != WebSocket.OPEN) {
             return;
         }
-        this._ws.send(JSON.stringify({ type: 1, msg: data }));
+        const msg = JSON.stringify({ type: 1, msg: data });
+        this._ws.send(msg);
+        console.log?.("WS sent",msg);
     }
 
     onAction(action, param) {
         if (!this._ws || this._ws.readyState != WebSocket.OPEN) {
             return;
         }
-        this._ws.send({
+        const msg = JSON.stringify({
             type: 1,
             room: this.properties.room,
             action: action,
             data: param,
         });
+        this._ws.send(msg);
+        console.log?.("WS sent by Action",msg);
     }
 
     onGetInputs() {
