@@ -107,9 +107,9 @@ this.widg_prop = this.addWidget();
 obWidget.draw = function(ctx, node, widget_width, y, H){
 
 }
-// can override Y placement
-obWidget.computeSize = function(width){
-    return Y;
+// can override sizing
+obWidget.computeSize = function(width, height){
+    return [newW,newH];
 }
 
 obWidget.mouse = function(){

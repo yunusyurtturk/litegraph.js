@@ -5,6 +5,7 @@ import { CallbackHandler } from "./callbackhandler.js";
 title: string
 pos: [x,y]
 size: [x,y]
+size_basic: [x,y] minimum size for the node beforeRecalculation
 
 input|output: every connection
     +  { name:string, type:string, pos: [x,y]=Optional, direction: "input"|"output", links: Array });
@@ -69,7 +70,8 @@ export class LGraphNode {
         LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor",this,title);
 
         this.title = title;
-        this.size = [LiteGraph.NODE_WIDTH, 60];
+        this.size = LiteGraph.NODE_MIN_SIZE; //this.size = [LiteGraph.NODE_WIDTH, 60];
+        this.size_basic = this.size;
         this.graph = null;
 
         this._pos = new Float32Array(10, 10);
@@ -1320,48 +1322,57 @@ export class LGraphNode {
             output_width = this.outputs.reduce((maxWidth, output) => {
                 const text = output.label || output.name || "";
                 const text_width = get_text_width(text);
-
                 return Math.max(maxWidth, text_width);
             }, 0);
         }
 
-        size[0] = Math.max(input_width + output_width + 10, title_width);
-        size[0] = Math.max(size[0], LiteGraph.NODE_WIDTH);
-        if (this.widgets && this.widgets.length) {
-            size[0] = Math.max(size[0], LiteGraph.NODE_WIDTH * 1.5);
+        if(this.horizontal){
+            // const lastIPos = this.getConnectionPos();
+            size[0] = Math.max(size[0], title_width);
+        }else{
+            // basicWidth
+            size[0] = Math.max(input_width + output_width + 10, title_width);
+            // basicHeight
+            size[1] = this.getSlotsHeight();
         }
+        
+        // min Width Height
+        size[0] = Math.max(size[0], LiteGraph.NODE_MIN_WIDTH);
+        size[0] = Math.max(size[0], LiteGraph.NODE_MIN_SIZE[0]);
+        size[1] = Math.max(size[1], LiteGraph.NODE_MIN_SIZE[1]);
 
-        // computeHeight
-
-        size[1] = this.getSlotsHeight();
-
-        // minimum height calculated by widgets
+        // widgets calc
         let widgetsHeight = 0;
         if (this.widgets && this.widgets.length) {
+            // width fallback
+            size[0] = Math.max(size[0], LiteGraph.NODE_MIN_WIDTH * 1.5);
+            // cycle widgets
             for (var i = 0, l = this.widgets.length; i < l; ++i) {
-                if (this.widgets[i].computeSize)
-                    widgetsHeight += this.widgets[i].computeSize(size[0])[1] + 4;
-                else
+                if (this.widgets[i].computeSize){
+                    const wSize = this.widgets[i].computeSize(size[0]);
+                    widgetsHeight += wSize[1] + 4;
+                    size[0] = Math.max(size[0], wSize[0]);
+                }else{
                     widgetsHeight += LiteGraph.NODE_WIDGET_HEIGHT + 4;
+                    size[0] = Math.max(size[0], LiteGraph.NODE_WIDTH); // using node width as widget default WIDHT TODO refcator
+                }
             }
             widgetsHeight += 8;
         }
 
-        // compute height using widgets height
-        if( this.widgets_up )
+        // process height
+        if( this.widgets_up ){
             size[1] = Math.max( size[1], widgetsHeight );
-        else if( this.widgets_start_y != null )
+        }else if( this.widgets_start_y != null ){
             size[1] = Math.max( size[1], widgetsHeight + this.widgets_start_y );
-        else
+        }else{
             size[1] += widgetsHeight;
-        if (
-            this.constructor.min_height &&
-            size[1] < this.constructor.min_height
-        ) {
+        }
+        if (this.constructor.min_height && size[1] < this.constructor.min_height) {
             size[1] = this.constructor.min_height;
         }
 
-        size[1] += 6; // margin
+        size[1] += 6; // x margin
         return size;
     }
 
@@ -2399,7 +2410,7 @@ export class LGraphNode {
             return out;
         }
 
-        // weird feature that never got finished
+        // if not specifing a slot fallback to title center, similar to collapsed
         if (is_input && slot_number == -1) {
             LiteGraph.log_debug("lgraphnode", "getConnectionPos", "asking for connection slot -1");
             out[0] = this.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * 0.5;

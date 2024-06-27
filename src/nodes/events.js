@@ -62,17 +62,17 @@ class Sequence {
 
     constructor() {
         var that = this;
-        this.addInput("", LiteGraph.ACTION);
-        this.addInput("", LiteGraph.ACTION);
-        this.addInput("", LiteGraph.ACTION);
-        this.addOutput("", LiteGraph.EVENT);
-        this.addOutput("", LiteGraph.EVENT);
-        this.addOutput("", LiteGraph.EVENT);
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
         this.addWidget("button", "+", null, function () {
             that.addInput("", LiteGraph.ACTION);
             that.addOutput("", LiteGraph.EVENT);
         });
-        this.size = [90, 70];
+        this.size = [90, 30];
         this.flags = { horizontal: true, render_box: false };
     }
 

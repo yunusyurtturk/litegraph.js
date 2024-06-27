@@ -17,6 +17,7 @@ export class LGraphCanvas {
             skip_render: false,
             autoresize: false,
             clip_all_nodes: false,
+            free_resize: true,
 
             groups_alpha: 0.21,
             groups_border_alpha: 0.45,
@@ -100,8 +101,6 @@ export class LGraphCanvas {
         this.render_title_colored = true;
         this.render_link_tooltip = true;
 
-        this.free_resize = true;
-
         this.links_render_mode = LiteGraph.SPLINE_LINK;
 
         // TODO refactor: options object do need refactoring .. all the options are actually outside of it
@@ -134,7 +133,9 @@ export class LGraphCanvas {
         this.round_radius = 8;
 
         this.current_node = null;
-        this.node_widget = null; // used for widgets
+        this.node_widget = null; // used for widgets: active (clicked) widget
+        this.over_widget = null;
+        this.over_node = null;
         this.over_link_center = null;
         this.last_mouse_position = [0, 0];
         this.visible_area = this.ds.visible_area;
@@ -1288,11 +1289,14 @@ export class LGraphCanvas {
 
         // DBG EXCESS LiteGraph.log_verbose("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
 
+        // CHECK ensure block_click should prevent all following 
         if(this.block_click) {
             LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "block_click");
             e.preventDefault();
             return false;
         }
+
+        this.over_widget = false; // will set again later on here
 
         e.dragging = this.last_mouse_dragging;
 
@@ -1308,7 +1312,8 @@ export class LGraphCanvas {
 
         // get node over
         var node = this.graph.getNodeOnPos(e.canvasX,e.canvasY,this.visible_nodes);
-
+        this.over_node = node;
+        
         if (this.dragging_rectangle) {
             LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "making rectangle");
             this.dragging_rectangle[2] = e.canvasX - this.dragging_rectangle[0];
@@ -1387,6 +1392,12 @@ export class LGraphCanvas {
                 node.processCallbackHandlers("onMouseMove",{
                     def_cb: node.onMouseMove
                 }, e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this );
+
+                // TODO replace processNodeWidgets for dedicated method to just checking overing: implement int processNodeWidgets too
+                var widgetOver = this.processNodeWidgets( node, this.graph_mouse ); // not passing event! just check, e );
+                if (widgetOver){
+                    this.over_widget = widgetOver;
+                }
 
                 // if dragging a link
                 if (this.connecting_node) {
@@ -1507,7 +1518,7 @@ export class LGraphCanvas {
             if (this.resizing_node && !this.live_mode) {
                 // convert mouse to node space
                 var desired_size = [ e.canvasX - this.resizing_node.pos[0], e.canvasY - this.resizing_node.pos[1] ];
-                var min_size = this.resizing_node.computeSize();
+                var min_size = this.free_resize?LiteGraph.NODE_MIN_SIZE:this.resizing_node.computeSize(); //this.resizing_node.size_basic; // .computeSize();
                 desired_size[0] = Math.max( min_size[0], desired_size[0] );
                 desired_size[1] = Math.max( min_size[1], desired_size[1] );
                 this.resizing_node.setSize( desired_size );
@@ -4935,6 +4946,16 @@ export class LGraphCanvas {
                 ctx.globalAlpha *= 0.5;
             var widget_width = w.width || width;
 
+            // // is over widget?
+            // var over_widget = this.processNodeWidgets( node, this.graph_mouse );
+            // if(over_widget) console.info(over_widget);
+            if(active_widget){ //this.node_widget == w){
+                console.info("ACTIVE thisWidget",w);
+            }
+            if(this.over_widget == w){
+                console.info("OVER thisWidget",w);
+            }
+
             switch (w.type) {
                 case "button":
                     if (w.clicked) {
@@ -4977,8 +4998,8 @@ export class LGraphCanvas {
                         ctx.textAlign = "right";
                         ctx.fillText(
                             w.value
-                                ? w.options.on || "true"
-                                : w.options.off || "false",
+                                ? w.options.on || "on"
+                                : w.options.off || "off",
                             widget_width - 40,
                             y + H * 0.7,
                         );
@@ -5116,7 +5137,7 @@ export class LGraphCanvas {
     }
 
     /**
-     * process an event on widgets
+     * process an event on widgets, or check overed widget if no event 
      * @method processNodeWidgets
      **/
     processNodeWidgets(node, pos, event, active_widget) {
@@ -5130,16 +5151,25 @@ export class LGraphCanvas {
         var x = pos[0] - node.pos[0];
         var y = pos[1] - node.pos[1];
         var width = node.size[0];
-        var deltaX = event.deltaX || event.deltax || 0;
+        var height = LiteGraph.NODE_WIDGET_HEIGHT;
+        var deltaX = event?.deltaX || event?.deltax || 0;
         var that = this;
         var ref_window = this.getCanvasWindow();
+        var widget_width = width;
+        var widget_height = height;
 
         for (let i = 0; i < node.widgets.length; ++i) {
             var w = node.widgets[i];
             if(!w || w.disabled)
                 continue;
-            var widget_height = w.computeSize ? w.computeSize(width)[1] : LiteGraph.NODE_WIDGET_HEIGHT;
-            var widget_width = w.width || width;
+            if(typeof(w.computeSize)=="function"){
+                const wSize = w.computeSize(node.size[0], node.size[1]);
+                widget_width = wSize[0];
+                widget_height = wSize[1];
+            }else{
+                widget_width = w.width || width;
+                widget_height = w.height || height;
+            }
             // outside
             if ( w != active_widget &&
                 (x < 6 || x > widget_width - 12 || y < w.last_y || y > w.last_y + widget_height || w.last_y === undefined) )
@@ -5151,158 +5181,160 @@ export class LGraphCanvas {
 
             // if ( w == active_widget || (x > 6 && x < widget_width - 12 && y > w.last_y && y < w.last_y + widget_height) ) {
             // inside widget
-            switch (w.type) {
-                case "button":
-                    if (event.type === "pointerdown") {
-                        if (w.callback) {
-                            LiteGraph.log_debug("graph processNodeWidgets","button, calling callback", w.callback);
-                            setTimeout(function() {
-                                w.callback(w, that, node, pos, event);
-                            }, 20);
+            if(event){
+                switch (w.type) {
+                    case "button":
+                        if (event.type === "pointerdown") {
+                            if (w.callback) {
+                                LiteGraph.log_debug("graph processNodeWidgets","button, calling callback", w.callback);
+                                setTimeout(function() {
+                                    w.callback(w, that, node, pos, event);
+                                }, 20);
+                            }else{
+                                LiteGraph.log_verbose("graph processNodeWidgets","button, has not callback", w);
+                            }
+                            w.clicked = true;
+                            this.dirty_canvas = true;
                         }else{
-                            LiteGraph.log_verbose("graph processNodeWidgets","button, has not callback", w);
+                            LiteGraph.log_verbose("graph processNodeWidgets","button, event is not pointer down", event);
                         }
-                        w.clicked = true;
+                        break;
+                    case "slider":
+                        var nvalue = LiteGraph.clamp((x - 15) / (widget_width - 30), 0, 1);
+                        if(w.options.read_only) break;
+                        w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
+                        if (old_value != w.value) {
+                            setTimeout(function() {
+                                inner_value_change(w, w.value, old_value);
+                            }, 20);
+                        }
                         this.dirty_canvas = true;
-                    }else{
-                        LiteGraph.log_verbose("graph processNodeWidgets","button, event is not pointer down", event);
-                    }
-                    break;
-                case "slider":
-                    var nvalue = LiteGraph.clamp((x - 15) / (widget_width - 30), 0, 1);
-                    if(w.options.read_only) break;
-                    w.value = w.options.min + (w.options.max - w.options.min) * nvalue;
-                    if (old_value != w.value) {
-                        setTimeout(function() {
-                            inner_value_change(w, w.value, old_value);
-                        }, 20);
-                    }
-                    this.dirty_canvas = true;
-                    break;
-                case "number":
-                case "combo":
-                case "enum":
-                    if (event.type == "pointermove" && w.type == "number") {
-                        if(deltaX)
-                            w.value += deltaX * 0.1 * (w.options.step || 1);
-                        if ( w.options.min != null && w.value < w.options.min ) {
-                            w.value = w.options.min;
-                        }
-                        if ( w.options.max != null && w.value > w.options.max ) {
-                            w.value = w.options.max;
-                        }
-                    } else if (event.type == "pointerdown") {
-                        var values = w.options.values;
-                        if (values && values.constructor === Function) {
-                            values = w.options.values(w, node);
-                        }
-                        var values_list = null;
-
-                        if( w.type != "number")
-                            values_list = values.constructor === Array ? values : Object.keys(values);
-
-                        let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
-                        if (w.type == "number") {
-                            w.value += delta * 0.1 * (w.options.step || 1);
+                        break;
+                    case "number":
+                    case "combo":
+                    case "enum":
+                        if (event.type == "pointermove" && w.type == "number") {
+                            if(deltaX)
+                                w.value += deltaX * 0.1 * (w.options.step || 1);
                             if ( w.options.min != null && w.value < w.options.min ) {
                                 w.value = w.options.min;
                             }
                             if ( w.options.max != null && w.value > w.options.max ) {
                                 w.value = w.options.max;
                             }
-                        } else if (delta) { // clicked in arrow, used for combos
-                            var index = -1;
-                            this.last_mouseclick = 0; // avoids double click event
-                            if(values.constructor === Object)
-                                index = values_list.indexOf( String( w.value ) ) + delta;
-                            else
-                                index = values_list.indexOf( w.value ) + delta;
-                            if (index >= values_list.length) {
-                                index = values_list.length - 1;
+                        } else if (event.type == "pointerdown") {
+                            var values = w.options.values;
+                            if (values && values.constructor === Function) {
+                                values = w.options.values(w, node);
                             }
-                            if (index < 0) {
-                                index = 0;
+                            var values_list = null;
+
+                            if( w.type != "number")
+                                values_list = values.constructor === Array ? values : Object.keys(values);
+
+                            let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
+                            if (w.type == "number") {
+                                w.value += delta * 0.1 * (w.options.step || 1);
+                                if ( w.options.min != null && w.value < w.options.min ) {
+                                    w.value = w.options.min;
+                                }
+                                if ( w.options.max != null && w.value > w.options.max ) {
+                                    w.value = w.options.max;
+                                }
+                            } else if (delta) { // clicked in arrow, used for combos
+                                var index = -1;
+                                this.last_mouseclick = 0; // avoids double click event
+                                if(values.constructor === Object)
+                                    index = values_list.indexOf( String( w.value ) ) + delta;
+                                else
+                                    index = values_list.indexOf( w.value ) + delta;
+                                if (index >= values_list.length) {
+                                    index = values_list.length - 1;
+                                }
+                                if (index < 0) {
+                                    index = 0;
+                                }
+                                if( values.constructor === Array )
+                                    w.value = values[index];
+                                else
+                                    w.value = index;
+                            } else { // combo clicked
+                                var text_values = values != values_list ? Object.values(values) : values;
+                                let inner_clicked = function(v) {
+                                    if(values != values_list)
+                                        v = text_values.indexOf(v);
+                                    this.value = v;
+                                    inner_value_change(this, v, old_value);
+                                    that.dirty_canvas = true;
+                                    return false;
+                                }
+                                LiteGraph.ContextMenu(
+                                    text_values, {
+                                        scale: Math.max(1, this.ds.scale),
+                                        event: event,
+                                        className: "dark",
+                                        callback: inner_clicked.bind(w),
+                                    },
+                                    ref_window,
+                                );
                             }
-                            if( values.constructor === Array )
-                                w.value = values[index];
-                            else
-                                w.value = index;
-                        } else { // combo clicked
-                            var text_values = values != values_list ? Object.values(values) : values;
-                            let inner_clicked = function(v) {
-                                if(values != values_list)
-                                    v = text_values.indexOf(v);
-                                this.value = v;
-                                inner_value_change(this, v, old_value);
-                                that.dirty_canvas = true;
-                                return false;
-                            }
-                            LiteGraph.ContextMenu(
-                                text_values, {
-                                    scale: Math.max(1, this.ds.scale),
-                                    event: event,
-                                    className: "dark",
-                                    callback: inner_clicked.bind(w),
-                                },
-                                ref_window,
-                            );
-                        }
-                        // end mousedown
-                    } else if(event.type == "pointerup" && w.type == "number") {
-                        let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
-                        if (event.click_time < 200 && delta == 0) {
-                            this.prompt(
-                                "Value",w.value,function(v) {
-                                // check if v is a valid equation or a number
-                                    if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-                                        try {// solve the equation if possible
-                                            v = eval(v);
-                                        } catch (error) {
-                                            LiteGraph.log_warn(error);
+                            // end mousedown
+                        } else if(event.type == "pointerup" && w.type == "number") {
+                            let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
+                            if (event.click_time < 200 && delta == 0) {
+                                this.prompt(
+                                    "Value",w.value,function(v) {
+                                    // check if v is a valid equation or a number
+                                        if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                                            try {// solve the equation if possible
+                                                v = eval(v);
+                                            } catch (error) {
+                                                LiteGraph.log_warn(error);
+                                            }
                                         }
-                                    }
-                                    this.value = Number(v);
+                                        this.value = Number(v);
+                                        inner_value_change(this, this.value, old_value);
+                                    }.bind(w),
+                                    event,
+                                );
+                            }
+                        }
+
+                        if( old_value != w.value )
+                            setTimeout(
+                                function() {
                                     inner_value_change(this, this.value, old_value);
                                 }.bind(w),
-                                event,
+                                20,
+                            );
+                        this.dirty_canvas = true;
+                        break;
+                    case "toggle":
+                        if (event.type == "pointerdown") {
+                            w.value = !w.value;
+                            setTimeout(function() {
+                                inner_value_change(w, w.value);
+                            }, 20);
+                        }
+                        break;
+                    case "string":
+                    case "text":
+                        if (event.type == "pointerdown") {
+                            this.prompt(
+                                "Value",w.value,function(v) {
+                                    // @TODO: this.value = v; // CHECK
+                                    inner_value_change(this, v);
+                                }.bind(w),
+                                event,w.options ? w.options.multiline : false,
                             );
                         }
-                    }
-
-                    if( old_value != w.value )
-                        setTimeout(
-                            function() {
-                                inner_value_change(this, this.value, old_value);
-                            }.bind(w),
-                            20,
-                        );
-                    this.dirty_canvas = true;
-                    break;
-                case "toggle":
-                    if (event.type == "pointerdown") {
-                        w.value = !w.value;
-                        setTimeout(function() {
-                            inner_value_change(w, w.value);
-                        }, 20);
-                    }
-                    break;
-                case "string":
-                case "text":
-                    if (event.type == "pointerdown") {
-                        this.prompt(
-                            "Value",w.value,function(v) {
-                                // @TODO: this.value = v; // CHECK
-                                inner_value_change(this, v);
-                            }.bind(w),
-                            event,w.options ? w.options.multiline : false,
-                        );
-                    }
-                    break;
-                default:
-                    if (w.mouse) {
-                        this.dirty_canvas = w.mouse(event, [x, y], node);
-                    }
-                    break;
+                        break;
+                    default:
+                        if (w.mouse) {
+                            this.dirty_canvas = w.mouse(event, [x, y], node);
+                        }
+                        break;
+                }
             }
 
             return w;
@@ -6085,6 +6117,11 @@ export class LGraphCanvas {
             return;
         }
 
+        var canvas = LGraphCanvas.active_canvas;
+        var ref_window = canvas.getCanvasWindow();
+        var graph = canvas.graph;
+        graph?.onGraphChanged({action: "resize", doSave: true});
+        
         const fApplyMultiNode = (node) => {
             node.size = node.computeSize();
             node.processCallbackHandlers("onResize",{
@@ -7608,11 +7645,11 @@ export class LGraphCanvas {
                     elem.classList.add("bool-on");
                 elem.addEventListener("click", function() {
                     // var v = node.properties[this.dataset["property"]];
-                    // node.setProperty(this.dataset["property"],!v); this.innerText = v ? "true" : "false";
+                    // node.setProperty(this.dataset["property"],!v); this.innerText = v ? "on" : "off";
                     var propname = this.dataset["property"];
                     this.value = !this.value;
                     this.classList.toggle("bool-on");
-                    this.querySelector(".property_value").innerText = this.value ? "true" : "false";
+                    this.querySelector(".property_value").innerText = this.value ? "on" : "off";
                     innerChange(propname, this.value );
                 });
             } else if (type == "string" || type == "number") {
@@ -7769,7 +7806,7 @@ export class LGraphCanvas {
             aProps.sort();
             for(var pI in aProps) {
                 var pX = aProps[pI];
-                panel.addWidget( "boolean", pX, graphcanvas[pX], {key: pX, on: "True", off: "False"}, fUpdate);
+                panel.addWidget( "boolean", pX, graphcanvas[pX], {key: pX, on: "on", off: "off"}, fUpdate);
             }
 
             panel.addWidget( "combo", "Render mode", LiteGraph.LINK_RENDER_MODES[graphcanvas.links_render_mode], {key: "links_render_mode", values: LiteGraph.LINK_RENDER_MODES}, fUpdate);
@@ -8409,13 +8446,13 @@ export class LGraphCanvas {
                 {
                     content: "Inputs",
                     has_submenu: true,
-                    disabled: true,
+                    // disabled: true, // disable Input and Output slots ? would need better check :: TODO use showMenuNodeOptional ins
                     callback: LGraphCanvas.showMenuNodeOptionalInputs,
                 },
                 {
                     content: "Outputs",
                     has_submenu: true,
-                    disabled: true,
+                    // disabled: true, // disable Input and Output slots ? would need better check :: TODO use showMenuNodeOptional ins
                     callback: LGraphCanvas.showMenuNodeOptionalOutputs,
                 },
                 null,
@@ -8460,27 +8497,29 @@ export class LGraphCanvas {
             );
         }
 
-        r = node.processCallbackHandlers("onGetInputs",{
-            def_cb: node.onGetInputs
-        });
-        if(r!==null && (typeof(r)=="object")){
-            if(typeof(r.return_value)=="object"){
-                if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
-                    options[0].disabled = false;
-                }
-            }
-        }
+        // disable Input and Output slots ? would need better check :: TODO use showMenuNodeOptional instead
 
-        r = node.processCallbackHandlers("onGetOutputs",{
-            def_cb: node.onGetOutputs
-        });
-        if(r!==null && (typeof(r)=="object")){
-            if(typeof(r.return_value)=="object"){
-                if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
-                    options[1].disabled = false;
-                }
-            }
-        }
+        // r = node.processCallbackHandlers("onGetInputs",{
+        //     def_cb: node.onGetInputs
+        // });
+        // if(r!==null && (typeof(r)=="object")){
+        //     if(typeof(r.return_value)=="object"){
+        //         if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
+        //             options[0].disabled = false;
+        //         }
+        //     }
+        // }
+
+        // r = node.processCallbackHandlers("onGetOutputs",{
+        //     def_cb: node.onGetOutputs
+        // });
+        // if(r!==null && (typeof(r)=="object")){
+        //     if(typeof(r.return_value)=="object"){
+        //         if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
+        //             options[1].disabled = false;
+        //         }
+        //     }
+        // }
 
         if (LiteGraph.do_add_triggers_slots)
             options[1].disabled = false;

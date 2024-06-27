@@ -41,6 +41,7 @@ export var LiteGraph = new class {
         this.NODE_WIDGET_HEIGHT = 20;
         this.NODE_WIDTH = 140;
         this.NODE_MIN_WIDTH = 50;
+        this.NODE_MIN_SIZE = [50, 25],
         this.NODE_COLLAPSED_RADIUS = 10;
         this.NODE_COLLAPSED_WIDTH = 80;
         this.NODE_TITLE_COLOR = "#999";
@@ -661,6 +662,9 @@ export var LiteGraph = new class {
 
         // extend constructor with the extended always executed (custom class or lgraphnode)
         node.post_constructor();
+        
+        // basic size, before computing
+        node.size_basic = node.size;
 
         node.type = type;
         node.title ??= title;
@@ -670,6 +674,7 @@ export var LiteGraph = new class {
         node.size ??= node.computeSize();
         node.pos ??= LiteGraph.DEFAULT_POSITION.concat();
         node.mode ??= LiteGraph.ALWAYS;
+
 
         // extra options
         Object.assign(node, options);
@@ -1085,28 +1090,6 @@ export var LiteGraph = new class {
         return hex;
     }
 
-    closeAllContextMenus = function(ref_window) {
-        ref_window = ref_window || window;
-
-        var elements = ref_window.document.querySelectorAll(".litecontextmenu");
-        if (!elements.length) {
-            return;
-        }
-
-        var result = [];
-        for (var i = 0; i < elements.length; i++) {
-            result.push(elements[i]);
-        }
-
-        for (var i=0; i < result.length; i++) {
-            if (result[i].close) {
-                result[i].close();
-            } else if (result[i].parentNode) {
-                result[i].parentNode.removeChild(result[i]);
-            }
-        }
-    };
-
     extendClass = (target, origin) => {
         for (let i in origin) {
             // copy class properties
@@ -1182,7 +1165,7 @@ export var LiteGraph = new class {
     } */
 
     closeAllContextMenus = () => {
-        LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
+        LiteGraph.log_verbose('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenuClass.closeAll();
     };
 

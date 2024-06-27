@@ -124,6 +124,8 @@ export class ContextMenu {
     }
 
     createFilter(values, options){
+        if(!values || !values.length || values.length == 1) return;
+
         const filter = document.createElement("input");
         filter.classList.add("context-menu-filter");
         filter.placeholder = "Filter list";
@@ -529,8 +531,8 @@ export class ContextMenu {
      * @param {Window} [ref_window=window] - The window object to search for open menus.
      */
     static closeAll = (ref_window = window) => {
-        const elements = ref_window.document.querySelectorAll(".litecontextmenu");
-        if (!elements.length)
+        const elements = ref_window?.document?.querySelectorAll(".litecontextmenu");
+        if (!elements || !elements.length)
             return;
 
         elements.forEach((element) => {
