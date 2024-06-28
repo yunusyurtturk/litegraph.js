@@ -136,7 +136,7 @@ class MathRange {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return (this._last_v || 0).toFixed(2);
         }
         return this.title;
@@ -749,7 +749,7 @@ class MathOperation {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
 

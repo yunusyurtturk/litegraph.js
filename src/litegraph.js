@@ -979,6 +979,21 @@ export var LiteGraph = new class {
         );
     }
 
+    textCalculateMaxWidth(text){
+        // TODO RESTART FROM HERE
+        // const retCalc = this.canvasFillTextMultiline();
+    }
+
+    /**
+     * helper function to write text to a canvas calculating multiline and returning info on final sizes 
+     * @param {*} context 
+     * @param {*} text 
+     * @param {*} x 
+     * @param {*} y 
+     * @param {*} maxWidth 
+     * @param {*} lineHeight 
+     * @returns 
+     */
     canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
         var words = (text+"").trim().split(' ');
         var line = '';

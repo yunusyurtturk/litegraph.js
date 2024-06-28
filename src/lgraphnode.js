@@ -70,34 +70,36 @@ export class LGraphNode {
         LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor",this,title);
 
         this.title = title;
-        this.size = LiteGraph.NODE_MIN_SIZE; //this.size = [LiteGraph.NODE_WIDTH, 60];
-        this.size_basic = this.size;
-        this.graph = null;
-
-        this._pos = new Float32Array(10, 10);
-
-        if (LiteGraph.use_uuids) {
-            this.id = LiteGraph.uuidv4();
-        } else {
-            this.id = -1; // not know till not added
-        }
-        this.type = null;
-
-        // inputs available: array of inputs
-        this.inputs = [];
-        this.outputs = [];
-        this.connections = [];
-
-        // local data
-        this.properties = {}; // for the values
-        this.properties_info = []; // for the info
-
-        this.flags = {};
 
         this.post_constructor(...arguments);
     }
 
     post_constructor(){
+
+        this.size ??= LiteGraph.NODE_MIN_SIZE; //this.size ??= [LiteGraph.NODE_WIDTH, 60];
+        this.size_basic ??= this.size;
+        this.graph ??= null;
+
+        this._pos ??= new Float32Array(10, 10);
+
+        if (LiteGraph.use_uuids) {
+            this.id ??= LiteGraph.uuidv4();
+        } else {
+            this.id ??= -1; // not know till not added
+        }
+        this.type ??= null;
+
+        // inputs available: array of inputs
+        this.inputs ??= [];
+        this.outputs ??= [];
+        this.connections ??= [];
+
+        // local data
+        this.properties ??= {}; // for the values
+        this.properties_info ??= []; // for the info
+
+        this.flags ??= {};
+
         // DBG EXCESS LiteGraph.log_verbose("lgraphNODE", "postconstruct",this,...arguments);
         // register CallbackHandler methods on this
         this.callbackhandler_setup();
@@ -1285,6 +1287,12 @@ export class LGraphNode {
         return o;
     }
 
+    getDefaultCanvas(){
+        if(!this.graph) return false;
+        if(!this.graph.list_of_graphcanvas || !this.graph.list_of_graphcanvas.length) return false;
+        return this.graph.list_of_graphcanvas[0];
+    }
+
     /**
      * computes the minimum size of a node according to its inputs and output slots
      * @method computeSize
@@ -1296,18 +1304,41 @@ export class LGraphNode {
             return this.constructor.size.concat();
         }
 
+        var node = this;
         var size = out || new Float32Array([0, 0]);
 
         var font_size = LiteGraph.NODE_TEXT_SIZE; // although it should be graphcanvas.inner_text_font size
 
         // computeWidth
-        const get_text_width = (text) => {
+        const get_text_width = (text, isTitle) => {
             if (!text) {
                 return 0;
             }
-            return font_size * text.length * 0.6;
+            // TRIED BUT NOT WORKING ?
+            const lgcanvas = node.getDefaultCanvas();
+            if(lgcanvas && lgcanvas.canvas && lgcanvas.ctx){
+                if(isTitle){
+                    lgcanvas.ctx.font = lgcanvas.title_text_font;
+                }else{
+                    lgcanvas.ctx.font = lgcanvas.inner_text_font;
+                }
+                const measuredT = lgcanvas.ctx?.measureText(text);
+                if(measuredT){
+                    // DBG EXCESS LiteGraph.log_verbose("lgraphnode","computeSize","measured text",text,measuredT,this);
+                    return measuredT.width;
+                }
+            }
+            // fallback
+            // DBG EXCESS LiteGraph.log_verbose("lgraphnode","computeSize","fallback size",text,font_size * text.length * 0.6,this);
+            return font_size * text.length * 0.423; // TODO this is not precise
         };
-        var title_width = get_text_width(this.title);
+        var node_title = node.title;
+        try{
+            node_title = this.getTitle();
+        }catch(e){
+            // skip :: being in construction properties could not be set yet
+        }
+        var title_width = 40 + get_text_width(node_title, true); // this.title
         var input_width = 0;
         var output_width = 0;
 

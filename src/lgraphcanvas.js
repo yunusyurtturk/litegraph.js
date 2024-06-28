@@ -4950,19 +4950,13 @@ export class LGraphCanvas {
                 ctx.globalAlpha *= 0.5;
             var widget_width = w.width || width;
 
-            // // is over widget?
-            // var over_widget = this.processNodeWidgets( node, this.graph_mouse );
-            // if(over_widget) console.info(over_widget);
-            if(active_widget){ //this.node_widget == w){
-                console.info("ACTIVE thisWidget",w);
+            // is over this widget?
+            is_over_widget = this.over_widget == w;
+            // is this widget active(clicked)?
+            if(active_widget == w){
+                //
             }
-            if(this.over_widget == w){
-                console.info("OVER thisWidget",w);
-                is_over_widget = true;
-            }else{
-                is_over_widget = false;
-            }
-
+            
             switch (w.type) {
                 case "button":
                     if (w.clicked) {

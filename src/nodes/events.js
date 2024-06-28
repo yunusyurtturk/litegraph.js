@@ -129,7 +129,7 @@ class WaitAll {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         for (var i = 0; i < this.inputs.length; ++i) {
@@ -184,7 +184,7 @@ class Stepper {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         var index = this.properties.index || 0;
@@ -326,7 +326,7 @@ class EventCounter {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return String(this.num);
         }
         return this.title;
@@ -347,7 +347,7 @@ class EventCounter {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         ctx.fillStyle = "#AAA";
