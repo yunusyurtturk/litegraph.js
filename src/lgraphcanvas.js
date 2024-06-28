@@ -29,6 +29,8 @@ export class LGraphCanvas {
             groups_add_around_selected: true,
             groups_add_default_spacing: 15,
 
+            hide_widget_label_when_small: 150, //false,
+
         };
         this.options = options;
         
@@ -1289,7 +1291,7 @@ export class LGraphCanvas {
 
         // DBG EXCESS LiteGraph.log_verbose("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
 
-        // CHECK ensure block_click should prevent all following 
+        // TODO CHECK ensure block_click should prevent all following 
         if(this.block_click) {
             LiteGraph.log_verbose("lgraphcanvas", "processMouseMove", "block_click");
             e.preventDefault();
@@ -1300,6 +1302,7 @@ export class LGraphCanvas {
 
         e.dragging = this.last_mouse_dragging;
 
+        // pass event to active widget (previously)clicked
         if (this.node_widget) {
             this.processNodeWidgets(
                 this.node_widget[0],
@@ -4930,6 +4933,7 @@ export class LGraphCanvas {
         var text_color = LiteGraph.WIDGET_TEXT_COLOR;
         var secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
         var margin = 15;
+        var is_over_widget = false;
 
         for (let i = 0; i < widgets.length; ++i) {
             var w = widgets[i];
@@ -4954,6 +4958,9 @@ export class LGraphCanvas {
             }
             if(this.over_widget == w){
                 console.info("OVER thisWidget",w);
+                is_over_widget = true;
+            }else{
+                is_over_widget = false;
             }
 
             switch (w.type) {
@@ -4969,7 +4976,9 @@ export class LGraphCanvas {
                     if (show_text) {
                         ctx.textAlign = "center";
                         ctx.fillStyle = text_color;
-                        ctx.fillText(w.label || w.name, widget_width * 0.5, y + H * 0.7);
+                        if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
+                            ctx.fillText(w.label || w.name, widget_width * 0.5, y + H * 0.7);
+                        }
                     }
                     break;
                 case "toggle":
@@ -4992,7 +5001,9 @@ export class LGraphCanvas {
                         ctx.fillStyle = secondary_text_color;
                         const label = w.label || w.name;
                         if (label != null) {
-                            ctx.fillText(label, margin * 2, y + H * 0.7);
+                            if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
+                                ctx.fillText(label, margin * 2, y + H * 0.7);
+                            }
                         }
                         ctx.fillStyle = w.value ? text_color : secondary_text_color;
                         ctx.textAlign = "right";
@@ -5026,13 +5037,15 @@ export class LGraphCanvas {
                     if (show_text) {
                         ctx.textAlign = "center";
                         ctx.fillStyle = text_color;
-                        ctx.fillText(
-                            w.label || w.name + "  " + Number(w.value).toFixed(w.options.precision != null
-                                ? w.options.precision
-                                : 3),
-                            widget_width * 0.5,
-                            y + H * 0.7,
-                        );
+                        if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
+                            ctx.fillText(
+                                w.label || w.name + "  " + Number(w.value).toFixed(w.options.precision != null
+                                    ? w.options.precision
+                                    : 3),
+                                widget_width * 0.5,
+                                y + H * 0.7,
+                            );
+                        }
                     }
                     break;
                 case "number":
@@ -5063,7 +5076,9 @@ export class LGraphCanvas {
                             ctx.fill();
                         }
                         ctx.fillStyle = secondary_text_color;
-                        ctx.fillText(w.label || w.name, margin * 2 + 5, y + H * 0.7);
+                        if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
+                            ctx.fillText(w.label || w.name, margin * 2 + 5, y + H * 0.7);
+                        }
                         ctx.fillStyle = text_color;
                         ctx.textAlign = "right";
                         if (w.type == "number") {
@@ -5114,7 +5129,9 @@ export class LGraphCanvas {
                         ctx.fillStyle = secondary_text_color;
                         const label = w.label || w.name;
                         if (label != null) {
-                            ctx.fillText(label, margin * 2, y + H * 0.7);
+                            if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
+                                ctx.fillText(label, margin * 2, y + H * 0.7);
+                            }
                         }
                         ctx.fillStyle = text_color;
                         ctx.textAlign = "right";
@@ -5172,8 +5189,9 @@ export class LGraphCanvas {
             }
             // outside
             if ( w != active_widget &&
-                (x < 6 || x > widget_width - 12 || y < w.last_y || y > w.last_y + widget_height || w.last_y === undefined) )
+                (x < 6 || x > widget_width - 12 || y < w.last_y || y > w.last_y + widget_height || w.last_y === undefined) ){
                 continue;
+            }
 
             var old_value = w.value;
 
