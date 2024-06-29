@@ -1005,6 +1005,7 @@ export class LiteGraphClass {
     textCalculateMaxWidth(text){
         // TODO RESTART FROM HERE
         // const retCalc = this.canvasFillTextMultiline();
+        // USING ctx.measureText directly
     }
 
     /**
@@ -1226,7 +1227,7 @@ export class LiteGraphClass {
 
     closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
-        ContextMenuClass.closeAll();
+        ContextMenu.closeAll();
     };
 
     getTime(){

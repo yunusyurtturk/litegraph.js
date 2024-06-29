@@ -8556,8 +8556,8 @@ export class LGraphCanvas {
         //         if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
         //             options[0].disabled = false;
         //         }
-            }else if(typeof(r.length)!=="undefined" && r.length){
-                options[0].disabled = false;
+        //     }else if(typeof(r.length)!=="undefined" && r.length){
+        //         options[0].disabled = false;
         //     }
         // }
 
@@ -8569,8 +8569,8 @@ export class LGraphCanvas {
         //         if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
         //             options[1].disabled = false;
         //         }
-            }else if(typeof(r.length)!=="undefined" && r.length){
-                options[0].disabled = false;
+        //     }else if(typeof(r.length)!=="undefined" && r.length){
+        //         options[0].disabled = false;
         //     }
         // }
 
