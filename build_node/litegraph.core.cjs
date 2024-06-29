@@ -1,4 +1,30 @@
-// readable version
+// global.js
+function getGlobalObject() {
+    if (typeof globalThis !== 'undefined') {
+        return globalThis;
+    }
+    if (typeof self !== 'undefined') {
+        return self;
+    }
+    if (typeof window !== 'undefined') {
+        return window;
+    }
+    if (typeof global !== 'undefined') {
+        return global;
+    }
+    throw new Error('Unable to determine global object');
+}
+
+function setGlobalVariable(key, value) {
+    const globalObject = getGlobalObject();
+    globalObject[key] = value;
+}
+
+function getGlobalVariable(key) {
+    const globalObject = getGlobalObject();
+    return globalObject[key];
+}
+
 
 /**
  * @class LiteGraph
@@ -7,201 +33,207 @@
  * Try to avoid adding things to this class.
  * https://dzone.com/articles/singleton-anti-pattern
  */
-class LiteGraph {
+class LiteGraphClass {
 
-    static VERSION = "a0.11.0";
+    VERSION = "a0.11.0";
 
-    static LLink = null; //LLink;
-    static LGraph = null; //LGraph;
-    static LGraphNode = null; //LGraphNode;
-    static LGraphGroup = null; //LGraphGroup;
-    static LGraphCanvas = null; //LGraphCanvas;
-    static Subgraph = null; //Subgraph;
-    static GraphInput = null; //GraphInput;
-    static GraphOutput = null; //GraphOutput;
-    static DragAndScale = null; //DragAndScale;
-    static ContextMenuClass = null; //ContextMenuClass;
-    // static ContextMenu = function(){ return new ContextMenuClass(...arguments); };
-    static CallbackHandler = null; //CallbackHandler;
+    LLink = null; //LLink;
+    LGraph = null; //LGraph;
+    LGraphNode = null; //LGraphNode;
+    LGraphGroup = null; //LGraphGroup;
+    LGraphCanvas = null; //LGraphCanvas;
+    Subgraph = null; //Subgraph;
+    GraphInput = null; //GraphInput;
+    GraphOutput = null; //GraphOutput;
+    DragAndScale = null; //DragAndScale;
+    ContextMenuClass = null; //ContextMenuClass;
+    ContextMenu = null;
+    // ContextMenu = function(){ return new ContextMenuClass(...arguments); };
+    CallbackHandler = null; //CallbackHandler;
 
-    static CANVAS_GRID_SIZE = 10;
-    static NODE_TITLE_HEIGHT = 30;
-    static NODE_TITLE_TEXT_Y = 20;
-    static NODE_SLOT_HEIGHT = 20;
-    static NODE_WIDGET_HEIGHT = 20;
-    static NODE_WIDTH = 140;
-    static NODE_MIN_WIDTH = 50;
-    static NODE_COLLAPSED_RADIUS = 10;
-    static NODE_COLLAPSED_WIDTH = 80;
-    static NODE_TITLE_COLOR = "#999";
-    static NODE_SELECTED_TITLE_COLOR = "#FFF";
-    static NODE_TEXT_SIZE = 14;
-    static NODE_TEXT_COLOR = "#AAA";
-    static NODE_SUBTEXT_SIZE = 12;
-    static NODE_DEFAULT_COLOR = "#333";
-    static NODE_DEFAULT_BGCOLOR = "#353535";
-    static NODE_DEFAULT_BOXCOLOR = "#666";
-    static NODE_DEFAULT_SHAPE = "box";
-    static NODE_BOX_OUTLINE_COLOR = "#FFF";
-    static DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
-    static DEFAULT_GROUP_FONT = 24;
+    CANVAS_GRID_SIZE = 10;
+    NODE_TITLE_HEIGHT = 30;
+    NODE_TITLE_TEXT_Y = 20;
+    NODE_SLOT_HEIGHT = 20;
+    NODE_WIDGET_HEIGHT = 20;
+    NODE_WIDTH = 140;
+    NODE_MIN_WIDTH = 50;
+    NODE_COLLAPSED_RADIUS = 10;
+    NODE_COLLAPSED_WIDTH = 80;
+    NODE_TITLE_COLOR = "#999";
+    NODE_SELECTED_TITLE_COLOR = "#FFF";
+    NODE_TEXT_SIZE = 14;
+    NODE_TEXT_COLOR = "#AAA";
+    NODE_SUBTEXT_SIZE = 12;
+    NODE_DEFAULT_COLOR = "#333";
+    NODE_DEFAULT_BGCOLOR = "#353535";
+    NODE_DEFAULT_BOXCOLOR = "#666";
+    NODE_DEFAULT_SHAPE = "box";
+    NODE_BOX_OUTLINE_COLOR = "#FFF";
+    DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
+    DEFAULT_GROUP_FONT = 24;
 
-    static WIDGET_BGCOLOR = "#222";
-    static WIDGET_OUTLINE_COLOR = "#666";
-    static WIDGET_TEXT_COLOR = "#DDD";
-    static WIDGET_SECONDARY_TEXT_COLOR = "#999";
+    WIDGET_BGCOLOR = "#222";
+    WIDGET_OUTLINE_COLOR = "#666";
+    WIDGET_TEXT_COLOR = "#DDD";
+    WIDGET_SECONDARY_TEXT_COLOR = "#999";
 
-    static LINK_COLOR = "#9A9";
-    static EVENT_LINK_COLOR = "#A86";
-    static CONNECTING_LINK_COLOR = "#AFA";
+    LINK_COLOR = "#9A9";
+    EVENT_LINK_COLOR = "#A86";
+    CONNECTING_LINK_COLOR = "#AFA";
 
-    static MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
-    static DEFAULT_POSITION = [100, 100]; // default node position
-    static VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
+    MAX_NUMBER_OF_NODES = 1000; // avoid infinite loops
+    DEFAULT_POSITION = [100, 100]; // default node position
+    VALID_SHAPES = ["default", "box", "round", "card"]; // ,"circle"
 
     // shapes are used for nodes but also for slots
-    static BOX_SHAPE = 1;
-    static ROUND_SHAPE = 2;
-    static CIRCLE_SHAPE = 3;
-    static CARD_SHAPE = 4;
-    static ARROW_SHAPE = 5;
-    static GRID_SHAPE = 6; // intended for slot arrays
+    BOX_SHAPE = 1;
+    ROUND_SHAPE = 2;
+    CIRCLE_SHAPE = 3;
+    CARD_SHAPE = 4;
+    ARROW_SHAPE = 5;
+    GRID_SHAPE = 6; // intended for slot arrays
 
     // enums
-    static INPUT = 1;
-    static OUTPUT = 2;
+    INPUT = 1;
+    OUTPUT = 2;
 
-    static EVENT = -1; // for outputs
-    static ACTION = -1; // for inputs
+    EVENT = -1; // for outputs
+    ACTION = -1; // for inputs
 
-    static NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper
-    static NODE_MODES_COLORS = ["#666", "#422", "#333", "#224", "#626"]; // use with node_box_coloured_by_mode
-    static ALWAYS = 0;
-    static ON_EVENT = 1;
-    static NEVER = 2;
-    static ON_TRIGGER = 3;
-    static ON_REQUEST = 4; // used from event-based nodes, where ancestors are recursively executed on needed
+    NODE_MODES = ["Always", "On Event", "Never", "On Trigger", "On Request"]; // helper
+    NODE_MODES_COLORS = ["#666", "#422", "#333", "#224", "#626"]; // use with node_box_coloured_by_mode
+    ALWAYS = 0;
+    ON_EVENT = 1;
+    NEVER = 2;
+    ON_TRIGGER = 3;
+    ON_REQUEST = 4; // used from event-based nodes, where ancestors are recursively executed on needed
 
-    static UP = 1;
-    static DOWN = 2;
-    static LEFT = 3;
-    static RIGHT = 4;
-    static CENTER = 5;
+    UP = 1;
+    DOWN = 2;
+    LEFT = 3;
+    RIGHT = 4;
+    CENTER = 5;
 
-    static LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
-    static STRAIGHT_LINK = 0;
-    static LINEAR_LINK = 1;
-    static SPLINE_LINK = 2;
+    LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
+    STRAIGHT_LINK = 0;
+    LINEAR_LINK = 1;
+    SPLINE_LINK = 2;
 
-    static NORMAL_TITLE = 0;
-    static NO_TITLE = 1;
-    static TRANSPARENT_TITLE = 2;
-    static AUTOHIDE_TITLE = 3;
-    static VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
+    NORMAL_TITLE = 0;
+    NO_TITLE = 1;
+    TRANSPARENT_TITLE = 2;
+    AUTOHIDE_TITLE = 3;
+    VERTICAL_LAYOUT = "vertical"; // arrange nodes vertically
 
-    static proxy = null; // used to redirect calls
-    static node_images_path = "";
+    proxy = null; // used to redirect calls
+    node_images_path = "";
 
-    static catch_exceptions = true;
-    static throw_errors = true;
-    static allow_scripts = false; // nodes should be check this value before executing unsafe code :: does not prevent anything in the main library, implement in nodes :: if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
-    static use_deferred_actions = true; // executes actions during the graph execution flow
-    static registered_node_types = {}; // nodetypes by string
-    static node_types_by_file_extension = {}; // used for dropping files in the canvas
-    static Nodes = {}; // node types by classname
-    static Globals = {}; // used to store vars between graphs
+    catch_exceptions = true;
+    throw_errors = true;
+    allow_scripts = false; // nodes should be check this value before executing unsafe code :: does not prevent anything in the main library, implement in nodes :: if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
+    use_deferred_actions = true; // executes actions during the graph execution flow
+    registered_node_types = {}; // nodetypes by string
+    node_types_by_file_extension = {}; // used for dropping files in the canvas
+    Nodes = {}; // node types by classname
+    Globals = {}; // used to store vars between graphs
 
-    static searchbox_extras = {}; // used to add extra features to the search box
-    static auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
+    searchbox_extras = {}; // used to add extra features to the search box
+    auto_sort_node_types = false; // [true!] If set to true, will automatically sort node types / categories in the context menus
 
-    static node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
-    static node_box_coloured_by_mode = false; // [true!] nodebox based on node mode, visual feedback
+    node_box_coloured_when_on = false; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
+    node_box_coloured_by_mode = false; // [true!] nodebox based on node mode, visual feedback
 
-    static dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-    static dialog_close_on_mouse_leave_delay = 500;
+    dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+    dialog_close_on_mouse_leave_delay = 500;
 
-    static shift_click_do_break_link_from = true; // [false!] prefer false if too easy to break links - implement with ALT or TODO custom keys
-    static click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
+    shift_click_do_break_link_from = true; // [false!] prefer false if too easy to break links - implement with ALT or TODO custom keys
+    click_do_break_link_to = false; // [false!]prefer false, way too easy to break links
 
-    static search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
-    static search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-    static search_hide_on_mouse_leave_time = 1200; // time before hiding
-    static search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
+    search_filter_enabled = false; // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
+    search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+    search_hide_on_mouse_leave_time = 1200; // time before hiding
+    search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
 
-    static show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
-    static show_node_tooltip_use_descr_property = false; // enabled tooltip from desc when property tooltip not set
+    show_node_tooltip = false; // [true!] show a tooltip with node property "tooltip" over the selected node
+    show_node_tooltip_use_descr_property = false; // enabled tooltip from desc when property tooltip not set
 
-    static auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
+    auto_load_slot_types = false; // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
 
     // set these values if not using auto_load_slot_types
-    static registered_slot_in_types = {}; // slot types for nodeclass
-    static registered_slot_out_types = {}; // slot types for nodeclass
-    static slot_types_in = []; // slot types IN
-    static slot_types_out = []; // slot types OUT
-    static slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
-    static slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
+    registered_slot_in_types = {}; // slot types for nodeclass
+    registered_slot_out_types = {}; // slot types for nodeclass
+    slot_types_in = []; // slot types IN
+    slot_types_out = []; // slot types OUT
+    slot_types_default_in = []; // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
+    slot_types_default_out = []; // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
 
-    static graphDefaultConfig = {
+    graphDefaultConfig = {
         align_to_grid: true,
         links_ontop: false,
     };
 
-    static alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
-    static alt_shift_drag_connect_clone_with_input = true; // [true!] very handy, when cloning, keep input connections with SHIFT
+    alt_drag_do_clone_nodes = false; // [true!] very handy, ALT click to clone and drag the new node
+    alt_shift_drag_connect_clone_with_input = true; // [true!] very handy, when cloning, keep input connections with SHIFT
 
-    static do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
+    do_add_triggers_slots = false; // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
 
-    static allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
+    allow_multi_output_for_events = true; // [false!] being events, it is strongly reccomended to use them sequentially, one by one
 
-    static middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
+    middle_click_slot_add_default_node = false; // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
 
-    static release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
-    static two_fingers_opens_menu = false; // [true!] using pointer event isPrimary, when is not simulate right click
+    release_link_on_empty_shows_menu = false; // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
+    two_fingers_opens_menu = false; // [true!] using pointer event isPrimary, when is not simulate right click
 
-    static backspace_delete = true; // [false!] delete key is enough, don't mess with text edit and custom
+    backspace_delete = true; // [false!] delete key is enough, don't mess with text edit and custom
 
-    static ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+    ctrl_shift_v_paste_connect_unselected_outputs = false; // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
 
-    static actionHistory_enabled = false; // cntrlZ, cntrlY
-    static actionHistoryMaxSave = 300;
+    actionHistory_enabled = false; // cntrlZ, cntrlY
+    actionHistoryMaxSave = 300;
 
     /* EXECUTING ACTIONS AFTER UPDATING VALUES - ANCESTORS */
-    static refreshAncestorsOnTriggers = false; // [true!]
-    static refreshAncestorsOnActions = false; // [true!]
-    static ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
+    refreshAncestorsOnTriggers = false; // [true!]
+    refreshAncestorsOnActions = false; // [true!]
+    ensureUniqueExecutionAndActionCall = false; // [true!] the new tecnique.. let's make it working best of
 
     // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
     // use this if you must have node IDs that are unique across all graphs and subgraphs.
-    static use_uuids = false;
+    use_uuids = false;
 
     // enable filtering elements of the context menu with keypress (+ arrows for navigation, escape to close)
-    static context_menu_filter_enabled = false; // FIX event handler removal
+    context_menu_filter_enabled = false; // FIX event handler removal
 
     // ,"editor_alpha" //= 1; //used for transition
 
-    static canRemoveSlots = true;
-    static canRemoveSlots_onlyOptional = true;
-    static canRenameSlots = true;
-    static canRenameSlots_onlyOptional = true;
+    canRemoveSlots = true;
+    canRemoveSlots_onlyOptional = true;
+    canRenameSlots = true;
+    canRenameSlots_onlyOptional = true;
 
-    static ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
-    static ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
-    static preventAncestorRecalculation = false; // OLD(?) when calculating the ancestors, set a flag to prevent recalculate the subtree
+    ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
+    ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
+    preventAncestorRecalculation = false; // OLD(?) when calculating the ancestors, set a flag to prevent recalculate the subtree
 
-    static allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
+    allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
 
-    static reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
+    reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
 
-    static log_methods = ['error', 'warn', 'info', 'log', 'debug'];
+    log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
-    static cb_handler = false;
-    static debug = true; // WIP
-    static debug_level = 2;
+    cb_handler = false;
+    debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
+    debug_level = 2; // set via this.logging_set_level
 
-    static initialize() {
-        // this.debug = true; // enable/disable logging :: in this.debug_level is stored the actual numeric value
-        // this.logging_set_level(2);
+    constructor() {
+        // if exporting stripping include for a bundle will trow error because not yet instantiated other classes
+        // this.initialize();
+    }
 
+    /**
+     * initialize LiteGraph, call when other classes are instantiated
+     */
+    initialize() {
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
         this.callbackhandler_setup();
 
@@ -224,13 +256,13 @@ class LiteGraph {
         this.includeBasicNodes();
     }
 
-    static includeBasicNodes() {
+    includeBasicNodes() {
         this.registerNodeType("graph/subgraph", Subgraph);
         this.registerNodeType("graph/input", GraphInput);
         this.registerNodeType("graph/output", GraphOutput);
     }
 
-    static callbackhandler_setup() {
+    callbackhandler_setup() {
         if (this.cb_handler) return;
         this.cb_handler = new CallbackHandler(this);
         // register CallbackHandler methods on this // Should move as class standard class methods?
@@ -245,15 +277,15 @@ class LiteGraph {
         };
     }
 
-    static registerCallbackHandler() {
+    registerCallbackHandler() {
         this.callbackhandler_setup();
         this.cb_handler.registerCallbackHandler(...arguments);
     }
-    static unregisterCallbackHandler() {
+    unregisterCallbackHandler() {
         this.callbackhandler_setup();
         this.cb_handler.unregisterCallbackHandler(...arguments);
     }
-    static processCallbackHandlers() {
+    processCallbackHandlers() {
         this.callbackhandler_setup();
         this.cb_handler.processCallbackHandlers(...arguments);
     }
@@ -261,13 +293,13 @@ class LiteGraph {
     // set logging debug_level
     // from -1 (none), 0 (error), .. to 5 (debug) based on console methods 'error', 'warn', 'info', 'log', 'debug'
     // could be set higher to enable verbose logging
-    static logging_set_level(v) {
+    logging_set_level(v) {
         this.debug_level = Number(v);
     }
 
     // entrypoint to debug log
     // pass 0 (error) to 4 (debug), (or more for verbose logging)
-    static logging(lvl /**/ ) { // arguments
+    logging(lvl /**/ ) { // arguments
 
         if (!this.debug && this.debug_level > 0) {
             // force only errors
@@ -298,22 +330,22 @@ class LiteGraph {
 
         console[lvl_txt]("[LG]", ...clean_args(arguments));
     }
-    static log_error() {
+    log_error() {
         this.logging(0, ...arguments);
     }
-    static log_warn() {
+    log_warn() {
         this.logging(1, ...arguments);
     }
-    static log_info() {
+    log_info() {
         this.logging(2, ...arguments);
     }
-    static log_log() {
+    log_log() {
         this.logging(3, ...arguments);
     }
-    static log_debug() {
+    log_debug() {
         this.logging(4, ...arguments);
     }
-    static log_verbose() {
+    log_verbose() {
         this.logging(5, ...arguments);
     }
 
@@ -323,7 +355,7 @@ class LiteGraph {
      * @param {String} type name of the node and path
      * @param {Class} base_class class containing the structure of a node
      */
-    static registerNodeType(type, base_class) {
+    registerNodeType(type, base_class) {
         if (!base_class.prototype) {
             throw new Error("Cannot register a simple object, it must be a class with a prototype");
         }
@@ -331,16 +363,16 @@ class LiteGraph {
 
         this.log_debug("registerNodeType", "start", type);
 
-        var classname = base_class.name;
+        const classname = base_class.name;
 
-        var pos = type.lastIndexOf("/");
+        const pos = type.lastIndexOf("/");
         base_class.category = type.substring(0, pos);
 
         if (!base_class.title) {
             base_class.title = classname;
         }
 
-        var propertyDescriptors = Object.getOwnPropertyDescriptors(LGraphNode.prototype);
+        const propertyDescriptors = Object.getOwnPropertyDescriptors(LGraphNode.prototype);
 
         // WIP BAD
         // extend constructor instead of copy properties :: WANTED to have originalconstructor too
@@ -365,7 +397,7 @@ class LiteGraph {
             }
         });
 
-        var prev = this.registered_node_types[type];
+        const prev = this.registered_node_types[type];
         if (prev) {
             this.log_debug("registerNodeType", "replacing node type", type, prev);
         }
@@ -403,7 +435,7 @@ class LiteGraph {
             // used to know which nodes to create when dragging files to the canvas
             if (base_class.supported_extensions) {
                 for (let i in base_class.supported_extensions) {
-                    var ext = base_class.supported_extensions[i];
+                    const ext = base_class.supported_extensions[i];
                     if (ext && ext.constructor === String) {
                         this.node_types_by_file_extension[ext.toLowerCase()] = base_class;
                     }
@@ -458,8 +490,8 @@ class LiteGraph {
      * @method unregisterNodeType
      * @param {String|Object} type name of the node or the node constructor itself
      */
-    static unregisterNodeType(type) {
-        var base_class =
+    unregisterNodeType(type) {
+        const base_class =
             type.constructor === String ?
             this.registered_node_types[type] :
             type;
@@ -478,14 +510,14 @@ class LiteGraph {
      * @param {String|Object} type name of the node or the node constructor itself
      * @param {String} slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
      */
-    static registerNodeAndSlotType(type, slot_type, out = false) {
-        var base_class =
+    registerNodeAndSlotType(type, slot_type, out = false) {
+        const base_class =
             type.constructor === String &&
             this.registered_node_types[type] !== "anonymous" ?
             this.registered_node_types[type] :
             type;
 
-        var class_type = base_class.constructor.type;
+        const class_type = base_class.constructor.type;
 
         let allTypes = [];
         if (typeof slot_type === "string") {
@@ -501,7 +533,7 @@ class LiteGraph {
             if (slotType === "") {
                 slotType = "*";
             }
-            var registerTo = out ?
+            const registerTo = out ?
                 "registered_slot_out_types" :
                 "registered_slot_in_types";
             if (this[registerTo][slotType] === undefined) {
@@ -535,7 +567,7 @@ class LiteGraph {
      * @param {String} name node name with namespace (p.e.: 'math/sum')
      * @param {Object} object methods expected onCreate, inputs, outputs, properties, onExecute
      */
-    static buildNodeClassFromObject(
+    buildNodeClassFromObject(
         name,
         object,
     ) {
@@ -584,18 +616,18 @@ class LiteGraph {
      * @param {String} return_type [optional] string with the return type, otherwise it will be generic
      * @param {Object} properties [optional] properties to be configurable
      */
-    static wrapFunctionAsNode(name, func, param_types, return_type, properties) {
-        var names = LiteGraph.getParameterNames(func);
+    wrapFunctionAsNode(name, func, param_types, return_type, properties) {
+        const names = LiteGraph.getParameterNames(func);
 
-        var code = names.map((name, i) => {
-            var paramType = param_types?.[i] ? `'${param_types[i]}'` : "0";
+        const code = names.map((name, i) => {
+            const paramType = param_types?.[i] ? `'${param_types[i]}'` : "0";
             return `this.addInput('${name}', ${paramType});`;
         }).join("\n");
 
-        var returnTypeStr = return_type ? `'${return_type}'` : 0;
-        var propertiesStr = properties ? `this.properties = ${JSON.stringify(properties)};` : "";
+        const returnTypeStr = return_type ? `'${return_type}'` : 0;
+        const propertiesStr = properties ? `this.properties = ${JSON.stringify(properties)};` : "";
 
-        var classObj = new Function(`
+        const classObj = new Function(`
             ${code}
             this.addOutput('out', ${returnTypeStr});
             ${propertiesStr}
@@ -605,8 +637,8 @@ class LiteGraph {
         classObj.desc = `Generated from ${func.name}`;
 
         classObj.prototype.onExecute = function() {
-            var params = names.map((name, i) => this.getInputData(i));
-            var result = func.apply(this, params);
+            const params = names.map((name, i) => this.getInputData(i));
+            const result = func.apply(this, params);
             this.setOutputData(0, result);
         };
         // TODO: should probably set onConfigure or INIT too the value set ??
@@ -620,7 +652,7 @@ class LiteGraph {
     /**
      * Removes all previously registered node's types
      */
-    static clearRegisteredTypes() {
+    clearRegisteredTypes() {
         this.registered_node_types = {};
         this.node_types_by_file_extension = {};
         this.Nodes = {};
@@ -633,7 +665,7 @@ class LiteGraph {
      * @method addNodeMethod
      * @param {Function} func
      */
-    static addNodeMethod(name, func) {
+    addNodeMethod(name, func) {
         LGraphNode.prototype[name] = func;
         for (var i in this.registered_node_types) {
             var type = this.registered_node_types[i];
@@ -652,8 +684,8 @@ class LiteGraph {
      * @param {Object} options to set options
      */
 
-    static createNode(type, title, options = {}) {
-        var base_class = this.registered_node_types[type] ?? null;
+    createNode(type, title, options = {}) {
+        const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
             this.log_debug(`GraphNode type "${type}" not registered.`);
@@ -708,7 +740,7 @@ class LiteGraph {
      * @param {String} type full name of the node class. p.e. "math/sin"
      * @return {Class} the node class
      */
-    static getNodeType(type) {
+    getNodeType(type) {
         return this.registered_node_types[type];
     }
 
@@ -719,8 +751,8 @@ class LiteGraph {
      * @return {Array} array with all the node classes
      */
 
-    static getNodeTypesInCategory(category, filter) {
-        var filteredTypes = Object.values(this.registered_node_types).filter((type) => {
+    getNodeTypesInCategory(category, filter) {
+        const filteredTypes = Object.values(this.registered_node_types).filter((type) => {
             if (type.filter !== filter) {
                 return false;
             }
@@ -746,8 +778,8 @@ class LiteGraph {
      * @param {String} filter only nodes with ctor.filter equal can be shown
      * @return {Array} array with all the names of the categories
      */
-    static getNodeTypesCategories(filter) {
-        var categories = {
+    getNodeTypesCategories(filter) {
+        const categories = {
             "": 1
         };
 
@@ -757,14 +789,14 @@ class LiteGraph {
             }
         });
 
-        var result = Object.keys(categories);
+        const result = Object.keys(categories);
 
         return this.auto_sort_node_types ? result.sort() : result;
     }
 
 
     // debug purposes: reloads all the js scripts that matches a wildcard
-    static reloadNodes(folder_wildcard) {
+    reloadNodes(folder_wildcard) {
         var tmp = document.getElementsByTagName("script");
         // weird, this array changes by its own, so we use a copy
         var script_files = [];
@@ -809,12 +841,12 @@ class LiteGraph {
      * @param {object} obj the object to parse clean
      * @returns the cleaned object
      */
-    static parseStringifyObject(obj, target) {
+    parseStringifyObject(obj, target) {
         // method 1: not working
         // return JSON.parse(JSON.stringify(obj));
 
         // method 2: working
-        // for (var key in obj) {
+        // for (const key in obj) {
         //     if (Object.prototype.hasOwnProperty.call(obj, key)) {
         //         target[key] = obj[key];
         //     }
@@ -825,15 +857,15 @@ class LiteGraph {
         return this.cloneObject(obj, target);
     }
 
-    static cloneObject(obj, target) {
+    cloneObject(obj, target) {
         if (obj == null) {
             return null;
         }
-        var clonedObj = JSON.parse(JSON.stringify(obj));
+        const clonedObj = JSON.parse(JSON.stringify(obj));
         if (!target) {
             return clonedObj;
         }
-        for (var key in clonedObj) {
+        for (const key in clonedObj) {
             if (Object.prototype.hasOwnProperty.call(clonedObj, key)) {
                 target[key] = clonedObj[key];
             }
@@ -845,7 +877,7 @@ class LiteGraph {
     /*
      * https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
      */
-    static uuidv4() {
+    uuidv4() {
         return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (a) => (a ^ Math.random() * 16 >> a / 4).toString(16));
     }
 
@@ -856,7 +888,7 @@ class LiteGraph {
      * @param {String} type_b
      * @return {Boolean} true if they can be connected
      */
-    static isValidConnection(type_a, type_b) {
+    isValidConnection(type_a, type_b) {
         if (type_a === "" || type_a === "*") type_a = 0;
         if (type_b === "" || type_b === "*") type_b = 0;
 
@@ -871,11 +903,11 @@ class LiteGraph {
             return type_a === type_b;
         }
 
-        var supported_types_a = type_a.split(",");
-        var supported_types_b = type_b.split(",");
+        const supported_types_a = type_a.split(",");
+        const supported_types_b = type_b.split(",");
 
-        for (var supported_type_a of supported_types_a) {
-            for (var supported_type_b of supported_types_b) {
+        for (const supported_type_a of supported_types_a) {
+            for (const supported_type_b of supported_types_b) {
                 if (this.isValidConnection(supported_type_a, supported_type_b)) {
                     return true;
                 }
@@ -894,10 +926,11 @@ class LiteGraph {
      * @param {Object} data it could contain info of how the node should be configured
      * @return {Boolean} true if they can be connected
      */
-    static registerSearchboxExtra(node_type, description, data) {
+    registerSearchboxExtra(node_type, description, data) {
         this.searchbox_extras[description.toLowerCase()] = {
             type: node_type,
             desc: description,
+            // title: node_type.title, TODO implement searching by title, desc, and extra pars
             data: data,
         };
     }
@@ -911,7 +944,7 @@ class LiteGraph {
      * @param {Function} on_error in case of an error
      * @return {FileReader|Promise} returns the object used to
      */
-    static fetchFile(url, type, on_complete, on_error) {
+    fetchFile(url, type, on_complete, on_error) {
         if (!url)
             return null;
 
@@ -962,8 +995,8 @@ class LiteGraph {
     }
 
     // @TODO These weren't even directly bound, so could be used as free functions
-    static compareObjects(a, b) {
-        var aKeys = Object.keys(a);
+    compareObjects(a, b) {
+        const aKeys = Object.keys(a);
 
         if (aKeys.length !== Object.keys(b).length) {
             return false;
@@ -972,14 +1005,14 @@ class LiteGraph {
         return aKeys.every((key) => a[key] === b[key]);
     }
 
-    static distance(a, b) {
-        var [xA, yA] = a;
-        var [xB, yB] = b;
+    distance(a, b) {
+        const [xA, yA] = a;
+        const [xB, yB] = b;
 
         return Math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2);
     }
 
-    static colorToString(c) {
+    colorToString(c) {
         return (
             "rgba(" +
             Math.round(c[0] * 255).toFixed() +
@@ -993,7 +1026,7 @@ class LiteGraph {
         );
     }
 
-    static canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
+    canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
         var words = (text + "").trim().split(' ');
         var line = '';
         var ret = {
@@ -1025,11 +1058,11 @@ class LiteGraph {
         return ret;
     }
 
-    static isInsideRectangle(x, y, left, top, width, height) {
+    isInsideRectangle(x, y, left, top, width, height) {
         return x > left && x < left + width && y > top && y < top + height;
     }
 
-    static isBoundingInsideRectangle(bounding, left, top, width, height) {
+    isBoundingInsideRectangle(bounding, left, top, width, height) {
         let x = bounding[0];
         let y = bounding[1];
         if (!(x > left && x < left + width && y > top && y < top + height))
@@ -1042,7 +1075,7 @@ class LiteGraph {
     }
 
     // [minx,miny,maxx,maxy]
-    static growBounding(bounding, x, y) {
+    growBounding(bounding, x, y) {
         if (x < bounding[0]) {
             bounding[0] = x;
         } else if (x > bounding[2]) {
@@ -1057,17 +1090,17 @@ class LiteGraph {
     }
 
     // point inside bounding box
-    static isInsideBounding(p, bb) {
+    isInsideBounding(p, bb) {
         return p[0] >= bb[0][0] && p[1] >= bb[0][1] && p[0] <= bb[1][0] && p[1] <= bb[1][1];
     }
 
     // bounding overlap, format: [ startx, starty, width, height ]
-    static overlapBounding(a, b, add) {
+    overlapBounding(a, b, add) {
         add = add || 0;
-        var A_end_x = a[0] + a[2] + add;
-        var A_end_y = a[1] + a[3] + add;
-        var B_end_x = b[0] + b[2] + add;
-        var B_end_y = b[1] + b[3] + add;
+        const A_end_x = a[0] + a[2] + add;
+        const A_end_y = a[1] + a[3] + add;
+        const B_end_x = b[0] + b[2] + add;
+        const B_end_y = b[1] + b[3] + add;
 
         return !(a[0] > B_end_x || a[1] > B_end_y || A_end_x < b[0] || A_end_y < b[1]);
     }
@@ -1075,7 +1108,7 @@ class LiteGraph {
     // Convert a hex value to its decimal value - the inputted hex must be in the
     //	format of a hex triplet - the kind we use for HTML colours. The function
     //	will return an array with three values.
-    static hex2num(hex) {
+    hex2num(hex) {
         if (hex.charAt(0) == "#") {
             hex = hex.slice(1);
         } // Remove the '#' char - if there is one.
@@ -1095,7 +1128,7 @@ class LiteGraph {
 
     // Give a array with three values as the argument and the function will return
     //	the corresponding hex triplet.
-    static num2hex(triplet) {
+    num2hex(triplet) {
         var hex_alphabets = "0123456789ABCDEF";
         var hex = "#";
         var int1, int2;
@@ -1108,7 +1141,7 @@ class LiteGraph {
         return hex;
     }
 
-    static closeAllContextMenus = function(ref_window) {
+    closeAllContextMenus = function(ref_window) {
         ref_window = ref_window || window;
 
         var elements = ref_window.document.querySelectorAll(".litecontextmenu");
@@ -1130,7 +1163,7 @@ class LiteGraph {
         }
     };
 
-    static extendClass = (target, origin) => {
+    extendClass = (target, origin) => {
         for (let i in origin) {
             // copy class properties
             if (target.hasOwnProperty(i)) {
@@ -1174,7 +1207,7 @@ class LiteGraph {
     }
 
     // used to create nodes from wrapping functions
-    static getParameterNames = function(func) {
+    getParameterNames = function(func) {
         return (func + "")
             .replace(/[/][/].*$/gm, "") // strip single-line comments
             .replace(/\s+/g, "") // strip white space
@@ -1186,7 +1219,7 @@ class LiteGraph {
             .filter(Boolean); // split & filter [""]
     };
 
-    static clamp = (v, a, b) => {
+    clamp = (v, a, b) => {
         return a > v ? a : b < v ? b : v;
     };
 
@@ -1204,30 +1237,41 @@ class LiteGraph {
         console.error?.("Removed and being re-integrated sorta");
     } */
 
-    static closeAllContextMenus = () => {
+    /* closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
-        ContextMenuClass.closeAll();
-    };
+        ContextMenu.closeAll();
+    }; */
 
-
+    getTime() {
+        if (typeof performance != "undefined") {
+            return performance.now(); //.bind(performance);
+        } else if (typeof Date != "undefined" && Date.now) {
+            Date.now();
+        } else if (typeof process != "undefined") {
+            const t = process.hrtime();
+            return t[0] * 0.001 + t[1] * 1e-6;
+        } else {
+            return new Date().getTime();
+        }
+    }
 }
 
 // !¿ TODO MOVE THESE HELPERS ?!
 // timer that works everywhere
-if (typeof performance != "undefined") {
-    LiteGraph.getTime = performance.now.bind(performance);
-} else if (typeof Date != "undefined" && Date.now) {
-    LiteGraph.getTime = Date.now.bind(Date);
-} else if (typeof process != "undefined") {
-    LiteGraph.getTime = () => {
-        var t = process.hrtime();
-        return t[0] * 0.001 + t[1] * 1e-6;
-    };
-} else {
-    LiteGraph.getTime = function getTime() {
-        return new Date().getTime();
-    };
-}
+// if (typeof performance != "undefined") {
+//     LiteGraphClass.getTime = performance.now.bind(performance);
+// } else if (typeof Date != "undefined" && Date.now) {
+//     LiteGraphClass.getTime = Date.now.bind(Date);
+// } else if (typeof process != "undefined") {
+//     LiteGraphClass.getTime = () => {
+//         var t = process.hrtime();
+//         return t[0] * 0.001 + t[1] * 1e-6;
+//     };
+// } else {
+//     LiteGraphClass.getTime = function getTime() {
+//         return new Date().getTime();
+//     };
+// }
 
 // @BROWSERONLY
 if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
@@ -1239,8 +1283,13 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
         });
 }
 
-if (typeof(global) == "object") global.LiteGraph = LiteGraph;
-if (typeof(window) == "object") window.LiteGraph = LiteGraph;
+const root = getGlobalObject();
+if (!getGlobalVariable("LiteGraph")) {
+    setGlobalVariable("LiteGraph", new LiteGraphClass());
+    let LGInst = getGlobalVariable("LiteGraph");
+    LGInst.log_info("LiteGraph instantiated", LGInst.getTime());
+}
+var LiteGraph = getGlobalVariable("LiteGraph");
 
 /**
  * WIP
@@ -1268,7 +1317,7 @@ class CallbackHandler {
      */
     registerCallbackHandler = function(name, callback, opts) {
         if (!opts || typeof(opts) !== "object") opts = {};
-        var def_opts = {
+        const def_opts = {
             priority: 0,
             is_default: false,
             call_once: false
@@ -1286,7 +1335,7 @@ class CallbackHandler {
                 handlers: []
             };
         }
-        var h_id = this.callbacks_handlers[name].last_id++;
+        const h_id = this.callbacks_handlers[name].last_id++;
 
         if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler", "new callback handler", name, h_id);
 
@@ -1313,7 +1362,7 @@ class CallbackHandler {
     unregisterCallbackHandler(name, h_id) {
         // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
         if (typeof(this.callbacks_handlers[name]) !== "undefined") {
-            var nHandlers = this.callbacks_handlers[name].handlers.length;
+            const nHandlers = this.callbacks_handlers[name].handlers.length;
             this.callbacks_handlers[name].handlers = this.callbacks_handlers[name].handlers.filter(function(obj) {
                 // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
                 if (obj.id === h_id) {
@@ -1340,7 +1389,7 @@ class CallbackHandler {
      */
     processCallbackHandlers(name, opts /*, .. arguments */ ) {
         if (!opts || typeof(opts) !== "object") opts = {};
-        var def_opts = {
+        const def_opts = {
             // WIP :: think try and implement options
             // process: "all", return: "first_result", skip_null_return: true, append_last_return: false
             // min_piority: false, max_priority: false
@@ -1430,9 +1479,12 @@ class CallbackHandler {
                         (typeof(stepRet.result_priority) !== "undefined" && cbResPriority <= stepRet.result_priority) ||
                         (typeof(stepRet.result_priority) === "undefined" && (!cbResPriority || cbResPriority <= 0))
                     ) {
-                        if (cbHandle.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "checkStepRet", "set result", stepRet, oCbInfo);
+                        if (cbHandle.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "checkStepRet", "set result from object", stepRet, oCbInfo);
                         cbRet = stepRet;
                     }
+                } else {
+                    if (cbHandle.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "checkStepRet", "set result, not object", stepRet, oCbInfo);
+                    cbRet = stepRet;
                 }
                 if (typeof(stepRet.stop_replication) !== "undefined" && stepRet.stop_replication) {
                     if (cbHandle.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "checkStepRet", "stop_replication", oCbInfo);
@@ -1544,7 +1596,7 @@ class ContextMenu {
     }
 
     #createRoot() {
-        var root = this.root = document.createElement("div");
+        const root = this.root = document.createElement("div");
         if (this.options.className) {
             root.className = this.options.className;
         }
@@ -1555,7 +1607,7 @@ class ContextMenu {
     }
 
     #bindEvents() {
-        var root = this.root;
+        const root = this.root;
 
         root.style.pointerEvents = "none";
         setTimeout(() => {
@@ -1600,7 +1652,7 @@ class ContextMenu {
     }
 
     #linkToParent() {
-        var parentMenu = this.options.parentMenu;
+        const parentMenu = this.options.parentMenu;
         if (!parentMenu)
             return;
         if (parentMenu.constructor !== this.constructor) {
@@ -1624,7 +1676,7 @@ class ContextMenu {
 
         // why should we ignore other events ?
         // use strings because comparing classes between windows doesnt work
-        var eventClass = this.options.event.constructor.name;
+        const eventClass = this.options.event.constructor.name;
         if (eventClass !== "MouseEvent" &&
             eventClass !== "CustomEvent" &&
             eventClass !== "PointerEvent"
@@ -1635,12 +1687,12 @@ class ContextMenu {
     }
 
     createFilter(values, options) {
-        var filter = document.createElement("input");
+        const filter = document.createElement("input");
         filter.classList.add("context-menu-filter");
         filter.placeholder = "Filter list";
         this.root.prepend(filter);
 
-        var items = Array.from(this.root.querySelectorAll(".litemenu-entry"));
+        const items = Array.from(this.root.querySelectorAll(".litemenu-entry"));
         let displayedItems = [...items];
         let itemCount = displayedItems.length;
 
@@ -1648,8 +1700,8 @@ class ContextMenu {
 
         // We must request an animation frame for the current node of the active canvas to update.
         requestAnimationFrame(() => {
-            var currentNode = options.extra; //LGraphCanvas.active_canvas.current_node;
-            var clickedComboValue = currentNode?.widgets
+            const currentNode = options.extra; //LGraphCanvas.active_canvas.current_node;
+            const clickedComboValue = currentNode?.widgets
                 ?.filter(w => w.type === "combo" && w.options.values.length === values.length)
                 .find(w => w.options.values.every((v, i) => v === values[i]))
                 ?.value;
@@ -1670,13 +1722,13 @@ class ContextMenu {
                 selectedItem?.style.setProperty("color", "#000", "important");
             }
 
-            var positionList = () => {
-                var rect = this.root.getBoundingClientRect();
+            const positionList = () => {
+                const rect = this.root.getBoundingClientRect();
 
                 // If the top is off-screen then shift the element with scaling applied
                 if (rect.top < 0) {
-                    var scale = 1 - this.root.getBoundingClientRect().height / this.root.clientHeight;
-                    var shift = (this.root.clientHeight * scale) / 2;
+                    const scale = 1 - this.root.getBoundingClientRect().height / this.root.clientHeight;
+                    const shift = (this.root.clientHeight * scale) / 2;
                     this.root.style.top = -shift + "px";
                 }
             }
@@ -1709,10 +1761,10 @@ class ContextMenu {
                         updateSelected();
                         break;
                     case "ArrowLeft":
-                        var parentMenu = this.parentMenu;
+                        const parentMenu = this.parentMenu;
                         this.close(event, true);
                         if (parentMenu) {
-                            var parentFilter = Array.from(parentMenu.root.querySelectorAll(".context-menu-filter"));
+                            const parentFilter = Array.from(parentMenu.root.querySelectorAll(".context-menu-filter"));
                             if (parentFilter && parentFilter.length) {
                                 parentFilter[0].style.display = "block";
                                 parentFilter[0].focus();
@@ -1733,10 +1785,10 @@ class ContextMenu {
 
             filter.addEventListener("input", () => {
                 // Hide all items that don't match our filter
-                var term = filter.value.toLocaleLowerCase();
+                const term = filter.value.toLocaleLowerCase();
                 // When filtering, recompute which items are visible for arrow up/down and maintain selection.
                 displayedItems = items.filter(item => {
-                    var isVisible = !term || item.textContent.toLocaleLowerCase().includes(term);
+                    const isVisible = !term || item.textContent.toLocaleLowerCase().includes(term);
                     item.style.display = isVisible ? "block" : "none";
                     return isVisible;
                 });
@@ -1753,8 +1805,8 @@ class ContextMenu {
                 if (options.event) {
                     let top = options.event.clientY - 10;
 
-                    var bodyRect = document.body.getBoundingClientRect();
-                    var rootRect = this.root.getBoundingClientRect();
+                    const bodyRect = document.body.getBoundingClientRect();
+                    const rootRect = this.root.getBoundingClientRect();
                     if (bodyRect.height && top > bodyRect.height - rootRect.height - 10) {
                         top = Math.max(0, bodyRect.height - rootRect.height - 10);
                     }
@@ -1782,7 +1834,7 @@ class ContextMenu {
         if (!title)
             return;
         this.titleElement ??= document.createElement("div");
-        var element = this.titleElement;
+        const element = this.titleElement;
         element.className = "litemenu-title";
         element.innerHTML = title;
         if (!this.root.parentElement)
@@ -1810,16 +1862,16 @@ class ContextMenu {
     }
 
     #insertMenu() {
-        var doc = this.options.event?.target.ownerDocument ?? document;
-        var parent = doc.fullscreenElement ?? doc.body;
-        var root = this.root;
-        var that = this;
+        const doc = this.options.event?.target.ownerDocument ?? document;
+        const parent = doc.fullscreenElement ?? doc.body;
+        const root = this.root;
+        const that = this;
         parent.appendChild(this.root);
     }
 
     #calculateBestPosition() {
-        var options = this.options;
-        var root = this.root;
+        const options = this.options;
+        const root = this.root;
 
         let left = options.left || 0;
         let top = options.top || 0;
@@ -1835,12 +1887,12 @@ class ContextMenu {
             this.top_original = top;
 
             if (options.parentMenu) {
-                var rect = options.parentMenu.root.getBoundingClientRect();
+                const rect = options.parentMenu.root.getBoundingClientRect();
                 left = rect.left + rect.width;
             }
 
-            var body_rect = document.body.getBoundingClientRect();
-            var root_rect = root.getBoundingClientRect();
+            const body_rect = document.body.getBoundingClientRect();
+            const root_rect = root.getBoundingClientRect();
             if (body_rect.height === 0)
                 LiteGraph.log_error("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
 
@@ -1871,7 +1923,7 @@ class ContextMenu {
      */
     addItem(name, value, options = {}) {
 
-        var element = document.createElement("div");
+        const element = document.createElement("div");
         element.className = "litemenu-entry submenu";
 
         let disabled = false;
@@ -1923,7 +1975,7 @@ class ContextMenu {
         }
         if (!disabled && options.autoopen) {
             element.addEventListener("pointerenter", (event) => {
-                var value = this.value;
+                const value = this.value;
                 if (!value || !value.has_submenu) {
                     return;
                 }
@@ -1935,7 +1987,7 @@ class ContextMenu {
         var that = this;
 
         function handleMenuItemClick(event) {
-            var value = this.value;
+            const value = this.value;
             let closeParent = true;
 
             LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "process", value, event, options, closeParent, this.current_submenu, this);
@@ -1944,7 +1996,7 @@ class ContextMenu {
             that.current_submenu?.close(event);
 
             // Hide filter
-            var thisFilter = Array.from(that.root.querySelectorAll(".context-menu-filter"));
+            const thisFilter = Array.from(that.root.querySelectorAll(".context-menu-filter"));
             if (thisFilter && thisFilter.length) {
                 thisFilter[0].style.display = "none";
             }
@@ -1953,7 +2005,7 @@ class ContextMenu {
             if (options.callback) {
                 LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "global callback", this, value, options, event, that, options.node);
 
-                var globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
+                const globalCallbackResult = options.callback.call(this, value, options, event, that, options.node);
                 if (globalCallbackResult === true) {
                     LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "global callback processed, dont close parent?", globalCallbackResult);
                     closeParent = false;
@@ -1967,7 +2019,7 @@ class ContextMenu {
                 if (value.callback && !options.ignore_item_callbacks && value.disabled !== true) {
 
                     LiteGraph.log_debug("contextmenu", "handleMenuItemClick", "using value callback and !ignore_item_callbacks", this, value, options, event, that, options.node);
-                    var itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
+                    const itemCallbackResult = value.callback.call(this, value, options, event, that, options.extra);
                     if (itemCallbackResult === true) {
                         closeParent = false;
                     }
@@ -2040,7 +2092,7 @@ class ContextMenu {
      * @param {Window} [ref_window=window] - The window object to search for open menus.
      */
     static closeAll = (ref_window = window) => {
-        var elements = ref_window.document.querySelectorAll(".litecontextmenu");
+        const elements = ref_window.document.querySelectorAll(".litecontextmenu");
         if (!elements.length)
             return;
 
@@ -2063,7 +2115,7 @@ class ContextMenu {
      * @BUG: Probable bug related to params, origin not being configured/populated correctly
      */
     static trigger(element, event_name, params, origin) {
-        var evt = new CustomEvent(event_name, {
+        const evt = new CustomEvent(event_name, {
             bubbles: true,
             cancelable: true,
             detail: params,
@@ -2307,8 +2359,8 @@ class DragAndScale {
             return;
         }
 
-        var canvas = this.element;
-        var rect = canvas.getBoundingClientRect();
+        const canvas = this.element;
+        const rect = canvas.getBoundingClientRect();
         var x = event.clientX - rect.left;
         var y = event.clientY - rect.top;
         event.canvasx = x;
@@ -2338,8 +2390,8 @@ class DragAndScale {
             return;
         }
 
-        var canvas = this.element;
-        var rect = canvas.getBoundingClientRect();
+        const canvas = this.element;
+        const rect = canvas.getBoundingClientRect();
         var x = event.clientX - rect.left;
         var y = event.clientY - rect.top;
         event.canvasx = x;
@@ -2393,14 +2445,14 @@ class DragAndScale {
         if (viewport) {
             startx += viewport[0] / this.scale;
             starty += viewport[1] / this.scale;
-            var [vpWidth, vpHeight] = viewport.slice(2);
+            const [vpWidth, vpHeight] = viewport.slice(2);
             width = vpWidth;
             height = vpHeight;
         }
 
-        var endx = startx + width / this.scale;
-        var endy = starty + height / this.scale;
-        var coords = [startx, starty, endx - startx, endy - starty];
+        const endx = startx + width / this.scale;
+        const endy = starty + height / this.scale;
+        const coords = [startx, starty, endx - startx, endy - starty];
         this.visible_area.set(coords);
         return coords;
     }
@@ -2463,7 +2515,7 @@ class DragAndScale {
         if (value == this.scale || !this.element) {
             return;
         }
-        var rect = this.element.getBoundingClientRect();
+        const rect = this.element.getBoundingClientRect();
         if (!rect) {
             return;
         }
@@ -2671,7 +2723,7 @@ class LGraph {
      * @param {GraphCanvas} graph_canvas
      */
     attachCanvas(graphcanvas) {
-        if (!(graphcanvas instanceof LiteGraph.LGraphCanvas)) {
+        if (!(graphcanvas instanceof LGraphCanvas)) {
             throw new Error("attachCanvas expects a LiteGraph.LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
@@ -2720,7 +2772,7 @@ class LGraph {
         this.starttime = LiteGraph.getTime();
         this.last_update_time = this.starttime;
 
-        var onAnimationFrame = () => {
+        const onAnimationFrame = () => {
             if (this.execution_timer_id !== -1) {
                 return;
             }
@@ -3116,11 +3168,11 @@ class LGraph {
      * @method arrange
      */
     arrange(margin = 100, layout) {
-        var nodes = this.computeExecutionOrder(false, true);
-        var columns = [];
+        const nodes = this.computeExecutionOrder(false, true);
+        const columns = [];
         for (let i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
-            var col = node._level || 1;
+            const node = nodes[i];
+            const col = node._level || 1;
             columns[col] ??= [];
             columns[col].push(node);
         }
@@ -3128,21 +3180,21 @@ class LGraph {
         let x = margin;
 
         for (let i = 0; i < columns.length; ++i) {
-            var column = columns[i];
+            const column = columns[i];
             if (!column) {
                 continue;
             }
             let max_size = 100;
             let y = margin + LiteGraph.NODE_TITLE_HEIGHT;
             for (let j = 0; j < column.length; ++j) {
-                var node = column[j];
+                const node = column[j];
                 node.pos[0] = (layout == LiteGraph.VERTICAL_LAYOUT) ? y : x;
                 node.pos[1] = (layout == LiteGraph.VERTICAL_LAYOUT) ? x : y;
-                var max_size_index = (layout == LiteGraph.VERTICAL_LAYOUT) ? 1 : 0;
+                const max_size_index = (layout == LiteGraph.VERTICAL_LAYOUT) ? 1 : 0;
                 if (node.size[max_size_index] > max_size) {
                     max_size = node.size[max_size_index];
                 }
-                var node_size_index = (layout == LiteGraph.VERTICAL_LAYOUT) ? 0 : 1;
+                const node_size_index = (layout == LiteGraph.VERTICAL_LAYOUT) ? 0 : 1;
                 y += node.size[node_size_index] + margin + LiteGraph.NODE_TITLE_HEIGHT;
             }
             x += max_size + margin;
@@ -3193,7 +3245,7 @@ class LGraph {
         }
 
         for (let j = 0, l = nodes.length; j < l; ++j) {
-            var node = nodes[j];
+            const node = nodes[j];
 
             if (
                 node.constructor === LiteGraph.Subgraph &&
@@ -3228,7 +3280,7 @@ class LGraph {
             return;
         }
 
-        for (var c of this.list_of_graphcanvas) {
+        for (const c of this.list_of_graphcanvas) {
             if (typeof(c[action]) == "function" && c[action] && params) {
                 c[action](...params);
             }
@@ -3458,7 +3510,7 @@ class LGraph {
      * @return {Array} a list with all the nodes of this type
      */
     findNodesByType(type, result = []) {
-        var lowerCaseType = type.toLowerCase();
+        const lowerCaseType = type.toLowerCase();
         result = this._nodes.filter((node) => node.type.toLowerCase() === lowerCaseType);
         return result;
     }
@@ -3992,7 +4044,7 @@ class LGraph {
      * @return {Object} value of the node
      */
     serialize() {
-        var nodesInfo = this._nodes.map((node) => node.serialize());
+        const nodesInfo = this._nodes.map((node) => node.serialize());
         // TODO ensure and remove
         // var nodesInfo = [];
         // for (var i = 0, l = this._nodes.length; i < l; ++i) {
@@ -4007,7 +4059,7 @@ class LGraph {
             if (!link.serialize) {
                 // weird bug I havent solved yet
                 LiteGraph.log_warn("lgraph", "serialize", "weird LLink bug, link info is not a LLink but a regular object");
-                var link2 = new LiteGraph.LLink();
+                var link2 = new LLink();
                 for (var j in link) {
                     link2[j] = link[j];
                 }
@@ -4018,7 +4070,7 @@ class LGraph {
             links.push(link.serialize());
         }
 
-        var groupsInfo = this._groups.map((group) => group.serialize());
+        const groupsInfo = this._groups.map((group) => group.serialize());
         // TODO ensure and remove
         // var groupsInfo = [];
         // for (var i = 0; i < this._groups.length; ++i) {
@@ -4070,7 +4122,7 @@ class LGraph {
                     LiteGraph.log_warn("lgraph", "configure", "serialized graph link data contains errors, skipping.", link_data, i, data.links);
                     continue;
                 }
-                var link = new LiteGraph.LLink();
+                var link = new LLink();
                 link.configure(link_data);
                 links[link.id] = link;
             }
@@ -4110,7 +4162,7 @@ class LGraph {
 
             // configure nodes afterwards so they can reach each other
             nodes.forEach((n_info) => {
-                var node = this.getNodeById(n_info.id);
+                const node = this.getNodeById(n_info.id);
                 node?.configure(n_info);
             });
         }
@@ -4119,7 +4171,7 @@ class LGraph {
         this._groups.length = 0;
         if (data.groups) {
             data.groups.forEach((groupData) => {
-                var group = new LiteGraph.LGraphGroup();
+                const group = new LiteGraph.LGraphGroup();
                 group.configure(groupData);
                 this.add(group, true, {
                     doProcessChange: false
@@ -4477,7 +4529,7 @@ class LGraphCanvas {
             canvas = document.querySelector(canvas);
         }
 
-        this.ds = new LiteGraph.DragAndScale();
+        this.ds = new DragAndScale();
         this.zoom_modify_alpha = true; // otherwise it generates ugly patterns when scaling down too much
 
         this.title_text_font = `${LiteGraph.NODE_TEXT_SIZE}px Arial`;
@@ -4913,9 +4965,9 @@ class LGraphCanvas {
     }
 
     static getFileExtension(url) {
-        // var urlObj = new URL(url);
-        // var path = urlObj.pathname;
-        // var lastDotIndex = path.lastIndexOf(".");
+        // const urlObj = new URL(url);
+        // const path = urlObj.pathname;
+        // const lastDotIndex = path.lastIndexOf(".");
         // if (lastDotIndex === -1) return "";
         // return path.slice(lastDotIndex + 1).toLowerCase();
         url = url ? url + "" : "";
@@ -5134,7 +5186,7 @@ class LGraphCanvas {
         this.canvas.focus();
 
         // ComfyUI compatibility
-        if (LiteGraph.ContextMenuClass.closeAll) LiteGraph.ContextMenuClass.closeAll(ref_window);
+        if (LiteGraph.ContextMenu.closeAll) LiteGraph.ContextMenu.closeAll(ref_window);
 
         LiteGraph.closeAllContextMenus(ref_window);
 
@@ -7066,10 +7118,10 @@ class LGraphCanvas {
     // BAD WIP
     // TODO check right scaling and positioning
     /*centerOnSelection(){
-        // var canvas = LGraphCanvas.active_canvas;
-        var bounds = this.getBoundaryForSelection();
+        // const canvas = LGraphCanvas.active_canvas;
+        const bounds = this.getBoundaryForSelection();
         if(bounds){
-            var boundPos = [bounds[0], bounds[1]];
+            const boundPos = [bounds[0], bounds[1]];
             var canvasPos = this.convertCanvasToOffset(boundPos);
             this.ds.offset[0] = canvasPos[0]; // - (this.canvas.width * 0.5) / this.ds.scale;
             this.ds.offset[1] = canvasPos[1]; // - (this.canvas.height * 0.5) / this.ds.scale;
@@ -7108,27 +7160,39 @@ class LGraphCanvas {
      * @method adjustMouseEvent
      **/
     adjustMouseEvent(e) {
-        var clientX_rel = 0;
-        var clientY_rel = 0;
+        let clientX_rel = 0;
+        let clientX = 0;
+        let clientY_rel = 0;
+        let clientY = 0;
 
         if (!e.clientX) {
             // simulate position via event (little hack)
-            var mouseCoord = this.getMouseCoordinates();
-            var gloCoord = this.convertOffsetToEditorArea(mouseCoord);
+            const mouseCoord = this.getMouseCoordinates();
+            const gloCoord = this.convertOffsetToEditorArea(mouseCoord);
+
             // need prompt to be absolute positioned relative to editor-area that needs relative positioning
 
-            // TODO RESTART FROM HERE :: ERROR setting getter-only property
-            e.clientX = gloCoord[0];
-            e.clientY = gloCoord[1];
+            // prevent error for some read-only events: setting getter-only property
+            try {
+                e.clientX = gloCoord[0];
+                e.clientY = gloCoord[1];
+            } catch (e) {
+                LiteGraph.log_debug("lgraphcanvas", "adjustMouseEvent", "failed set custom prop on event", e);
+            }
+            clientX = gloCoord[0];
+            clientY = gloCoord[1];
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
         }
 
         if (this.canvas) {
             var b = this.canvas.getBoundingClientRect();
-            clientX_rel = e.clientX - b.left;
-            clientY_rel = e.clientY - b.top;
+            clientX_rel = clientX - b.left;
+            clientY_rel = clientY - b.top;
         } else {
-            clientX_rel = e.clientX;
-            clientY_rel = e.clientY;
+            clientX_rel = clientX;
+            clientY_rel = clientY;
         }
 
         // e.deltaX = clientX_rel - this.last_mouse_position[0];
@@ -7196,19 +7260,19 @@ class LGraphCanvas {
      **/
     convertOffsetToEditorArea(pos) {
         // working actually for absolute positioning to editor-area eg. prompt with class graphdialog
-        var rect = this.canvas.getBoundingClientRect();
-        var canvasPos = this.convertOffsetToCanvas(pos);
+        const rect = this.canvas.getBoundingClientRect();
+        const canvasPos = this.convertOffsetToCanvas(pos);
         // return [canvasPos[0]+rect.left, canvasPos[1]+rect.top];
         return [canvasPos[0] + rect.left, canvasPos[1] + rect.top];
         // not working
-        // var canvasAbsPos = this.cumulativeOffset(this.canvas);
-        // var canvasPos = this.convertOffsetToCanvas(pos);
+        // const canvasAbsPos = this.cumulativeOffset(this.canvas);
+        // const canvasPos = this.convertOffsetToCanvas(pos);
         // return [canvasPos[0]+canvasAbsPos[0], pos[1]+canvasAbsPos[1]];
     }
 
     // converts event coordinates from canvas2D to graph coordinates
     convertEventToCanvasOffset(e) {
-        var rect = this.canvas.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
         return this.convertCanvasToOffset([
             e.clientX - rect.left,
             e.clientY - rect.top,
@@ -7322,7 +7386,7 @@ class LGraphCanvas {
             if (draw_front_canvas) {
                 // count only slow frames with havy rendering
                 var threshold = this.low_quality_rendering_threshold;
-                var acceptable_fps = 45;
+                const acceptable_fps = 45;
                 if (this.fps < acceptable_fps) {
                     this.low_quality_rendering_counter += acceptable_fps / this.fps;
                     this.low_quality_rendering_counter = Math.min(this.low_quality_rendering_counter, 2 * threshold); // clamp counter
@@ -7700,7 +7764,7 @@ class LGraphCanvas {
         ctx.fillStyle = "#888";
         ctx.font = "14px Arial";
         ctx.textAlign = "left";
-        var title_text = "Graph Outputs";
+        const title_text = "Graph Outputs";
         var tw = ctx.measureText(title_text).width
         ctx.fillText(title_text, (canvas_w - tw) - 20, 34);
         // var pos = this.mouse;
@@ -8502,7 +8566,7 @@ class LGraphCanvas {
         ctx.globalAlpha = this.editor_alpha;
 
         // ctx.fillText(text, pos[0] + size[0]/2, pos[1] - 15 - h * 0.3);
-        var oTMultiRet = LiteGraph.canvasFillTextMultiline(ctx, text, pos[0] + size[0] / 2, pos[1] - (h), w, 14);
+        const oTMultiRet = LiteGraph.canvasFillTextMultiline(ctx, text, pos[0] + size[0] / 2, pos[1] - (h), w, 14);
 
         node.ttip_oTMultiRet = oTMultiRet;
 
@@ -9446,7 +9510,7 @@ class LGraphCanvas {
                     ctx.fill();
                     if (show_text) {
                         ctx.fillStyle = secondary_text_color;
-                        var label = w.label || w.name;
+                        const label = w.label || w.name;
                         if (label != null) {
                             ctx.fillText(label, margin * 2, y + H * 0.7);
                         }
@@ -9568,7 +9632,7 @@ class LGraphCanvas {
 
                         // ctx.stroke();
                         ctx.fillStyle = secondary_text_color;
-                        var label = w.label || w.name;
+                        const label = w.label || w.name;
                         if (label != null) {
                             ctx.fillText(label, margin * 2, y + H * 0.7);
                         }
@@ -10005,13 +10069,13 @@ class LGraphCanvas {
     /* CONTEXT MENU ********************/
 
     static onGroupAdd(info, entry, mouse_event) {
-        var canvas = LGraphCanvas.active_canvas;
+        const canvas = LGraphCanvas.active_canvas;
         var group = new LiteGraph.LGraphGroup();
         if (canvas.options.groups_add_around_selected && Object.keys(canvas.selected_nodes).length) {
-            var bounds = canvas.getBoundaryForSelection();
+            const bounds = canvas.getBoundaryForSelection();
             if (bounds) {
-                var spacing = canvas.options.groups_add_default_spacing;
-                var titleSpace = canvas.options.groups_title_font_size * 1.5;
+                const spacing = canvas.options.groups_add_default_spacing;
+                const titleSpace = canvas.options.groups_title_font_size * 1.5;
                 group.pos = [bounds[0] - spacing, bounds[1] - titleSpace - spacing];
                 group.size = [bounds[2] + (spacing * 2), bounds[3] + titleSpace + (spacing * 2)];
                 LiteGraph.log_debug("lgraphcanvas", "onGroupAdd", "groups_add_around_selected", bounds, group);
@@ -10034,10 +10098,10 @@ class LGraphCanvas {
         let right = null;
         let bottom = null;
         let left = null;
-        for (var nID in nodes) {
-            var node = nodes[nID];
-            var [x, y] = node.pos;
-            var [width, height] = node.size;
+        for (const nID in nodes) {
+            const node = nodes[nID];
+            const [x, y] = node.pos;
+            const [width, height] = node.size;
 
             if (top === null || y < top.pos[1]) {
                 top = node;
@@ -10071,12 +10135,12 @@ class LGraphCanvas {
 
     // returns x, y, w, h
     getBoundaryForSelection() {
-        var nodesBounds = this.boundaryNodesForSelection();
+        const nodesBounds = this.boundaryNodesForSelection();
         if (!nodesBounds || nodesBounds.left === null) return false;
-        var ln = nodesBounds.left.getBounding();
-        var tn = nodesBounds.top.getBounding();
-        var rn = nodesBounds.right.getBounding();
-        var bn = nodesBounds.bottom.getBounding();
+        const ln = nodesBounds.left.getBounding();
+        const tn = nodesBounds.top.getBounding();
+        const rn = nodesBounds.right.getBounding();
+        const bn = nodesBounds.bottom.getBounding();
         return [ln[0], tn[1], rn[0] + rn[2] - ln[0], bn[1] + bn[3] - tn[1]];
     }
 
@@ -10095,7 +10159,7 @@ class LGraphCanvas {
             return;
         }
 
-        var canvas = LGraphCanvas.active_canvas;
+        const canvas = LGraphCanvas.active_canvas;
         let boundaryNodes = []
         if (align_to === undefined) {
             boundaryNodes = LGraphCanvas.getBoundaryNodes(nodes)
@@ -10108,7 +10172,7 @@ class LGraphCanvas {
             }
         }
 
-        for (var [_, node] of Object.entries(canvas.selected_nodes)) {
+        for (const [_, node] of Object.entries(canvas.selected_nodes)) {
             switch (direction) {
                 case "right":
                     node.pos[0] = boundaryNodes["right"].pos[0] + boundaryNodes["right"].size[0] - node.size[0];
@@ -10228,7 +10292,7 @@ class LGraphCanvas {
 
             });
 
-            var e_check = e ? e : options.event;
+            const e_check = e ? e : options.event;
             // LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", e, options);
             LiteGraph.log_debug("lgraphcanvas", "onMenuAdd", "inner_onMenuAdded", "opening ContextMenu", entries, {
                 event: e_check,
@@ -10267,6 +10331,8 @@ class LGraphCanvas {
         if (r !== null && (typeof(r) == "object")) {
             if (typeof(r.return_value) == "object") {
                 options = r.return_value;
+            } else if (typeof(r.length) !== "undefined") {
+                options = r;
             }
         }
 
@@ -10381,6 +10447,8 @@ class LGraphCanvas {
         if (r !== null && (typeof(r) == "object")) {
             if (typeof(r.return_value) == "object") {
                 options = r.return_value;
+            } else if (typeof(r.length) !== "undefined") {
+                options = r;
             }
         }
 
@@ -10441,7 +10509,6 @@ class LGraphCanvas {
                             nameLocked: true,
                             removable: true,
                             optional: true,
-                            s
                         },
                     ],
                     className: "event",
@@ -10584,7 +10651,7 @@ class LGraphCanvas {
             return;
         }
 
-        var fApplyMultiNode = (node) => {
+        const fApplyMultiNode = (node) => {
             node.size = node.computeSize();
             node.processCallbackHandlers("onResize", {
                 def_cb: node.onResize
@@ -10750,7 +10817,7 @@ class LGraphCanvas {
                     // if is object pass options
                     if (nodeNewOpts) {
                         if (nodeNewOpts.properties) {
-                            for (var [key, value] of Object.entries(nodeNewOpts.properties)) {
+                            for (const [key, value] of Object.entries(nodeNewOpts.properties)) {
                                 newNode.addProperty(key, value);
                             }
                         }
@@ -10860,11 +10927,11 @@ class LGraphCanvas {
         }
 
         // get defaults nodes for this slottype
-        var fromSlotType = slotX.type === LiteGraph.EVENT ? "_event_" : slotX.type;
-        var slotTypesDefault = isFrom ? LiteGraph.slot_types_default_out : LiteGraph.slot_types_default_in;
+        const fromSlotType = slotX.type === LiteGraph.EVENT ? "_event_" : slotX.type;
+        const slotTypesDefault = isFrom ? LiteGraph.slot_types_default_out : LiteGraph.slot_types_default_in;
 
         if (slotTypesDefault && slotTypesDefault[fromSlotType]) {
-            var slotType = slotTypesDefault[fromSlotType];
+            const slotType = slotTypesDefault[fromSlotType];
 
             if (Array.isArray(slotType) || typeof slotType === "object") {
                 Object.values(slotType).forEach((typeX) => {
@@ -10881,7 +10948,7 @@ class LGraphCanvas {
             isCustomEvent: opts.isCustomEvent,
             title: (slotX && slotX.name != "" ? (slotX.name + (fromSlotType ? " | " : "")) : "") + (slotX && fromSlotType ? fromSlotType : ""),
             callback: (v, options, e) => {
-                var cases = {
+                const cases = {
                     "Add Node": () => {
                         LiteGraph.log_debug("lgraphcanvas", "showConnectionMenu", "callback", "Add Node calling onMenuAdd", v, options, e);
                         LGraphCanvas.onMenuAdd(null, null, e, menu, (node) => {
@@ -10901,8 +10968,8 @@ class LGraphCanvas {
                     },
                     "default": () => {
                         LiteGraph.log_debug("lgraphcanvas", "showConnectionMenu", "callback", "createDefaultNodeForSlot", v, options, e);
-                        // var new_pos = this.convertOffsetToEditorArea([opts.e.clientX, opts.e.clientY]);
-                        var new_pos = [opts.e.canvasX, opts.e.canvasY];
+                        // const new_pos = this.convertOffsetToEditorArea([opts.e.clientX, opts.e.clientY]);
+                        const new_pos = [opts.e.canvasX, opts.e.canvasY];
                         that.createDefaultNodeForSlot(Object.assign(opts, {
                             position: new_pos,
                             nodeType: v
@@ -10937,7 +11004,7 @@ class LGraphCanvas {
         title.innerText = property;
         var input = dialog.querySelector(".value");
 
-        var inner = () => {
+        const inner = () => {
             if (input) {
                 setValue(input.value);
             }
@@ -11002,7 +11069,7 @@ class LGraphCanvas {
             }
         });
 
-        var setValue = (value) => {
+        const setValue = (value) => {
             switch (item.type) {
                 case "Number":
                     value = Number(value);
@@ -11057,7 +11124,7 @@ class LGraphCanvas {
             }
         });
 
-        var selInDia = dialog.querySelectorAll("select");
+        const selInDia = dialog.querySelectorAll("select");
         if (selInDia) {
             // @BUG: prevent_timeout is never used.  This is literally thrashing just to keep some timeout from happening!
             let prevent_timeout = 0;
@@ -11082,7 +11149,7 @@ class LGraphCanvas {
         var value_element = dialog.querySelector(".value");
         value_element.value = value;
 
-        var input = value_element;
+        const input = value_element;
         input.addEventListener("keydown", (e) => {
             dialog.is_modified = true;
 
@@ -11106,7 +11173,7 @@ class LGraphCanvas {
             e.stopPropagation();
         });
 
-        var button = dialog.querySelector("button");
+        const button = dialog.querySelector("button");
         button.addEventListener("click", (_event) => {
             if (typeof(callback) == "function") {
                 callback(input.value);
@@ -11588,14 +11655,15 @@ class LGraphCanvas {
                     var extra = LiteGraph.searchbox_extras[i];
                     // var passTextSearch = extra.desc.toLowerCase().indexOf(str) !== -1;
                     let str_node = extra.desc.toLowerCase();
+                    let str_title = extra.title ? extra.title.toLowerCase() : "";
                     let a_srch_parts = str.toLowerCase().split(" ");
                     let passTextSearch = true;
                     for (let i_srch of a_srch_parts) {
-                        LiteGraph.log_verbose("search", "check", i_srch, str_node); // verbose debug, make new higher level
+                        // DBG EXCESS LiteGraph.log_verbose("search","check",i_srch,str_node); // verbose debug, make new higher level
                         if (i_srch.trim() === "") continue;
-                        if (str_node.indexOf(i_srch) == -1) {
+                        if (str_node.indexOf(i_srch) == -1 && str_title.indexOf(i_srch) == -1) {
                             passTextSearch = false;
-                            LiteGraph.log_verbose("search", "do not pass", i_srch, str_node); // verbose debug, make new higher level
+                            // DBG EXCESS LiteGraph.log_verbose("search","do not pass",i_srch,str_node); // verbose debug, make new higher level
                             break;
                         }
                     }
@@ -11614,16 +11682,31 @@ class LGraphCanvas {
                 }
 
                 var filtered = null;
+                // filter by nodetype
                 if (Array.prototype.filter) { // filter supported
                     let keys = Object.keys(LiteGraph.registered_node_types); // types
                     filtered = keys.filter(inner_test_filter);
                 } else {
                     filtered = [];
                     for (let i in LiteGraph.registered_node_types) {
-                        if (inner_test_filter(i))
+                        if (inner_test_filter(i)) {
                             filtered.push(i);
+                        }
                     }
                 }
+                // add filter by title and desc
+                // TODO
+                /* if (Array.prototype.filter) { // filter supported
+                    let keys = Object.keys( LiteGraph.registered_node_types ); // types
+                    filtered = keys.filter( inner_test_filter );
+                } else {
+                    filtered = [];
+                    for (let i in LiteGraph.registered_node_types) {
+                        if( inner_test_filter(i) ){
+                            filtered.push(i);
+                        }
+                    }
+                } */
 
                 for (let i = 0; i < filtered.length; i++) {
                     addResult(filtered[i]);
@@ -12260,7 +12343,7 @@ class LGraphCanvas {
 
             panel.content.innerHTML = ""; // clear
 
-            var fUpdate = (name, value, options) => {
+            const fUpdate = (name, value, options) => {
                 switch (name) {
                     /* case "Render mode":
                         // Case ""..
@@ -12348,7 +12431,7 @@ class LGraphCanvas {
 
             panel.addHTML("<h3>Properties</h3>");
 
-            var fUpdate = (name, value) => {
+            const fUpdate = (name, value) => {
                 graphcanvas.graph.beforeChange(node);
                 switch (name) {
                     case "Title":
@@ -12664,7 +12747,7 @@ class LGraphCanvas {
                 return;
             }
             var kV = Object.values(LiteGraph.NODE_MODES).indexOf(v);
-            var fApplyMultiNode = (node) => {
+            const fApplyMultiNode = (node) => {
                 if (kV >= 0 && LiteGraph.NODE_MODES[kV])
                     node.changeMode(kV);
                 else {
@@ -12729,7 +12812,7 @@ class LGraphCanvas {
 
             let color = v.value ? LGraphCanvas.node_colors[v.value] : null;
 
-            var fApplyColor = (node) => {
+            const fApplyColor = (node) => {
                 if (color) {
                     if (node.constructor === LiteGraph.LGraphGroup) {
                         node.color = color.groupcolor;
@@ -12779,7 +12862,7 @@ class LGraphCanvas {
             }
             node.graph.beforeChange( /* ?*/ ); // node
 
-            var fApplyMultiNode = (node) => {
+            const fApplyMultiNode = (node) => {
                 node.shape = v;
             }
 
@@ -12810,7 +12893,7 @@ class LGraphCanvas {
         var graph = node.graph;
         graph.beforeChange();
 
-        var fApplyMultiNode = (node) => {
+        const fApplyMultiNode = (node) => {
             if (node.removable === false) {
                 return;
             }
@@ -12860,7 +12943,7 @@ class LGraphCanvas {
 
         var newSelected = {};
 
-        var fApplyMultiNode = (node) => {
+        const fApplyMultiNode = (node) => {
             if (node.clonable === false) {
                 return;
             }
@@ -13016,6 +13099,8 @@ class LGraphCanvas {
                 if (typeof(r.return_value.length) !== "undefined" && r.return_value.length) {
                     options[0].disabled = false;
                 }
+            } else if (typeof(r.length) !== "undefined" && r.length) {
+                options[0].disabled = false;
             }
         }
 
@@ -13027,6 +13112,8 @@ class LGraphCanvas {
                 if (typeof(r.return_value.length) !== "undefined" && r.return_value.length) {
                     options[1].disabled = false;
                 }
+            } else if (typeof(r.length) !== "undefined" && r.length) {
+                options[0].disabled = false;
             }
         }
 
@@ -13723,7 +13810,7 @@ class LGraphNode {
                 // process inputs and outputs, checking for name to handle node changes
                 if (key === "inputs" || key === "outputs") {
                     LiteGraph.log_debug("lgraphnode", "syncObjectByProperty", key, info[key], this[key]);
-                    var resSync = this.syncObjectByProperty(info[key], this[key], "name");
+                    const resSync = this.syncObjectByProperty(info[key], this[key], "name");
                     this[key] = resSync.ob_dest;
                     if (resSync.keys_remap && Object.keys(resSync.keys_remap).length) {
                         if (this.graph) {
@@ -13761,7 +13848,7 @@ class LGraphNode {
         this.inputs?.forEach((input, i) => {
             if (!input.link)
                 return;
-            var link_info = this.graph ? this.graph.links[input.link] : null;
+            const link_info = this.graph ? this.graph.links[input.link] : null;
             this.processCallbackHandlers("onConnectionsChange", {
                 def_cb: this.onConnectionsChange
             }, LiteGraph.INPUT, i, true, link_info, input);
@@ -13774,7 +13861,7 @@ class LGraphNode {
             if (!output.links)
                 return;
             output.links.forEach((link, i) => {
-                var link_info = this.graph?.links[link] || null; // fixed
+                const link_info = this.graph?.links[link] || null; // fixed
                 LiteGraph.log_verbose("lgraphnode", "configure", "cycle outputlinks", link, i, link_info);
                 this.processCallbackHandlers("onConnectionsChange", {
                     def_cb: this.onConnectionsChange
@@ -13948,7 +14035,7 @@ class LGraphNode {
             return;
         }
 
-        var prevValue = this.properties[name];
+        const prevValue = this.properties[name];
         this.properties[name] = value;
 
         // Call onPropertyChanged and revert the change if needed
@@ -13960,7 +14047,7 @@ class LGraphNode {
         }
 
         // Update the widget value associated with the property name
-        var widgetToUpdate = this.widgets?.find((widget) => widget && widget.options?.property === name);
+        const widgetToUpdate = this.widgets?.find((widget) => widget && widget.options?.property === name);
 
         if (widgetToUpdate) {
             widgetToUpdate.value = value;
@@ -13973,7 +14060,7 @@ class LGraphNode {
     /**
      * sets the output data
      * @method setOutputData
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {*} data
      */
     setOutputData(slot, data) {
@@ -13981,12 +14068,13 @@ class LGraphNode {
             return;
         }
 
-        /* if(slot?.constructor === String) {
+        if (slot?.constructor === String) {
             // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
             slot = this.findOutputSlot(slot);
-        }else if (slot == -1 || slot >= this.outputs.length) {
+        }
+        if (slot == -1 || slot >= this.outputs.length) {
             return;
-        } */
+        }
         slot = this.getOutputSlot(slot);
 
         var output_info = this.outputs[slot];
@@ -13999,7 +14087,7 @@ class LGraphNode {
 
         // if there are connections, pass the data to the connections
         this.outputs[slot].links?.forEach((link_id) => {
-            var link = this.graph.links[link_id];
+            const link = this.graph.links[link_id];
             if (link) {
                 link.data = data;
             }
@@ -14009,12 +14097,16 @@ class LGraphNode {
     /**
      * sets the output data type, useful when you want to be able to overwrite the data type
      * @method setOutputDataType
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {String} datatype
      */
     setOutputDataType(slot, type) {
         if (!this.outputs) {
             return;
+        }
+        if (slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findOutputSlot(slot);
         }
         if (slot == -1 || slot >= this.outputs.length) {
             return;
@@ -14037,7 +14129,7 @@ class LGraphNode {
     /**
      * Retrieves the input data (data traveling through the connection) from one slot
      * @method getInputData
-     * @param {number} slot
+     * @param {number|string} slot
      * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
      * @return {*} data or if it is not connected returns undefined
      */
@@ -14046,7 +14138,11 @@ class LGraphNode {
             return;
         } // undefined;
 
-        if (slot >= this.inputs.length || this.inputs[slot].link == null) {
+        if (slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findInputSlot(slot);
+        }
+        if (slot == -1 || slot >= this.inputs.length) {
             return;
         }
 
@@ -14094,14 +14190,17 @@ class LGraphNode {
     /**
      * Retrieves the input data type (in case this supports multiple input types)
      * @method getInputDataType
-     * @param {number} slot
+     * @param {number|string} slot
      * @return {String} datatype in string format
      */
     getInputDataType(slot) {
         if (!this.inputs) {
             return null;
         } // undefined;
-
+        if (slot?.constructor === String) {
+            // not a niche case: consider that removable and optional slots will move indexes! just pass int value if preferred
+            slot = this.findInputSlot(slot);
+        }
         if (slot >= this.inputs.length || this.inputs[slot].link == null) {
             return null;
         }
@@ -14125,6 +14224,7 @@ class LGraphNode {
 
     /**
      * Retrieves the input data from one slot using its name instead of slot number
+     * OLD: IMPLEMENTED in getInputData,use that instead
      * @method getInputDataByName
      * @param {String} slot_name
      * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
@@ -14300,7 +14400,7 @@ class LGraphNode {
             return null;
         }
 
-        var output = this.outputs[slot];
+        const output = this.outputs[slot];
         if (!output.links || output.links.length === 0) {
             return null;
         }
@@ -14540,7 +14640,7 @@ class LGraphNode {
     /**
      * Triggers a slot event in this node: cycle output slots and launch execute/action on connected nodes
      * @method triggerSlot
-     * @param {Number} slot the index of the output slot
+     * @param {Number|string} slot the output slot
      * @param {*} param
      * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
      */
@@ -14654,7 +14754,7 @@ class LGraphNode {
                 return;
             }
 
-            var link_info = this.graph.links[id];
+            const link_info = this.graph.links[id];
             if (!link_info) {
                 // Not connected
                 return;
@@ -14685,7 +14785,7 @@ class LGraphNode {
      * @param {Object} extra_info this can be used to have special properties of the property (like values, etc)
      */
     addProperty(name, default_value, type, extra_info) {
-        var o = {
+        const o = {
             name,
             type,
             default_value,
@@ -14718,7 +14818,7 @@ class LGraphNode {
         return this.addSlot(name, type, extra_info, false);
     }
     addSlot(name, type, extra_info, isInput) {
-        var slot = isInput ? {
+        const slot = isInput ? {
             name,
             type,
             link: null,
@@ -14771,7 +14871,7 @@ class LGraphNode {
             array = [array];
 
         array.forEach((info) => {
-            var slot = isInput ? {
+            const slot = isInput ? {
                 name: info[0],
                 type: info[1],
                 link: null,
@@ -14815,10 +14915,10 @@ class LGraphNode {
      */
     removeInput(slot) {
         this.disconnectInput(slot);
-        var removedInput = this.inputs.splice(slot, 1)[0];
+        const removedInput = this.inputs.splice(slot, 1)[0];
 
         this.inputs.slice(slot).filter((input) => !!input).forEach((input) => {
-            var link = this.graph.links[input.link];
+            const link = this.graph.links[input.link];
             link?.target_slot && link.target_slot--;
         });
 
@@ -14843,7 +14943,7 @@ class LGraphNode {
                 return;
             }
             output.links.forEach((linkId) => {
-                var link = this.graph.links[linkId];
+                const link = this.graph.links[linkId];
                 if (link) {
                     link.origin_slot -= 1;
                 }
@@ -14893,7 +14993,7 @@ class LGraphNode {
         var font_size = LiteGraph.NODE_TEXT_SIZE; // although it should be graphcanvas.inner_text_font size
 
         // computeWidth
-        var get_text_width = (text) => {
+        const get_text_width = (text) => {
             if (!text) {
                 return 0;
             }
@@ -14905,15 +15005,15 @@ class LGraphNode {
 
         if (this.inputs) {
             input_width = this.inputs.reduce((maxWidth, input) => {
-                var text = input.label || input.name || "";
-                var text_width = get_text_width(text);
+                const text = input.label || input.name || "";
+                const text_width = get_text_width(text);
                 return Math.max(maxWidth, text_width);
             }, 0);
         }
         if (this.outputs) {
             output_width = this.outputs.reduce((maxWidth, output) => {
-                var text = output.label || output.name || "";
-                var text_width = get_text_width(text);
+                const text = output.label || output.name || "";
+                const text_width = get_text_width(text);
 
                 return Math.max(maxWidth, text_width);
             }, 0);
@@ -14961,7 +15061,7 @@ class LGraphNode {
 
     getSlotsHeight() {
         // minimum height calculated by slots or 1
-        var rowHeight = Math.max(
+        const rowHeight = Math.max(
             this.inputs ? this.inputs.length : 1,
             this.outputs ? this.outputs.length : 1,
             1,
@@ -15092,9 +15192,9 @@ class LGraphNode {
      * @return {Float32[]} The bounding box in the format of [topLeftCornerX, topLeftCornerY, width, height]
      */
     getBounding(out = new Float32Array(4), compute_outer) {
-        var nodePos = this.pos;
-        var isCollapsed = this.flags?.collapsed;
-        var nodeSize = this.size;
+        const nodePos = this.pos;
+        const isCollapsed = this.flags?.collapsed;
+        const nodeSize = this.size;
 
         let left_offset = 0;
         // 1 offset due to how nodes are rendered
@@ -16243,7 +16343,7 @@ class LGraphNode {
         }
         if (LiteGraph.preventAncestorRecalculation) {
             if (this.graph.node_ancestorsCalculated && this.graph.node_ancestorsCalculated[this.id]) {
-                LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "already calculated subtree! Prevent! " + this.id + ":" + this.order);
+                LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "already calculated subtree! Prevent! " + this.id + ":" + this.order, this);
                 return;
             }
         }
@@ -16258,7 +16358,7 @@ class LGraphNode {
             action_call: opts.action
         }, opts.options);
 
-        LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "ancestors processing", this.id + ":" + this.order + " " + opts.options.action_call);
+        LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "ancestors processing", this.id + ":" + this.order + " " + opts.options.action_call, this);
 
         this.graph.ancestorsCall = true; // prevent triggering slots
 
@@ -16270,6 +16370,7 @@ class LGraphNode {
         };
         var aAncestors = this.graph.getAncestors(this, optsAncestors);
         for (var iN in aAncestors) {
+            LiteGraph.log_verbose("lgraphnode", "refreshAncestors", "doExecute ancestor", iN, aAncestors[iN], opts.param, opts.options);
             aAncestors[iN].doExecute(opts.param, opts.options);
             this.graph.node_ancestorsCalculated[aAncestors[iN].id] = true;
         }
@@ -16819,14 +16920,14 @@ class Subgraph {
 
     // no need to define node.configure, the default method detects node.subgraph and passes the object to node.subgraph.configure()
     reassignSubgraphUUIDs(graph) {
-        var idMap = {
+        const idMap = {
             nodeIDs: {},
             linkIDs: {}
         };
 
-        for (var node of graph.nodes) {
-            var oldID = node.id;
-            var newID = LiteGraph.uuidv4();
+        for (const node of graph.nodes) {
+            const oldID = node.id;
+            const newID = LiteGraph.uuidv4();
             node.id = newID;
 
             if (idMap.nodeIDs[oldID] || idMap.nodeIDs[newID]) {
@@ -16837,9 +16938,9 @@ class Subgraph {
             idMap.nodeIDs[newID] = oldID;
         }
 
-        for (var link of graph.links) {
-            var oldID = link[0];
-            var newID = LiteGraph.uuidv4();
+        for (const link of graph.links) {
+            const oldID = link[0];
+            const newID = LiteGraph.uuidv4();
             link[0] = newID;
 
             if (idMap.linkIDs[oldID] || idMap.linkIDs[newID]) {
@@ -16849,8 +16950,8 @@ class Subgraph {
             idMap.linkIDs[oldID] = newID;
             idMap.linkIDs[newID] = oldID;
 
-            var nodeFrom = link[1];
-            var nodeTo = link[3];
+            const nodeFrom = link[1];
+            const nodeTo = link[3];
 
             if (!idMap.nodeIDs[nodeFrom]) {
                 throw new Error(`Old node UUID not found in mapping! ${nodeFrom}`);
@@ -16866,16 +16967,16 @@ class Subgraph {
         }
 
         // Reconnect links
-        for (var node of graph.nodes) {
+        for (const node of graph.nodes) {
             if (node.inputs) {
-                for (var input of node.inputs) {
+                for (const input of node.inputs) {
                     if (input.link) {
                         input.link = idMap.linkIDs[input.link];
                     }
                 }
             }
             if (node.outputs) {
-                for (var output of node.outputs) {
+                for (const output of node.outputs) {
                     if (output.links) {
                         output.links = output.links.map((l) => idMap.linkIDs[l]);
                     }
@@ -16884,9 +16985,9 @@ class Subgraph {
         }
 
         // Recurse!
-        for (var node of graph.nodes) {
+        for (const node of graph.nodes) {
             if (node.type === "graph/subgraph") {
-                var merge = reassignGraphUUIDs(node.subgraph);
+                const merge = reassignGraphUUIDs(node.subgraph);
                 idMap.nodeIDs.assign(merge.nodeIDs);
                 idMap.linkIDs.assign(merge.linkIDs);
             }
@@ -16900,7 +17001,7 @@ class Subgraph {
         if (LiteGraph.use_uuids) {
             // LiteGraph.LGraph.serialize() seems to reuse objects in the original graph. But we
             // need to change node IDs here, so clone it first.
-            var subgraph = LiteGraph.cloneObject(data.subgraph);
+            const subgraph = LiteGraph.cloneObject(data.subgraph);
 
             this.reassignSubgraphUUIDs(subgraph);
 
@@ -17286,8 +17387,10 @@ class GraphOutput {
 // LiteGraph.registerNodeType("graph/input", GraphInput);
 // LiteGraph.registerNodeType("graph/output", GraphOutput);
 
+// this needs to be called after all classes has been included, before registering nodes and creating canvas
+// will setup callback handlers and LiteGraph.CLASSES references ( eg. LitegGraph.LGraph, .. )
 LiteGraph.initialize();
-exports.LiteGraph = LiteGraph;
+exports.LiteGraphClass = LiteGraphClass;
 exports.CallbackHandler = CallbackHandler;
 exports.ContextMenu = ContextMenu;
 exports.CurveEditor = CurveEditor;
@@ -17300,3 +17403,6 @@ exports.LLink = LLink;
 exports.Subgraph = Subgraph;
 exports.GraphInput = GraphInput;
 exports.GraphOutput = GraphOutput;
+exports.getGlobalObject = getGlobalObject;
+exports.setGlobalVariable = setGlobalVariable;
+exports.getGlobalVariable = getGlobalVariable;
