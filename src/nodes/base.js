@@ -38,8 +38,8 @@ class ConstantNumber {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
-            return this.properties.value;
+        if (this.flags?.collapsed) {
+            return this.properties?.value;
         }
         return this.title;
     }
@@ -78,7 +78,7 @@ class ConstantBoolean {
     }
 
     onAction() {
-        this.setValue(!this.properties.value);
+        this.setValue(!this.properties?.value);
     }
 }
 ConstantBoolean.prototype.getTitle = ConstantNumber.prototype.getTitle;
@@ -160,7 +160,7 @@ class ConstantFile {
 
     onExecute() {
         var url = this.getInputData(0) || this.properties.url;
-        if (url && (url != this._url || this._type != this.properties.type))
+        if (url && (url != this._url || this._type != this.properties?.type))
             this.fetchFile(url);
         this.setOutputData(0, this._data);
     }
@@ -174,7 +174,7 @@ class ConstantFile {
         }
 
         this._url = url;
-        this._type = this.properties.type;
+        this._type = this.properties?.type;
         if (url.substr(0, 4) == "http" && LiteGraph.proxy) {
             url = LiteGraph.proxy + url.substr(url.indexOf(":") + 3);
         }
@@ -202,7 +202,7 @@ class ConstantFile {
     onDropFile(file) {
         var that = this;
         this._url = file.name;
-        this._type = this.properties.type;
+        this._type = this.properties?.type;
         this.properties.url = file.name;
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -313,15 +313,23 @@ class ConstantArray {
 
     constructor() {
         this._value = [];
-        this.addInput("json", "");
+        this.addInput("array", "");
         this.addOutput("arrayOut", "array");
         this.addOutput("length", "number");
         this.addProperty("value", "[]");
+        this.addProperty("persistent", false);
         this.widget = this.addWidget(
             "text",
             "array",
-            this.properties.value,
+            this.properties?.value,
             "value",
+        );
+        this.addWidget(
+            "combo",
+            "persistent",
+            this.properties?.persistent,
+            false,
+            {values: [true, false]},
         );
         this.widgets_up = true;
         this.size = [140, 50];
@@ -343,16 +351,16 @@ class ConstantArray {
     }
 
     onExecute() {
-        var v = this.getInputData(0);
-        if (v && v.length) {
-            // clone
-            if (!this._value)
-                this._value = new Array();
-            this._value.length = v.length;
-            for (var i = 0; i < v.length; ++i)
-                this._value[i] = v[i];
-            this.changeOutputType("arrayOut", "array");
-        }
+        var v = this.getInputOrProperty("array"); //getInputData(0);
+        this._value = v;
+        // clone
+        if (!this._value || !this.properties?.persistent || this.properties?.persistent==="false")
+            this._value = new Array();
+        // this._value.length = v.length;
+        // for (var i = 0; i < v.length; ++i)
+        //     this._value[i] = v[i];
+        // this.changeOutputType("arrayOut", "array");
+        // TODO restart here, convert and reprocess ad array
         this.setOutputData(0, this._value);
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
     }
@@ -398,7 +406,7 @@ class SetArray {
         this.widget = this.addWidget(
             "number",
             "i",
-            this.properties.index,
+            this.properties?.index,
             "index",
             { precision: 0, step: 10, min: 0 },
         );
@@ -409,7 +417,7 @@ class SetArray {
         if (!arr) return;
         var v = this.getInputData(1);
         if (v === undefined) return;
-        if (this.properties.index) arr[Math.floor(this.properties.index)] = v;
+        if (this.properties?.index) arr[Math.floor(this.properties?.index)] = v;
         this.setOutputData(0, arr);
     }
 }
@@ -431,12 +439,35 @@ class ArrayElement {
     onExecute() {
         var array = this.getInputData(0);
         var index = this.getInputData(1);
-        if (index == null) index = this.properties.index;
+        if (index == null) index = this.properties?.index;
         if (array == null || index == null) return;
         this.setOutputData(0, array[Math.floor(Number(index))]);
     }
 }
 LiteGraph.registerNodeType("basic/array[]", ArrayElement);
+
+class ArrayAppend {
+    static title = "Array Append";
+    static desc = "Pushes an element to an array";
+
+    constructor() {
+        this.addInput("array", "array");
+        this.addInput("element", 0);
+        this.addOutput("success", "boolean");
+    }
+
+    onExecute() {
+        var array = this.getInputData(0);
+        var el = this.getInputData(1);
+        if(array !== null && array && typeof(array.push) == "function"){
+            array.push(el);
+            this.setOutputData(0, true);
+        }else{
+            this.setOutputData(0, false);
+        }
+    }
+}
+LiteGraph.registerNodeType("basic/array_append", ArrayAppend);
 
 
 class TableElement {
@@ -457,8 +488,8 @@ class TableElement {
         var table = this.getInputData(0);
         var row = this.getInputData(1);
         var col = this.getInputData(2);
-        if (row == null) row = this.properties.row;
-        if (col == null) col = this.properties.column;
+        if (row == null) row = this.properties?.row;
+        if (col == null) col = this.properties?.column;
         if (table == null || row == null || col == null) return;
         row = table[Math.floor(Number(row))];
         if (row) this.setOutputData(0, row[Math.floor(Number(col))]);
@@ -487,16 +518,16 @@ class Variable {
 
         if (this.isInputConnected(0)) {
             this.value = this.getInputData(0);
-            container[this.properties.varname] = this.value;
+            container[this.properties?.varname] = this.value;
             this.setOutputData(0, this.value);
             return;
         }
 
-        this.setOutputData(0, container[this.properties.varname]);
+        this.setOutputData(0, container[this.properties?.varname]);
     }
 
     getContainer() {
-        switch (this.properties.container) {
+        switch (this.properties?.container) {
             case Variable.GRAPH:
                 if (this.graph) return this.graph.vars;
                 return {};
@@ -508,7 +539,7 @@ class Variable {
     }
 
     getTitle() {
-        return this.properties.varname;
+        return this.properties?.varname;
     }
 
 }
@@ -574,7 +605,7 @@ class DownloadData {
         var url = URL.createObjectURL(file);
         var element = document.createElement("a");
         element.setAttribute("href", url);
-        element.setAttribute("download", this.properties.filename);
+        element.setAttribute("download", this.properties?.filename);
         element.style.display = "none";
         document.body.appendChild(element);
         element.click();
@@ -598,8 +629,8 @@ class DownloadData {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
-            return this.properties.filename;
+        if (this.flags?.collapsed) {
+            return this.properties?.filename;
         }
         return this.title;
     }
@@ -634,7 +665,7 @@ class Watch {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return this.inputs[0].label;
         }
         return this.title;
@@ -708,7 +739,7 @@ class Console {
         const action = param;
         let msg = this.getInputData(1); // getInputDataByName("msg");
         // if (msg == null || typeof msg == "undefined") return;
-        if (!msg) msg = this.properties.msg;
+        if (!msg) msg = this.properties?.msg;
         if (!msg) msg = "ConsoleNode: " + param; // msg is undefined if the slot is lost?
         if (action == "log") {
             console.log(msg);
@@ -753,7 +784,7 @@ class Alert {
     }
 
     onAction() {
-        var msg = this.properties.msg;
+        var msg = this.properties?.msg;
         setTimeout(function () {
             alert(msg);
         }, 10);
@@ -859,7 +890,7 @@ class GenericCompare {
         this.addProperty("A", 1);
         this.addProperty("B", 1);
         this.addProperty("OP", "==", "enum", { values: GenericCompare.values });
-        this.addWidget("combo", "Op.", this.properties.OP, {
+        this.addWidget("combo", "Op.", this.properties?.OP, {
             property: "OP",
             values: GenericCompare.values,
         });
@@ -868,27 +899,27 @@ class GenericCompare {
     }
 
     getTitle() {
-        return "*A " + this.properties.OP + " *B";
+        return "*A " + this.properties?.OP + " *B";
     }
 
     onExecute() {
         var A = this.getInputData(0);
         if (A === undefined) {
-            A = this.properties.A;
+            A = this.properties?.A;
         } else {
             this.properties.A = A;
         }
 
         var B = this.getInputData(1);
         if (B === undefined) {
-            B = this.properties.B;
+            B = this.properties?.B;
         } else {
             this.properties.B = B;
         }
 
         var result = false;
         if (typeof A == typeof B) {
-            switch (this.properties.OP) {
+            switch (this.properties?.OP) {
                 case "==":
                 case "!=":
                     // traverse both objects.. consider that this is not a true deep check! consider underscore or other library for thath :: _isEqual()
@@ -912,7 +943,7 @@ class GenericCompare {
                         default:
                             result = A == B;
                     }
-                    if (this.properties.OP == "!=") result = !result;
+                    if (this.properties?.OP == "!=") result = !result;
                     break;
                 /* case ">":
                     result = A > B;

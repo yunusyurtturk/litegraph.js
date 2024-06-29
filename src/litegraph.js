@@ -41,6 +41,7 @@ export class LiteGraphClass {
     NODE_WIDGET_HEIGHT = 20;
     NODE_WIDTH = 140;
     NODE_MIN_WIDTH = 50;
+    NODE_MIN_SIZE = [50, 25];
     NODE_COLLAPSED_RADIUS = 10;
     NODE_COLLAPSED_WIDTH = 80;
     NODE_TITLE_COLOR = "#999";
@@ -684,6 +685,9 @@ export class LiteGraphClass {
 
         // extend constructor with the extended always executed (custom class or lgraphnode)
         node.post_constructor();
+        
+        // basic size, before computing
+        node.size_basic = node.size;
 
         node.type = type;
         node.title ??= title;
@@ -693,6 +697,7 @@ export class LiteGraphClass {
         node.size ??= node.computeSize();
         node.pos ??= LiteGraph.DEFAULT_POSITION.concat();
         node.mode ??= LiteGraph.ALWAYS;
+
 
         // extra options
         Object.assign(node, options);
@@ -997,6 +1002,21 @@ export class LiteGraphClass {
         );
     }
 
+    textCalculateMaxWidth(text){
+        // TODO RESTART FROM HERE
+        // const retCalc = this.canvasFillTextMultiline();
+    }
+
+    /**
+     * helper function to write text to a canvas calculating multiline and returning info on final sizes 
+     * @param {*} context 
+     * @param {*} text 
+     * @param {*} x 
+     * @param {*} y 
+     * @param {*} maxWidth 
+     * @param {*} lineHeight 
+     * @returns 
+     */
     canvasFillTextMultiline(context, text, x, y, maxWidth, lineHeight) {
         var words = (text+"").trim().split(' ');
         var line = '';
@@ -1108,7 +1128,7 @@ export class LiteGraphClass {
         return hex;
     }
 
-     closeAllContextMenus = function(ref_window) {
+    closeAllContextMenus = function(ref_window) {
         ref_window = ref_window || window;
 
         var elements = ref_window.document.querySelectorAll(".litecontextmenu");
@@ -1204,10 +1224,10 @@ export class LiteGraphClass {
         console.error?.("Removed and being re-integrated sorta");
     } */
 
-    /* closeAllContextMenus = () => {
+    closeAllContextMenus = () => {
         LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
-        ContextMenu.closeAll();
-    }; */
+        ContextMenuClass.closeAll();
+    };
 
     getTime(){
         if (typeof performance != "undefined") {

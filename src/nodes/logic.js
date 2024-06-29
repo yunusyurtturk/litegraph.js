@@ -249,12 +249,12 @@ class logicFor {
         var num = this.getInputData(1);
         for (var k=iI;k<iI+num;k++) {
             console.debug?.("for cycle "+k);
+            this.setOutputData(1, k);
             this.triggerSlot(0, param);
             if (this.stopped) {
                 console.debug?.("for cycle stopped on index "+k);
                 break;
             }
-            this.setOutputData(1, k);
         }
         this.started = false;
         this.stopped = true;
@@ -274,12 +274,71 @@ class logicFor {
             case "do":
                 this.started = true;
                 this.stopped = false;
-                this.execute();
+                this.doExecute();
                 break;
         }
     }
 }
 LiteGraph.registerNodeType("logic/CycleFOR", logicFor);
+
+class logicForEach {
+    constructor() {
+        this.properties = { };
+        this.addInput("array", "array");
+        this.addInput("do", LiteGraph.ACTION);
+        this.addInput("break", LiteGraph.ACTION);
+        this.addOutput("do", LiteGraph.EVENT);
+        this.addOutput("index", "number");
+        this.addOutput("element", 0);
+        this.started = false;
+        this.stopped = false;
+    }
+
+    static title = "ForEach";
+    static desc = "Cycle for each element in array";
+
+    onExecute(param) {
+        if (!this.started) return;
+        var ar = this.getInputData(0);
+        var num = this.getInputData(1);
+        if(ar === null || !ar || typeof(ar.forEach)!="function"){
+            return;
+        }
+        // for (var k=iI;k<iI+num;k++) {
+        ar.forEach((el,k)=>{
+            console.debug?.("for cycle "+k);
+            this.setOutputData(1, k);
+            this.setOutputData(2, el);
+            this.triggerSlot(0, param);
+            if (this.stopped) {
+                console.debug?.("foreach cycle stopped on index "+k);
+                return;
+            }
+        })
+        this.started = false;
+        this.stopped = true;
+    }
+
+    onAction(action) {
+        /* console.debug?.(action);
+        console.debug?.(param);
+        console.debug?.(this);*/
+        switch(action) {
+            case "break":
+                this.stopped = true;
+                break;
+            /* case "reset":
+                this.stopped = false;
+            break;*/
+            case "do":
+                this.started = true;
+                this.stopped = false;
+                this.doExecute();
+                break;
+        }
+    }
+}
+LiteGraph.registerNodeType("logic/CycleForEach", logicForEach);
 
 
 class logicWhile {
@@ -318,7 +377,7 @@ class logicWhile {
                 var checkOnStart = this.getInputOrProperty("checkOnStart");
                 this.cond = !checkOnStart || this.getInputData(1);
                 this.k = 0;
-                cycleLimit = this.properties.cycleLimit || 999;
+                var cycleLimit = this.properties.cycleLimit || 999;
                 while (this.cond && this.k<cycleLimit) {
                     console.debug?.("while cycle "+this.k);
                     this.setOutputData(1, this.k);

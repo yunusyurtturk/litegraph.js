@@ -62,17 +62,17 @@ class EvSequence {
 
     constructor() {
         var that = this;
-        this.addInput("", LiteGraph.ACTION);
-        this.addInput("", LiteGraph.ACTION);
-        this.addInput("", LiteGraph.ACTION);
-        this.addOutput("", LiteGraph.EVENT);
-        this.addOutput("", LiteGraph.EVENT);
-        this.addOutput("", LiteGraph.EVENT);
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addInput("", LiteGraph.ACTION, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
+        this.addOutput("", LiteGraph.EVENT, {removable: true, nameLocked: false});
         this.addWidget("button", "+", null, function () {
             that.addInput("", LiteGraph.ACTION);
             that.addOutput("", LiteGraph.EVENT);
         });
-        this.size = [90, 70];
+        this.size = [90, 30];
         this.flags = { horizontal: true, render_box: false };
     }
 
@@ -129,7 +129,7 @@ class WaitAll {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         for (var i = 0; i < this.inputs.length; ++i) {
@@ -184,7 +184,7 @@ class Stepper {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         var index = this.properties.index || 0;
@@ -326,7 +326,7 @@ class EventCounter {
     }
 
     getTitle() {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return String(this.num);
         }
         return this.title;
@@ -347,7 +347,7 @@ class EventCounter {
     }
 
     onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
+        if (this.flags?.collapsed) {
             return;
         }
         ctx.fillStyle = "#AAA";
