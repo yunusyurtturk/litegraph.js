@@ -8,9 +8,8 @@ export var gl = null; // webgl_canvas
 // if (typeof(global)=="object") global.LiteGraph = LiteGraph;
 // if (typeof(window)=="object") window.LiteGraph = LiteGraph;
 
-LiteGraph.initialize();
-
 LiteGraph.log_info("LiteGraph included");
+LiteGraph.initialize();
 
 var webgl_canvas = null;
 

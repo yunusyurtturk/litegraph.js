@@ -901,6 +901,7 @@ export class LiteGraphClass {
         this.searchbox_extras[description.toLowerCase()] = {
             type: node_type,
             desc: description,
+            // title: node_type.title, TODO implement searching by title, desc, and extra pars
             data: data,
         };
     }
