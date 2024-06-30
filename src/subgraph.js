@@ -546,7 +546,8 @@ export class GraphInput {
         this.type_widget.value = type;
 
         // update output
-        if (this.outputs[0].type != type) {
+        if (type == "action" || type == "event") type = LiteGraph.EVENT;
+        if (this.outputs[0].type !== type) {
             if (!LiteGraph.isValidConnection(this.outputs[0].type, type))
                 this.disconnectOutput(0);
             this.outputs[0].type = type;
@@ -555,16 +556,16 @@ export class GraphInput {
         // update widget
         if (type == "number") {
             this.value_widget.type = "number";
-            this.value_widget.value = 0;
+            this.value_widget.value = Number(); // 0
         } else if (type == "boolean") {
             this.value_widget.type = "toggle";
-            this.value_widget.value = true;
+            this.value_widget.value = this.value_widget.value&&(this.value_widget.value+"").toLocaleLowerCase()!=="false"&&this.value_widget.value!==""?true:false; // "true"
         } else if (type == "string") {
             this.value_widget.type = "text";
-            this.value_widget.value = "";
+            this.value_widget.value = this.value_widget.value+""; // ""
         } else {
             this.value_widget.type = null;
-            this.value_widget.value = null;
+            // this.value_widget.value = null;
         }
         this.properties.value = this.value_widget.value;
 
@@ -729,12 +730,28 @@ export class GraphOutput {
         if (this.type_widget) this.type_widget.value = type;
 
         // update output
-        if (this.inputs[0].type != type) {
-            if (type == "action" || type == "event") type = LiteGraph.EVENT;
+        if (type == "action" || type == "event") type = LiteGraph.EVENT;
+        if (this.inputs[0].type !== type) {
             if (!LiteGraph.isValidConnection(this.inputs[0].type, type))
                 this.disconnectInput(0);
             this.inputs[0].type = type;
         }
+
+        // update widget
+        if (type == "number") {
+            this.value_widget.type = "number";
+            this.value_widget.value = Number(); // 0
+        } else if (type == "boolean") {
+            this.value_widget.type = "toggle";
+            this.value_widget.value = this.value_widget.value&&(this.value_widget.value+"").toLocaleLowerCase()!=="false"&&this.value_widget.value!==""?true:false; // "true"
+        } else if (type == "string") {
+            this.value_widget.type = "text";
+            this.value_widget.value = this.value_widget.value+""; // ""
+        } else {
+            this.value_widget.type = null;
+            // this.value_widget.value = null;
+        }
+        this.properties.value = this.value_widget.value;
 
         // update graph
         if (this.graph && this.name_in_graph) {

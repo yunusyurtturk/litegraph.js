@@ -286,14 +286,20 @@ export class LGraphCanvas {
         }
 
         this.clear();
-
+        
         if (this.graph) {
             this._graph_stack ||= [];
             this._graph_stack.push(this.graph);
         }
 
+        var prev_graph = this.graph;
+        var cbRet = this.processCallbackHandlers("onOpenSubgraph",{
+            def_cb: this.onOpenSubgraph
+        }, graph, prev_graph);
+
         graph.attachCanvas(this);
         this.checkPanels();
+        
         this.setDirty(true, true);
     }
 
@@ -308,9 +314,15 @@ export class LGraphCanvas {
             return;
         }
         var subgraph_node = this.graph._subgraph_node;
+        var prev_graph = this.graph;
         var graph = this._graph_stack.pop();
         this.selected_nodes = {};
         this.highlighted_links = {};
+
+        var cbRet = this.processCallbackHandlers("onCloseSubgraph",{
+            def_cb: this.onCloseSubgraph
+        }, graph, prev_graph, subgraph_node );
+
         graph.attachCanvas(this);
         this.setDirty(true, true);
         if (subgraph_node) {
@@ -2668,7 +2680,7 @@ export class LGraphCanvas {
             try{
                 e.clientX = gloCoord[0];
                 e.clientY = gloCoord[1];
-            }catch(e){
+            }catch(error){
                 LiteGraph.log_debug("lgraphcanvas","adjustMouseEvent","failed set custom prop on event",e);
             }
             clientX = gloCoord[0];

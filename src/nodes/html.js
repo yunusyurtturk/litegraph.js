@@ -9,11 +9,12 @@ function nodeEmpower_htmlElement(nodeX){
     nodeX.htmlCreateElement = (function(){
         if(this._added) return;
         if(typeof(graphcanvas)!=="undefined" && graphcanvas){
-            this._el = document.createElement("div");
+            const htEl = document.createElement("div");
+            this._el = htEl;
             this._el.classList.add('lg-html-element');
             this._el.style.position = "absolute";
             // this._el.style.pointerEvents = "";
-            graphcanvas.canvas.parentNode.appendChild(this._el);
+            graphcanvas.canvas?.parentNode?.appendChild(this._el);
             this._el_cont = document.createElement("div");
             this._el_cont.style.display = "flex";
             // this._el_cont.style.alignItems = "center";
@@ -27,6 +28,29 @@ function nodeEmpower_htmlElement(nodeX){
             this._el.appendChild(this._el_cont);
             this._added = true;
             this.htmlRefreshElement();
+            const htGraph = graphcanvas.graph;
+            graphcanvas.registerCallbackHandler("onOpenSubgraph",function(info, graph, prev_graph){
+               // should hide or remove?
+                if(htGraph == graph){
+                    console.debug("htmlEmpoweredNode","restore on onOpenSubgraph",this,graph);
+                    htEl.style.display = htEl.style.display_prev ? htEl.style.display_prev : "block";
+                }else{
+                    console.debug("htmlEmpoweredNode","hide on onOpenSubgraph",this,graph);
+                    htEl.style.display_prev = htEl.style.display;
+                    htEl.style.display = "none";
+                }
+            });
+            graphcanvas.registerCallbackHandler("onCloseSubgraph",function(info, graph, prev_graph, subgraph_node){
+                // should restore hide or recreate? 
+                if(htGraph == graph){
+                    console.debug("htmlEmpoweredNode","restore on onCloseSubgraph",this,graph);
+                    htEl.style.display = htEl.style.display_prev ? htEl.style.display_prev : "block";
+                }else{
+                    console.debug("htmlEmpoweredNode","hide on onCloseSubgraph",this,graph);
+                    htEl.style.display_prev = htEl.style.display;
+                    htEl.style.display = "none";
+                }
+             });
         }else{
             console.warn(this,"NO CANVAS");
         }
