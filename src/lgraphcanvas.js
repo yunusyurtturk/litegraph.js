@@ -3624,13 +3624,12 @@ export class LGraphCanvas {
         var horizontal = node.horizontal; // || node.flags.horizontal;
 
         if (node.flags.collapsed) {
-            ctx.font = this.inner_text_font;
+            ctx.font = this.title_text_font;
             var title = node.getTitle ? node.getTitle() : node.title;
             if (title != null) {
                 node._collapsed_width = Math.min(
                     node.size[0],
-                    ctx.measureText(title).width +
-                        LiteGraph.NODE_TITLE_HEIGHT * 2,
+                    ctx.measureText(title).width + LiteGraph.NODE_TITLE_HEIGHT * 2,
                 ); // LiteGraph.NODE_COLLAPSED_WIDTH;
                 size[0] = node._collapsed_width;
                 size[1] = 0;
@@ -4339,7 +4338,7 @@ export class LGraphCanvas {
                     if (node.flags.collapsed) {
                         ctx.textAlign = "left";
                         ctx.fillText(
-                            title.substr(0,20), // avoid urls too long //@TODO: Replace with substring
+                            title, // NO? .substring(0,20), // avoid urls too long
                             title_height,// + measure.width * 0.5,
                             LiteGraph.NODE_TITLE_TEXT_Y - title_height,
                         );
