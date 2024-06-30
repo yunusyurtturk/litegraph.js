@@ -1021,19 +1021,20 @@ export class LGraph {
            LiteGraph.GraphInput,
            this._input_nodes,
         );
-        LiteGraph.log_debug("lgraph", "onAction", "will trigger actionDo on input nodes", this._input_nodes, "with name(?!)",action);
+        LiteGraph.log_debug("lgraph", "onAction", "will trigger actionDo on input nodes", this._input_nodes, "with name(?!)", ...arguments);
         for (var i = 0; i < this._input_nodes.length; ++i) {
             var node = this._input_nodes[i];
             if (node.properties.name != action) {
                 continue;
             }
             // wrap node.onAction(action, param);
+            LiteGraph.log_debug("lgraph", "onAction", node, "node actionDo", ...arguments);
             node.actionDo(action, param, options);
             break;
         }
     }
 
-    * // TODO check this, investigate, _last_trigger_time ? who calls trigger ? who calls triggerInput ? who calls onTrigger ?
+    // TODO check this, investigate, _last_trigger_time ? who calls trigger ? who calls triggerInput ? who calls onTrigger ?
     trigger(action, param) {
         LiteGraph.log_debug("lgraph","trigger",action, param);
         // this.onTrigger?.(action, param);

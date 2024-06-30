@@ -8076,6 +8076,9 @@ export class LGraphCanvas {
             var type = elem.querySelector(".type").value;
             if(!name || node.findInputSlot(name) != -1)
                 return;
+            if(["event","action"].indexOf(type)>-1){
+                type = LiteGraph.EVENT;
+            }
             node.addInput(name,type);
             elem.querySelector(".name").value = "";
             elem.querySelector(".type").value = "";
@@ -8138,6 +8141,9 @@ export class LGraphCanvas {
             var type = elem.querySelector(".type").value;
             if (!name || node.findOutputSlot(name) != -1)
                 return;
+            if(["event","action"].indexOf(type)>-1){
+                type = LiteGraph.EVENT;
+            }
             node.addOutput(name, type);
             elem.querySelector(".name").value = "";
             elem.querySelector(".type").value = "";

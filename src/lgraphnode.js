@@ -501,6 +501,11 @@ export class LGraphNode {
             return;
         }
 
+        if(this.inputs[slot].type==LiteGraph.ACTION){
+            // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputData", "skip getting data for event type", this.inputs[slot]);
+            return;
+        }
+
         var link_id = this.inputs[slot].link;
         var link = this.graph.links[link_id];
         if (!link) {
@@ -554,6 +559,12 @@ export class LGraphNode {
         if (slot >= this.inputs.length || this.inputs[slot].link == null) {
             return null;
         }
+
+        if(this.inputs[slot].type==LiteGraph.ACTION){
+            // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputDataType", "skip getting data for event type", this.inputs[slot]);
+            return;
+        }
+
         var link_id = this.inputs[slot].link;
         var link = this.graph.links[link_id];
         if (!link) {

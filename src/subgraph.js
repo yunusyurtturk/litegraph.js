@@ -82,6 +82,7 @@ export class Subgraph {
     */
 
     onAction(action, param) {
+        LiteGraph.log_debug("subgraph","onAction",...arguments);
         this.subgraph.onAction(action, param);
     }
 
@@ -101,6 +102,7 @@ export class Subgraph {
         }
 
         // execute
+        LiteGraph.log_verbose("subgraph","onExecute","subgraph runStep",this.subgraph);
         this.subgraph.runStep();
 
         // send subgraph global outputs to outputs
@@ -552,6 +554,7 @@ export class GraphInput {
                 this.disconnectOutput(0);
             this.outputs[0].type = type;
         }
+        this.properties.type = type;
 
         // update widget
         if (type == "number") {
@@ -607,6 +610,8 @@ export class GraphInput {
         if (this.properties.type == LiteGraph.EVENT) {
             LiteGraph.log_debug("GraphInput","onAction","triggering slot", action, param);
             this.triggerSlot(0, param);
+        }else{
+            LiteGraph.log_debug("GraphInput","onAction","NOT eventAction TYPE", "this", this, "arugments", ...arguments);
         }
     }
 
@@ -736,8 +741,10 @@ export class GraphOutput {
                 this.disconnectInput(0);
             this.inputs[0].type = type;
         }
+        this.properties.type = type;
 
-        // update widget
+        // TODO CHECK why differente from GraphInput 
+        /* // update widget
         if (type == "number") {
             this.value_widget.type = "number";
             this.value_widget.value = Number(); // 0
@@ -751,7 +758,7 @@ export class GraphOutput {
             this.value_widget.type = null;
             // this.value_widget.value = null;
         }
-        this.properties.value = this.value_widget.value;
+        this.properties.value = this.value_widget.value; */
 
         // update graph
         if (this.graph && this.name_in_graph) {
