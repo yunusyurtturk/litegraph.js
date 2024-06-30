@@ -794,7 +794,7 @@ export class LGraphNode {
     onAfterExecuteNode(param, options) {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
-            LiteGraph.log_debug("lgraphnode","onAfterExecuteNode",this.id+":"+this.order+" triggering slot onAfterExecute", param, options);
+            LiteGraph.log_verbose("lgraphnode","onAfterExecuteNode",this.id+":"+this.order+" triggering slot onAfterExecute", param, options);
             this.triggerSlot(trigS, param, null, options);
         }
     }
@@ -802,7 +802,7 @@ export class LGraphNode {
     onAfterActionedNode(param, options) {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
-            LiteGraph.log_debug("lgraphnode","onAfterActionedNode",this.id+":"+this.order+" triggering slot onAfterActionedNode",this, trigS, param, options);
+            LiteGraph.log_verbose("lgraphnode","onAfterActionedNode",this.id+":"+this.order+" triggering slot onAfterActionedNode",this, trigS, param, options);
             this.triggerSlot(trigS, param, null, options);
         }
     }
