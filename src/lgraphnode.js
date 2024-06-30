@@ -802,7 +802,7 @@ export class LGraphNode {
     onAfterActionedNode(param, options) {
         var trigS = this.findOutputSlot("onExecuted");
         if (trigS != -1) {
-            LiteGraph.log_debug("lgraphnode","onAfterActionedNode",this.id+":"+this.order+" triggering slot onAfterActionedNode", param, options);
+            LiteGraph.log_debug("lgraphnode","onAfterActionedNode",this.id+":"+this.order+" triggering slot onAfterActionedNode",this, trigS, param, options);
             this.triggerSlot(trigS, param, null, options);
         }
     }
@@ -858,6 +858,11 @@ export class LGraphNode {
      */
     doExecute(param, options = {}) {
         // if (this.onExecute) {
+
+            if (this.mode === LiteGraph.NEVER){
+                LiteGraph.log_debug("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
+                return;
+            }
 
             // enable this to give the event an ID
             options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
@@ -1021,6 +1026,10 @@ export class LGraphNode {
             return;
         }
 
+        if (this.mode === LiteGraph.NEVER){
+            return;
+        }
+
         // check for ancestors calls
         if (this.graph && this.graph.ancestorsCall) {
             // LiteGraph.log_debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
@@ -1049,8 +1058,8 @@ export class LGraphNode {
                 // node not found?
                 continue;
             }
-
-            if (node.mode === LiteGraph.ON_TRIGGER) {
+            var target_slot = node.inputs[link_info.target_slot];
+            if (node.mode === LiteGraph.ON_TRIGGER || target_slot?.name === "onTrigger") {
                 // generate unique trigger ID if not present
                 if (!options.action_call)
                     options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`; // TODO replace here and there fakeunique ID with real unique
@@ -1080,6 +1089,9 @@ export class LGraphNode {
                     LiteGraph.log_debug("lgraphnode", "triggerSlot","call actionDo", node, target_connection.name, param, options, link_info.target_slot);
                     node.actionDo( target_connection.name, param, options, link_info.target_slot );
                 }
+            } else {
+                // TODO CHECK
+                LiteGraph.log_debug("lgraphnode", "triggerSlot","not executing node, what to do with this Node Mode on slot triggered?", node.mode, this);
             }
         }
     }
