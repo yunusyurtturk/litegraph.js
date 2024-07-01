@@ -2,10 +2,20 @@
 
 A fork of the ecceptional litegraph.js library. This is unofficial and unsupported.
 
+-- 2024 --
+
+Recent works regards moving LG to a new step. Actual state should be almost compatible but many things have been touched.
+Thanks to Daniel Lewis for separate the library into classes, ES6 conversion and code refactoring. He's actually trying better ways to organize things in a new modern form.
+Meanwhile I've been working in many aspect, maybe the most important one is allowing to register multiple callbacks maintaining compatibility with previous method.
+There are few working extensions making use of this method ment to be an experiment while improving QOL in the library usage.
+Objective is to gather LG contributors together and make wonderful things.
+
+
+-- 2022 --
+
 Here there are pushed a couple experiments, nothing serious, take it for what is it. Don't use it at others risk.
 
 MODS
-
 
 - auto connect
   - drag into node
@@ -234,6 +244,7 @@ You can write any feedback to javi.agenjo@gmail.com
 
 ## Contributors
 
+- daniel-lewis-ab
 - atlasan
 - kriffe
 - rappestad
@@ -242,6 +253,4 @@ You can write any feedback to javi.agenjo@gmail.com
 - coderofsalvation
 - ilyabesk
 - gausszhou
-
-
 
