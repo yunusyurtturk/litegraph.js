@@ -165,12 +165,19 @@ export class LGraph {
             throw new Error("attachCanvas expects a LiteGraph.LGraphCanvas instance");
         }
         if (graphcanvas.graph && graphcanvas.graph != this) {
+            LiteGraph.log_debug("lgraph","attachCanvas","detaching previous");
             graphcanvas.graph.detachCanvas(graphcanvas);
         }
 
         graphcanvas.graph = this;
         this.list_of_graphcanvas ??= [];
-        this.list_of_graphcanvas.push(graphcanvas);
+        var pos = this.list_of_graphcanvas.indexOf(graphcanvas);
+        if (pos == -1) {
+            LiteGraph.log_debug("lgraph","attachCanvas","attaching canvas");
+            this.list_of_graphcanvas.push(graphcanvas);
+        }else{
+            LiteGraph.log_debug("lgraph","attachCanvas","canvas was already attached");
+        }
     }
 
     /**
@@ -182,12 +189,12 @@ export class LGraph {
         if (!this.list_of_graphcanvas) {
             return;
         }
-
         var pos = this.list_of_graphcanvas.indexOf(graphcanvas);
         if (pos == -1) {
             return;
         }
-        graphcanvas.graph = null;
+        // graphcanvas.graph = null; // ?!
+        LiteGraph.log_debug("lgraph","detachCanvas",pos,this.list_of_graphcanvas,this);
         this.list_of_graphcanvas.splice(pos, 1);
     }
 
@@ -259,6 +266,20 @@ export class LGraph {
             this.execution_timer_id = null;
         }
         this.sendEventToAllNodes("onStop");
+        
+        // TODO CHECK THIS : TRYING to refresh canvas, for multiview one still need a manual refresh (mouseover) 
+        // var thisGraph = this;
+        // let fRefreshOnStop = function(){
+        //     thisGraph.change();
+        //     // thisGraph.setDirtyCanvas(true,true);
+        //     thisGraph.sendActionToCanvas("draw");
+        //     LiteGraph.log_warn("finally drawing on stop");
+        // };
+        // if(window.requestAnimationFrame){
+        //     window.requestAnimationFrame(fRefreshOnStop);
+        // }
+        // setTimeout(fRefreshOnStop,972);
+        
     }
 
     /**

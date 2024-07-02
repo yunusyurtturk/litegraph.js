@@ -288,32 +288,55 @@ export class Editor {
         this.root.querySelector(".content").appendChild(miniwindow);
     }
 
-    addMultiview() {
+    // removeMultiView() {
+    //     if (this.graphcanvas2) {
+    //         this.graphcanvas2.setGraph(null, true);
+    //         this.graphcanvas2.viewport = null;
+    //         this.graphcanvas2 = null;
+
+    //         this.graphcanvas.viewport = [0,0,canvas.width,canvas.height];
+    //         this.graphcanvas.resize();
+    //     }
+    // }
+
+    toggleMultiview() {
         var canvas = this.canvas;
         let graphcanvas;
 
+        // toggle test
         if (this.graphcanvas2) {
+            this.graphcanvas2.unbindEvents();
             this.graphcanvas2.setGraph(null, true);
             this.graphcanvas2.viewport = null;
             this.graphcanvas2 = null;
-            this.graphcanvas.viewport = null;
-            this.graphcanvas.setGraph(null, true);
-            this.graphcanvas = null;
-            graphcanvas = new LGraphCanvas( canvas, this.graph );
-            graphcanvas.background_image = "imgs/grid.png";
-            this.graphcanvas = graphcanvas;
-            window.graphcanvas = this.graphcanvas;
+
+            // this.graphcanvas.unbindEvents();
+            // this.graphcanvas.setGraph(null, false);
+            // this.graphcanvas.viewport = null;
+            // this.graphcanvas = null;
+            // graphcanvas = new LGraphCanvas( canvas, this.graph );
+            // graphcanvas.background_image = "imgs/grid.png";
+            // this.graphcanvas = graphcanvas;
+            // window.graphcanvas = this.graphcanvas;
+
+            this.graphcanvas.viewport = [0,0,canvas.width,canvas.height];
+            this.graphcanvas.setDirty(true,true);
+
             return;
         }
 
         this.graphcanvas.ctx.fillStyle = "black";
         this.graphcanvas.ctx.fillRect(0,0,canvas.width,canvas.height);
         this.graphcanvas.viewport = [0,0,canvas.width*0.5-2,canvas.height];
+        // this.graphcanvas.resize();
+        this.graphcanvas.setDirty(true,true);
 
         graphcanvas = new LGraphCanvas( canvas, this.graph );
         graphcanvas.background_image = "imgs/grid.png";
         this.graphcanvas2 = graphcanvas;
         this.graphcanvas2.viewport = [canvas.width*0.5,0,canvas.width*0.5,canvas.height];
+        // this.graphcanvas2.resize();
+        this.graphcanvas2.setDirty(true,true);
     }
 
     isFullscreen() {

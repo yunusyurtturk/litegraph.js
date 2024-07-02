@@ -252,6 +252,7 @@ export class LGraphCanvas {
         }
 
         graph.attachCanvas(this);
+        LiteGraph.log_debug("lgraphcanvas","setGraph",graph,this);
 
         // remove the graph stack in case a subgraph was open
         this._graph_stack &&= null;
@@ -438,9 +439,9 @@ export class LGraphCanvas {
         this._mousedown_callback = this.processMouseDown.bind(this);
         this._mousemove_callback = this.processMouseMove.bind(this);
         this._mouseup_callback = this.processMouseUp.bind(this);
-        canvas.addEventListener("pointerdown", this._mousedown_callback, true);
+        canvas.addEventListener("pointerdown", this._mousedown_callback); //, true);
         canvas.addEventListener("pointermove", this._mousemove_callback);
-        canvas.addEventListener("pointerup", this._mouseup_callback, true);
+        canvas.addEventListener("pointerup", this._mouseup_callback); //, true);
         canvas.addEventListener("contextmenu", this._doNothing);
 
         // Wheel
@@ -472,9 +473,9 @@ export class LGraphCanvas {
         var document = ref_window.document;
 
         // Pointer
-        canvas.removeEventListener("pointerdown", this._mousedown_callback);
+        canvas.removeEventListener("pointerdown", this._mousedown_callback); //, true);
         canvas.removeEventListener("pointermove", this._mousemove_callback);
-        canvas.removeEventListener("pointerup", this._mouseup_callback);
+        canvas.removeEventListener("pointerup", this._mouseup_callback); //, true);
         canvas.removeEventListener("contextmenu", this._doNothing);
 
         // Wheel
@@ -488,7 +489,7 @@ export class LGraphCanvas {
         canvas.removeEventListener("dragover", this._doNothing, false);
         canvas.removeEventListener("dragend", this._doNothing, false);
         canvas.removeEventListener("drop", this.processDrop);
-        canvas.removeEventListener("dragenter", this._doReturnTrue);
+        canvas.removeEventListener("dragenter", this._doReturnTrue, false);
 
         this._mousedown_callback = null;
 
@@ -675,6 +676,8 @@ export class LGraphCanvas {
 
         var ref_window = this.getCanvasWindow();
         LGraphCanvas.active_canvas = this;
+
+        // processing mouseDown for all canvas ?
 
         var x = e.clientX;
         var y = e.clientY;
@@ -1282,8 +1285,9 @@ export class LGraphCanvas {
             this.resize(); // ? really ? every mouse move ? TODO move this
         }
 
-        if( this.set_canvas_dirty_on_mouse_event )
+        if( this.set_canvas_dirty_on_mouse_event ){
             this.dirty_canvas = true;
+        }
 
         if (!this.graph) {
             LiteGraph.log_warn("lgraphcanvas", "processMouseMove", "no canvas ref");
@@ -1589,7 +1593,7 @@ export class LGraphCanvas {
         if(!this.options.skip_events) {
             LiteGraph.log_verbose("pointerevents: processMouseUp adjustEventListener");
             document.removeEventListener("pointermove", this._mousemove_callback,true);
-            this.canvas.addEventListener("pointermove", this._mousemove_callback,true);
+            this.canvas.addEventListener("pointermove", this._mousemove_callback);
             document.removeEventListener("pointerup", this._mouseup_callback,true);
         }
 
@@ -2918,6 +2922,7 @@ export class LGraphCanvas {
         var ctx = this.ctx;
         if (!ctx) {
             // maybe is using webgl...
+            LiteGraph.log_warn("lgraphcanvas", "drawFrontCanvas", "no ctx", this);
             return;
         }
 
@@ -3149,6 +3154,8 @@ export class LGraphCanvas {
                 def_cb: this.onDrawForeground
             }, ctx, this.visible_rect);
             ctx.restore();
+        }else{
+            LiteGraph.log_warn("lgraphcanvas", "drawFrontCanvas", "no graph", this);
         }
 
         // draws panel in the corner

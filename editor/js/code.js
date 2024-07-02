@@ -105,7 +105,17 @@ window.addEventListener("load", (event) => {
 	});
 
 	elem.querySelector("#webgl").addEventListener("click", enableWebGL );
-	elem.querySelector("#multiview").addEventListener("click", function(){ editor.addMultiview()  } );
+	var is_multi_view = false;
+	elem.querySelector("#multiview").addEventListener("click", function(){
+		if(!is_multi_view){
+			editor.toggleMultiview();
+			is_multi_view = true;
+		}else{
+			// toggling
+			editor.toggleMultiview(); //removeMultiView();
+			is_multi_view = false;
+		}
+	} );
 
 	//some examples
 	addDemo("Features", "examples/features.json");
