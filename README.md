@@ -10,6 +10,51 @@ Meanwhile I've been working in many aspect, maybe the most important one is allo
 There are few working extensions making use of this method ment to be an experiment while improving QOL in the library usage.
 Objective is to gather LG contributors together and make wonderful things.
 
+MODS
+
+- CallbacksHandlers for all previous callbacks (eg. onNodeMoved, oonDblClick, ..)
+  - register multiple callbacks
+  - use alongside previous direct callback set
+  - specify execution priority
+  - can break execution chain or prevent default callback
+  - specify result priority
+
+- Debugging improved
+  - better messages
+  - internal logging funcion
+  - use levels
+
+- Better search (fuzzy)
+
+- ContexMenu filter and keyboard navigation
+
+- Unserialize (configure) graph will try to fix nodes slots differences and restore links
+  - this can happend node code changes and importing a previously created .json
+  - will look for matching slot name, than for type
+
+- Groups improvement
+  - create group for selected nodes
+  - allow moving groups inside groups
+  - wrap title
+  - select inner nodes
+
+- Extensions
+  - autoconnnect: select nodes, press 'a', click on destination node
+  - keyboard helper:
+    - RightArrow+(Shift/Ctlr) will open add node / search node and connect to the newly placed
+    - Arrows will move selected nodes
+    - Tab (+Shift) and Cntrl+ArrowUp/Down tries to allow nodes selection navigation (WIP)
+    - 'F' focus on selected node 
+  - renamer: select a node o hover a group, press 'f2', specify title
+
+- Input link movable (WIP)
+  - will work for multiple too, but drawing only one while dragging
+  - does not yet open add and search panel, need drop precisely on slot
+
+
++ fixes and experiments
+
+
 
 -- 2022 --
 
@@ -244,7 +289,6 @@ You can write any feedback to javi.agenjo@gmail.com
 
 ## Contributors
 
-- daniel-lewis-ab
 - atlasan
 - kriffe
 - rappestad
@@ -253,4 +297,6 @@ You can write any feedback to javi.agenjo@gmail.com
 - coderofsalvation
 - ilyabesk
 - gausszhou
+
+
 
