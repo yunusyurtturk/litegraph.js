@@ -993,14 +993,22 @@ export class LGraph {
     }
 
     /**
-     * Returns the top-most group in that position
+     * Returns the y closest group enclosing a position
      * @method getGroupOnPos
      * @param {number} x the x coordinate in canvas space
      * @param {number} y the y coordinate in canvas space
      * @return {LiteGraph.LGraphGroup} the group or null
      */
     getGroupOnPos(x, y) {
-        return this._groups.find((group) => group.isPointInside(x, y, 2, true)) ?? null;
+        // let firstGroupMatching = this._groups.find((group) => group.isPointInside(x, y, 2, true)) ?? null;
+        let aMatchingGroups = this._groups.filter((group, index) => {
+            return group.isPointInside(x, y, 2, true); // ?? null;
+        });
+        if(!aMatchingGroups.length) return null;
+        LiteGraph.log_verbose("lgraph","getGroupOnPos","matching groups by x,y",x,y,aMatchingGroups);
+        let aSortedByYDistance = aMatchingGroups.sort((a,b) => Math.abs(a._pos[1]-y) > Math.abs(b._pos[1]-y));
+        LiteGraph.log_verbose("lgraph","getGroupOnPos","sorted groups y distance",aSortedByYDistance);
+        return aSortedByYDistance[0];
     }
 
     /**
