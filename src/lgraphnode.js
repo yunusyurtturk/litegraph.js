@@ -397,8 +397,9 @@ export class LGraphNode {
         let r = this.processCallbackHandlers("onPropertyChanged",{
             def_cb: this.onPropertyChanged
         }, name, value, prevValue);
-        if(r!==null && (typeof(r)=="object" && r.return_value===false)){
+        if(r===false || (r!==null && (typeof(r)=="object" && r.return_value===false))){
             this.properties[name] = prevValue;
+            LiteGraph.log_debug("lgraphnode","setProperty","prevent property set by cbHandler",name,value,prevValue,r);
         }
 
         // Update the widget value associated with the property name

@@ -7472,11 +7472,20 @@ export class LGraphCanvas {
             if (type == "array" || type == "object") {
                 value = JSON.parse(value);
             }
+            const prevValue = this.properties[name];
             node.properties[property] = value;
             node.graph?.onGraphChanged({action: "propertyChanged", doSave: true});
-            node.processCallbackHandlers("onPropertyChanged",{
+            
+            // Call onPropertyChanged and block the change if needed
+            let r = node.processCallbackHandlers("onPropertyChanged",{
                 def_cb: node.onPropertyChanged
-            }, property, value);
+            }, property, value, prevValue);
+            if(r===false || (r!==null && (typeof(r)=="object" && r.return_value===false))){
+                node.properties[property] = prevValue;
+            }else{
+                LiteGraph.log_debug("lgraphcanvas","showEditPropertyValue","setValue","prevent property set by cbHandler",property,value,prevValue,r);
+            }
+            
             if(options.onclose)
                 options.onclose();
             dialog.close();
