@@ -341,9 +341,14 @@ class EventCounter {
         } else if (action == "reset") {
             this.num = 0;
         }
+        this.setOutputData(1, this.num);
         if (this.num != v) {
-            this.trigger("change", this.num);
+            this.changed();
         }
+    }
+
+    changed(){
+        this.trigger("change", this.num);
     }
 
     onDrawBackground(ctx) {
@@ -359,6 +364,7 @@ class EventCounter {
     onExecute() {
         if (this.properties.doCountExecution) {
             this.num += 1;
+            this.changed();
         }
         this.setOutputData(1, this.num);
     }
