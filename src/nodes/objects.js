@@ -236,6 +236,7 @@
         this.widg_prop.value = v;
     };
     objMethodWidget.prototype.updateFromInput = function(v) {
+        var that = this;
         var data = this.getInputData(0);
         if (data != null) {
             this._obin = data;
@@ -243,12 +244,31 @@
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try{
                     this._methods = [];
-                    var allProps = Object.keys(this._obin);
+                    // method 1, simple
+                    /* var allProps = Object.keys(this._obin);
                     console.debug("Props",allProps);
                     for(var iM in allProps){
                         // console.debug("dbg prop",allProps[iM],typeof(this._obin[allProps[iM]]));
                         if(typeof(this._obin[allProps[iM]]) == "function"){
                             this._methods.push(allProps[iM]);
+                        }
+                    } */
+                    // method 2, better
+                    /* for(var iM in this._obin){
+                        // console.debug("dbg prop",allProps[iM],typeof(this._obin[allProps[iM]]));
+                        if(typeof(this._obin[iM]) == "function"){
+                            this._methods.push(iM);
+                        }
+                    } */
+                    // method 3
+                    this._properties = [];
+                    currentObj = this._obin;
+                    do {
+                        Object.getOwnPropertyNames(currentObj).map(function(item){ if(!that._properties.includes(item)) that._properties.push(item) });
+                    } while ((currentObj = Object.getPrototypeOf(currentObj)));
+                    for(var iM in this._properties){
+                        if(typeof(this._obin[this._properties[iM]]) == "function"){
+                            this._methods.push(this._properties[iM]);
                         }
                     }
                     if(this._methods && this._methods.sort) this._methods = this._methods.sort();
@@ -285,6 +305,15 @@
             // }
 
             this._function = this._obin[actVal];
+            
+            // inheritance ?
+            // using call or apply ?
+            // prototype ¿
+            // Uncaught (in promise) TypeError: can't access private field or method: object is not the right class
+            /*
+            BAD
+            var actVal = this.widg_prop.value; // this.properties.method
+            var r = this._obin.prototype[actVal].call(this._obin); */
 
             var params = Array(this._function.length);
             var names = LiteGraph.getParameterNames(this._function);
@@ -383,10 +412,8 @@
 
     // SINGLE object EVAL
     objEvalGlo.prototype.onConfigure = function(o) {
-        if (o.properties.obj_eval && LiteGraph.allow_scripts)
+        if (o.properties.obj_eval)
             this.compileCode(o.properties.obj_eval);
-        else
-            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
     };
 
     objEvalGlo.title = "Eval Obj";
@@ -397,14 +424,17 @@
     };
 
     objEvalGlo.prototype.onPropertyChanged = function(name, value) {
-        if (name == "obj_eval" && LiteGraph.allow_scripts)
+        if (name == "obj_eval")
             this.compileCode(value);
-        else
-            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
     };
 
     objEvalGlo.prototype.compileCode = function(code) {
         this._func = null;
+        if (LiteGraph.allow_scripts){
+            // ok
+        }else{
+            console.warn("Obj string not evaluated, LiteGraph.allow_scripts is false");
+        }
         if (code.length > 256) {
             console.warn("Script too long, max 256 chars");
         } else {
@@ -425,6 +455,7 @@
             // }
             try {
                 this._func = new Function("DATA", "node", code_eval);
+                console.debug("Evaluated",code,this._func);
             } catch (err) {
                 console.error("Error parsing obj evaluation");
                 console.error(err);
@@ -433,12 +464,16 @@
     };
 
     objEvalGlo.prototype.onExecute = function() {
+        if (this.properties.obj_eval)
+            this.compileCode(this.properties.obj_eval);
         if (!this._func) {
+            this.setOutputData(0, null);
             return;
         }
         try {
             this.setOutputData(0, this._func(this.data, this));
         } catch (err) {
+            this.setOutputData(0, null);
             console.error("Error in code eval");
             console.error(err);
         }
