@@ -1,4 +1,6 @@
 
+import { LiteGraph } from "../../src/litegraph.js";
+
 function demo()
 {
 	multiConnection();
@@ -234,7 +236,9 @@ LiteGraph.registerNodeType("features/shape", TestSpecialNode );
 //Show value inside the debug console
 function TestSlotsNode()
 {
+	this.addInput("A","number");
 	this.addInput("C","number");
+	this.addInput("D","number");
 	this.addOutput("A","number");
 	this.addOutput("B","number");
 	this.horizontal = true;
@@ -263,18 +267,17 @@ function TestPropertyEditorsNode()
 
 	var that = this;
 	this.addWidget("button","Log",null,function(){
-		console.log(that.properties);
+		console.log?.(that.properties);
 	});
 }
 
 TestPropertyEditorsNode.title = "Properties";
 
-
 LiteGraph.registerNodeType("features/properties_editor", TestPropertyEditorsNode );
 
 
 
-//Show value inside the debug console
+// demostrate large input and copy paste + shift
 function LargeInputNode()
 {
 	this.addInput("in 1","number");
@@ -301,7 +304,129 @@ function LargeInputNode()
 }
 
 LargeInputNode.title = "Large Input Node";
-
-
 LiteGraph.registerNodeType("features/largeinput_editor", LargeInputNode);
 
+function LargeOutputNode()
+{
+	this.addOutput("out 1","number");
+	this.addOutput("out 2","number");
+	this.addOutput("out 3","number");
+	this.addOutput("out 4","number");
+	this.addOutput("out 5","number");
+	this.addOutput("out 6","number");
+	this.addOutput("out 7","number");
+	this.addOutput("out 8","number");
+	this.addOutput("out 9","number");
+	this.addOutput("out 10","number");
+	this.addOutput("out 11","number");
+	this.addOutput("out 12","number");
+	this.addOutput("out 13","number");
+	this.addOutput("out 14","number");
+	this.addOutput("out 15","number");
+	this.addOutput("out 16","number");
+	this.addOutput("out 17","number");
+	this.addOutput("out 18","number");
+	this.addOutput("out 19","number");
+	this.addOutput("out 20","number");
+	this.size = [200,410];
+}
+
+LargeOutputNode.title = "Large Output Node";
+LiteGraph.registerNodeType("features/largeoutput_editor", LargeOutputNode);
+
+
+// demostrate many slot types
+function ManySlotsNode()
+{
+	this.addInput("_event_","_event_");
+	this.addInput("array","array");
+	this.addInput("boolean","boolean");
+	this.addInput("number","number");
+	this.addInput("object","object");
+	this.addInput("string","string");
+	this.addInput("vec2","vec2");
+	this.addInput("vec3","vec3");
+	this.addInput("vec4","vec4");
+	this.addInput("audio","audio");
+	this.addInput("canvas","canvas");
+	this.addInput("geometry","geometry");
+	this.addInput("image","image");
+	this.addInput("mat4","mat4");
+	this.addInput("quat","quat");
+	this.addInput("table","table");
+
+	this.addOutput("array","array");
+	this.addOutput("object","object");
+	this.addOutput("number","number");
+	this.addOutput("vec4","vec4");
+	this.addOutput("string","string");
+	this.addOutput("_event_","_event_");
+	this.addOutput("canvas","canvas");
+	this.addOutput("vec2","vec2");
+	this.addOutput("vec3","vec3");
+	this.addOutput("mat4","mat4");
+	this.addOutput("boolean","boolean");
+	this.addOutput("image","image");
+	this.addOutput("table","table");
+	this.addOutput("audio","audio");
+	this.addOutput("geometry","geometry");
+	this.addOutput("quat","quat");
+	// this.size = [200,410];
+}
+
+ManySlotsNode.title = "ManySlots Node";
+LiteGraph.registerNodeType("features/many_slots", ManySlotsNode);
+
+
+// demostrate many slot types ( subsection A )
+function ManyHalfASlotsNode()
+{
+	this.addInput("_event_","_event_");
+	this.addInput("array","array");
+	this.addInput("boolean","boolean");
+	this.addInput("number","number");
+	this.addInput("object","object");
+	this.addInput("string","string");
+	this.addInput("vec2","vec2");
+	this.addInput("vec3","vec3");
+
+	this.addOutput("array","array");
+	this.addOutput("object","object");
+	this.addOutput("number","number");
+	this.addOutput("vec4","vec4");
+	this.addOutput("string","string");
+	this.addOutput("_event_","_event_");
+	this.addOutput("canvas","canvas");
+	this.addOutput("vec2","vec2");
+	// this.size = [200,410];
+}
+
+ManyHalfASlotsNode.title = "ManyHalfASlots Node";
+LiteGraph.registerNodeType("features/many_halfA_slots", ManyHalfASlotsNode);
+
+
+// demostrate many slot types ( subsection B )
+function ManyHalfBSlotsNode()
+{
+	this.addOutput("vec3","vec3");
+	this.addOutput("mat4","mat4");
+	this.addOutput("boolean","boolean");
+	this.addOutput("image","image");
+	this.addOutput("table","table");
+	this.addOutput("audio","audio");
+	this.addOutput("geometry","geometry");
+	this.addOutput("quat","quat");
+
+	this.addInput("vec4","vec4");
+	this.addInput("audio","audio");
+	this.addInput("canvas","canvas");
+	this.addInput("geometry","geometry");
+	this.addInput("image","image");
+	this.addInput("mat4","mat4");
+	this.addInput("quat","quat");
+	this.addInput("table","table");
+
+}
+
+ManyHalfBSlotsNode.title = "ManyHalfBSlots Node";
+LiteGraph.registerNodeType("features/many_halfB_slots", ManyHalfBSlotsNode);
