@@ -17,6 +17,7 @@ export class ContextMenu {
     constructor(values, options = {}) {
         this.options = options;
         options.scroll_speed ??= 0.1;
+        options.filter_enabled ??= true;
         this.menu_elements = [];
 
         this.#linkToParent();
@@ -27,7 +28,7 @@ export class ContextMenu {
         this.addItems(values);
         this.#insertMenu();
         this.#calculateBestPosition();
-        if(LiteGraph.context_menu_filter_enabled){
+        if(LiteGraph.context_menu_filter_enabled && options.filter_enabled){
             this.createFilter(values, options);
         }
     }

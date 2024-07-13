@@ -6736,9 +6736,20 @@ export class LGraphCanvas {
         };
         options = Object.assign(def_options, options || {});
 
-        LiteGraph.log_verbose("lgraphcanvas","showSearchBox",options);
+        if(typeof(event)!=="object" || typeof(event.target)=="undefined"){
+            if(typeof(options.event)!=="undefined"){
+                LiteGraph.log_debug("lgraphcanvas","showSearchBox","event not passed directly, using event from options",options.event,"first par was:",event);
+                event = options.event;
+            }
+        }
+        LiteGraph.log_debug("lgraphcanvas","showSearchBox",event,options);
 
-        var that = this;
+        if(typeof(that)=="undefined"){
+            var that = this;
+        }else{
+            LiteGraph.log_debug("lgraphcanvas","showSearchBox","using already present graphcanvas reference",that,"this is other?",this);
+        }
+
         var graphcanvas = LGraphCanvas.active_canvas;
         var canvas = graphcanvas.canvas;
         var root_document = canvas.ownerDocument || document;
@@ -6775,15 +6786,22 @@ export class LGraphCanvas {
             root_document.body.style.overflow = "";
 
             setTimeout(function() {
-                that.canvas.focus();
+                that.canvas?.focus();
+                if(!that.canvas){
+                    LiteGraph.log_debug("lgraphcanvas","showSearchBox","dont have reference to canvas",that,"this is other?",this);
+                }
             }, 20); // important, if canvas loses focus keys wont be captured
             if (dialog.parentNode) {
                 dialog.parentNode.removeChild(dialog);
             }
         };
 
-        if (this.ds.scale > 1) {
-            dialog.style.transform = `scale(${this.ds.scale})`;
+        if(typeof(that.ds)!=="undefined"){
+            if (that.ds.scale > 1) {
+                dialog.style.transform = `scale(${that.ds.scale})`;
+            }
+        }else{
+            LiteGraph.log_debug("lgraphcanvas","showSearchBox","ds reference not found, is this graphcanvas or what","that",that,"this",this);
         }
 
         // hide on mouse leave
@@ -8464,6 +8482,7 @@ export class LGraphCanvas {
 
     getCanvasMenuOptions() {
         var options = null;
+        var that = this;
         let r = this.processCallbackHandlers("getMenuOptions",{
             def_cb: this.getMenuOptions
         });
@@ -8476,6 +8495,11 @@ export class LGraphCanvas {
                     content: "Add Node",
                     has_submenu: true,
                     callback: LGraphCanvas.onMenuAdd,
+                },
+                {
+                    content: "Search",
+                    has_submenu: false,
+                    callback: that.showSearchBox,
                 },
                 { content: "Add Group", callback: LGraphCanvas.onGroupAdd },
                 // { content: "Arrange", callback: that.graph.arrange },
