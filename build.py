@@ -4,13 +4,14 @@ import json
 import sys
 import re
 
-# BUILD v 0.2
+# BUILD v 0.3
 # will export .js bundled
+# will export .mini.js bundled
+# will export .full.js bundled with defaults, editor and extensions
 # will export .cjs versions stripped of import and export, a cjs bundle working on node.js too
 
 # need npm install -g js-beautify
 # need npm install -g uglify-js
-
 
 # Default options, can be overridden by command-line arguments
 options = {
@@ -28,7 +29,6 @@ for arg in sys.argv:
     if arg == "--update-version":
         options["update-version"] = True
 
-# Define the list of redundant JS files
 lib_js_files = [
     "./src/global.js",
     "./src/litegraph.js",
@@ -45,45 +45,68 @@ lib_js_files = [
     "./src/init_litegraph.js",
 ]
 
-# Define the list of static inclusion files
+lib_nodes_files = [
+    "./src/nodes/base.js",
+    "./src/nodes/events.js",
+    "./src/nodes/interface.js",
+    "./src/nodes/input.js",
+    "./src/nodes/math.js",
+    "./src/nodes/math3d.js",
+    "./src/nodes/strings.js",
+    "./src/nodes/logic.js",
+    "./src/nodes/graphics.js",
+    "./src/nodes/gltextures.js",
+    "./src/nodes/glshaders.js",
+    "./src/nodes/geometry.js",
+    "./src/nodes/glfx.js",
+    "./src/nodes/midi.js",
+    "./src/nodes/audio.js",
+    "./src/nodes/network.js",
+    "./src/nodes/objects.js",
+    "./src/nodes/libraries.js",
+    "./src/nodes/html.js",
+]
+
+# lib_basicnodes_files = [
+    # "./src/nodes/base.js",
+    # "./src/nodes/events.js",
+    # "./src/nodes/input.js",
+    # "./src/nodes/math.js",
+    # "./src/nodes/strings.js",
+    # "./src/nodes/logic.js",
+# ]
+
+lib_editor_files = [
+    "./src/litegraph-editor.js",
+]
+
+lib_extensions_files = [
+    "./editor/js/defaults_debug.js",
+    "./src/extensions/autoconnect.js",
+    "./src/extensions/keyboard_helper.js",
+    "./src/extensions/renamer.js",
+]
+
 static_inclusions = [
-    # Add other static inclusion files here if any
 ]
 
 # Define the lists of JS files to concatenate
 js_files_lists = [
     {
         "output_filename": "litegraph.js",
-        "js_files": lib_js_files + [
-            "./src/nodes/base.js",
-            "./src/nodes/events.js",
-            "./src/nodes/interface.js",
-            "./src/nodes/input.js",
-            "./src/nodes/math.js",
-            "./src/nodes/math3d.js",
-            "./src/nodes/strings.js",
-            "./src/nodes/logic.js",
-            "./src/nodes/graphics.js",
-            "./src/nodes/gltextures.js",
-            "./src/nodes/glshaders.js",
-            "./src/nodes/geometry.js",
-            "./src/nodes/glfx.js",
-            "./src/nodes/midi.js",
-            "./src/nodes/audio.js",
-            "./src/nodes/network.js",
-        ]
+        "js_files": lib_js_files + lib_nodes_files
     },
     {
         "output_filename": "litegraph.mini.js",
-        "js_files": lib_js_files + [
-            "./src/nodes/base.js",
-            # "./src/nodes/events.js",
-            "./src/nodes/input.js",
-            "./src/nodes/math.js",
-            "./src/nodes/strings.js",
-            "./src/nodes/logic.js",
-            # "./src/nodes/network.js",
-        ]
+        "js_files": lib_js_files + lib_nodes_files
+    },
+    {
+        "output_filename": "litegraph.full.js",
+        "js_files": lib_js_files + lib_nodes_files + lib_editor_files + lib_extensions_files
+    },
+    {
+        "output_filename": "litegraph.full.mini.js",
+        "js_files": lib_js_files + lib_nodes_files + lib_editor_files + lib_extensions_files
     },
     {
         "output_filename": "litegraph.core.js",
@@ -100,7 +123,7 @@ def concatenate_js_files(js_files, output_filename, output_folder, remove_import
     for js_file in js_files:
         print(f"Processing {js_file} ", end="")
         try:
-            with open(js_file, "r") as f:
+            with open(js_file, "r", encoding="utf-8") as f:
                 file_data = f.read()
                 if remove_imports:
                     file_data = re.sub(r'import\s+.*?;\n', '', file_data)
@@ -183,37 +206,31 @@ def convert_es6_to_commonjs(data):
     const_names = []
     function_names = []
 
-    # Convert export default class
     def export_default_class_replacer(match):
         class_name = match.group(1)
         class_names.append(class_name)
         return f'class {class_name}'
 
-    # Convert export class
     def export_class_replacer(match):
         class_name = match.group(1)
         class_names.append(class_name)
         return f'class {class_name}'
     
-    # Convert export var
     def export_var_replacer(match):
         var_name = match.group(1)
         var_names.append(var_name)
         return f'var {var_name}'
     
-    # Convert export const
     def export_const_replacer(match):
         const_name = match.group(1)
         const_names.append(const_name)
         return f'const {const_name}'
 
-    # Convert export function
     def export_function_replacer(match):
         function_name = match.group(1)
         function_names.append(function_name)
         return f'function {function_name}'
 
-    # Convert export default function or variable
     def export_default_replacer(match):
         return match.group(1)
 
@@ -226,7 +243,7 @@ def convert_es6_to_commonjs(data):
     data = re.sub(r'export\s+function\s+([a-zA-Z0-9_]+)', export_function_replacer, data)
     data = re.sub(r'export\s+\{([a-zA-Z0-9_,\s]+)\};', r'\1;', data)
     data = re.sub(r'import\s+([a-zA-Z0-9_,{}\s*]+)\s+from\s+["\']([a-zA-Z0-9_./-]+)["\'];', lambda match: "var " + match.group(1).strip() + " = require('" + match.group(2).strip() + "');", data)
-    # data = re.sub(r'\bconst\b', 'var', data)
+    # data = re.sub(r'\let\b', 'var', data)
 
     # Add exports at the end of the file
     if class_names or function_names:

@@ -38922,6 +38922,830 @@ class HtmlElementStyle {
 LiteGraph.registerNodeType("html/apply_element_css", HtmlElementStyle);
 
 
+// Creates an interface to access extra features from a graph (like play, stop, live, etc)
+class Editor {
+
+    constructor(container_id, options = {}) {
+
+        const root = this.root = document.createElement("div");
+        root.className = "litegraph litegraph-editor";
+        root.innerHTML = `
+        <div class="header">
+            <div class="tools tools-left"></div>
+            <div class="tools tools-right"></div>
+        </div>
+        <div class="content">
+            <div class="editor-area">
+                <canvas class="graphcanvas" width="1000" height="500" tabindex="10"></canvas>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="tools tools-left"></div>
+            <div class="tools tools-right"></div>
+        </div>`;
+
+        this.tools = root.querySelector(".tools");
+        this.content = root.querySelector(".content");
+        this.footer = root.querySelector(".footer");
+
+        const canvas = this.canvas = root.querySelector(".graphcanvas");
+        const graph = this.graph = new LGraph();
+        const graphcanvas = this.graphcanvas = new LGraphCanvas(canvas, graph);
+
+        graphcanvas.background_image = "imgs/grid.png";
+        graph.onAfterExecute = () => {
+            graphcanvas.draw(true);
+        };
+
+        graphcanvas.onDropItem = this.onDropItem.bind(this);
+
+        // add stuff
+        // this.addToolsButton("loadsession_button","Load","imgs/icon-load.png", this.onLoadButton.bind(this), ".tools-left" );
+        // this.addToolsButton("savesession_button","Save","imgs/icon-save.png", this.onSaveButton.bind(this), ".tools-left" );
+        this.addLoadCounter();
+        this.addToolsButton(
+            "playnode_button",
+            "Play",
+            "imgs/icon-play.png",
+            this.onPlayButton.bind(this),
+            ".tools-right",
+        );
+        this.addToolsButton(
+            "playstepnode_button",
+            "Step",
+            "imgs/icon-playstep.png",
+            this.onPlayStepButton.bind(this),
+            ".tools-right",
+        );
+
+        if (!options.skip_livemode) {
+            this.addToolsButton(
+                "livemode_button",
+                "Live",
+                "imgs/icon-record.png",
+                this.onLiveButton.bind(this),
+                ".tools-right",
+            );
+        }
+        if (!options.skip_maximize) {
+            this.addToolsButton(
+                "maximize_button",
+                "",
+                "imgs/icon-maximize.png",
+                this.onFullscreenButton.bind(this),
+                ".tools-right",
+            );
+        }
+        if (options.miniwindow) {
+            this.addMiniWindow(300, 200);
+        }
+
+        // append to DOM
+        const parent = document.getElementById(container_id);
+        if (parent) {
+            parent?.appendChild(root);
+        } else {
+            throw new Error("Editor has no parentElement to bind to");
+        }
+
+        graph.onPlayEvent = () => {
+            const button = this.root.querySelector("#playnode_button");
+            button.innerHTML = `<img src="imgs/icon-stop.png"/> Stop`;
+        };
+
+        graph.onStopEvent = () => {
+            const button = this.root.querySelector("#playnode_button");
+            button.innerHTML = `<img src="imgs/icon-play.png"/> Play`;
+        };
+
+        graphcanvas.resize();
+    }
+
+    addLoadCounter() {
+        const meter = document.createElement("div");
+        meter.className = "headerpanel loadmeter toolbar-widget";
+        meter.innerHTML = `
+            <div class="cpuload">
+                <strong>CPU</strong> 
+                <div class="bgload">
+                    <div class="fgload"></div>
+                </div>
+            </div>
+            <div class="gpuload">
+                <strong>GFX</strong> 
+                <div class="bgload">
+                    <div class="fgload"></div>
+                </div>
+            </div>`;
+
+        this.root.querySelector(".header .tools-left").appendChild(meter);
+        var self = this;
+
+        setInterval(() => {
+            meter.querySelector(".cpuload .fgload").style.width =
+                `${2 * self.graph.execution_time * 90}px`;
+            if (self.graph.status == LGraph.STATUS_RUNNING) {
+                meter.querySelector(".gpuload .fgload").style.width =
+                    `${self.graphcanvas.render_time * 10 * 90}px`;
+            } else {
+                meter.querySelector(".gpuload .fgload").style.width = `${4}px`;
+            }
+        }, 200);
+    }
+
+    addToolsButton(id, name, icon_url, callback, container = ".tools") {
+        const button = this.createButton(name, icon_url, callback);
+        button.id = id;
+        this.root.querySelector(container).appendChild(button);
+    }
+
+    createButton(name, icon_url, callback) {
+        const button = document.createElement("button");
+        if (icon_url) {
+            button.innerHTML = `<img src="${icon_url}"/> `;
+        }
+        button.classList.add("btn");
+        button.innerHTML += name;
+        if(callback)
+            button.addEventListener("click", callback );
+        return button;
+    }
+
+    onLoadButton() {
+        var panel = this.graphcanvas.createPanel("Load session",{closable: true});
+
+        // @TODO
+
+        this.root.appendChild(panel);
+    }
+
+    onSaveButton() {}
+
+    onPlayButton() {
+        var graph = this.graph;
+        if (graph.status == LGraph.STATUS_STOPPED) {
+            graph.start();
+        } else {
+            graph.stop();
+        }
+    }
+
+    onPlayStepButton() {
+        var graph = this.graph;
+        graph.runStep(1);
+        this.graphcanvas.draw(true, true);
+    }
+
+    onLiveButton() {
+        var is_live_mode = !this.graphcanvas.live_mode;
+        this.graphcanvas.switchLiveMode(true);
+        this.graphcanvas.draw();
+        var button = this.root.querySelector("#livemode_button");
+        button.innerHTML = !is_live_mode
+            ? `<img src="imgs/icon-record.png"/> Live`
+            : `<img src="imgs/icon-gear.png"/> Edit`;
+    }
+
+    onDropItem(e) {
+        var that = this;
+        if(!e.dataTransfer){
+            LiteGraph.log_warn("LGEditor","onDropItem","no dataTransfer on event",e,this);
+            return;
+        }
+        LiteGraph.log_info("LGEditor","onDropItem","processing dataTransfer",e.dataTransfer);
+        for(var i = 0; i < e.dataTransfer.files.length; ++i) {
+            var file = e.dataTransfer.files[i];
+            var ext = LGraphCanvas.getFileExtension(file.name);
+            var reader = new FileReader();
+            if(ext == "json") {
+                reader.onload = (event) => {
+                    var data = JSON.parse( event.target.result );
+                    that.graph.configure(data);
+                };
+                reader.readAsText(file);
+            }
+        }
+    }
+
+    goFullscreen() {
+        if (this.root.requestFullscreen) {
+            this.root.requestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        } else if (this.root.mozRequestFullscreen) {
+            this.root.requestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        } else if (this.root.webkitRequestFullscreen) {
+            this.root.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        } else {
+            throw new Error("Fullscreen not supported");
+        }
+
+        var self = this;
+        setTimeout(() => {
+            self.graphcanvas.resize();
+        }, 100);
+    }
+
+    onFullscreenButton() {
+        if(this.isFullscreen()) {
+            this.exitFullscreen();
+        } else {
+            this.goFullscreen();
+        }
+    }
+
+    addMiniWindow(w, h) {
+        var miniwindow = document.createElement("div");
+        miniwindow.className = "litegraph miniwindow";
+        miniwindow.innerHTML =
+            `<canvas class="graphcanvas" width="${w}" height="${h}" tabindex="10"></canvas>`;
+        var canvas = miniwindow.querySelector("canvas");
+        var that = this;
+
+        var graphcanvas = new LGraphCanvas( canvas, this.graph );
+        graphcanvas.show_info = false;
+        graphcanvas.background_image = "imgs/grid.png";
+        graphcanvas.scale = 0.25;
+        graphcanvas.allow_dragnodes = false;
+        graphcanvas.allow_interaction = false;
+        graphcanvas.render_shadows = false;
+        graphcanvas.max_zoom = 0.25;
+        this.miniwindow_graphcanvas = graphcanvas;
+        graphcanvas.onClear = () => {
+            graphcanvas.scale = 0.25;
+            graphcanvas.allow_dragnodes = false;
+            graphcanvas.allow_interaction = false;
+        };
+        graphcanvas.onRenderBackground = function(canvas, ctx) {
+            ctx.strokeStyle = "#567";
+            var tl = that.graphcanvas.convertOffsetToCanvas([0, 0]);
+            var br = that.graphcanvas.convertOffsetToCanvas([
+                that.graphcanvas.canvas.width,
+                that.graphcanvas.canvas.height,
+            ]);
+            tl = this.convertCanvasToOffset(tl);
+            br = this.convertCanvasToOffset(br);
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+                Math.floor(tl[0]) + 0.5,
+                Math.floor(tl[1]) + 0.5,
+                Math.floor(br[0] - tl[0]),
+                Math.floor(br[1] - tl[1]),
+            );
+        };
+
+        miniwindow.style.position = "absolute";
+        miniwindow.style.top = "4px";
+        miniwindow.style.right = "4px";
+
+        var close_button = document.createElement("div");
+        close_button.className = "corner-button";
+        close_button.innerHTML = "&#10060;";
+        close_button.addEventListener("click", (_event) => {
+            graphcanvas.setGraph(null);
+            miniwindow.parentNode.removeChild(miniwindow);
+        });
+        miniwindow.appendChild(close_button);
+
+        this.root.querySelector(".content").appendChild(miniwindow);
+    }
+
+    // removeMultiView() {
+    //     if (this.graphcanvas2) {
+    //         this.graphcanvas2.setGraph(null, true);
+    //         this.graphcanvas2.viewport = null;
+    //         this.graphcanvas2 = null;
+
+    //         this.graphcanvas.viewport = [0,0,canvas.width,canvas.height];
+    //         this.graphcanvas.resize();
+    //     }
+    // }
+
+    toggleMultiview() {
+        var canvas = this.canvas;
+        let graphcanvas;
+
+        // toggle test
+        if (this.graphcanvas2) {
+            this.graphcanvas2.unbindEvents();
+            this.graphcanvas2.setGraph(null, true);
+            this.graphcanvas2.viewport = null;
+            this.graphcanvas2 = null;
+
+            // this.graphcanvas.unbindEvents();
+            // this.graphcanvas.setGraph(null, false);
+            // this.graphcanvas.viewport = null;
+            // this.graphcanvas = null;
+            // graphcanvas = new LGraphCanvas( canvas, this.graph );
+            // graphcanvas.background_image = "imgs/grid.png";
+            // this.graphcanvas = graphcanvas;
+            // window.graphcanvas = this.graphcanvas;
+
+            this.graphcanvas.viewport = [0,0,canvas.width,canvas.height];
+            this.graphcanvas.setDirty(true,true);
+
+            return;
+        }
+
+        this.graphcanvas.ctx.fillStyle = "black";
+        this.graphcanvas.ctx.fillRect(0,0,canvas.width,canvas.height);
+        this.graphcanvas.viewport = [0,0,canvas.width*0.5-2,canvas.height];
+        // this.graphcanvas.resize();
+        this.graphcanvas.setDirty(true,true);
+
+        graphcanvas = new LGraphCanvas( canvas, this.graph );
+        graphcanvas.background_image = "imgs/grid.png";
+        this.graphcanvas2 = graphcanvas;
+        this.graphcanvas2.viewport = [canvas.width*0.5,0,canvas.width*0.5,canvas.height];
+        // this.graphcanvas2.resize();
+        this.graphcanvas2.setDirty(true,true);
+    }
+
+    isFullscreen() {
+        return(
+            document.fullscreenElement ||
+            document.mozRequestFullscreen ||
+            document.webkitRequestFullscreen ||
+            false
+        );
+    }
+
+    exitFullscreen() {
+        if(document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullscreen) {
+            document.mozCancelFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+}
+
+
+LiteGraph.debug = true; // enable logging
+LiteGraph.logging_set_level(4); // -1 is none, 0 is error level, 5 is all up to debug, more is for verbose : will set LiteGraph.debug_level
+
+LiteGraph.catch_exceptions = true;
+LiteGraph.throw_errors = true;
+LiteGraph.allow_scripts = true; //if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration); which could lead to exploits
+
+LiteGraph.searchbox_extras = {}; //used to add extra features to the search box
+LiteGraph.auto_sort_node_types = true; // [true!] If set to true; will automatically sort node types / categories in the context menus
+LiteGraph.node_box_coloured_when_on = true; // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action); visual feedback
+LiteGraph.node_box_coloured_by_mode = true; // [true!] nodebox based on node mode; visual feedback
+LiteGraph.dialog_close_on_mouse_leave = true; // [false on mobile] better true if not touch device;
+LiteGraph.dialog_close_on_mouse_leave_delay = 500;
+LiteGraph.shift_click_do_break_link_from = false; // [false!] prefer false if results too easy to break links
+LiteGraph.click_do_break_link_to = false; // [false!]prefer false; way too easy to break links
+LiteGraph.search_hide_on_mouse_leave = true; // [false on mobile] better true if not touch device;
+LiteGraph.search_filter_enabled = true; // [true!] enable filtering slots type in the search widget; !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
+LiteGraph.search_show_all_on_open = true; // [true!] opens the results list when opening the search widget
+
+LiteGraph.show_node_tooltip = true; // [true!] show a tooltip with node property "tooltip" over the selected node
+LiteGraph.show_node_tooltip_use_descr_property = true; // enabled tooltip from desc when property tooltip not set
+
+LiteGraph.auto_load_slot_types = true; // [if want false; use true; run; get vars values to be statically set; than disable] nodes types and nodeclass association with node types need to be calculated; if dont want this; calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
+/*// set these values if not using auto_load_slot_types
+LiteGraph.registered_slot_in_types = {}; // slot types for nodeclass
+LiteGraph.registered_slot_out_types = {}; // slot types for nodeclass
+LiteGraph.slot_types_in = []; // slot types IN
+LiteGraph.slot_types_out = []; // slot types OUT*/
+
+LiteGraph.alt_drag_do_clone_nodes = true; // [true!] very handy; ALT click to clone and drag the new node
+LiteGraph.do_add_triggers_slots = true; // [true!] will create and connect event slots when using action/events connections; !WILL CHANGE node mode when using onTrigger (enable mode colors); onExecuted does not need this
+LiteGraph.allow_multi_output_for_events = false; // [false!] being events; it is strongly reccomended to use them sequentially; one by one
+LiteGraph.middle_click_slot_add_default_node = true;  //[true!] allows to create and connect a ndoe clicking with the third button (wheel)
+LiteGraph.release_link_on_empty_shows_menu = true; //[true!] dragging a link to empty space will open a menu, add from list, search or defaults
+// OLD setting: this is always pointer on this version :: LiteGraph.pointerevents_method = "pointer"; // "mouse"|"pointer" use mouse for compatibility issues, touch will work only with pointer 
+LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs = true; //[true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+LiteGraph.backspace_delete = false;  // [false!] delete key is enough, don't mess with text edit and custom
+
+LiteGraph.actionHistory_enabled = true; // [true!] cntrlZ, cntrlY :: WIP testing
+LiteGraph.actionHistoryMaxSave = 40;
+
+LiteGraph.showCanvasOptions = true; // enable canvas options panel, customize in LiteGrpah.availableCanvasOptions
+
+LiteGraph.use_uuids = false; // why not? maybe not good for comparison?
+
+/* -- EVENTS PROCESSING METHODS -- */
+
+/* METHOD 1 ANCESTORS : EXECUTING ACTIONS BEFORE THE NEXT FRAME, AFFECTING INPUT NODES WILL BE REPROCESSED */
+LiteGraph.refreshAncestorsOnTriggers = true; //[true!]
+LiteGraph.refreshAncestorsOnActions = true; //[true!]
+LiteGraph.ensureUniqueExecutionAndActionCall = true; //[true!]
+
+/* METHOD 2 DEFERRED ACTIONS */
+LiteGraph.use_deferred_actions = false; // disabling deferred
+
+
+// CONTEXT MENU FILTERING
+// ---- WIP ----
+// i) ComfyUI has his own
+LiteGraph.context_menu_filter_enabled = true; // [WIP!]
+
+// !! TESTING node configure FIX SLOTS !!
+LiteGraph.reprocess_slot_while_node_configure = true;
+/**
+ * EXAMPLE EXTENSION TO AUTOCONNECT SELECTED NODES TO ANOTHER (SINGLE) NODE
+ * press a than click on a node
+ */
+
+
+export let registerExtension_autoconnect = function(graphcanvas){
+    // enable only if debugging CallbackHandler itself
+    // graphcanvas.cb_handler.debug = true;
+
+    let ext = "autoconnect";
+    let debug = false;
+    
+    graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
+        // oCbInfo is first passed parameter and contains infos about the event execution chain 
+        
+        // skip from second event on
+        if(keyEvent.repeat){
+            return;
+        }
+
+        if(debug) console.info(ext, "*** onKeyDown handler ***", ...arguments);
+        switch(keyEvent.keyCode){
+            case 65: // a
+            
+                // skip if shift o ctrl
+                if(keyEvent.shiftKey || keyEvent.ctrlKey){
+                    if(debug) console.verbose(ext, "skip shift or ctlr", ...arguments);
+                    break;
+                }
+
+                // check selected nodes
+                let nSel = Object.keys(graphcanvas.selected_nodes).length;
+                var aNodesFrom = [];
+                if(nSel){
+                    for(let iO in graphcanvas.selected_nodes){
+                        // graphcanvas.graph.autoConnectNodes(node_from, node_to);
+                        aNodesFrom.push(graphcanvas.selected_nodes[iO]);
+                    }
+                }
+                
+                graphcanvas.registerCallbackHandler("onMouseDown",function(md_oCbInfo, e){
+                    if(debug) console.info(ext, "*** onMouseDown handler ***", ...arguments);
+
+                    let node_to = graphcanvas.graph.getNodeOnPos( e.canvasX, e.canvasY, graphcanvas.visible_nodes, 5 );
+
+                    if(node_to){
+                        if(debug) console.info(ext, "### dbg: clicked on DEST node, autoconnect", node_to, aNodesFrom);
+                        for(let node_from of aNodesFrom){
+                            if(debug) console.info(ext, "### dbg: AUTOCONNECT", node_from, node_to);
+                            graphcanvas.graph.autoConnectNodes(node_from, node_to);
+                        }
+                    }else{
+                        if(debug) console.info(ext, "### dbg: not clicked on a node", node_to);
+                    }
+
+                },{ call_once: true }); // register to call only once
+
+            break;
+            default:
+                if(debug) console.debug(ext, "### dbg: ignore key", keyEvent.keyCode);
+            break;
+        }
+    });
+
+}
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_autoconnect(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_autoconnect(graphcanvas);
+});
+
+export let registerExtension_keyhelper = function(graphcanvas){
+
+    // enable only if debugging CallbackHandler itself
+    // graphcanvas.cb_handler.debug = true;
+
+    // oCbInfo is first passed parameter and contains infos about the event execution chain 
+
+    let ext = "key_helper";
+    let debug = false;
+
+    // onKeyDown
+    graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
+        if(debug) console.info(ext, "*** onKeyDown handler ***",...arguments);
+
+        let nSel = Object.keys(graphcanvas.selected_nodes).length;
+        var aNodesFrom = [];
+        var nodeX = false;
+        var return_value = null;
+        if(nSel){
+            for(let iO in graphcanvas.selected_nodes){
+                aNodesFrom.push(graphcanvas.selected_nodes[iO]);
+            }
+            nodeX = aNodesFrom[0];
+        }
+
+        switch(keyEvent.keyCode){
+            case 39: //ArrowLeft
+                if(nSel){
+
+                    // ---- ADD NEW NODE CONNECTED TO SELECTED ONE  ----
+                    if(keyEvent.shiftKey || keyEvent.ctrlKey){
+
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+
+                        // simulate position via event (little hack, should implement that on prompt itself)
+                        /* const mouseCoord = graphcanvas.getMouseCoordinates();
+                        const gloCoord = graphcanvas.convertOffsetToEditorArea(mouseCoord);
+                        // need prompt to be absolute positioned relative to editor-area that needs relative positioning
+                        keyEvent.clientX = gloCoord[0];
+                        keyEvent.clientY = gloCoord[1]; */
+                        const gloCoord = graphcanvas.convertOffsetToEditorArea(nodeX.pos);
+                        keyEvent.clientX = gloCoord[0] + nodeX.size[0] + 33;
+                        keyEvent.clientY = gloCoord[1];
+                        keyEvent.canvasX = nodeX.pos[0] + nodeX.size[0] + 33;
+                        keyEvent.canvasY = nodeX.pos[1];
+
+                        if(nodeX.outputs && nodeX.outputs[0]){
+                            if(keyEvent.shiftKey){
+                                if(debug) console.debug(ext, "dbg: show search (using first slot)", nodeX, keyEvent);
+                                graphcanvas.showSearchBox(keyEvent, {node_from: nodeX, slot_from: nodeX.outputs[0], type_filter_in: nodeX.outputs[0].type});
+                            }else if(keyEvent.ctrlKey){
+                                if(debug) console.debug(ext, "dbg: show connection menu (using first slot)", nodeX, keyEvent);
+                                graphcanvas.showConnectionMenu({nodeFrom: nodeX, slotFrom: nodeX.outputs[0], e: keyEvent, isCustomEvent: true});
+                            }
+                        }else{
+                            if(debug) console.debug(ext, "dbg: no output for node");
+                        }
+                        
+                    }else{
+
+                        // move nodes right
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[0] += LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
+
+                    }
+
+                }
+            break;
+            case 37: // ArrowLeft
+                // move nodes left
+                if(nSel){
+                    for(let iN=0;iN<aNodesFrom.length;iN++){
+                        aNodesFrom[iN].alignToGrid();
+                        aNodesFrom[iN].pos[0] -= LiteGraph.CANVAS_GRID_SIZE;
+                        aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                            def_cb: aNodesFrom[iN].onMoved
+                        });
+                    }
+                }
+            break;
+            case 38: // ArrowUp
+                if(nSel){
+                    // move nodes up
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO=parentNode.outputs.length-1; iO>=0; iO--){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
+                                for(let ioN=outNodes.length-1; ioN>=0; ioN--){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] -= LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
+                    }
+                }
+            break;
+            case 40: // ArrowDown
+                if(nSel){
+                    // check if ctrlKey
+                    if(keyEvent.ctrlKey){
+                        // ---- select sibiling node, adding if shift ----
+                        // skip from second event on
+                        if(keyEvent.repeat){
+                            return;
+                        }
+                        if(nodeX.inputs && nodeX.inputs.length){
+                            const parentNode = nodeX.getInputNode(0);
+                            if(!parentNode) return;
+                            let found = false;
+                            let foundNode = false;
+                            for(let iO in parentNode.outputs){
+                                let outNodes = parentNode.getOutputNodes(iO);
+                                if(!outNodes) continue;
+                                for(let ioN in outNodes){
+                                    if(found){
+                                        // found prev cycle
+                                        foundNode = outNodes[ioN];
+                                        break;
+                                    }
+                                    if(nodeX.id === outNodes[ioN].id){
+                                        found = true;
+                                        // will get next in cycle
+                                    }
+                                }
+                                if(found){
+                                    break;
+                                }
+                            }
+                            if(foundNode){
+                                if(keyEvent.shiftKey){
+                                    graphcanvas.selectNode(foundNode, true);
+                                }else{
+                                    graphcanvas.selectNodes([foundNode]);
+                                }
+                            }
+                        }
+                    }else{
+                        // move nodes down
+                        for(let iN=0;iN<aNodesFrom.length;iN++){
+                            aNodesFrom[iN].alignToGrid();
+                            aNodesFrom[iN].pos[1] += LiteGraph.CANVAS_GRID_SIZE;
+                            aNodesFrom[iN].processCallbackHandlers("onMoved",{
+                                def_cb: aNodesFrom[iN].onMoved
+                            });
+                        }
+                    }
+                }
+            break;
+            case 9: // TAB
+                // next node (connected to selected, or previous w shift)
+                if(nSel){
+                    let nextNode = false;
+                    if(keyEvent.shiftKey){
+                        if(nodeX.inputs && nodeX.inputs.length && nodeX.inputs[0].link && nodeX.inputs[0].link!==null){
+                            nextNode = nodeX.getInputNode(0);
+                            graphcanvas.selectNodes([nextNode]);
+                        }
+                    }else{
+                        if(nodeX.outputs && nodeX.outputs.length && nodeX.outputs[0].links && nodeX.outputs[0].links.length){
+                            nextNode = nodeX.getOutputNodes(0)[0];
+                            graphcanvas.selectNodes([nextNode]);
+                        }
+                    }
+                    return_value = true;
+                }
+            break;
+            case 70: // F
+                // focus on node
+                if(nSel){
+                    graphcanvas.centerOnNode(nodeX);
+                    // TODO graphcanvas.centerOnSelection();
+                }else{
+                    graphcanvas.recenter();
+                }
+            break;
+            default:
+                if(debug) console.debug(ext, "dbg: ignore",keyEvent.keyCode);
+            break;
+        }
+
+        return {
+            return_value: return_value,
+            //prevent_default: true,
+            //stop_replication: true
+        };
+    });
+
+}
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_keyhelper(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_keyhelper(graphcanvas);
+});
+
+export let registerExtension_renamer = function(graphcanvas){
+
+    // enable only if debugging CallbackHandler itself
+    // graphcanvas.cb_handler.debug = true;
+
+    // oCbInfo is first passed parameter and contains infos about the event execution chain 
+
+    let ext = "renamer";
+    let debug = false;
+
+    // onKeyDown
+    graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
+        if(debug) console.info(ext, "*** renamer onKeyDown handler ***",...arguments);
+        switch(keyEvent.keyCode){
+            case 113: // F2
+                
+                // skip from second event on
+                if(keyEvent.repeat){
+                    return;
+                }
+
+                // check selected nodes
+                let nSel = Object.keys(graphcanvas.selected_nodes).length;
+                
+                // simulate position via event (little hack, should implement that on prompt itself)
+                const mouseCoord = graphcanvas.getMouseCoordinates();
+                const gloCoord = graphcanvas.convertOffsetToEditorArea(mouseCoord);
+                // need prompt to be absolute positioned relative to editor-area that needs relative positioning
+                keyEvent.clientX = gloCoord[0];
+                keyEvent.clientY = gloCoord[1];
+
+                if(nSel){
+
+                    // get actual title
+                    let actT = nSel == 1
+                                ? graphcanvas.selected_nodes[Object.keys(graphcanvas.selected_nodes)[0]].title
+                                : "titleForMany";
+                    
+                    // set update function
+                    var fCB = function(tIn){
+                        for(let iN in graphcanvas.selected_nodes){
+                            graphcanvas.selected_nodes[iN].title = tIn;
+                        }
+                    }
+                    
+                    // open prompt
+                    graphcanvas.prompt(
+                        "Title",actT,fCB,keyEvent //,w.options ? w.options.multiline : false,
+                    );
+
+                }else{
+                    
+                    // check is over Group (Note)
+                    const groupOver = graphcanvas.graph.getGroupOnPos( mouseCoord[0], mouseCoord[1] );
+                    if(groupOver){
+                        if(debug) console.warn(ext, "dbg: group to rename",groupOver);
+                        // set update function
+                        var fCB = function(tIn){
+                            groupOver.title = tIn;
+                        }
+                        // open prompt
+                        graphcanvas.prompt(
+                            "Title",groupOver.title,fCB,keyEvent //,w.options ? w.options.multiline : false,
+                        );
+                    }else{
+
+                        if(debug) console.warn(ext, "dbg: nothing to rename");
+
+                    }
+                }
+            break;
+            default:
+                if(debug) console.debug("dbg: ignore key",keyEvent.keyCode);
+            break;
+        }
+    });
+
+}
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_renamer(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_renamer(graphcanvas);
+});
+
 exports.LiteGraphClass = LiteGraphClass;
 exports.CallbackHandler = CallbackHandler;
 exports.ContextMenu = ContextMenu;
@@ -38937,6 +39761,7 @@ exports.GraphInput = GraphInput;
 exports.GraphOutput = GraphOutput;
 exports.LGraphTexture = LGraphTexture;
 exports.LGShaderContext = LGShaderContext;
+exports.Editor = Editor;
 exports.getGlobalObject = getGlobalObject;
 exports.setGlobalVariable = setGlobalVariable;
 exports.getGlobalVariable = getGlobalVariable;
