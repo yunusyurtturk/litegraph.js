@@ -1129,28 +1129,6 @@ export class LiteGraphClass {
         return hex;
     }
 
-    closeAllContextMenus = function(ref_window) {
-        ref_window = ref_window || window;
-
-        var elements = ref_window.document.querySelectorAll(".litecontextmenu");
-        if (!elements.length) {
-            return;
-        }
-
-        var result = [];
-        for (var i = 0; i < elements.length; i++) {
-            result.push(elements[i]);
-        }
-
-        for (var i=0; i < result.length; i++) {
-            if (result[i].close) {
-                result[i].close();
-            } else if (result[i].parentNode) {
-                result[i].parentNode.removeChild(result[i]);
-            }
-        }
-    };
-
     extendClass = (target, origin) => {
         for (let i in origin) {
             // copy class properties
@@ -1226,7 +1204,7 @@ export class LiteGraphClass {
     } */
 
     closeAllContextMenus = () => {
-        LiteGraph.log_warn('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
+        LiteGraph.log_verbose('LiteGraph.closeAllContextMenus is deprecated in favor of ContextMenu.closeAll()');
         ContextMenu.closeAll();
     };
 
