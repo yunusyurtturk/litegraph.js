@@ -223,6 +223,17 @@ class WidgetNumber {
         return true;
     }
 
+    onDblClick(e, pos, canvas){ 
+        console.warn("onDblClick", ...arguments);
+        // NO, this is for title, etc.: canvas.doShowNodeInfoEditor(this, this.getPropertyInfo("value"), e);
+        // NO, this is to open the whole parameter list: doShowMenuNodeProperties
+        canvas.showEditPropertyValue(this, "value", { event: e/* position: pos */ });
+        this.prevent_up = true;
+        e.preventDefault();
+        e.stopPropagation();
+        return true;
+    }
+
     onMouseMove(e) {
         if (!this.mouse_captured) {
             return;
@@ -252,8 +263,13 @@ class WidgetNumber {
     }
 
     onMouseUp(e, pos) {
+        if(this.prevent_up){
+            this.prevent_up = false;
+            return;
+        }
         if (e.click_time < 200) {
             var steps = pos[1] > this.size[1] * 0.5 ? -1 : 1;
+            // TOOD use setProperty
             this.properties.value = LiteGraph.clamp(
                 this.properties.value + steps * this.properties.step,
                 this.properties.min,

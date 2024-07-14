@@ -510,9 +510,11 @@ export class LGraphNode {
             return;
         }
 
-        var link_id = this.inputs[slot].link;
-        var link = this.graph.links[link_id];
+        let ob_input = this.inputs[slot];
+        let link_id = ob_input.link;
+        let link = this.graph.links[link_id];
         if (!link) {
+            // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputData", "No link", link_id, slot, this);
             return null;
         }
 
@@ -520,18 +522,22 @@ export class LGraphNode {
             return link.data;
         }
 
-        // special case: used to extract data from the incoming connection before the graph has been executed
-        var node = this.graph.getNodeById(link.origin_id);
+        // forcing origin data update
+        // will execute the node (eventually after updating ancestors)
+
+        let node = this.graph.getNodeById(link.origin_id);
         if (!node) {
             LiteGraph.log_debug("lgraphnode", "getInputData","No origin node, return the link data", link.data, link, slot, this);
             return link.data;
         }
 
-        // atlasan: refactor: This is a basic, but seems working, version. Consider moving this out of here and use a single ancestorsCalculation (for each event?)
+        // TODO Consider moving this out of here and use a single ancestorsCalculation (for each event?)
+        // CHECK THIS : used in logic/while , is ATM necessary? does this solve reading self value while executing loops ?
         if (refresh_tree) {
-            LiteGraph.log_debug("lgraphnode", "getInputData","Refreshing ancestors tree", link, slot, this);
-            var uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
-            var optsAncestors = {action: uIdRand, options: {action_call: uIdRand}};
+            LiteGraph.log_warn("CHECK THIS", "lgraphnode", "getInputData","Refreshing ancestors tree by ForcedUpdateSlotData", link, slot, this);
+            LiteGraph.log_debug("lgraphnode", "getInputData","Refreshing ancestors tree by ForcedUpdateSlotData", link, slot, this);
+            let uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
+            let optsAncestors = {action: uIdRand, options: {action_call: uIdRand}};
             this.refreshAncestors(optsAncestors);
         }
 
@@ -859,51 +865,56 @@ export class LGraphNode {
      * @param {*} options
      */
     doExecute(param, options = {}) {
-        // if (this.onExecute) {
 
-            if (this.mode === LiteGraph.NEVER){
-                LiteGraph.log_debug("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
+        if (this.mode === LiteGraph.NEVER){
+            LiteGraph.log_verbose("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
+            return;
+        }
+
+        // enable this to give the event an ID
+        options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`; // TODO replace all ath.floor(Math.random()*9999) by LiteGraph.uuidv4
+
+        if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
+            LiteGraph.log_debug("lgraphNODE", "doExecute", "already executing! Prevent! "+this.id+":"+this.order);
+            return;
+        }
+        if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined) {
+            LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
+            return;
+        }
+        // LiteGraph.log_debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
+        if (LiteGraph.ensureUniqueExecutionAndActionCall) {
+            // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
+            if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
+                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! "+options.action_call);
                 return;
             }
+        }
 
-            // enable this to give the event an ID
-            options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`;
+        this.graph.nodes_executing[this.id] = true; // .push(this.id);
 
-            if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
-                LiteGraph.log_debug("lgraphNODE", "doExecute", "already executing! Prevent! "+this.id+":"+this.order);
-                return;
-            }
-            if (LiteGraph.ensureNodeSingleExecution && this.exec_version && this.exec_version >= this.graph.iteration && this.exec_version !== undefined) {
-                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already EXECUTED THIS STEP !! "+this.exec_version);
-                return;
-            }
-            // LiteGraph.log_debug("Actioned ? "+this.id+":"+this.order+" :: "+this.action_call);
-            if (LiteGraph.ensureUniqueExecutionAndActionCall) {
-                // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
-                if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                    LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! "+options.action_call);
-                    return;
-                }
-            }
+        // update binded properties
+        if(LiteGraph.properties_allow_input_binding){
+            this.doUpdateBindedInputProperties();
+        }
 
-            this.graph.nodes_executing[this.id] = true; // .push(this.id);
+        // --- NODE EXECUTION ---
+        // this.onExecute(param, options);
+        this.processCallbackHandlers("onExecute",{
+            def_cb: this.onExecute
+        }, param, options);
 
-            // this.onExecute(param, options);
-            this.processCallbackHandlers("onExecute",{
-                def_cb: this.onExecute
-            }, param, options);
+        this.graph.nodes_executing[this.id] = false; // .pop();
 
-            this.graph.nodes_executing[this.id] = false; // .pop();
+        // save execution/action ref
+        this.exec_version = this.graph.iteration;
+        if(options && options.action_call) {
+            this.action_call = options.action_call; // if (param)
+            this.graph.nodes_executedAction[this.id] = options.action_call;
+        }
 
-            // save execution/action ref
-            this.exec_version = this.graph.iteration;
-            if(options && options.action_call) {
-                this.action_call = options.action_call; // if (param)
-                this.graph.nodes_executedAction[this.id] = options.action_call;
-            }
-        // }
-        this.execute_triggered = 2; // the nFrames it will be used (-- each step), means "how old" is the event
-        // callbcak after execution
+        this.execute_triggered = 2; // helper to draw currently executing, the nFrames it will be used (-- each step), means "how old" is the event
+        
         this.processCallbackHandlers("onAfterExecuteNode",{
             def_cb: this.onAfterExecuteNode
         }, param, options);
@@ -1125,6 +1136,35 @@ export class LGraphNode {
         });
     }
 
+    doUpdateBindedInputProperties(){
+        let thisNode = this;
+        this.inputs.forEach((ob_input) => {
+            if(ob_input.param_bind){
+                LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
+                if(thisNode.properties && typeof(thisNode.properties[ob_input.name])!=="undefined"){
+                    let inputData = thisNode.getInputData(ob_input.name);
+                    // thisNode.properties[ob_input.name] = link.data;
+                    LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","update value",ob_input.name,inputData,thisNode);
+                    this.setProperty(ob_input.name, inputData);
+                }else{
+                    LiteGraph.log_warn("lgraphnode","doUpdateBindedInputProperties","inexisting property",ob_input.name,inputData,thisNode);
+                }
+            }   
+        });
+    }
+
+    /**
+     * set the node size to auto computed
+     * @method autoSize
+     */
+    autoSize(only_greater_than_current){
+        let minSize = this.computeSize();
+        let newSize = only_greater_than_current && this.size
+                        ? [Math.max(this.size[0], minSize[0]),Math.max(this.size[1], minSize[1])]
+                        : minSize;
+        this.setSize(newSize);
+    }
+
     /**
      * changes node size and triggers callback
      * @method setSize
@@ -1195,7 +1235,7 @@ export class LGraphNode {
             }
         }
 
-        this.setSize(this.computeSize());
+        this.autoSize(true);
         this.setDirtyCanvas(true, true);
         return slot;
     }
@@ -1250,7 +1290,7 @@ export class LGraphNode {
             }
         });
 
-        this.setSize(this.computeSize());
+        this.autoSize();
         this.setDirtyCanvas(true, true);
     }
 
@@ -1270,7 +1310,7 @@ export class LGraphNode {
             link?.target_slot && link.target_slot--;
         });
 
-        this.setSize(this.computeSize());
+        this.autoSize();
         this.processCallbackHandlers("onInputRemoved",{
             def_cb: this.onInputRemoved
         }, slot, removedInput);
@@ -1298,7 +1338,7 @@ export class LGraphNode {
             });
         });
 
-        this.setSize(this.computeSize());
+        this.autoSize();
         this.processCallbackHandlers("onOutputRemoved",{
             def_cb: this.onOutputRemoved
         }, slot);
@@ -1352,7 +1392,6 @@ export class LGraphNode {
             if (!text) {
                 return 0;
             }
-            // TRIED BUT NOT WORKING ?
             const lgcanvas = node.getDefaultCanvas();
             if(lgcanvas && lgcanvas.canvas && lgcanvas.ctx){
                 if(isTitle){
@@ -1400,7 +1439,7 @@ export class LGraphNode {
             size[0] = Math.max(size[0], title_width);
         }else{
             // basicWidth
-            size[0] = Math.max(input_width + output_width + 10, title_width);
+            size[0] = Math.max(input_width + output_width + 40 + 10, title_width);
             // basicHeight
             size[1] = this.getSlotsHeight();
         }
@@ -1437,11 +1476,11 @@ export class LGraphNode {
         }else{
             size[1] += widgetsHeight;
         }
-        if (this.constructor.min_height && size[1] < this.constructor.min_height) {
-            size[1] = this.constructor.min_height;
+        if (this.constructor.min_height) {
+            size[1] = Math.max( size[1], this.constructor.min_height);
         }
 
-        size[1] += 6; // x margin
+        // size[1] += 6; // y margin
         return size;
     }
 
@@ -1451,7 +1490,7 @@ export class LGraphNode {
             this.inputs ? this.inputs.length : 1,
             this.outputs ? this.outputs.length : 1,
             1,
-        ) * LiteGraph.NODE_SLOT_HEIGHT;
+        ) * LiteGraph.NODE_SLOT_HEIGHT + 10;
         // add margin (should this be always?)
         return rowHeight + (this.constructor.slot_start_y || 0);
     }
@@ -1477,11 +1516,13 @@ export class LGraphNode {
             }
         }
         // litescene mode using the constructor
-        if(this.constructor[`@${property}`])
+        if(this.constructor[`@${property}`]){
             info = this.constructor[`@${property}`];
+        }
 
-        if(this.constructor.widgets_info && this.constructor.widgets_info[property])
+        if(this.constructor.widgets_info && this.constructor.widgets_info[property]){
             info = this.constructor.widgets_info[property];
+        }
 
         // litescene mode using the constructor
         if (!info) {
@@ -1494,12 +1535,18 @@ export class LGraphNode {
             }
         }
 
-        if (!info)
+        if (!info){
             info = {};
-        if(!info.type)
+        }
+        if(!info.type){
             info.type = typeof this.properties[property];
-        if(info.widget == "combo")
+        }
+        /* if(!info.property){
+            info.property = property;
+        } */
+        if(info.widget == "combo"){
             info.type = "enum";
+        }
 
         return info;
     }

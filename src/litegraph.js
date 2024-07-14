@@ -41,7 +41,7 @@ export class LiteGraphClass {
     NODE_WIDGET_HEIGHT = 20;
     NODE_WIDTH = 140;
     NODE_MIN_WIDTH = 50;
-    NODE_MIN_SIZE = [50, 25];
+    NODE_MIN_SIZE = [50, 0];
     NODE_COLLAPSED_RADIUS = 10;
     NODE_COLLAPSED_WIDTH = 80;
     NODE_TITLE_COLOR = "#999";
@@ -202,6 +202,8 @@ export class LiteGraphClass {
     allowMultiOutputForEvents = false; // being events, it is strongly reccomended to use them sequentually, one by one
 
     reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
+
+    properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
 
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 

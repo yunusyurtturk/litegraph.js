@@ -388,7 +388,7 @@ class logicWhile {
                         break;
                     }
                     this.k++;
-                    this.cond = this.getInputData(1,true,true);
+                    this.cond = this.getInputData(1,true,true); // CHECK THIS : USING FORCE ANCESTOR REFRESH ( ?!? getInputData refresh_tree )
                 }
                 this.k = 0;
                 this.setOutputData(1, this.k);

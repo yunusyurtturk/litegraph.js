@@ -17,6 +17,7 @@ export class ContextMenu {
     constructor(values, options = {}) {
         this.options = options;
         options.scroll_speed ??= 0.1;
+        options.filter_enabled ??= true;
         this.menu_elements = [];
 
         this.#linkToParent();
@@ -27,7 +28,7 @@ export class ContextMenu {
         this.addItems(values);
         this.#insertMenu();
         this.#calculateBestPosition();
-        if(LiteGraph.context_menu_filter_enabled){
+        if(LiteGraph.context_menu_filter_enabled && options.filter_enabled){
             this.createFilter(values, options);
         }
     }
@@ -362,6 +363,10 @@ export class ContextMenu {
      */
     addItem(name, value, options = {}) {
 
+        // value.callback_on_element_created ??= false; 
+
+        LiteGraph.log_verbose("contextmenu", "addItem", ...arguments);
+
         const element = document.createElement("div");
         element.className = "litemenu-entry submenu";
 
@@ -393,6 +398,11 @@ export class ContextMenu {
 
             if (value.className) {
                 element.className += " " + value.className;
+            }
+            // execute element additional construction function
+            if(typeof(value.callback_on_element_created)=="function"){
+                LiteGraph.log_debug("contextmenu", "addItem", "callback_on_element_created", element, value.callback_on_element_created);
+                value.callback_on_element_created(element, this);
             }
         }
 
