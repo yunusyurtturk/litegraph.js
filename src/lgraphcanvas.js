@@ -159,6 +159,10 @@ export class LGraphCanvas {
 
         // event dispatcher, along direct (single) assignment of callbacks [ event entrypoint ]
         this.callbackhandler_setup();
+
+        LiteGraph.processCallbackHandlers("on_lgraphcanvas_construct",{
+            def_cb: LiteGraph.on_lgraphcanvas_construct
+        }, this);
     }
 
     callbackhandler_setup(){
@@ -718,11 +722,8 @@ export class LGraphCanvas {
         this.pointer_is_down = true;
         this.canvas.focus();
         
-        // ComfyUI compatibility
-        if(LiteGraph.ContextMenu.closeAll) LiteGraph.ContextMenu.closeAll(ref_window);
+        LiteGraph.ContextMenuClass.closeAll(ref_window);
         
-        LiteGraph.closeAllContextMenus(ref_window);
-
         // if (this.onMouse?.(e))
         //     return;
 

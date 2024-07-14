@@ -107,6 +107,9 @@ export class LGraphNode {
         this.processCallbackHandlers("onPostConstruct",{
             def_cb: this.onPostConstruct
         });
+        LiteGraph.processCallbackHandlers("on_lgraphnode_construct",{
+            def_cb: LiteGraph.on_lgraphnode_construct
+        }, this);
     }
 
     callbackhandler_setup(){
@@ -510,8 +513,6 @@ export class LGraphNode {
         var link_id = this.inputs[slot].link;
         var link = this.graph.links[link_id];
         if (!link) {
-            // bug: weird case but it happens sometimes
-            LiteGraph.log_warn("lgraphnode", "getInputData", "No link", link_id, slot, this);
             return null;
         }
 

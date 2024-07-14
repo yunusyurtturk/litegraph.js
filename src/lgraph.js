@@ -33,6 +33,10 @@ export class LGraph {
         if (o) {
             this.configure(o);
         }
+        
+        LiteGraph.processCallbackHandlers("on_lgraph_construct",{
+            def_cb: LiteGraph.on_lgraph_construct
+        }, this);
     }
 
     callbackhandler_setup(){
