@@ -1,6 +1,6 @@
 import { LiteGraph } from "../litegraph.js";
 
-if(LiteGraph && graphcanvas) (function(){
+export let registerExtension_renamer = function(graphcanvas){
 
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
@@ -77,4 +77,12 @@ if(LiteGraph && graphcanvas) (function(){
         }
     });
 
-})();
+}
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_renamer(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_renamer(graphcanvas);
+});

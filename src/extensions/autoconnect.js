@@ -5,17 +5,15 @@
 
 import { LiteGraph } from "../litegraph.js";
 
-if(LiteGraph && graphcanvas) (function(){
+export let registerExtension_autoconnect = function(graphcanvas){
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
 
-    // oCbInfo is first passed parameter and contains infos about the event execution chain 
-
     let ext = "autoconnect";
     let debug = false;
-
-    // onKeyDown
+    
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
+        // oCbInfo is first passed parameter and contains infos about the event execution chain 
         
         // skip from second event on
         if(keyEvent.repeat){
@@ -66,4 +64,12 @@ if(LiteGraph && graphcanvas) (function(){
         }
     });
 
-})();
+}
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_autoconnect(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_autoconnect(graphcanvas);
+});

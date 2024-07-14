@@ -1,6 +1,6 @@
 import { LiteGraph } from "../litegraph";
 
-if(LiteGraph && graphcanvas){
+export let registerExtension_keyhelper = function(graphcanvas){
 
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
@@ -232,3 +232,11 @@ if(LiteGraph && graphcanvas){
     });
 
 }
+
+if(typeof(graphcanvas)!=="undefined"){
+    registerExtension_keyhelper(graphcanvas);
+}
+
+LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct",function(oCbInfo, graphcanvas){
+    registerExtension_keyhelper(graphcanvas);
+});
