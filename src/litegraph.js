@@ -1222,6 +1222,21 @@ export class LiteGraphClass {
             return new Date().getTime();
         }
     }
+
+    /**
+     * 
+     * @param {number} n number to be formatted
+     * @param {*} precision decimal positions
+     * @returns formatted number to precision witouth trailing zeros
+     */ 
+    formatNumber(n, precision = 3){
+        n = Number(n);
+        if(n === NaN){
+            return "";
+        }else{
+            return n.toFixed(precision).replace(/(\.\d*[1-9])0+$|\.0*$/, '$1');
+        }
+    }
 }
 
 // !¿ TODO MOVE THESE HELPERS ?!

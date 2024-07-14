@@ -5072,9 +5072,10 @@ export class LGraphCanvas {
                         ctx.fillStyle = text_color;
                         if(is_over_widget || this.options.hide_widget_label_when_small===true || this.options.hide_widget_label_when_small < width){
                             ctx.fillText(
-                                w.label || w.name + "  " + Number(w.value).toFixed(w.options.precision != null
-                                    ? w.options.precision
-                                    : 3),
+                                w.label ||
+                                    w.name + "  "
+                                    + LiteGraph.formatNumber(w.value, w.options.precision != null ? w.options.precision : 3)
+                                ,
                                 widget_width * 0.5,
                                 y + H * 0.7,
                             );
@@ -5116,9 +5117,7 @@ export class LGraphCanvas {
                         ctx.textAlign = "right";
                         if (w.type == "number") {
                             ctx.fillText(
-                                Number(w.value).toFixed(w.options.precision !== undefined
-                                    ? w.options.precision
-                                    : 3),
+                                LiteGraph.formatNumber(w.value, w.options.precision !== undefined ? w.options.precision : 3),
                                 widget_width - margin * 2 - 20,
                                 y + H * 0.7,
                             );
@@ -5285,7 +5284,7 @@ export class LGraphCanvas {
 
                             let delta = x < 40 ? -1 : x > widget_width - 40 ? 1 : 0;
                             if (w.type == "number") {
-                                w.value += delta * 0.1 * (w.options.step || 1);
+                                w.value += delta * (w.options.step || 1);
                                 if ( w.options.min != null && w.value < w.options.min ) {
                                     w.value = w.options.min;
                                 }
@@ -7792,7 +7791,7 @@ export class LGraphCanvas {
             var str_value = String(value);
             type = type.toLowerCase();
             if(type == "number")
-                str_value = value.toFixed(3);
+                str_value = LiteGraph.formatNumber(value,3);
 
             var elem = document.createElement("div");
             elem.className = "property";

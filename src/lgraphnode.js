@@ -1437,6 +1437,7 @@ export class LGraphNode {
         if(this.horizontal){
             // const lastIPos = this.getConnectionPos();
             size[0] = Math.max(size[0], title_width);
+            size[1] = this.outputs.length ? Math.max(size[1], LiteGraph.NODE_SLOT_HEIGHT + 10) : size[1];
         }else{
             // basicWidth
             size[0] = Math.max(input_width + output_width + 40 + 10, title_width);

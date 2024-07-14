@@ -40,10 +40,24 @@ class ConstantNumber {
 
     constructor() {
         this.addOutput("value", "number");
-        this.addProperty("value", 1.0);
-        this.widget = this.addWidget("number", "value", 1, "value");
+        this.addProperty("value", 1.0, "number");
+        this.addProperty("precision", 12, "number", {min: 0, max: 12});
+        this.addProperty("step", 1, "number");
+        this.addProperty("min", 0, "number");
+        this.addProperty("max", Number.MAX_SAFE_INTEGER, "number");
+        this.widget = this.addWidget("number", "value", 1, "value", { precision: this.properties.precision, step: this.properties.step, min: this.properties.min });
         this.widgets_up = true;
         this.size = [180, 30];
+    }
+
+    onPropertyChanged(name, value) {
+        if (["precision","step","min"].indexOf(name) !== -1) {
+            if(name=="precision"){
+                value = Math.max(0,Math.min(value,12));
+                return false;
+            }
+            this.widgets[0].options[name] = value;
+        }
     }
 
     onExecute() {
@@ -63,7 +77,7 @@ class ConstantNumber {
 
     onDrawBackground() {
         // show the current value
-        this.outputs[0].label = this.properties["value"].toFixed(3);
+        this.outputs[0].label = LiteGraph.formatNumber(this.properties["value"],3);
     }
 }
 LiteGraph.registerNodeType("basic/const", ConstantNumber);
