@@ -264,8 +264,9 @@ class objMethodWidget {
     setValue(v) {
         this.properties.method = v;
         this.widg_prop.value = v;
-    };
-    objMethodWidget.prototype.updateFromInput = function(v) {
+    }
+
+    updateFromInput(v) {
         var that = this;
         var data = this.getInputData(0);
         if (data != null) {
@@ -458,14 +459,14 @@ class objEvalGlo {
     }
 
     // SINGLE object EVAL
-    objEvalGlo.prototype.onConfigure = function(o) {
+    onConfigure = function(o) {
         if (o.properties.obj_eval)
             this.compileCode(o.properties.obj_eval);
     };
 
     static widgets_info = {obj_eval: { type: "code" }};
 
-    objEvalGlo.prototype.onPropertyChanged = function(name, value) {
+    onPropertyChanged = function(name, value) {
         if (name == "obj_eval")
             this.compileCode(value);
     };
