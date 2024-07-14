@@ -755,7 +755,7 @@ class MathOperation {
             return;
         }
 
-        ctx.font = "40px Arial";
+        ctx.font = "36px Arial";
         ctx.fillStyle = "#666";
         ctx.textAlign = "center";
         ctx.fillText(
@@ -807,7 +807,7 @@ class MathOperation {
         values: MathOperation.values,
     };
 
-    static size = [100, 60];
+    // static size = [100, 60];
 }
 LiteGraph.registerNodeType("math/operation", MathOperation);
 LiteGraph.registerSearchboxExtra("math/operation", "MAX", {

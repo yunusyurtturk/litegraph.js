@@ -1,6 +1,5 @@
 import { LiteGraph } from "../litegraph.js";
 
-// Constant
 class Time {
 
     static title = "Time";
@@ -18,6 +17,20 @@ class Time {
 }
 LiteGraph.registerNodeType("basic/time", Time);
 
+class Empty {
+
+    static title = "";
+    static desc = "Empty node";
+
+    constructor() {
+        
+    }
+
+    onExecute() {
+        
+    }
+}
+LiteGraph.registerNodeType("basic/empty", Empty);
 
 // Constant
 class ConstantNumber {

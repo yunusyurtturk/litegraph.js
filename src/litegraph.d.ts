@@ -1111,7 +1111,7 @@ export declare class LGraphCanvas {
 
     static onMenuCollapseAll(): void;
     static onMenuNodeEdit(): void;
-    static onShowPropertyEditor(
+    static onShowNodeInfoEditor(
         item: any,
         options: any,
         e: any,

@@ -363,6 +363,10 @@ export class ContextMenu {
      */
     addItem(name, value, options = {}) {
 
+        // value.callback_on_element_created ??= false; 
+
+        LiteGraph.log_verbose("contextmenu", "addItem", ...arguments);
+
         const element = document.createElement("div");
         element.className = "litemenu-entry submenu";
 
@@ -394,6 +398,11 @@ export class ContextMenu {
 
             if (value.className) {
                 element.className += " " + value.className;
+            }
+            // execute element additional construction function
+            if(typeof(value.callback_on_element_created)=="function"){
+                LiteGraph.log_debug("contextmenu", "addItem", "callback_on_element_created", element, value.callback_on_element_created);
+                value.callback_on_element_created(element, this);
             }
         }
 

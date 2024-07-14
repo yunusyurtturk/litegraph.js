@@ -1031,25 +1031,31 @@ export class LGraphCanvas {
                         this.node_widget = [node, widget];
                     }
 
+                    let cbRet = null;
+
                     // double clicking
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
                         LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "double clicked on node", node);
                         // TAG callback node event entrypoint
-                        node.processCallbackHandlers("onDblClick",{
+                        cbRet = node.processCallbackHandlers("onDblClick",{
                             def_cb: node.onDblClick
                         }, e, pos, this );
-                        this.processNodeDblClicked(node);
+                        if ( cbRet!==null && (cbRet === true || (typeof(cbRet)=="object" && cbRet.return_value)) ) {
+                            LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "dragging blocked by onDblClick", cbRet);
+                        }else{
+                            this.processNodeDblClicked(node);
+                        }
                         block_drag_node = true;
                     }
 
                     // TAG callback node event entrypoint
-                    var cbRet = node.processCallbackHandlers("onMouseDown",{
+                    cbRet = node.processCallbackHandlers("onMouseDown",{
                         def_cb: node.onMouseDown
                     }, e, pos, this );
                     
                     // if do not capture mouse
                     if ( cbRet!==null && (cbRet === true || (typeof(cbRet)=="object" && cbRet.return_value)) ) {
-                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "dragging blocked");
+                        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "dragging blocked by onMouseDownCbRet", cbRet);
                         block_drag_node = true;
                     } else {
                         // open subgraph button
@@ -6100,7 +6106,11 @@ export class LGraphCanvas {
         return false;
     }
 
-    static onShowMenuNodeProperties(value, options, e, prev_menu, node) {
+    doShowMenuNodeProperties(element, options, e, prev_menu, node) {
+        LGraphCanvas.onShowMenuNodeProperties(element, options, e, prev_menu, node);
+    }
+
+    static onShowMenuNodeProperties(element, options, e, prev_menu, node) {
         if (!node || !node.properties) {
             return;
         }
@@ -6108,26 +6118,87 @@ export class LGraphCanvas {
         var canvas = LGraphCanvas.active_canvas;
         var ref_window = canvas.getCanvasWindow();
 
-        var entries = [];
+        let entries = [];
         for (let i in node.properties) {
-            value = node.properties[i] !== undefined ? node.properties[i] : " ";
+            let value = node.properties[i] !== undefined ? node.properties[i] : " ";
             if( typeof value == "object" )
                 value = JSON.stringify(value);
-            var info = node.getPropertyInfo(i);
-            if(info.type == "enum" || info.type == "combo")
+            let info = node.getPropertyInfo(i);
+            let info_type = info.type;
+            let propName = info.label ? info.label : i;
+
+            // parse combo
+            if(info_type == "enum" || info_type == "combo"){
                 value = LGraphCanvas.getPropertyPrintableValue( value, info.values );
+            }
 
             // value could contain invalid html characters, clean that
             value = LGraphCanvas.decodeHTML(value);
+            let htmlEntry = "<span class='property_name'>"
+                                + propName
+                            + "</span>"
+                            + "<span class='property_value'>"
+                                + value
+                            + "</span>";
+            
+            let callback_on_element_created = false; // can pass in element construction function
+
+            // allow property binding
+            if(LiteGraph.properties_allow_input_binding){
+                let relSlotOb = node.findInputSlot(propName, true);
+                let hasSlotByName = relSlotOb !== -1;
+                let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                htmlEntry += "<span class='property_input_bind'>"
+                                + ( slotBinded
+                                        // input exists and is binded
+                                        ?   "<span class='property_input_binded'>linked</span>"
+                                        // input is not binded or does not exist
+                                        :   ( hasSlotByName
+                                                ?   "<span class='property_input_exist'>"
+                                                        + "<input type='button' class='btn_confirm btn_bind_property_to_input' value='link input' />"
+                                                    + "</span>"
+                                                : "<span class=''>"
+                                                        + "<input type='button' class='btn_confirm btn_bind_property_to_input' value='create input' />"
+                                                    + "</span>"
+                                            )
+                                    )
+                            +"</span>";
+                callback_on_element_created = function(el, menu){
+                    LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","calling callback_on_element_created",propName,el,slotBinded,relSlotOb);
+                    let btnConfirm = el.querySelector('.btn_confirm');
+                    if(!btnConfirm){
+                        el.disabled = "disabled";
+                        LiteGraph.log_warn("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties",".btn_confirm not found",propName,el);
+                    }else{
+                        LiteGraph.log_info("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties",".btn_confirm binding!",btnConfirm,propName);
+                        btnConfirm.addEventListener("click", function(ev){
+                            relSlotOb = node.findInputSlot(propName, true);
+                            hasSlotByName = relSlotOb !== -1;
+                            slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                            if ( !slotBinded ){
+                                if( !hasSlotByName ){
+                                    LiteGraph.log_info("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","CREATING NEW INPUT ON NODE",relSlotOb,propName);
+                                    // propName
+                                    node.addInput(propName, info_type, {removable: true, nameLocked: true});
+                                    relSlotOb = node.findInputSlot(propName, true);
+                                }
+                                LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","Linking property to input",relSlotOb);
+                                relSlotOb.param_bind = true;
+                                menu.close?.(ev, true);
+                            }else{
+                                LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","Property already binded",relSlotOb,propName);
+                            }
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        });
+                    }
+                }
+            }
+
             entries.push({
-                content:
-                    "<span class='property_name'>" +
-                    (info.label ? info.label : i) +
-                    "</span>" +
-                    "<span class='property_value'>" +
-                    value +
-                    "</span>",
+                content: htmlEntry,
                 value: i,
+                callback_on_element_created: callback_on_element_created
             });
         }
         if (!entries.length) {
@@ -6146,12 +6217,15 @@ export class LGraphCanvas {
             ref_window,
         );
 
-        function inner_clicked(v) {
+        function inner_clicked(v, options, event, parent_menu, rel_node) {
+            LiteGraph.log_debug("lgraphcanvas", "onShowMenuNodeProperties", "inncer_clicked", this, ...arguments);
             if (!node) {
                 return;
             }
-            var rect = this.getBoundingClientRect();
-            canvas.showEditPropertyValue(node, v.value, { position: [rect.left, rect.top] });
+            if( !this.disabled && !v.disabled ){
+                var rect = this.getBoundingClientRect();
+                canvas.showEditPropertyValue(node, v.value, { position: [rect.left, rect.top] });
+            }
         }
 
         return false;
@@ -6497,8 +6571,12 @@ export class LGraphCanvas {
         return false;
     }
 
+    doShowNodeInfoEditor(node, item, e, options){
+        LGraphCanvas.onShowNodeInfoEditor(item, options, e, null, node);
+    }
+
     // TODO refactor :: this is used fot title but not for properties!
-    static onShowPropertyEditor(item, options, e, menu, node) {
+    static onShowNodeInfoEditor(item, options, e, menu, node) {
         var property = item.property || "title";
         var value = node[property];
 
@@ -8569,7 +8647,7 @@ export class LGraphCanvas {
                 null,
                 {
                     content: "Title",
-                    callback: LGraphCanvas.onShowPropertyEditor,
+                    callback: LGraphCanvas.onShowNodeInfoEditor,
                 },
                 {
                     content: "Mode",
@@ -8683,7 +8761,7 @@ export class LGraphCanvas {
 
     getGroupMenuOptions() {
         var o = [
-            { content: "Title", callback: LGraphCanvas.onShowPropertyEditor },
+            { content: "Title", callback: LGraphCanvas.onShowNodeInfoEditor },
             {
                 content: "Color",
                 has_submenu: true,
@@ -8693,7 +8771,7 @@ export class LGraphCanvas {
                 content: "Font size",
                 property: "font_size",
                 type: "Number",
-                callback: LGraphCanvas.onShowPropertyEditor,
+                callback: LGraphCanvas.onShowNodeInfoEditor,
             },
             null,
             { content: "Remove", callback: LGraphCanvas.onMenuNodeRemove },
@@ -8764,6 +8842,7 @@ export class LGraphCanvas {
                     event.canvasX,
                     event.canvasY,
                 );
+                options.filter_enabled = false;
                 if (group) {
                     // on group
                     menu_info.push(null, {

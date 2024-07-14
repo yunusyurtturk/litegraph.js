@@ -43,7 +43,7 @@ LiteGraph.actionHistoryMaxSave = 40;
 
 LiteGraph.showCanvasOptions = true; // enable canvas options panel, customize in LiteGrpah.availableCanvasOptions
 
-LiteGraph.use_uuids = false; // why not? maybe not good for comparison?
+LiteGraph.use_uuids = true; // [testing] why not? maybe not good for comparison?
 
 /* -- EVENTS PROCESSING METHODS -- */
 
@@ -63,3 +63,5 @@ LiteGraph.context_menu_filter_enabled = true; // [WIP!]
 
 // !! TESTING node configure FIX SLOTS !!
 LiteGraph.reprocess_slot_while_node_configure = true;
+
+LiteGraph.properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 

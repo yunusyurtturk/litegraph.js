@@ -692,3 +692,11 @@
     border-radius: 20px;
     cursor: pointer;
 }
+
+.litegraph.property_input_bind {
+    text-align: right;
+    float: right;
+}
+.litegraph.property_input_binded {
+    font-weight: bold;
+}
