@@ -363,7 +363,7 @@ export class ContextMenu {
      */
     addItem(name, value, options = {}) {
 
-        // value.callback_on_element_created ??= false; 
+        // value.callbacks_on_element_created ??= false; 
 
         LiteGraph.log_verbose("contextmenu", "addItem", ...arguments);
 
@@ -400,9 +400,17 @@ export class ContextMenu {
                 element.className += " " + value.className;
             }
             // execute element additional construction function
-            if(typeof(value.callback_on_element_created)=="function"){
-                LiteGraph.log_debug("contextmenu", "addItem", "callback_on_element_created", element, value.callback_on_element_created);
-                value.callback_on_element_created(element, this);
+            if(typeof(value.callbacks_on_element_created)!=="undefined"){
+                if(typeof(value.callbacks_on_element_created)=="function"){
+                    value.callbacks_on_element_created = [value.callbacks_on_element_created];
+                }
+                var thisMenu = this;
+                value.callbacks_on_element_created.forEach((fun)=>{
+                    if(typeof(fun)=="function"){
+                        LiteGraph.log_debug("contextmenu", "addItem", "callbacks_on_element_created", element, fun);
+                        fun(element, thisMenu);
+                    }
+                })
             }
         }
 
