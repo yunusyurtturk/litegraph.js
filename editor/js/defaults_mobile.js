@@ -59,5 +59,5 @@ LiteGraph.use_deferred_actions = false; // disabling deferred
 // !! TESTING node configure FIX SLOTS !!
 LiteGraph.reprocess_slot_while_node_configure = true;
 
-properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 
+LiteGraph.properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 
 

@@ -1,6 +1,7 @@
-//event related nodes
+import { LiteGraph } from "./litegraph.js";
+
+//LiteGraph library related nodes
 (function(global) {
-    var LiteGraph = global.LiteGraph;
 
     // --------------------------
 

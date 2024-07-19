@@ -61,4 +61,4 @@ LiteGraph.context_menu_filter_enabled = false; // [WIP!]
 // !! DISABLED : TESTING node configure FIX SLOTS !!
 LiteGraph.reprocess_slot_while_node_configure = false;
 
-properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
+LiteGraph.properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 

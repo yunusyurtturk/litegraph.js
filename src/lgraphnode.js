@@ -1186,6 +1186,8 @@ export class LGraphNode {
      * @param {Object} extra_info this can be used to have special properties of the property (like values, etc)
      */
     addProperty(name, default_value, type, extra_info) {
+        default_value ??= null;
+        type ??= null;
         const o = { name, type, default_value, ...extra_info };
         this.properties_info = this.properties_info ?? [];
         this.properties_info.push(o);
@@ -1535,6 +1537,12 @@ export class LGraphNode {
                 info = r.return_value;
             }
         }
+
+        // DISABLED: REFACTOR code will use info.type or info. even if not valid
+        // if still has no info, that's a "property does not exists and nobody is managing it"
+        // if (info === null || typeof(info) == "undefined"){
+            // return null;
+        // }
 
         if (!info){
             info = {};
