@@ -6124,8 +6124,8 @@ export class LGraphCanvas {
             if( typeof value == "object" )
                 value = JSON.stringify(value);
             let info = node.getPropertyInfo(i);
-            let info_type = info.type;
-            let propName = info.label ? info.label : i;
+            let info_type = info && info!==null ? info.type : "string";
+            let propName = info && info!==null && info.label ? info.label : i;
 
             // parse combo
             if(info_type == "enum" || info_type == "combo"){
@@ -6141,7 +6141,7 @@ export class LGraphCanvas {
                                 + value
                             + "</span>";
             
-            let callback_on_element_created = false; // can pass in element construction function
+            let callbacks_on_element_created = []; // can pass in element construction function
 
             // allow property binding
             if(LiteGraph.properties_allow_input_binding){
@@ -6163,7 +6163,7 @@ export class LGraphCanvas {
                                             )
                                     )
                             +"</span>";
-                callback_on_element_created = function(el, menu){
+                    callbacks_on_element_created.push(function(el, menu){
                     LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","calling callback_on_element_created",propName,el,slotBinded,relSlotOb);
                     let btnConfirm = el.querySelector('.btn_confirm');
                     if(!btnConfirm){
@@ -6192,13 +6192,66 @@ export class LGraphCanvas {
                             ev.stopPropagation();
                         });
                     }
-                }
+                });
+            }
+            // WIP TODO RESTART FROM HERE allow widget binding
+            if(LiteGraph.properties_allow_widget_binding){
+                const relWidgetOb = node.widgets?.find((widget) => widget && widget.options?.property === propName);
+                const hasWidgetByName = relWidgetOb && relWidgetOb !== null;
+            //     let relSlotOb = node.findInputSlot(propName, true);
+            //     let hasSlotByName = relSlotOb !== -1;
+            //     let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+            //     htmlEntry += "<span class='property_input_bind'>"
+            //                     + ( slotBinded
+            //                             // input exists and is binded
+            //                             ?   "<span class='property_input_binded'>linked</span>"
+            //                             // input is not binded or does not exist
+            //                             :   ( hasSlotByName
+            //                                     ?   "<span class='property_input_exist'>"
+            //                                             + "<input type='button' class='btn_confirm btn_bind_property_to_input' value='link input' />"
+            //                                         + "</span>"
+            //                                     : "<span class=''>"
+            //                                             + "<input type='button' class='btn_confirm btn_bind_property_to_input' value='create input' />"
+            //                                         + "</span>"
+            //                                 )
+            //                         )
+            //                 +"</span>";
+            //         callbacks_on_element_created.push(function(el, menu){
+            //         LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","calling callback_on_element_created",propName,el,slotBinded,relSlotOb);
+            //         let btnConfirm = el.querySelector('.btn_confirm');
+            //         if(!btnConfirm){
+            //             el.disabled = "disabled";
+            //             LiteGraph.log_warn("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties",".btn_confirm not found",propName,el);
+            //         }else{
+            //             LiteGraph.log_info("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties",".btn_confirm binding!",btnConfirm,propName);
+            //             btnConfirm.addEventListener("click", function(ev){
+            //                 relSlotOb = node.findInputSlot(propName, true);
+            //                 hasSlotByName = relSlotOb !== -1;
+            //                 slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+            //                 if ( !slotBinded ){
+            //                     if( !hasSlotByName ){
+            //                         LiteGraph.log_info("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","CREATING NEW INPUT ON NODE",relSlotOb,propName);
+            //                         // propName
+            //                         node.addInput(propName, info_type, {removable: true, nameLocked: true});
+            //                         relSlotOb = node.findInputSlot(propName, true);
+            //                     }
+            //                     LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","Linking property to input",relSlotOb);
+            //                     relSlotOb.param_bind = true;
+            //                     menu.close?.(ev, true);
+            //                 }else{
+            //                     LiteGraph.log_debug("lgraphcanvas","showLinkMenu","onShowMenuNodeProperties","callback_on_element_created","properties_allow_input_binding","btnConfirm","Property already binded",relSlotOb,propName);
+            //                 }
+            //                 ev.preventDefault();
+            //                 ev.stopPropagation();
+            //             });
+            //         }
+            //     });
             }
 
             entries.push({
                 content: htmlEntry,
                 value: i,
-                callback_on_element_created: callback_on_element_created
+                callbacks_on_element_created: callbacks_on_element_created
             });
         }
         if (!entries.length) {
@@ -7455,7 +7508,7 @@ export class LGraphCanvas {
         options = options || {};
 
         var info = node.getPropertyInfo(property);
-        var type = info.type;
+        let type = info && info!==null ? info.type : "string";
 
         let input_html;
 
@@ -8068,14 +8121,13 @@ export class LGraphCanvas {
             for(var pName in node.properties) {
                 var value = node.properties[pName];
                 var info = node.getPropertyInfo(pName);
-                // @TODO: Figure out if deleting this is a bug:
-                // var type = info.type || "string";
+                let type = info && info!==null ? info.type : "string";
 
                 // in case the user wants control over the side panel widget
                 if( node.onAddPropertyToPanel && node.onAddPropertyToPanel(pName, panel, value, info, fUpdate) ) {
                     continue;
                 }
-                panel.addWidget( info.widget || info.type, pName, value, info, fUpdate);
+                panel.addWidget( info.widget || type, pName, value, info, fUpdate);
             }
 
             panel.addSeparator();
