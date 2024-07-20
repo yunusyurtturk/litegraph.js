@@ -7,8 +7,8 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("send", LiteGraph.ACTION);
-        this.addOutput("received", LiteGraph.EVENT);
+        this.addInput("send_trig", LiteGraph.ACTION);
+        this.addOutput("trig_received", LiteGraph.EVENT);
         this.addInput("in", 0);
         this.addOutput("out", 0);
         this.properties = {
@@ -137,23 +137,27 @@ class LGWebSocket {
                 return;
             }
 
-            if (data.type === 1) {
-                if (data.data.object_class && LiteGraph[data.data.object_class]) {
+            if (data?.type === 1) {
+                if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
                         const obj = new LiteGraph[data.data.object_class](data.data);
                         this.triggerSlot(0, obj);
                         console.debug("WS received object:", obj);
                     } catch (err) {
-                        console.error("Error creating object:", err);
+                        console.error("WS Error creating object:", err);
                     }
                 } else if (data.data !== undefined) {
                     this.triggerSlot(0, data.data);
-                    console.debug("WS received data:", data.data);
+                    console.debug("WS type1 received data:", data.data);
+                } else {
+                    console.debug("WS type1 received UNKNOWN data:", data);
                 }
             } else {
                 if (data.data !== undefined) {
                     this._last_received_data[data.channel !== undefined ? data.channel : 0] = data.data;
                     console.debug("WS received channel data:", data.channel, data.data);
+                } else {
+                    console.debug("WS received UNKNOWN data:", data);
                 }
             }
         };
@@ -180,7 +184,7 @@ class LGWebSocket {
         if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
-        const msg = JSON.stringify({ type: 1, msg: data });
+        const msg = JSON.stringify({ type: 1, data: data });
         try {
             this._ws.send(msg);
             console.log("WS sent:", msg);
@@ -859,7 +863,7 @@ class LGWebSocketServer {
         if (!this._wsServer) {
             return;
         }
-        const msg = JSON.stringify({ type: 1, msg: data });
+        const msg = JSON.stringify({ type: 1, data: data });
         for (const client of this._clients) {
             if (client.readyState === 1) { // WebSocket.OPEN
                 client.send(msg);
@@ -880,7 +884,7 @@ class LGWebSocketServer {
             type: 1,
             // room: this.properties.room,
             action: action,
-            msg: data, //param,
+            data: data, //param,
         });
         for (const client of this._clients) {
             if (client.readyState === 1) { // WebSocket.OPEN

@@ -11,7 +11,8 @@ class LogEvent {
         this.addInput("event", LiteGraph.ACTION);
     }
     onAction(action, param, options, slot_index) {
-        console.log("LogNode", action, param, options, slot_index);
+        console.info("[LogNode]", param);
+        console.debug("[LogNode]", action, param, options, slot_index);
     }
 }
 LiteGraph.registerNodeType("events/log", LogEvent);
