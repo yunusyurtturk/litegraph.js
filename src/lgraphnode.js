@@ -536,7 +536,7 @@ export class LGraphNode {
         if (refresh_tree) {
             LiteGraph.log_warn("CHECK THIS", "lgraphnode", "getInputData","Refreshing ancestors tree by ForcedUpdateSlotData", link, slot, this);
             LiteGraph.log_debug("lgraphnode", "getInputData","Refreshing ancestors tree by ForcedUpdateSlotData", link, slot, this);
-            let uIdRand = this.id+"_getInputData_forced_"+Math.floor(Math.random()*9999);
+            let uIdRand = this.id+"_getInputData_forced_"+LiteGraph.uuidv4();
             let optsAncestors = {action: uIdRand, options: {action_call: uIdRand}};
             this.refreshAncestors(optsAncestors);
         }
@@ -872,7 +872,7 @@ export class LGraphNode {
         }
 
         // enable this to give the event an ID
-        options.action_call ??= `${this.id}_exec_${Math.floor(Math.random()*9999)}`; // TODO replace all ath.floor(Math.random()*9999) by LiteGraph.uuidv4
+        options.action_call ??= `${this.id}_exec_${LiteGraph.uuidv4()}`; // TODO replace all ath.floor(Math.random()*9999) by LiteGraph.uuidv4
 
         if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
             LiteGraph.log_debug("lgraphNODE", "doExecute", "already executing! Prevent! "+this.id+":"+this.order);
@@ -940,7 +940,7 @@ export class LGraphNode {
         // if (this.onAction) {
 
             // enable this to give the event an ID
-            options.action_call ??= `${this.id}_${action?action:"action"}_${Math.floor(Math.random()*9999)}`;
+            options.action_call ??= `${this.id}_${action?action:"action"}_${LiteGraph.uuidv4()}`;
 
             if (LiteGraph.ensureNodeSingleAction) {
                 if (this.graph.nodes_actioning && this.graph.nodes_actioning[this.id] == options.action_call) { // == action){
@@ -1075,7 +1075,7 @@ export class LGraphNode {
             if (node.mode === LiteGraph.ON_TRIGGER || target_slot?.name === "onTrigger") {
                 // generate unique trigger ID if not present
                 if (!options.action_call)
-                    options.action_call = `${this.id}_trigg_${Math.floor(Math.random()*9999)}`; // TODO replace here and there fakeunique ID with real unique
+                    options.action_call = `${this.id}_trigg_${LiteGraph.uuidv4()}`; // TODO replace here and there fakeunique ID with real unique
                 if (LiteGraph.refreshAncestorsOnTriggers)
                     node.refreshAncestors({action: "trigger", param: param, options: options});
                 if (node.onExecute) {
@@ -1084,7 +1084,7 @@ export class LGraphNode {
                 }
             } else if (node.onAction) {
                 // generate unique action ID if not present
-                if (!options.action_call) options.action_call = `${this.id}_act_${Math.floor(Math.random()*9999)}`;
+                if (!options.action_call) options.action_call = `${this.id}_act_${LiteGraph.uuidv4()}`;
                 // pass the action name
                 let target_connection = node.inputs[link_info.target_slot];
                 

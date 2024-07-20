@@ -316,7 +316,7 @@ class HtmlEventListener {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         } else this.setOutputData(3,null);
     }
@@ -370,7 +370,7 @@ class HtmlEventListenerRemove {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         }
     }
@@ -499,7 +499,7 @@ class HtmlCreateElement {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         }
     }
@@ -543,7 +543,7 @@ class HtmlAppendChild {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         }
     }
@@ -578,7 +578,7 @@ class HtmlRemoveElement {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         }
     }
@@ -629,7 +629,7 @@ class HtmlElementStyle {
     onExecute(param, options) {
         // no code?
         if (this.mode == LiteGraph.ON_TRIGGER) {
-            action = this.id+"_"+(action?action:"action")+"_exectoact_"+Math.floor(Math.random()*9999);
+            action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         }
     }
