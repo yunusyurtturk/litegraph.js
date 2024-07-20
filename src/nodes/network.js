@@ -15,14 +15,16 @@ class LGWebSocket {
             url: "ws://127.0.0.1:8080",
             room: false,
             only_send_changes: true,
+            runOnServerToo: false
         };
         this._ws = null;
         this._last_sent_data = [];
         this._last_received_data = [];
+        this._hasWarned = false; // To ensure warning is only logged once
     }
 
     onPropertyChanged(name, _value) {
-        if (name == "url") {
+        if (name === "url") {
             this.connectSocket();
         }
     }
@@ -32,144 +34,163 @@ class LGWebSocket {
             this.connectSocket();
         }
 
-        if (!this._ws || this._ws.readyState != WebSocket.OPEN) {
+        if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
 
-        var room = this.properties.room;
-        var only_changes = this.properties.only_send_changes;
+        const room = this.properties.room;
+        const only_changes = this.properties.only_send_changes;
 
         for (let i = 1; i < this.inputs.length; ++i) {
-            var data = this.getInputData(i);
+            const data = this.getInputData(i);
             if (data == null) {
                 continue;
             }
-            var json;
+
+            let json;
             try {
                 json = JSON.stringify({
                     type: 0,
                     channel: i,
                     data: data,
                 });
-                if(room) json.room = room;
+                if (room) json.room = room;
             } catch (err) {
+                console.error("Error stringifying data:", err);
                 continue;
             }
-            if (only_changes && this._last_sent_data[i] == json) {
+
+            if (only_changes && this._last_sent_data[i] === json) {
                 continue;
             }
 
             this._last_sent_data[i] = json;
-            this._ws.send(json);
-            console.log?.("WS sent by execute",i,json);
+            try {
+                this._ws.send(json);
+                console.log("WS sent by execute:", i, json);
+            } catch (err) {
+                console.error("Error sending data:", err);
+            }
         }
 
         for (let i = 1; i < this.outputs.length; ++i) {
             this.setOutputData(i, this._last_received_data[i]);
         }
 
-        if (this.boxcolor == "#AFA") {
+        if (this.boxcolor === "#AFA") {
             this.boxcolor = "#6C6";
         }
     }
 
     connectSocket() {
-        var that = this;
-        var url = this.properties.url;
-        if (url.substr(0, 2) != "ws") {
-            url = "ws://" + url;
+        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+            if (!this.properties.runOnServerToo) {
+                if (!this._hasWarned) {
+                    console.warn("WebSocket connection is not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
+                    this._hasWarned = true;
+                }
+                return;
+            }
         }
-        this._ws = new WebSocket(url);
-    
-        this._ws.onopen = function () {
-            console.log?.("WS ready");
-            that.boxcolor = "#6C6";
+
+        if (this._ws) {
+            this._ws.close();
+        }
+
+        const url = this.properties.url.startsWith("ws") ? this.properties.url : "ws://" + this.properties.url;
+        try {
+            this._ws = new WebSocket(url);
+        } catch (err) {
+            console.error("Error creating WebSocket:", err);
+            return;
+        }
+
+        this._ws.onopen = () => {
+            console.log("WS ready");
+            this.boxcolor = "#6C6";
         };
-    
-        this._ws.onmessage = function (e) {
-            that.boxcolor = "#AFA";
-            console.info("WS on message", e.data);
-    
-            var data = e.data;
-    
+
+        this._ws.onmessage = (e) => {
+            this.boxcolor = "#AFA";
+            console.info("WS on message:", e.data);
+
+            let data = e.data;
+
             if (typeof data === 'string') {
                 try {
                     data = JSON.parse(data);
                 } catch (err) {
-                    // not JSON, keep it as a string
+                    console.warn("Received non-JSON data:", data);
                 }
             } else if (data instanceof ArrayBuffer) {
-                // Handling binary data
                 console.log("Received binary data");
-                var byteArray = new Uint8Array(data);
-                // Example: Convert binary data to a string (assuming UTF-8 encoding)
-                var binaryString = new TextDecoder('utf-8').decode(byteArray);
+                const byteArray = new Uint8Array(data);
+                const binaryString = new TextDecoder('utf-8').decode(byteArray);
                 console.log("Binary data as string:", binaryString);
-                // Example: Convert binary data to a base64 string (useful for images)
-                var binaryBase64 = btoa(String.fromCharCode.apply(null, byteArray));
+                const binaryBase64 = btoa(String.fromCharCode.apply(null, byteArray));
                 console.log("Binary data as base64:", binaryBase64);
-                data = binaryString; // or binaryBase64, depending on your use case
+                data = binaryString;
             }
-    
-            if (typeof(data.room) !== "undefined" && data.room && data.room != that.properties.room) {
-                console.debug("WS : rec 0 BIS");
+
+            if (data.room && data.room !== this.properties.room) {
+                console.debug("WS: received message for different room");
                 return;
             }
-            
-            if (typeof(data.type) !== "undefined" && data.type == 1) {
+
+            if (data.type === 1) {
                 if (data.data.object_class && LiteGraph[data.data.object_class]) {
-                    var obj = null;
                     try {
-                        obj = new LiteGraph[data.data.object_class](data.data);
-                        that.triggerSlot(0, obj);
-                        console.debug("WS : rec 1");
+                        const obj = new LiteGraph[data.data.object_class](data.data);
+                        this.triggerSlot(0, obj);
+                        console.debug("WS received object:", obj);
                     } catch (err) {
-                        console.debug("WS : rec 1 BIS");
-                        return;
+                        console.error("Error creating object:", err);
                     }
-                } else {
-                    if (typeof(data.data) !== "undefined") {
-                        that.triggerSlot(0, data.data);
-                        console.debug("WS : rec 2");
-                    } else {
-                        // that.triggerSlot(0, data);
-                        console.debug("WS : rec 2 BIS");
-                    }
+                } else if (data.data !== undefined) {
+                    this.triggerSlot(0, data.data);
+                    console.debug("WS received data:", data.data);
                 }
             } else {
-                if (typeof(data.data) !== "undefined") {
-                    that._last_received_data[typeof(data.channel) !== "undefined" ? data.channel : 0] = data.data;
-                    console.debug("WS : rec 3");
-                } else {
-                    // that.triggerSlot(0);
-                    console.debug("WS : rec 3 BIS");
+                if (data.data !== undefined) {
+                    this._last_received_data[data.channel !== undefined ? data.channel : 0] = data.data;
+                    console.debug("WS received channel data:", data.channel, data.data);
                 }
             }
         };
-    
-        this._ws.onerror = function (_e) {
-            console.log?.("WS couldn't connect to websocket");
-            that.boxcolor = "#E88";
+
+        this._ws.onerror = (err) => {
+            console.error("WS connection error:", err);
+            this.boxcolor = "#E88";
         };
-    
-        this._ws.onclose = function (_e) {
-            console.log?.("WS connection closed");
-            that.boxcolor = "#000";
+
+        this._ws.onclose = () => {
+            console.log("WS connection closed");
+            this.boxcolor = "#000";
         };
     }
-    
+
+    disconnectSocket() {
+        if (this._ws) {
+            this._ws.close();
+            this._ws = null;
+        }
+    }
 
     send(data) {
-        if (!this._ws || this._ws.readyState != WebSocket.OPEN) {
+        if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
         const msg = JSON.stringify({ type: 1, msg: data });
-        this._ws.send(msg);
-        console.log?.("WS sent",msg);
+        try {
+            this._ws.send(msg);
+            console.log("WS sent:", msg);
+        } catch (err) {
+            console.error("Error sending data:", err);
+        }
     }
 
     onAction(action, param) {
-        if (!this._ws || this._ws.readyState != WebSocket.OPEN) {
+        if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
         const oMsg = {
@@ -177,10 +198,14 @@ class LGWebSocket {
             action: action,
             data: param,
         };
-        if(this.properties.room) oMsg.room = this.properties.room;
+        if (this.properties.room) oMsg.room = this.properties.room;
         const msg = JSON.stringify(oMsg);
-        this._ws.send(msg);
-        console.log?.("WS sent by Action",oMsg);
+        try {
+            this._ws.send(msg);
+            console.log("WS sent by Action:", oMsg);
+        } catch (err) {
+            console.error("Error sending data by action:", err);
+        }
     }
 
     onGetInputs() {
@@ -190,8 +215,13 @@ class LGWebSocket {
     onGetOutputs() {
         return [["out", 0]];
     }
+
+    onRemove() {
+        this.disconnectSocket();
+    }
 }
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
+
 
 
 // HTTP Request
@@ -838,22 +868,26 @@ class LGWebSocketServer {
         console.log?.("WS sent:", msg);
     }
 
-    onAction(action, param) {
+    onAction(action, param, options) {
         if (!this._wsServer) {
             return;
+        }
+        const data = this.getInputData("in");
+        if (data == null) {
+            return; // continue; // 
         }
         const msg = JSON.stringify({
             type: 1,
             // room: this.properties.room,
             action: action,
-            data: param,
+            msg: data, //param,
         });
         for (const client of this._clients) {
             if (client.readyState === 1) { // WebSocket.OPEN
                 client.send(msg);
             }
         }
-        console.log?.("WS sent by Action:", msg);
+        console.debug?.("WS sent by Action:", msg, options);
     }
 
     onGetInputs() {

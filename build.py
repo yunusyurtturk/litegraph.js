@@ -4,14 +4,16 @@ import json
 import sys
 import re
 
-# BUILD v 0.3
+# ** CAREFUL THIS NOT A STANDARD BUILDER nor BUILD **
+
+# BUILDER v 0.31
 # will export .js bundled
 # will export .mini.js bundled
 # will export .full.js bundled with defaults, editor and extensions
 # will export .cjs versions stripped of import and export, a cjs bundle working on node.js too
 
-# need npm install -g js-beautify
-# need npm install -g uglify-js
+# npm install -g js-beautify
+# npm install -g uglify-js
 
 # Default options, can be overridden by command-line arguments
 options = {
@@ -204,6 +206,7 @@ def convert_es6_to_commonjs(data):
     class_names = []
     var_names = []
     const_names = []
+    let_names = []
     function_names = []
 
     def export_default_class_replacer(match):
@@ -225,6 +228,11 @@ def convert_es6_to_commonjs(data):
         const_name = match.group(1)
         const_names.append(const_name)
         return f'const {const_name}'
+    
+    def export_let_replacer(match):
+        let_name = match.group(1)
+        let_names.append(let_name)
+        return f'let {let_name}'
 
     def export_function_replacer(match):
         function_name = match.group(1)
@@ -239,6 +247,7 @@ def convert_es6_to_commonjs(data):
     data = re.sub(r'export\s+class\s+([a-zA-Z0-9_]+)', export_class_replacer, data)
     data = re.sub(r'export\s+var\s+([a-zA-Z0-9_]+)', export_var_replacer, data)
     data = re.sub(r'export\s+const\s+([a-zA-Z0-9_]+)', export_const_replacer, data)
+    data = re.sub(r'export\s+let\s+([a-zA-Z0-9_]+)', export_let_replacer, data)
     data = re.sub(r'export\s+default\s+([a-zA-Z0-9_]+)', export_default_replacer, data)
     data = re.sub(r'export\s+function\s+([a-zA-Z0-9_]+)', export_function_replacer, data)
     data = re.sub(r'export\s+\{([a-zA-Z0-9_,\s]+)\};', r'\1;', data)

@@ -48,6 +48,8 @@
         "web"
     ],
     "dependencies": {
+        "js-beautify": "^1.15.1",
+        "osc": "^2.4.4",
         "uglifyjs": "^2.4.11"
     }
 }

@@ -1631,6 +1631,7 @@ export class LGraph {
      * @param {string | File | Blob} url - The URL or file to load the graph data from.
      * @param {Function} callback - An optional callback function to be executed after loading and configuring the graph.
      */
+    // @TODO implement Node.JS loading? check string for being a graph
     load(url, callback) {
         var that = this;
 

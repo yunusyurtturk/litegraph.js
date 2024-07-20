@@ -767,15 +767,15 @@ class Console {
         let msg = this.getInputData(1); // getInputDataByName("msg");
         // if (msg == null || typeof msg == "undefined") return;
         if (!msg) msg = this.properties?.msg;
-        if (!msg) msg = "ConsoleNode: " + param; // msg is undefined if the slot is lost?
         if (action == "log") {
-            console.log(msg);
+            console.log(msg,param);
         } else if (action == "warn") {
-            console.warn(msg);
+            console.warn(msg,param);
         } else if (action == "error") {
-            console.error(msg);
+            console.error(msg,param);
         }else{
-            console.info("std",msg,options);
+            console.info("[ConsoleNode]",msg,param);
+            console.verbose("[ConsoleNode]",msg,param,"options:",options);
         }
     }
 
