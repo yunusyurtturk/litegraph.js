@@ -221,6 +221,7 @@ class LiteGraphClass {
     reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
 
     properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
+    properties_allow_output_binding = false; // [true!] allow create and bind outputs, will update output slots when node executed 
 
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
@@ -651,6 +652,26 @@ class LiteGraphClass {
         return classObj;
     }
 
+    wrapObjectAsNodeCollection(obj, objectNameId) {
+        if (typeof(obj) !== "object") { // && typeof(obj)!=="function"){
+            return;
+        }
+        const propsDescr = Object.getOwnPropertyDescriptors(obj);
+        Object.keys(propsDescr).forEach((propertyName) => {
+            console.debug("cyclingProps", objectNameId, propertyName, obj, typeof(obj[propertyName]));
+            if (typeof(obj[propertyName]) == "function") {
+                // .arguments
+                try {
+                    console.info("**", obj[propertyName]["arguments"]);
+                } catch (e) {
+
+                }
+                this.wrapFunctionAsNode(objectNameId + "/" + propertyName, obj[propertyName]);
+            } else {
+                // GETTER SETTER
+            }
+        });
+    }
 
     /**
      * Removes all previously registered node's types
@@ -1318,7 +1339,7 @@ class CallbackHandler {
     constructor(ref) {
         this.callbacks_handlers = {};
         this.ob_ref = ref;
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks", ref);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks", ref);
     }
 
     /**
@@ -1341,7 +1362,7 @@ class CallbackHandler {
         opts = Object.assign(def_opts, opts);
 
         if (typeof(callback) !== "function") {
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_error("registerCallbackHandler", "Invalid callback");
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_error("registerCallbackHandler", "Invalid callback");
             return false;
         }
 
@@ -1353,7 +1374,7 @@ class CallbackHandler {
         }
         const h_id = this.callbacks_handlers[name].last_id++;
 
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler", "new callback handler", name, h_id);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler", "new callback handler", name, h_id);
 
         this.callbacks_handlers[name].handlers.push({
             id: h_id,
@@ -1365,7 +1386,7 @@ class CallbackHandler {
         // sort descending
         this.callbacks_handlers[name].handlers.sort((a, b) => b.priority - a.priority);
 
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
 
         return h_id; // return the cbhandle id
     };
@@ -1376,11 +1397,11 @@ class CallbackHandler {
      * @returns {boolean} true if found
      */
     unregisterCallbackHandler(name, h_id) {
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
         if (typeof(this.callbacks_handlers[name]) !== "undefined") {
             const nHandlers = this.callbacks_handlers[name].handlers.length;
             this.callbacks_handlers[name].handlers = this.callbacks_handlers[name].handlers.filter(function(obj) {
-                // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
+                // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
                 if (obj.id === h_id) {
                     LiteGraph.log_info("unregisterCallbackHandler", name, h_id);
                 }
@@ -1414,7 +1435,7 @@ class CallbackHandler {
         opts = Object.assign(def_opts, opts);
         var cbHandle = this;
 
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("**processCallbackHandlers**", ...arguments);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("**processCallbackHandlers**", ...arguments);
 
         // ensure callback name is present on this
         if (typeof(this.callbacks_handlers[name]) == "undefined") {
@@ -1425,7 +1446,7 @@ class CallbackHandler {
         }
 
         var aArgs = ([].slice.call(arguments)).slice(2);
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
 
         // previous implementation of converting arguments
         // using shorter ([].slice.call(arguments)).slice(2)
@@ -1519,13 +1540,13 @@ class CallbackHandler {
 
             // eventually prevent cb marked as default
             if (preventDefCb && cbhX.is_default) {
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "preventing default registered", cbhX);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "preventing default registered", cbhX);
                 continue;
             }
 
             // execute default if already processed the ones >= 0
             if (cbhX.priority < 0 && !defCbChecked) {
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "process default passed", "nextCb:", cbhX);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "process default passed", "nextCb:", cbhX);
                 executeDefaultCb();
                 if (breakCycle) break;
             }
@@ -1548,16 +1569,16 @@ class CallbackHandler {
             // call method on ref object (LiteGraph, LGraphNode, LGraphCanvas, ...) in the method `this` will than correctly set
             stepRet = cbhX.callback.call(this.ob_ref, oCbInfo, ...aArgs);
 
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "callback executed", stepRet, oCbInfo);
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "callback executed", stepRet, oCbInfo);
 
             // push result
             checkStepRet();
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "result checked", "cbRet", cbRet, "aResChain", aResChain, "cbResPriority", cbResPriority, "defCbChecked", defCbChecked, "preventDefCb", preventDefCb, "breakCycle", breakCycle);
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "result checked", "cbRet", cbRet, "aResChain", aResChain, "cbResPriority", cbResPriority, "defCbChecked", defCbChecked, "preventDefCb", preventDefCb, "breakCycle", breakCycle);
             if (breakCycle) break;
 
             if (cbhX.data.call_once) {
                 this.unregisterCallbackHandler(name, cbhX.id);
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "unregistered call_once", oCbInfo);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "unregistered call_once", oCbInfo);
             }
 
         } // end cycle
@@ -1625,6 +1646,8 @@ class ContextMenu {
 
     #bindEvents() {
         const root = this.root;
+
+        LiteGraph.log_info("**contextmenu**", "binding events on root", root, this);
 
         root.style.pointerEvents = "none";
         setTimeout(() => {
@@ -2798,6 +2821,13 @@ class LGraph {
         // graphcanvas.graph = null; // ?!
         LiteGraph.log_debug("lgraph", "detachCanvas", pos, this.list_of_graphcanvas, this);
         this.list_of_graphcanvas.splice(pos, 1);
+    }
+
+    getCanvas() {
+        if (!this.list_of_graphcanvas) {
+            return;
+        }
+        return this.list_of_graphcanvas[0];
     }
 
     /**
@@ -4965,6 +4995,7 @@ class LGraphCanvas {
         }
 
         if (!skip_events) {
+
             this.bindEvents();
         }
     }
@@ -4994,6 +5025,8 @@ class LGraphCanvas {
         var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document; // multiwindows
+
+        LiteGraph.log_info("[lgraphcanvas]", "BINDing events", canvas, document);
 
         // Pointer
         this._mousedown_callback = this.processMouseDown.bind(this);
@@ -5031,6 +5064,8 @@ class LGraphCanvas {
         var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document;
+
+        LiteGraph.log_info("[lgraphcanvas]", "UNbinding events", canvas, document);
 
         // Pointer
         canvas.removeEventListener("pointerdown", this._mousedown_callback); //, true);
@@ -6149,8 +6184,10 @@ class LGraphCanvas {
         if (this.set_canvas_dirty_on_mouse_event)
             this.dirty_canvas = true;
 
-        if (!this.graph)
+        if (!this.graph) {
+            LiteGraph.log_warn("lgraphcanvas", "processMouseUp", "has not graph", this);
             return;
+        }
 
         var window = this.getCanvasWindow();
         var document = window.document;
@@ -6158,7 +6195,7 @@ class LGraphCanvas {
 
         // restore the mousemove event back to the canvas
         if (!this.options.skip_events) {
-            LiteGraph.log_verbose("pointerevents: processMouseUp adjustEventListener");
+            LiteGraph.log_verbose("pointerevents: processMouseUp restoreEventListener");
             document.removeEventListener("pointermove", this._mousemove_callback, true);
             this.canvas.addEventListener("pointermove", this._mousemove_callback);
             document.removeEventListener("pointerup", this._mouseup_callback, true);
@@ -6175,7 +6212,7 @@ class LGraphCanvas {
             this.block_click = false; // used to avoid sending twice a click in a immediate button
         }
 
-        LiteGraph.log_verbose("pointerevents: processMouseUp which: " + e.which);
+        LiteGraph.log_debug("pointerevents: processMouseUp which: " + e.which);
 
         if (e.which == 1) {
 
@@ -8712,8 +8749,13 @@ class LGraphCanvas {
             text = String(data);
         else if (data.toToolTip)
             text = data.toToolTip();
-        else
-            text = "[" + data.constructor.name + "]";
+        else {
+            try {
+                text = "[" + data.constructor.name + "]";
+            } catch (e) {
+                text = "[" + typeof(data) + "]";
+            }
+        }
 
         if (text == null)
             return;
@@ -9957,6 +9999,7 @@ class LGraphCanvas {
                             );
                         this.dirty_canvas = true;
                         break;
+                    case "boolean":
                     case "toggle":
                         if (event.type == "pointerdown") {
                             w.value = !w.value;
@@ -10740,6 +10783,9 @@ class LGraphCanvas {
                 value = JSON.stringify(value);
             let info = node.getPropertyInfo(i);
             let info_type = info && info !== null ? info.type : "string";
+            let readonly = info && info !== null ? (info.readonly ? true : false) : false;
+            let prevent_input_bind = info && info !== null ? (info.prevent_input_bind ? true : false) : false;
+            let prevent_output_bind = info && info !== null ? (info.prevent_output_bind ? true : false) : false;
             let propName = info && info !== null && info.label ? info.label : i;
 
             // parse combo
@@ -10759,7 +10805,7 @@ class LGraphCanvas {
             let callbacks_on_element_created = []; // can pass in element construction function
 
             // allow property binding
-            if (LiteGraph.properties_allow_input_binding) {
+            if (!prevent_input_bind && !readonly && LiteGraph.properties_allow_input_binding) {
                 let relSlotOb = node.findInputSlot(propName, true);
                 let hasSlotByName = relSlotOb !== -1;
                 let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
@@ -10772,22 +10818,22 @@ class LGraphCanvas {
                         :
                         (hasSlotByName ?
                             "<span class='property_input_exist'>" +
-                            "<input type='button' class='btn_confirm btn_bind_property_to_input' value='link input' />" +
+                            "<input type='button' class='btn_bind_in btn_bind_property_to_input' value='link input' />" +
                             "</span>" :
                             "<span class=''>" +
-                            "<input type='button' class='btn_confirm btn_bind_property_to_input' value='create input' />" +
+                            "<input type='button' class='btn_bind_in btn_bind_property_to_input' value='create input' />" +
                             "</span>"
                         )
                     ) +
                     "</span>";
                 callbacks_on_element_created.push(function(el, menu) {
                     LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "calling callback_on_element_created", propName, el, slotBinded, relSlotOb);
-                    let btnConfirm = el.querySelector('.btn_confirm');
+                    let btnConfirm = el.querySelector('.btn_bind_in');
                     if (!btnConfirm) {
                         el.disabled = "disabled";
-                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_confirm not found", propName, el);
+                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_bind_in not found", propName, el);
                     } else {
-                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_confirm binding!", btnConfirm, propName);
+                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_bind_in binding!", btnConfirm, propName);
                         btnConfirm.addEventListener("click", function(ev) {
                             relSlotOb = node.findInputSlot(propName, true);
                             hasSlotByName = relSlotOb !== -1;
@@ -10807,6 +10853,61 @@ class LGraphCanvas {
                                 menu.close?.(ev, true);
                             } else {
                                 LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "callback_on_element_created", "properties_allow_input_binding", "btnConfirm", "Property already binded", relSlotOb, propName);
+                            }
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        });
+                    }
+                });
+            }
+            if (!prevent_output_bind && LiteGraph.properties_allow_output_binding) {
+                let relSlotOb = node.findOutputSlot(propName, true);
+                let hasSlotByName = relSlotOb !== -1;
+                let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                htmlEntry += "<span class='property_output_bind'>" +
+                    (slotBinded
+                        // output exists and is binded
+                        ?
+                        "<span class='property_output_binded'>linked</span>"
+                        // output is not binded or does not exist
+                        :
+                        (hasSlotByName ?
+                            "<span class='property_output_exist'>" +
+                            "<input type='button' class='btn_bind_out btn_bind_property_to_output' value='link output' />" +
+                            "</span>" :
+                            "<span class=''>" +
+                            "<input type='button' class='btn_bind_out btn_bind_property_to_output' value='create output' />" +
+                            "</span>"
+                        )
+                    ) +
+                    "</span>";
+                callbacks_on_element_created.push(function(el, menu) {
+                    LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output calling callback_on_element_created", propName, el, slotBinded, relSlotOb);
+                    let btnConfirm = el.querySelector('.btn_bind_out');
+                    if (!btnConfirm) {
+                        el.disabled = "disabled";
+                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output .btn_bind_out not found", propName, el);
+                    } else {
+                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output .btn_bind_out binding!", btnConfirm, propName);
+                        btnConfirm.addEventListener("click", function(ev) {
+                            relSlotOb = node.findOutputSlot(propName, true);
+                            hasSlotByName = relSlotOb !== -1;
+                            slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                            if (!slotBinded) {
+                                if (!hasSlotByName) {
+                                    LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "CREATING NEW OUTPUT ON NODE", relSlotOb, propName);
+                                    // propName
+                                    node.addOutput(propName, info_type, {
+                                        removable: true,
+                                        nameLocked: true
+                                    });
+                                    relSlotOb = node.findOutputSlot(propName, true);
+                                }
+                                LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "Linking property to output", relSlotOb);
+                                relSlotOb.param_bind = true;
+                                menu.close?.(ev, true);
+                            } else {
+                                LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "Property already binded", relSlotOb, propName);
                             }
                             ev.preventDefault();
                             ev.stopPropagation();
@@ -10871,7 +10972,8 @@ class LGraphCanvas {
             entries.push({
                 content: htmlEntry,
                 value: i,
-                callbacks_on_element_created: callbacks_on_element_created
+                callbacks_on_element_created: callbacks_on_element_created,
+                readonly: readonly
             });
         }
         if (!entries.length) {
@@ -10890,15 +10992,18 @@ class LGraphCanvas {
         );
 
         function inner_clicked(v, options, event, parent_menu, rel_node) {
-            LiteGraph.log_debug("lgraphcanvas", "onShowMenuNodeProperties", "inncer_clicked", this, ...arguments);
+            LiteGraph.log_debug("lgraphcanvas", "onShowMenuNodeProperties", "inner_clicked", this, ...arguments);
             if (!node) {
                 return;
             }
+            console.warn("**showeditproperty**", v, options);
             if (!this.disabled && !v.disabled) {
-                var rect = this.getBoundingClientRect();
-                canvas.showEditPropertyValue(node, v.value, {
-                    position: [rect.left, rect.top]
-                });
+                if (!v.readonly) {
+                    var rect = this.getBoundingClientRect();
+                    canvas.showEditPropertyValue(node, v.value, {
+                        position: [rect.left, rect.top]
+                    });
+                }
             }
         }
 
@@ -11760,6 +11865,10 @@ class LGraphCanvas {
 
         function select(name) {
             if (name) {
+                if (!that || typeof(that) !== "object" || typeof(that.processCallbackHandlers) == "undefined") {
+                    LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "that reference is wrong", that, dialog, this, options);
+                    return;
+                }
                 let r = that.processCallbackHandlers("onSearchBoxSelection", {
                     def_cb: that.onSearchBoxSelection
                 }, name, event, graphcanvas);
@@ -14478,7 +14587,7 @@ class LGraphNode {
 
         let ob_input = this.inputs[slot];
         let link_id = ob_input.link;
-        let link = this.graph.links[link_id];
+        let link = this.graph?.links[link_id];
         if (!link) {
             // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputData", "No link", link_id, slot, this);
             return null;
@@ -14890,6 +14999,11 @@ class LGraphNode {
             this.graph.nodes_executedAction[this.id] = options.action_call;
         }
 
+        // update output slot binded to properties
+        if (LiteGraph.properties_allow_output_binding) {
+            this.doUpdateBindedOutputProperties();
+        }
+
         this.execute_triggered = 2; // helper to draw currently executing, the nFrames it will be used (-- each step), means "how old" is the event
 
         this.processCallbackHandlers("onAfterExecuteNode", {
@@ -15125,14 +15239,32 @@ class LGraphNode {
         let thisNode = this;
         this.inputs.forEach((ob_input) => {
             if (ob_input.param_bind) {
-                LiteGraph.log_debug("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
+                LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
                 if (thisNode.properties && typeof(thisNode.properties[ob_input.name]) !== "undefined") {
                     let inputData = thisNode.getInputData(ob_input.name);
-                    // thisNode.properties[ob_input.name] = link.data;
-                    LiteGraph.log_debug("lgraphnode", "doUpdateBindedInputProperties", "update value", ob_input.name, inputData, thisNode);
-                    this.setProperty(ob_input.name, inputData);
+                    if (inputData !== null) {
+                        // thisNode.properties[ob_input.name] = link.data;
+                        LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "update value", ob_input.name, inputData, thisNode);
+                        this.setProperty(ob_input.name, inputData);
+                    }
                 } else {
-                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedInputProperties", "inexisting property", ob_input.name, inputData, thisNode);
+                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedInputProperties", "inexisting property", ob_input.name, thisNode);
+                }
+            }
+        });
+    }
+
+    doUpdateBindedOutputProperties() {
+        let thisNode = this;
+        this.outputs.forEach((ob_output) => {
+            if (ob_output.param_bind) {
+                LiteGraph.log_verbose("lgraphnode", "doUpdateBindedOutputProperties", "has bind", ob_output, thisNode);
+                if (thisNode.properties && typeof(thisNode.properties[ob_output.name]) !== "undefined") {
+                    let propertyData = this.properties[ob_output.name];
+                    LiteGraph.log_verbose("lgraphnode", "doUpdateBindedOutputProperties", "update value", ob_output.name, propertyData, thisNode);
+                    this.setOutputData(ob_output.name, propertyData);
+                } else {
+                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedOutputProperties", "inexisting property", ob_output.name, outputData, thisNode);
                 }
             }
         });
@@ -18588,7 +18720,11 @@ class Watch {
             str += "]";
             return str;
         } else {
-            return String(o);
+            try {
+                return String(o);
+            } catch (e) {
+                return typeof(o);
+            }
         }
     }
 
@@ -18903,7 +19039,8 @@ class LogEvent {
         this.addInput("event", LiteGraph.ACTION);
     }
     onAction(action, param, options, slot_index) {
-        console.log("LogNode", action, param, options, slot_index);
+        console.info("[LogNode]", param);
+        console.debug("[LogNode]", action, param, options, slot_index);
     }
 }
 LiteGraph.registerNodeType("events/log", LogEvent);
@@ -20085,9 +20222,11 @@ class WidgetHSlider {
         this.properties = {
             color: "#7AF",
             min: 0,
-            max: 1,
-            value: 0.5
-        };
+            max: 1
+        }; //, value: 0.5 };
+        this.addProperty("value", 0.5, "number", {
+            prevent_input_bind: true
+        }); // readonly: false, 
         this.value = -1;
     }
 
@@ -23645,6 +23784,7 @@ class ColorPalette {
     constructor() {
         this.addInput("f", "number");
         this.addOutput("Color", "color");
+        this.addOutput("Hex", "string");
         this.properties = {
             colorA: "#444444",
             colorB: "#44AAFF",
@@ -23657,16 +23797,16 @@ class ColorPalette {
         var c = [];
 
         if (this.properties.colorA != null) {
-            c.push(hex2num(this.properties.colorA));
+            c.push(LiteGraph.hex2num(this.properties.colorA));
         }
         if (this.properties.colorB != null) {
-            c.push(hex2num(this.properties.colorB));
+            c.push(LiteGraph.hex2num(this.properties.colorB));
         }
         if (this.properties.colorC != null) {
-            c.push(hex2num(this.properties.colorC));
+            c.push(LiteGraph.hex2num(this.properties.colorC));
         }
         if (this.properties.colorD != null) {
-            c.push(hex2num(this.properties.colorD));
+            c.push(LiteGraph.hex2num(this.properties.colorD));
         }
 
         var f = this.getInputData(0);
@@ -23708,8 +23848,10 @@ class ColorPalette {
             result[i] /= 255;
         }
 
-        this.boxcolor = colorToString(result);
+        const hexColor = LiteGraph.colorToString(result);
+        this.boxcolor = hexColor;
         this.setOutputData(0, result);
+        this.setOutputData(1, hexColor);
     }
 }
 LiteGraph.registerNodeType("color/palette", ColorPalette);
@@ -38399,8 +38541,8 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("send", LiteGraph.ACTION);
-        this.addOutput("received", LiteGraph.EVENT);
+        this.addInput("send_trig", LiteGraph.ACTION);
+        this.addOutput("trig_received", LiteGraph.EVENT);
         this.addInput("in", 0);
         this.addOutput("out", 0);
         this.properties = {
@@ -38529,23 +38671,27 @@ class LGWebSocket {
                 return;
             }
 
-            if (data.type === 1) {
-                if (data.data.object_class && LiteGraph[data.data.object_class]) {
+            if (data?.type === 1) {
+                if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
                         const obj = new LiteGraph[data.data.object_class](data.data);
                         this.triggerSlot(0, obj);
                         console.debug("WS received object:", obj);
                     } catch (err) {
-                        console.error("Error creating object:", err);
+                        console.error("WS Error creating object:", err);
                     }
                 } else if (data.data !== undefined) {
                     this.triggerSlot(0, data.data);
-                    console.debug("WS received data:", data.data);
+                    console.debug("WS type1 received data:", data.data);
+                } else {
+                    console.debug("WS type1 received UNKNOWN data:", data);
                 }
             } else {
                 if (data.data !== undefined) {
                     this._last_received_data[data.channel !== undefined ? data.channel : 0] = data.data;
                     console.debug("WS received channel data:", data.channel, data.data);
+                } else {
+                    console.debug("WS received UNKNOWN data:", data);
                 }
             }
         };
@@ -38883,568 +39029,6 @@ LiteGraph.registerNodeType("network/webrtc", WebRTCNode);
 
 
 
-// Note: This node requires the 'osc' library to be integrate in both cases: running in browser or Node.js.
-// To install, run: npm install osc
-// there are two node libraries: osc and osc-js, using osc here because have browser counterpart
-
-class OSCNode {
-    static title = "OSC";
-    static desc = "Send and receive data through OSC";
-
-    constructor() {
-        this.size = [100, 60];
-        this.addInput("send", LiteGraph.ACTION);
-        this.addInput("data", 0);
-        this.addOutput("received", LiteGraph.EVENT);
-        this.addOutput("data", 0);
-        this.properties = {
-            host: "127.0.0.1",
-            port: 57121,
-            localPort: 57120,
-            address: "/osc/address",
-            useWebSocket: true,
-            webSocketURL: "ws://localhost:8080"
-        };
-        this._osc = null;
-        this._lastReceivedData = null;
-        this.isNode = (typeof process !== 'undefined' && process.versions && process.versions.node);
-        this._connected = false;
-        this._cant_connect = false;
-    }
-
-    onPropertyChanged(name, value) {
-        if (["host", "port", "localPort", "address", "useWebSocket", "webSocketURL"].includes(name)) {
-            this._cant_connect = false;
-            this.initConnection();
-        }
-    }
-
-    initConnection() {
-        if (this._osc) {
-            this._osc.close();
-            this._osc = null;
-        }
-        if (typeof(this._title) == "undefined") {
-            this._title = this.title;
-        }
-        if (this.isNode) {
-            this.initNodeOSC();
-            if (typeof(this._title) !== "undefined") this.title = this._title;
-        } else if (this.properties.useWebSocket) {
-            this.initBrowserOSC();
-            if (typeof(this._title) !== "undefined") this.title = this._title;
-        } else {
-            console.warn("OSCNode can only run on Node.js server or WebSocket in the browser");
-            this.boxcolor = "#FF0000";
-            this.title = "OSC (useWebSocket disabled)";
-            this._cant_connect = true;
-        }
-    }
-
-    initNodeOSC() {
-        const osc = require('osc');
-
-        try {
-            this._osc = new osc.UDPPort({
-                localAddress: "0.0.0.0",
-                localPort: this.properties.localPort,
-                remoteAddress: this.properties.host,
-                remotePort: this.properties.port
-            });
-
-            this._osc.on("ready", () => {
-                console.debug(`OSC server is ready on ${this.properties.localPort}`);
-                this._connected = true;
-                this.boxcolor = "#00FF00";
-            });
-
-            this._osc.on("message", (oscMessage) => {
-                this._lastReceivedData = oscMessage.args;
-                this.setOutputData(1, this._lastReceivedData);
-                this.triggerSlot(0, this._lastReceivedData);
-                console.debug("OSC message received:", oscMessage);
-            });
-
-            this._osc.on("error", (err) => {
-                console.error("OSC error:", err);
-                this._connected = false;
-                this.boxcolor = "#FF0000";
-            });
-
-            this._osc.open();
-        } catch (error) {
-            console.error("Error initializing Node.js OSC connection:", error);
-            this.boxcolor = "#FF0000";
-        }
-    }
-
-    initBrowserOSC() {
-        try {
-            this._osc = new WebSocket(this.properties.webSocketURL);
-
-            this._osc.onopen = () => {
-                console.debug("WebSocket connection opened");
-                this._connected = true;
-                this.boxcolor = "#00FF00";
-            };
-
-            this._osc.onmessage = (event) => {
-                try {
-                    const oscMessage = JSON.parse(event.data);
-                    this._lastReceivedData = oscMessage.args;
-                    this.setOutputData(1, this._lastReceivedData);
-                    this.triggerSlot(0, this._lastReceivedData);
-                    console.debug("OSC message received via WebSocket:", oscMessage);
-                } catch (error) {
-                    console.error("Error parsing OSC message via WebSocket:", error);
-                }
-            };
-
-            this._osc.onerror = (err) => {
-                console.error("WebSocket error:", err);
-                this._connected = false;
-                this.boxcolor = "#FF0000";
-            };
-
-            this._osc.onclose = () => {
-                console.debug("WebSocket connection closed");
-                this._connected = false;
-                this.boxcolor = "#AA0000";
-            };
-        } catch (error) {
-            console.error("Error initializing WebSocket OSC connection:", error);
-            this.boxcolor = "#FF0000";
-        }
-    }
-
-    onExecute() {
-        if (!this._connected || !this._osc) {
-            if (!this._cant_connect) this.initConnection();
-            return;
-        }
-
-        const data = this.getInputData(1);
-        if (data != null) {
-            const message = {
-                address: this.properties.address,
-                args: Array.isArray(data) ? data : [data]
-            };
-
-            try {
-                if (this.isNode) {
-                    this._osc.send(message);
-                } else {
-                    this._osc.send(JSON.stringify(message));
-                }
-                console.debug("OSC message sent:", message);
-            } catch (error) {
-                console.error("Error sending OSC message:", error);
-            }
-        }
-
-        this.setOutputData(1, this._lastReceivedData);
-    }
-
-    onAction(action, param) {
-        if (!this._connected || !this._osc) {
-            return;
-        }
-
-        const message = {
-            address: this.properties.address,
-            args: Array.isArray(param) ? param : [param]
-        };
-
-        try {
-            if (this.isNode) {
-                this._osc.send(message);
-            } else {
-                this._osc.send(JSON.stringify(message));
-            }
-            console.debug("OSC message sent by action:", message);
-        } catch (error) {
-            console.error("Error sending OSC message by action:", error);
-        }
-    }
-
-    onRemove() {
-        if (this._osc) {
-            this._osc.close();
-        }
-    }
-
-    // onGetInputs() {
-    //     return [["send", LiteGraph.ACTION], ["data", 0]];
-    // }
-
-    // onGetOutputs() {
-    //     return [["received", LiteGraph.EVENT], ["data", 0]];
-    // }
-}
-LiteGraph.registerNodeType("network/osc", OSCNode);
-
-
-
-
-// -------------- NODE JS ONLY ---------------
-
-
-/**
- * To use this WebSocket server node, ensure you have the 'ws' package installed.
- * Install it using the following command:
- * 
- * npm install ws
- */
-class LGWebSocketServer {
-    static title = "WebSocket Server";
-    static desc = "WebSocket server node";
-
-    constructor() {
-        this.size = [60, 20];
-        this.addInput("send", LiteGraph.ACTION);
-        this.addOutput("received", LiteGraph.EVENT);
-        this.addInput("in", 0);
-        this.addOutput("out", 0);
-        this.properties = {
-            port: 8080,
-            room: false,
-            only_send_changes: true,
-            broadcast: true,
-        };
-        this._wsServer = null;
-        this._clients = new Set();
-        this._last_sent_data = [];
-        this._last_received_data = [];
-
-        if (typeof process === 'undefined' || process.browser) {
-            console.warn("WebSocket Server node is designed to run in Node.js, not in a browser.");
-            this.boxcolor = "#FF0000";
-            this.title = "WSServer (run on server)";
-        } else {
-            this.startWebSocketServer();
-        }
-    }
-
-    onPropertyChanged(name, _value) {
-        if (name == "port" && this._wsServer) {
-            this.restartWebSocketServer();
-        }
-    }
-
-    onExecute() {
-        if (!this._wsServer) {
-            return;
-        }
-
-        // const room = this.properties.room;
-        const only_changes = this.properties.only_send_changes;
-
-        for (let i = 1; i < this.inputs.length; ++i) {
-            const data = this.getInputData(i);
-            if (data == null) {
-                continue;
-            }
-
-            let json;
-            try {
-                json = JSON.stringify({
-                    type: 0,
-                    // room: room,
-                    channel: i,
-                    data: data,
-                });
-            } catch (err) {
-                console.error("Error stringifying data:", err);
-                continue;
-            }
-
-            if (only_changes && this._last_sent_data[i] == json) {
-                continue;
-            }
-
-            this._last_sent_data[i] = json;
-            for (const client of this._clients) {
-                if (client.readyState === 1) { // WebSocket.OPEN
-                    client.send(json);
-                }
-            }
-            console.log?.("WS sent by execute:", i, json);
-        }
-
-        for (let i = 1; i < this.outputs.length; ++i) {
-            this.setOutputData(i, this._last_received_data[i]);
-        }
-
-        if (this.boxcolor == "#AFA") {
-            this.boxcolor = "#6C6";
-        }
-    }
-
-    startWebSocketServer() {
-        const WebSocket = require('ws');
-        const port = this.properties.port;
-
-        this._wsServer = new WebSocket.Server({
-            port
-        });
-        this._wsServer.on('connection', (ws) => {
-            this._clients.add(ws);
-            ws.on('message', (message) => this.handleMessage(ws, message));
-            ws.on('close', () => this._clients.delete(ws));
-            console.log?.("New client connected");
-        });
-
-        this._wsServer.on('listening', () => {
-            console.log(`WebSocket server is running on ws://localhost:${port}`);
-            this.boxcolor = "#6C6";
-        });
-
-        this._wsServer.on('error', (error) => {
-            console.error("WebSocket server error:", error);
-            this.boxcolor = "#E88";
-        });
-    }
-
-    restartWebSocketServer() {
-        if (this._wsServer) {
-            this._wsServer.close(() => {
-                this.startWebSocketServer();
-            });
-        }
-    }
-
-    handleMessage(ws, message) {
-        this.boxcolor = "#AFA";
-        console.info("WS on message:", message);
-
-        let data;
-        try {
-            data = JSON.parse(message);
-        } catch (err) {
-            console.error("Error parsing message:", err);
-            return;
-        }
-
-        // if (data.room && data.room !== this.properties.room) {
-        //     console.debug("Message room mismatch:", data.room);
-        //     return;
-        // }
-
-        if (data.type === 1) {
-            if (data.data.object_class && LiteGraph[data.data.object_class]) {
-                try {
-                    const obj = new LiteGraph[data.data.object_class](data.data);
-                    this.triggerSlot(0, obj);
-                    console.debug("WS received object:", obj);
-                } catch (err) {
-                    console.error("Error creating object:", err);
-                }
-            } else {
-                this.triggerSlot(0, data.data);
-                console.debug("WS received data:", data.data);
-            }
-        } else {
-            this._last_received_data[data.channel ?? 0] = data.data;
-            console.debug("WS received channel data:", data.channel, data.data);
-        }
-
-        // Broadcast message to other clients if broadcasting is enabled
-        if (this.properties.broadcast) {
-            const broadcastMessage = JSON.stringify(data);
-            for (const client of this._clients) {
-                if (client !== ws && client.readyState === 1) { // WebSocket.OPEN
-                    client.send(broadcastMessage);
-                }
-            }
-            console.debug("WS broadcasted message:", broadcastMessage);
-        }
-    }
-
-    send(data) {
-        if (!this._wsServer) {
-            return;
-        }
-        const msg = JSON.stringify({
-            type: 1,
-            data: data
-        });
-        for (const client of this._clients) {
-            if (client.readyState === 1) { // WebSocket.OPEN
-                client.send(msg);
-            }
-        }
-        console.log?.("WS sent:", msg);
-    }
-
-    onAction(action, param, options) {
-        if (!this._wsServer) {
-            return;
-        }
-        const data = this.getInputData("in");
-        if (data == null) {
-            return; // continue; // 
-        }
-        const msg = JSON.stringify({
-            type: 1,
-            // room: this.properties.room,
-            action: action,
-            data: data, //param,
-        });
-        for (const client of this._clients) {
-            if (client.readyState === 1) { // WebSocket.OPEN
-                client.send(msg);
-            }
-        }
-        console.debug?.("WS sent by Action:", msg, options);
-    }
-
-    onGetInputs() {
-        return [
-            ["in", 0]
-        ];
-    }
-
-    onGetOutputs() {
-        return [
-            ["out", 0]
-        ];
-    }
-}
-LiteGraph.registerNodeType("network/websocketserver", LGWebSocketServer);
-
-
-// Note: This node requires the 'dgram' module to be available in Node.js.
-// To install, run: npm install dgram
-
-class UDPNode {
-    static title = "UDP";
-    static desc = "Send and receive data through UDP";
-
-    constructor() {
-        this.size = [60, 20];
-        this.addInput("send", LiteGraph.ACTION);
-        this.addInput("data", 0);
-        this.addOutput("received", LiteGraph.EVENT);
-        this.addOutput("data", 0);
-        this.properties = {
-            host: "127.0.0.1",
-            port: 41234,
-            only_send_changes: true,
-        };
-        this._dgram = null;
-        this._last_sent_data = null;
-        this._last_received_data = null;
-        this.isNode = (typeof process !== 'undefined' && process.versions && process.versions.node);
-
-        if (this.isNode) {
-            console.debug("UDPNode initialized in Node.js environment");
-            this.connectSocket();
-        } else {
-            console.warn("UDPNode can only run on Node.js server");
-            this.boxcolor = "#FF0000";
-            this.title = "UDP (run on server)";
-        }
-    }
-
-    onPropertyChanged(name, value) {
-        if (name == "host" || name == "port") {
-            if (this.isNode) {
-                console.debug("Property changed:", name, value);
-                this.connectSocket();
-            }
-        }
-    }
-
-    onExecute() {
-        if (!this._dgram) {
-            if (this.isNode) {
-                this.connectSocket();
-            } else {
-                return;
-            }
-        }
-
-        var only_changes = this.properties.only_send_changes;
-
-        // Send data
-        var data = this.getInputData(1);
-        if (data != null) {
-            var message = Buffer.from(JSON.stringify(data));
-
-            if (only_changes && this._last_sent_data == message.toString()) {
-                return;
-            }
-
-            this._last_sent_data = message.toString();
-
-            this._dgram.send(message, 0, message.length, this.properties.port, this.properties.host, (err) => {
-                if (err) {
-                    console.error('UDP send error:', err);
-                } else {
-                    console.debug("UDP message sent", message.toString());
-                }
-            });
-        }
-
-        // Receive data
-        this.setOutputData(1, this._last_received_data);
-
-        if (this.boxcolor == "#AFA") {
-            this.boxcolor = "#6C6";
-        }
-    }
-
-    connectSocket() {
-        const dgram = require('dgram'); // Ensure 'dgram' module is available in Node.js
-        if (this._dgram) {
-            this._dgram.close();
-        }
-
-        this._dgram = dgram.createSocket('udp4');
-
-        this._dgram.on('message', (msg, rinfo) => {
-            this._last_received_data = JSON.parse(msg.toString());
-            this.triggerSlot(0, this._last_received_data);
-            console.debug('UDP message received', msg.toString());
-        });
-
-        this._dgram.on('error', (err) => {
-            console.error('UDP error:', err);
-            this._dgram.close();
-        });
-
-        this._dgram.on('listening', () => {
-            const address = this._dgram.address();
-            console.debug(`UDP server listening ${address.address}:${address.port}`);
-        });
-
-        this._dgram.bind(this.properties.port);
-    }
-
-    onAction(action, param) {
-        this.send(param);
-    }
-
-    onGetInputs() {
-        return [
-            ["data", 0]
-        ];
-    }
-
-    onGetOutputs() {
-        return [
-            ["data", 0]
-        ];
-    }
-
-    onRemove() {
-        if (this._dgram) {
-            this._dgram.close();
-        }
-    }
-}
-LiteGraph.registerNodeType("network/udp", UDPNode);
-
 // EG METHOD
 
 // function mMETHOD(){
@@ -39490,7 +39074,7 @@ class objProperties {
         // this.widgets_up = true;
         // this.size = [140, 30];
         this._value = null;
-        this._properties = [];
+        this._objProperties = [];
     }
 
     onExecute() {
@@ -39498,11 +39082,11 @@ class objProperties {
         if (data != null) {
             this._value = data;
             try {
-                this._properties = Object.keys(this._value);
+                this._objProperties = Object.keys(this._value);
             } catch (e) {
                 console.error?.(e);
             }
-            this.setOutputData(0, this._properties);
+            this.setOutputData(0, this._objProperties);
         }
     }
     onAction() {
@@ -39596,7 +39180,7 @@ class objPropertyWidget {
 
         this._obin = null;
         this._value = null;
-        this._properties = [];
+        this._objProperties = [];
     }
 
     setValue(v) {
@@ -39611,18 +39195,20 @@ class objPropertyWidget {
             if (this._obin) { // } && typeof this._obin == "Object"){
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try {
-                    this._properties = Object.keys(this._obin);
-                    if (this._properties && this._properties.sort)
-                        this._properties = this._properties.sort();
+                    this._objProperties = Object.keys(this._obin);
+                    if (this._objProperties && this._objProperties.sort)
+                        this._objProperties = this._objProperties.sort();
                 } catch (e) {
-                    console.error?.(e);
+                    console.error?.(this.name, "updateFromInput error", e);
                 }
-                if (this._properties) {
+                // recreate property widget
+                if (this._objProperties) {
                     // this.removeWidget();
                     this.widgets = [];
+                    console.info("**propertywidget**", "refreshing widget", "will set previous value if found", this.properties.prop);
                     this.widg_prop = this.addWidget("combo", "prop", this.properties.prop, {
                         property: "prop",
-                        values: this._properties
+                        values: this._objProperties
                     });
                 }
                 if (typeof this._obin[this.properties.prop] !== "undefined") {
@@ -39632,11 +39218,11 @@ class objPropertyWidget {
                 }
             } else {
                 this._value = null;
-                this._properties = [];
+                this._objProperties = [];
             }
         }
         if (!this.widg_prop.options) this.widg_prop.options = {};
-        this.widg_prop.options.values = this._properties;
+        this.widg_prop.options.values = this._objProperties;
         this.setOutputData(0, this._value);
     }
 
@@ -39697,10 +39283,10 @@ class objMethodWidget {
     static desc = "Choose and execute a method from an object";
 
     constructor() {
-        this.addInput("obj", "object");
         // this.addInput("onTrigger", LiteGraph.ACTION);
-        this.addInput("refresh", LiteGraph.ACTION);
-        this.addInput("execute", LiteGraph.ACTION);
+        this.addInput("obj", "object"); // 0
+        this.addInput("refresh", LiteGraph.ACTION); // 1
+        this.addInput("execute", LiteGraph.ACTION); // 2 : DYNAMICALLY SWITCH TO "new"
         this.addOutput("executed", LiteGraph.EVENT);
         this.addOutput("method", "function");
         this.addOutput("return", "*");
@@ -39746,19 +39332,20 @@ class objMethodWidget {
                         }
                     } */
                     // method 3
-                    this._properties = [];
-                    currentObj = this._obin;
+                    this._objProperties = [];
+                    let currentObj = this._obin;
                     do {
                         Object.getOwnPropertyNames(currentObj).map(function(item) {
-                            if (!that._properties.includes(item)) that._properties.push(item)
+                            if (!that._objProperties.includes(item)) that._objProperties.push(item)
                         });
                     } while ((currentObj = Object.getPrototypeOf(currentObj)));
-                    for (var iM in this._properties) {
-                        if (typeof(this._obin[this._properties[iM]]) == "function") {
-                            this._methods.push(this._properties[iM]);
+                    for (var iM in this._objProperties) {
+                        if (typeof(this._obin[this._objProperties[iM]]) == "function") {
+                            this._methods.push(this._objProperties[iM]);
                         }
                     }
                     if (this._methods && this._methods.sort) this._methods = this._methods.sort();
+                    console.debug(this.name, "got methods", this._methods);
                 } catch (e) {
                     console.warn?.("Err on methods get", e);
                 }
@@ -39776,14 +39363,16 @@ class objMethodWidget {
                 this._function = null;
                 this._methods = [];
             }
+        } else {
+            console.debug(this.name, "empty data");
         }
         if (!this.widg_prop.options) this.widg_prop.options = {}; // reset widget options
         this.widg_prop.options.values = this._methods; // set widget options
 
-        this.updateInputsForMethod();
+        this.refreshMethodAndInputs();
     }
 
-    updateInputsForMethod() {
+    refreshMethodAndInputs() {
         // TODO fixthis :: property is not yet updated?
         var actVal = this.widg_prop.value; // this.properties.method
         if (actVal && this._obin && typeof this._obin[actVal] !== "undefined") {
@@ -39806,6 +39395,7 @@ class objMethodWidget {
             var actVal = this.widg_prop.value; // this.properties.method
             var r = this._obin.prototype[actVal].call(this._obin); */
 
+            // cycle inputs
             var params = Array(this._function.length);
             var names = LiteGraph.getParameterNames(this._function);
             for (var i = 0; i < names.length; ++i) {
@@ -39819,6 +39409,15 @@ class objMethodWidget {
                 }
             }
             this._params = names;
+
+            // check if method is a class constructor
+            if ((this._function?.prototype?.constructor + "").startsWith("class")) {
+                this._isClass = true;
+                this.inputs[2].name = "new";
+            } else {
+                this._isClass = false;
+                this.inputs[2].name = "execute";
+            }
 
         } else {
             console.debug?.("Invalid method", actVal);
@@ -39834,18 +39433,19 @@ class objMethodWidget {
 
     // objMethodWidget.prototype.onPropertyChanged = function(name, value, prev_value){
     //     console.debug?.("Property changed", name, value, prev_value)
-    //     this.updateInputsForMethod();
+    //     this.refreshMethodAndInputs();
     // }
 
     onWidgetChanged(name, value, prev_value) {
         console.debug?.("Widget changed", name, value, prev_value);
         // if changed, reset inputs
         if (this.properties.method !== value) {
-            for (var i = 3; i < this.inputs.length; ++i) {
-                this.removeInput(i);
+            const nInputs = this.inputs.length;
+            for (var i = 3; i < nInputs; ++i) {
+                this.removeInput(3); // not i
             }
         }
-        this.updateInputsForMethod();
+        this.refreshMethodAndInputs();
     }
 
     onAction(action) {
@@ -39853,7 +39453,7 @@ class objMethodWidget {
         // this.updateFromInput();
         if (action == "refresh") {
             this.updateFromInput();
-        } else if (action == "execute") {
+        } else if (action == "execute" || action == "new") {
             if (this._function && typeof(this._function) == "function") {
 
                 var parValues = [];
@@ -39863,14 +39463,25 @@ class objMethodWidget {
 
                 // call execute
                 console.debug?.("NodeObjMethod Execute", parValues);
-                var r = this._function(parValues); // this._function.apply(this, parValues);
-
-                this.triggerSlot(0);
-                this.setOutputData(2, r); // update method result
+                try {
+                    if (this._isClass) {
+                        var r = new this._function(parValues); // this._function.apply(this, parValues);
+                    } else {
+                        var r = this._function(parValues); // this._function.apply(this, parValues);
+                    }
+                    this.triggerSlot(0);
+                    this.setOutputData(2, r); // update method result
+                    this.boxcolor = "#0F0";
+                } catch (e) {
+                    console.warn("[NodeObjMethod]", "execute error", e);
+                    this.boxcolor = "#F00";
+                }
             } else {
                 this.setOutputData(1, null);
                 this.setOutputData(2, null);
             }
+        } else {
+            console.debug(this.name, "unknown action", action);
         }
     }
 
@@ -39965,10 +39576,14 @@ class objEvalGlo {
             // }
             try {
                 this._func = new Function("DATA", "node", code_eval);
-                console.debug("Evaluated", code, this._func);
+                // console.debug("Evaluated",code,this._func);
+                this.title = (code + "").substring(0, 33);
+                this.autoSize();
             } catch (err) {
                 console.error?.("Error parsing obj evaluation");
                 console.error?.(err);
+                this.title = "Eval ERR";
+                this.autoSize();
             }
         }
         return false;
@@ -40156,204 +39771,6 @@ LiteGraph.registerNodeType("objects/merge_objects", MergeObjects);
 
 
 
-// WIP
-// https://api.cdnjs.com/libraries
-/*
-LiteGraph.libraries_known = {
-    // "jquery": {"obj":"jQuery","name":"jquery", "latest":"..URL.."}
-};
-LiteGraph.libraries_loaded = {
-    // "vue":{},
-};
-*/
-
-
-// CDN LIBRARY SEARCH
-
-class CDNLibSearch {
-    constructor() {
-        this.addInput("search", LiteGraph.ACTION);
-        // this.addInput("name", "string"); in optionals
-        this.addProperty("name", "", "string");
-        this.addOutput("ready", LiteGraph.EVENT);
-        this.addOutput("results", "array");
-        this.addOutput("first name", "object");
-        this.addOutput("first object", "object");
-        // this.addOutput("error", LiteGraph.EVENT); // in optionals
-        this.addWidget("string", "name", this.properties.name, "name");
-        // this.addWidget("button", "Fetch", null, this.fetch.bind(this));
-        this._data = null;
-        this._fetching = null;
-        this.base_url = "https://api.cdnjs.com/libraries";
-    }
-
-    static title = "CDN Search";
-    static desc = "Search and fetch CDN libraries";
-
-    search() {
-        var that = this;
-        var url = this.base_url;
-        var name = this.getInputOrProperty("name");
-        if (name && name !== "") {
-            url += "?search=" + name;
-        }
-        this._fetching = fetch(url)
-            .then((resp) => {
-                if (!resp.ok) {
-                    this.boxcolor = "#F00";
-                    that.trigger("error");
-                } else {
-                    this.boxcolor = "#0F0";
-                    return resp.text();
-                }
-            })
-            .then((data) => {
-                that._data = data;
-                that._fetching = null;
-
-                // var libsNames = [];
-                // for(var iL in data.results){
-                // libsNames.push(data.results[iL]["name"]);
-                // }
-
-                if (this._data && typeof(this._data) == "string") {
-                    try {
-                        this._data = JSON.parse(this._data);
-                    } catch (e) {
-                        console.warn?.("Not a JSON resp", this._data);
-                    }
-                }
-
-                if (this._data && typeof(this._data) == "object") {
-                    if (this._data.results && this._data.results.length && this._data.results[0]["name"]) {
-                        this.setOutputData(1, this._data.results); // array of result libs
-                        this.setOutputData(2, this._data.results[0]["name"]);
-                        this.setOutputData(3, this._data.results[0]);
-                    } else {
-                        // no results?
-                        this.setOutputData(2, null);
-                        this.setOutputData(3, null);
-                    }
-                } else {
-                    this.setOutputData(2, null);
-                    this.setOutputData(3, null);
-                }
-                that.trigger("ready");
-            });
-    }
-
-    onAction(evt) {
-        if (evt == "search")
-            this.search();
-    }
-
-    onExecute() {
-        // this.setOutputData(1, this._data); // "data"
-        // if(this._data && typeof(this._data)=="string"){
-        //     try{
-        //         this._data = JSON.parse(this._data);
-        //     }catch(e){
-        //         console.warn?.("Not a JSON resp",this._data);
-        //     }
-        // }
-        // if(this._data && typeof(this._data)=="object"){
-        //     if(this._data.results && this._data.results.length){
-        //         this.setOutputData(2, this._data.results[0]);
-        //     }
-        // }else{
-        //     this.setOutputData(2, null);
-        // }
-    }
-
-    onGetInputs() {
-        return [
-            ["name", "string"]
-        ];
-    }
-
-    onGetOutputs() {
-        return [
-            ["error", LiteGraph.EVENT]
-        ];
-    }
-}
-LiteGraph.registerNodeType("libraries/search_CDN_lib", CDNLibSearch);
-
-
-// CDN LIBRARY LOAD INCLUDE
-
-class CDNLibInclude {
-
-    static title = "CDN Load";
-    static desc = "Load and include a CDN library";
-
-    constructor() {
-        this.addInput("load", LiteGraph.ACTION);
-        this.addInput("lib_spec", "object");
-        this.addOutput("ready", LiteGraph.EVENT);
-        this.addOutput("error", LiteGraph.EVENT);
-        // this.addOutput("error", LiteGraph.EVENT); // in optionals
-        // this.addWidget("button", "load", null, this.load.bind(this));
-    }
-
-    load() {
-        var that = this;
-        var lib_spec = this.getInputOrProperty("lib_spec");
-        if (lib_spec && typeof(lib_spec) == "object" && lib_spec.latest) {
-            var url = lib_spec.latest;
-
-            var script = document.createElement("script");
-            script.type = "text/javascript";
-            script.onload = function(a) {
-                that.on_loaded(lib_spec, a);
-            }
-            script.onerror = function(e) {
-                that.on_error(lib_spec, e);
-            }
-            script.src = url;
-            document.head.appendChild(script);
-            // wait for loas
-        }
-    }
-
-    on_loaded(ob_lib, a) {
-        console.debug?.("Loaded library", ob_lib, a);
-        if (ob_lib && ob_lib.name) {
-            this.trigger("ready");
-            libraries_loaded[ob_lib.name] = ob_lib;
-            this.boxcolor = "#0F0";
-        } else {
-            this.on_error(ob_lib);
-        }
-    }
-
-    on_error(ob_lib, e) {
-        this.trigger("error");
-        this.boxcolor = "#F00";
-        console.warn?.("Lib loading failed", ob_lib, e);
-    }
-
-    onAction(evt) {
-        if (evt == "load") {
-            this.load();
-        }
-    }
-
-    onExecute() {
-        // ?
-    }
-
-    onGetInputs() {
-        // return [["name","string"]];
-    }
-    onGetOutputs() {
-        // return [["error",LiteGraph.EVENT]];
-    }
-}
-LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
-
-
-
 /**
  * will extend a node class creating an html element for it available in this._el_cont, use this._html to set his content
  * @param {object} nodeX
@@ -40361,13 +39778,14 @@ LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
 function nodeEmpower_htmlElement(nodeX) {
     nodeX.htmlCreateElement = (function() {
         if (this._added) return;
-        if (typeof(graphcanvas) !== "undefined" && graphcanvas) {
+        const myGCanvas = this.graph?.getCanvas();
+        if (myGCanvas) {
             const htEl = document.createElement("div");
             this._el = htEl;
             this._el.classList.add('lg-html-element');
             this._el.style.position = "absolute";
             // this._el.style.pointerEvents = "";
-            graphcanvas.canvas?.parentNode?.appendChild(this._el);
+            myGCanvas.canvas?.parentNode?.appendChild(this._el);
             this._el_cont = document.createElement("div");
             this._el_cont.style.display = "flex";
             // this._el_cont.style.alignItems = "center";
@@ -40381,8 +39799,8 @@ function nodeEmpower_htmlElement(nodeX) {
             this._el.appendChild(this._el_cont);
             this._added = true;
             this.htmlRefreshElement();
-            const htGraph = graphcanvas.graph;
-            graphcanvas.registerCallbackHandler("onOpenSubgraph", function(info, graph, prev_graph) {
+            const htGraph = myGCanvas.graph;
+            myGCanvas.registerCallbackHandler("onOpenSubgraph", function(info, graph, prev_graph) {
                 // should hide or remove?
                 if (htGraph == graph) {
                     console.debug("htmlEmpoweredNode", "restore on onOpenSubgraph", this, graph);
@@ -40393,7 +39811,7 @@ function nodeEmpower_htmlElement(nodeX) {
                     htEl.style.display = "none";
                 }
             });
-            graphcanvas.registerCallbackHandler("onCloseSubgraph", function(info, graph, prev_graph, subgraph_node) {
+            myGCanvas.registerCallbackHandler("onCloseSubgraph", function(info, graph, prev_graph, subgraph_node) {
                 // should restore hide or recreate? 
                 if (htGraph == graph) {
                     console.debug("htmlEmpoweredNode", "restore on onCloseSubgraph", this, graph);
@@ -40414,16 +39832,27 @@ function nodeEmpower_htmlElement(nodeX) {
         }
         if (!this.pos) return;
         if (!this.size) return;
-        const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
+        const myGCanvas = this.graph?.getCanvas();
+        if (!myGCanvas) {
+            console.warn("htmlRefreshElement", "has no graphcanvas", this);
+            return;
+        }
+        const absPos = myGCanvas.convertOffsetToCanvas(this.pos);
         this._el.style.left = absPos[0] + "px";
         this._el.style.top = (absPos[1] + this.getSlotsHeight()) + "px";
-        this._el.style.width = Math.round(this.size[0] * graphcanvas.ds.scale) + "px";
-        this._el.style.height = (Math.round(this.size[1] * graphcanvas.ds.scale) - this.getSlotsHeight()) + "px";
+        this._el.style.width = Math.round(this.size[0] * myGCanvas.ds.scale) + "px";
+        this._el.style.height = (Math.round(this.size[1] * myGCanvas.ds.scale) - this.getSlotsHeight()) + "px";
     }).bind(nodeX);
     nodeX.setHtml = function(html) {
         this._html = html;
-        if (!this._el || !this._el_cont) this.htmlRefreshElement();
-        this._el_cont.innerHTML = this._html;
+        if (typeof(this._el) == "undefined" || typeof(this._el_cont) == "undefined" ||
+            !this._el || !this._el_cont
+        ) {
+            this.htmlRefreshElement();
+        }
+        if (typeof(this._el_cont) !== "undefined") {
+            this._el_cont.innerHTML = this._html;
+        }
     }
     nodeX.registerCallbackHandler("onConfigure", function(info) {
         console.info("empoweredHtmlNode", this, "onConfigure", ...arguments);
@@ -40577,12 +40006,18 @@ function htmlJsonViewerHelper(json, collapsible = false) {
 
     function createItem(key, value, type) {
         var element = TEMPLATES.item.replace('%KEY%', key);
-        if (type == 'string') {
-            element = element.replace('%VALUE%', '"' + value + '"');
-        } else {
-            element = element.replace('%VALUE%', value);
+        try {
+            if (type == 'string') {
+                element = element.replace('%VALUE%', '"' + value + '"');
+            } else {
+                element = element.replace('%VALUE%', value);
+            }
+            element = element.replace('%TYPE%', type);
+        } catch (e) {
+            console.warn("html createItem error", type, value, e);
+            element = element.replace('%VALUE%', "[ERR]");
+            element = element.replace('%TYPE%', type);
         }
-        element = element.replace('%TYPE%', type);
         return element;
     }
 
@@ -40598,20 +40033,29 @@ function htmlJsonViewerHelper(json, collapsible = false) {
         return element;
     }
 
-    function handleChildren(key, value, type) {
+    function handleChildren(key, value, type, already_processed) {
+        if (!already_processed) already_processed = [];
         var html = '';
         for (var item in value) {
             var _key = item,
                 _val = value[item];
-            html += handleItem(_key, _val);
+            if (typeof(_val) !== "object" || !already_processed.includes(_val)) {
+                if (typeof(_val) == "object") {
+                    already_processed.push(_val);
+                }
+                html += handleItem(_key, _val, already_processed);
+            } else {
+                html += createItem(_key, "[OBJ_CYCLE]");
+            }
         }
         return createCollapsibleItem(key, value, type, html);
     }
 
-    function handleItem(key, value) {
+    function handleItem(key, value, already_processed) {
+        if (!already_processed) already_processed = [];
         var type = typeof value;
         if (typeof value === 'object') {
-            return handleChildren(key, value, type);
+            return handleChildren(key, value, type, already_processed);
         }
         return createItem(key, value, type);
     }

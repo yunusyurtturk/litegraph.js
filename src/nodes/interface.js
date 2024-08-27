@@ -540,7 +540,8 @@ class WidgetHSlider {
     constructor() {
         this.size = [160, 26];
         this.addOutput("", "number");
-        this.properties = { color: "#7AF", min: 0, max: 1, value: 0.5 };
+        this.properties = { color: "#7AF", min: 0, max: 1}; //, value: 0.5 };
+        this.addProperty("value", 0.5, "number", {prevent_input_bind: true}); // readonly: false, 
         this.value = -1;
     }
 

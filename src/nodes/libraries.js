@@ -3,15 +3,23 @@ import { LiteGraph } from "../litegraph.js";
 
 // WIP
 // https://api.cdnjs.com/libraries
-/*
-LiteGraph.libraries_known = {
+// dynamically load libraries and to to expose global object and methods
+const libraries_known = {
     // "jquery": {"obj":"jQuery","name":"jquery", "latest":"..URL.."}
+    "fullPage.js": {"obj":"fullPage","name":"fullPage.js", "latest":"https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/4.0.25/fullpage.min.js"}
 };
-LiteGraph.libraries_loaded = {
+const libraries_loaded = {
     // "vue":{},
 };
-*/
+LiteGraph.libraries = {}; // STORING REFERENCES
+// should make a class for this, and add this to graph, serialize data to get that back when loading back
+/**/
 
+function camelize(str) {
+    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(letter, index) {
+        return index == 0 ? letter.toLowerCase() : letter.toUpperCase();
+    }).replace(/\s+/g, '');
+}
 
 // CDN LIBRARY SEARCH
 
@@ -125,35 +133,96 @@ LiteGraph.registerNodeType("libraries/search_CDN_lib", CDNLibSearch);
 
 class CDNLibInclude {
 
-    static title = "CDN Load";
-    static desc = "Load and include a CDN library";
+    static title = "Lib Load";
+    static desc = "Load and include a JS library (CDN or url)";
 
     constructor() {
         this.addInput("load", LiteGraph.ACTION);
-        this.addInput("lib_spec", "object");
+        this.addInput("lib_spec", "object,cdn_lib");
+        this.addInput("url", "string,url", {param_bind: true});
+        this.addInput("name", "string", {param_bind: true});
         this.addOutput("ready", LiteGraph.EVENT);
         this.addOutput("error", LiteGraph.EVENT);
         // this.addOutput("error", LiteGraph.EVENT); // in optionals
         // this.addWidget("button", "load", null, this.load.bind(this));
+        // this.addProperty("type", "text/javascript", "enum", {values:["text/javascript", "module"]});
+        this.addProperty("module", true, "boolean");
+        this.addProperty("url", "", "string", {});
+        this.addProperty("name", "", "string", {});
+        this.addWidget("string", "url", "", "url", {});
+        this.addWidget("string", "name", "", "name", {});
+        this.addWidget("toggle", "module", false, "module", {});
     }
 
     load() {
         var that = this;
-        var lib_spec = this.getInputOrProperty("lib_spec");
-        if(lib_spec && typeof(lib_spec)=="object" && lib_spec.latest) {
-            var url = lib_spec.latest;
+        var url = this.getInputOrProperty("url");
+        var name = this.getInputOrProperty("name");
+        let lib_spec = {};
+        if(!url){
+            lib_spec = this.getInputOrProperty("lib_spec");
+            if(lib_spec && typeof(lib_spec)=="object" && lib_spec.latest) {
+                url = lib_spec.latest;
+                name = lib_spec.name;
+                
+                // Step 1: Remove all invalid characters except underscores and dollar signs
+                let validName = name.replace(/[^a-zA-Z0-9_$]/g, '_');
+                // Step 2: Ensure the name doesn't start with a digit
+                if (/^[0-9]/.test(validName)) {
+                    validName = '_' + validName;
+                }
+                name = validName;
 
+            }
+        }else{
+            if(url && name){
+                lib_spec = {name: name, latest: url}; //namename
+            }else{
+                // TODO should color red, invalid
+            }
+        }
+        if(lib_spec && lib_spec.latest){
+            url = lib_spec.latest;
+            name = lib_spec.name;
+            name = camelize(name);
+            this.setProperty("name",name);
+            this.setProperty("url",url);
+            
             var script = document.createElement("script");
-            script.type = "text/javascript";
-            script.onload = function(a) {
-                that.on_loaded(lib_spec, a);
+            if(this.properties.module){
+
+                script.type = "module"; // this.properties.module ? "module" : "text/javascript";
+                script.textContent = "import * as "+this.properties.name+" from '"+url+"';";
+                script.textContent += " "+"window."+this.properties.name+" = "+this.properties.name+";";
+                script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = "+this.properties.name+";";
+                try{
+                    console.debug?.("Lib script load",this.properties.name,url);
+                    document.head.appendChild(script);
+                    // wait for load
+                    this.boxcolor = "#770";
+                }catch(e){
+                    console.warn?.("Lib script failed",this.properties.name,url,e);
+                    this.boxcolor = "#F00";
+                }
+
+            }else{
+
+                script.type = this.properties.module ? "module" : "text/javascript";
+                script.onload = function(a) {
+                    that.on_loaded(lib_spec, a);
+                    that.boxcolor = "#0F0";
+                }
+                script.onerror = function(e) {
+                    that.on_error(lib_spec, e);
+                    that.boxcolor = "#F00";
+                }
+                script.src = url;
+                document.head.appendChild(script);
+
             }
-            script.onerror = function(e) {
-                that.on_error(lib_spec, e);
-            }
-            script.src = url;
-            document.head.appendChild(script);
-            // wait for loas
+            
+        }else{
+            this.boxcolor = "#F00";
         }
     }
 

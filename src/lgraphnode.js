@@ -512,7 +512,7 @@ export class LGraphNode {
 
         let ob_input = this.inputs[slot];
         let link_id = ob_input.link;
-        let link = this.graph.links[link_id];
+        let link = this.graph?.links[link_id];
         if (!link) {
             // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputData", "No link", link_id, slot, this);
             return null;
@@ -913,6 +913,11 @@ export class LGraphNode {
             this.graph.nodes_executedAction[this.id] = options.action_call;
         }
 
+        // update output slot binded to properties
+        if(LiteGraph.properties_allow_output_binding){
+            this.doUpdateBindedOutputProperties();
+        }
+
         this.execute_triggered = 2; // helper to draw currently executing, the nFrames it will be used (-- each step), means "how old" is the event
         
         this.processCallbackHandlers("onAfterExecuteNode",{
@@ -1140,14 +1145,32 @@ export class LGraphNode {
         let thisNode = this;
         this.inputs.forEach((ob_input) => {
             if(ob_input.param_bind){
-                LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
+                LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
                 if(thisNode.properties && typeof(thisNode.properties[ob_input.name])!=="undefined"){
                     let inputData = thisNode.getInputData(ob_input.name);
-                    // thisNode.properties[ob_input.name] = link.data;
-                    LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","update value",ob_input.name,inputData,thisNode);
-                    this.setProperty(ob_input.name, inputData);
+                    if(inputData!==null){
+                        // thisNode.properties[ob_input.name] = link.data;
+                        LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","update value",ob_input.name,inputData,thisNode);
+                        this.setProperty(ob_input.name, inputData);
+                    }
                 }else{
-                    LiteGraph.log_warn("lgraphnode","doUpdateBindedInputProperties","inexisting property",ob_input.name,inputData,thisNode);
+                    LiteGraph.log_warn("lgraphnode","doUpdateBindedInputProperties","inexisting property",ob_input.name,thisNode);
+                }
+            }   
+        });
+    }
+    
+    doUpdateBindedOutputProperties(){
+        let thisNode = this;
+        this.outputs.forEach((ob_output) => {
+            if(ob_output.param_bind){
+                LiteGraph.log_verbose("lgraphnode","doUpdateBindedOutputProperties","has bind",ob_output,thisNode);
+                if(thisNode.properties && typeof(thisNode.properties[ob_output.name])!=="undefined"){
+                    let propertyData = this.properties[ob_output.name];
+                    LiteGraph.log_verbose("lgraphnode","doUpdateBindedOutputProperties","update value",ob_output.name,propertyData,thisNode);
+                    this.setOutputData(ob_output.name, propertyData);
+                }else{
+                    LiteGraph.log_warn("lgraphnode","doUpdateBindedOutputProperties","inexisting property",ob_output.name,outputData,thisNode);
                 }
             }   
         });

@@ -45,7 +45,7 @@ class objProperties {
         // this.widgets_up = true;
         // this.size = [140, 30];
         this._value = null;
-        this._properties = [];
+        this._objProperties = [];
     }
 
     onExecute() {
@@ -53,11 +53,11 @@ class objProperties {
         if (data != null) {
             this._value = data;
             try{
-                this._properties = Object.keys(this._value);
+                this._objProperties = Object.keys(this._value);
             }catch(e) {
                 console.error?.(e);
             }
-            this.setOutputData(0, this._properties);
+            this.setOutputData(0, this._objProperties);
         }
     }
     onAction() {
@@ -148,7 +148,7 @@ class objPropertyWidget {
 
         this._obin = null;
         this._value = null;
-        this._properties = [];
+        this._objProperties = [];
     }
 
     setValue(v) {
@@ -163,16 +163,18 @@ class objPropertyWidget {
             if(this._obin) { // } && typeof this._obin == "Object"){
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try{
-                    this._properties = Object.keys(this._obin);
-                    if(this._properties && this._properties.sort)
-                        this._properties = this._properties.sort();
+                    this._objProperties = Object.keys(this._obin);
+                    if(this._objProperties && this._objProperties.sort)
+                        this._objProperties = this._objProperties.sort();
                 }catch(e) {
-                    console.error?.(e);
+                    console.error?.(this.name, "updateFromInput error", e);
                 }
-                if(this._properties) {
+                // recreate property widget
+                if(this._objProperties) {
                     // this.removeWidget();
                     this.widgets = [];
-                    this.widg_prop = this.addWidget("combo","prop",this.properties.prop,{ property: "prop", values: this._properties });
+                    console.info("**propertywidget**","refreshing widget","will set previous value if found", this.properties.prop);
+                    this.widg_prop = this.addWidget("combo", "prop", this.properties.prop, { property: "prop", values: this._objProperties });
                 }
                 if(typeof this._obin[this.properties.prop] !== "undefined") {
                     this._value = this._obin[this.properties.prop];
@@ -181,11 +183,11 @@ class objPropertyWidget {
                 }
             }else{
                 this._value = null;
-                this._properties = [];
+                this._objProperties = [];
             }
         }
         if(!this.widg_prop.options) this.widg_prop.options = {};
-        this.widg_prop.options.values = this._properties;
+        this.widg_prop.options.values = this._objProperties;
         this.setOutputData(0, this._value);
     }
 
@@ -246,10 +248,10 @@ class objMethodWidget {
     static desc = "Choose and execute a method from an object";
 
     constructor() {
-        this.addInput("obj", "object");
         // this.addInput("onTrigger", LiteGraph.ACTION);
-        this.addInput("refresh", LiteGraph.ACTION);
-        this.addInput("execute", LiteGraph.ACTION);
+        this.addInput("obj", "object"); // 0
+        this.addInput("refresh", LiteGraph.ACTION); // 1
+        this.addInput("execute", LiteGraph.ACTION); // 2 : DYNAMICALLY SWITCH TO "new"
         this.addOutput("executed", LiteGraph.EVENT);
         this.addOutput("method", "function");
         this.addOutput("return", "*");
@@ -292,17 +294,18 @@ class objMethodWidget {
                         }
                     } */
                     // method 3
-                    this._properties = [];
-                    currentObj = this._obin;
+                    this._objProperties = [];
+                    let currentObj = this._obin;
                     do {
-                        Object.getOwnPropertyNames(currentObj).map(function(item){ if(!that._properties.includes(item)) that._properties.push(item) });
+                        Object.getOwnPropertyNames(currentObj).map(function(item){ if(!that._objProperties.includes(item)) that._objProperties.push(item) });
                     } while ((currentObj = Object.getPrototypeOf(currentObj)));
-                    for(var iM in this._properties){
-                        if(typeof(this._obin[this._properties[iM]]) == "function"){
-                            this._methods.push(this._properties[iM]);
+                    for(var iM in this._objProperties){
+                        if(typeof(this._obin[this._objProperties[iM]]) == "function"){
+                            this._methods.push(this._objProperties[iM]);
                         }
                     }
                     if(this._methods && this._methods.sort) this._methods = this._methods.sort();
+                    console.debug(this.name, "got methods", this._methods);
                 }catch(e) {
                     console.warn?.("Err on methods get",e);
                 }
@@ -317,14 +320,16 @@ class objMethodWidget {
                 this._function = null;
                 this._methods = [];
             }
+        }else{
+            console.debug(this.name, "empty data");
         }
         if(!this.widg_prop.options) this.widg_prop.options = {}; // reset widget options
         this.widg_prop.options.values = this._methods; // set widget options
 
-        this.updateInputsForMethod();
+        this.refreshMethodAndInputs();
     }
 
-    updateInputsForMethod() {
+    refreshMethodAndInputs() {
         // TODO fixthis :: property is not yet updated?
         var actVal = this.widg_prop.value; // this.properties.method
         if(actVal && this._obin && typeof this._obin[actVal] !== "undefined") {
@@ -347,6 +352,7 @@ class objMethodWidget {
             var actVal = this.widg_prop.value; // this.properties.method
             var r = this._obin.prototype[actVal].call(this._obin); */
 
+            // cycle inputs
             var params = Array(this._function.length);
             var names = LiteGraph.getParameterNames(this._function);
             for (var i = 0; i < names.length; ++i) {
@@ -356,6 +362,15 @@ class objMethodWidget {
                 }
             }
             this._params = names;
+
+            // check if method is a class constructor
+            if((this._function?.prototype?.constructor+"").startsWith("class")){
+                this._isClass = true;
+                this.inputs[2].name = "new";
+            }else{
+                this._isClass = false;
+                this.inputs[2].name = "execute";
+            }
 
         }else{
             console.debug?.("Invalid method",actVal);
@@ -371,18 +386,19 @@ class objMethodWidget {
 
     // objMethodWidget.prototype.onPropertyChanged = function(name, value, prev_value){
     //     console.debug?.("Property changed", name, value, prev_value)
-    //     this.updateInputsForMethod();
+    //     this.refreshMethodAndInputs();
     // }
 
     onWidgetChanged(name, value, prev_value) {
         console.debug?.("Widget changed", name, value, prev_value);
         // if changed, reset inputs
         if(this.properties.method !== value) {
-            for (var i = 3; i < this.inputs.length; ++i) {
-                this.removeInput(i);
+            const nInputs = this.inputs.length;
+            for (var i = 3; i < nInputs; ++i) {
+                this.removeInput(3); // not i
             }
         }
-        this.updateInputsForMethod();
+        this.refreshMethodAndInputs();
     }
 
     onAction(action) {
@@ -390,7 +406,7 @@ class objMethodWidget {
         // this.updateFromInput();
         if(action == "refresh") {
             this.updateFromInput();
-        }else if(action == "execute") {
+        }else if(action == "execute" || action == "new") {
             if(this._function && typeof(this._function) == "function") {
 
                 var parValues = [];
@@ -400,14 +416,25 @@ class objMethodWidget {
 
                 // call execute
                 console.debug?.("NodeObjMethod Execute",parValues);
-                var r = this._function(parValues); // this._function.apply(this, parValues);
-
-                this.triggerSlot(0);
-                this.setOutputData(2, r); // update method result
+                try{
+                    if(this._isClass){
+                        var r = new this._function(parValues); // this._function.apply(this, parValues);
+                    }else{
+                        var r = this._function(parValues); // this._function.apply(this, parValues);
+                    }
+                    this.triggerSlot(0);
+                    this.setOutputData(2, r); // update method result
+                    this.boxcolor = "#0F0";
+                }catch(e){
+                    console.warn("[NodeObjMethod]","execute error",e);
+                    this.boxcolor = "#F00";
+                }
             }else{
                 this.setOutputData(1, null);
                 this.setOutputData(2, null);
             }
+        }else{
+            console.debug(this.name, "unknown action", action);
         }
     }
 
@@ -498,10 +525,14 @@ class objEvalGlo {
             // }
             try {
                 this._func = new Function("DATA", "node", code_eval);
-                console.debug("Evaluated",code,this._func);
+                // console.debug("Evaluated",code,this._func);
+                this.title = (code+"").substring(0,33);
+                this.autoSize();
             } catch (err) {
                 console.error?.("Error parsing obj evaluation");
                 console.error?.(err);
+                this.title = "Eval ERR";
+                this.autoSize();
             }
         }
         return false;

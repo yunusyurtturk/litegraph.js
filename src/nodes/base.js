@@ -711,7 +711,11 @@ class Watch {
             str += "]";
             return str;
         } else {
-            return String(o);
+            try{
+                return String(o);
+            }catch(e){
+                return typeof(o);
+            }
         }
     }
 

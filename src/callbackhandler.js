@@ -11,7 +11,7 @@ export class CallbackHandler {
     constructor(ref){
         this.callbacks_handlers = {};
         this.ob_ref = ref;
-        if(this.debug&&LiteGraph!==undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks",ref);
+        if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks",ref);
     }
 
     /**
@@ -30,7 +30,7 @@ export class CallbackHandler {
         opts = Object.assign(def_opts, opts);
         
         if(typeof(callback)!=="function"){
-            if(this.debug&&LiteGraph!==undefined) LiteGraph.log_error("registerCallbackHandler","Invalid callback");
+            if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_error("registerCallbackHandler","Invalid callback");
             return false;
         }
 
@@ -39,7 +39,7 @@ export class CallbackHandler {
         }
         const h_id = this.callbacks_handlers[name].last_id++;
 
-        if(this.debug&&LiteGraph!==undefined) LiteGraph.log_debug("registerCallbackHandler","new callback handler",name,h_id);
+        if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler","new callback handler",name,h_id);
 
         this.callbacks_handlers[name].handlers.push({
             id: h_id,
@@ -51,7 +51,7 @@ export class CallbackHandler {
         // sort descending
         this.callbacks_handlers[name].handlers.sort((a, b) => b.priority - a.priority);
 
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
 
         return h_id; // return the cbhandle id
     };
@@ -62,11 +62,11 @@ export class CallbackHandler {
      * @returns {boolean} true if found
      */
     unregisterCallbackHandler(name, h_id){
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
         if(typeof(this.callbacks_handlers[name]) !== "undefined"){
             const nHandlers = this.callbacks_handlers[name].handlers.length;
             this.callbacks_handlers[name].handlers = this.callbacks_handlers[name].handlers.filter(function( obj ) {
-                // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
+                // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
                 if(obj.id === h_id){
                     LiteGraph.log_info("unregisterCallbackHandler",name,h_id);
                 }
@@ -100,7 +100,7 @@ export class CallbackHandler {
         opts = Object.assign(def_opts, opts);
         var cbHandle = this;
 
-        if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
+        if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("**processCallbackHandlers**",...arguments);
 
         // ensure callback name is present on this
         if(typeof(this.callbacks_handlers[name]) == "undefined"){
@@ -108,7 +108,7 @@ export class CallbackHandler {
         }
         
         var aArgs = ([].slice.call(arguments)).slice(2);
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
 
         // previous implementation of converting arguments
         // using shorter ([].slice.call(arguments)).slice(2)
@@ -202,13 +202,13 @@ export class CallbackHandler {
 
             // eventually prevent cb marked as default
             if(preventDefCb && cbhX.is_default){
-                if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("processCallbackHandlers","preventing default registered",cbhX);
+                if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers","preventing default registered",cbhX);
                 continue;
             }
             
             // execute default if already processed the ones >= 0
             if(cbhX.priority<0 && !defCbChecked){
-                if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
+                if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers","process default passed","nextCb:",cbhX);
                 executeDefaultCb();
                 if(breakCycle) break;
             }
@@ -227,16 +227,16 @@ export class CallbackHandler {
             // call method on ref object (LiteGraph, LGraphNode, LGraphCanvas, ...) in the method `this` will than correctly set
             stepRet = cbhX.callback.call(this.ob_ref, oCbInfo, ...aArgs);
 
-            if(this.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
+            if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers","callback executed",stepRet,oCbInfo);
             
             // push result
             checkStepRet();
-            if(this.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","result checked","cbRet", cbRet,"aResChain", aResChain,"cbResPriority", cbResPriority,"defCbChecked", defCbChecked,"preventDefCb", preventDefCb,"breakCycle", breakCycle);
+            if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers","result checked","cbRet", cbRet,"aResChain", aResChain,"cbResPriority", cbResPriority,"defCbChecked", defCbChecked,"preventDefCb", preventDefCb,"breakCycle", breakCycle);
             if(breakCycle) break;
 
             if(cbhX.data.call_once){
                 this.unregisterCallbackHandler(name, cbhX.id);
-                if(this.debug&&LiteGraph!==undefined) LiteGraph.log_debug("processCallbackHandlers","unregistered call_once",oCbInfo);
+                if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers","unregistered call_once",oCbInfo);
             }
 
         } // end cycle

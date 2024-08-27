@@ -202,6 +202,13 @@ export class LGraph {
         this.list_of_graphcanvas.splice(pos, 1);
     }
 
+    getCanvas(){
+        if (!this.list_of_graphcanvas) {
+            return;
+        }
+        return this.list_of_graphcanvas[0];
+    }
+
     /**
      * Starts running this graph every interval milliseconds.
      * @method start

@@ -204,6 +204,7 @@ export class LiteGraphClass {
     reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
 
     properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
+    properties_allow_output_binding = false; // [true!] allow create and bind outputs, will update output slots when node executed 
 
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
@@ -624,6 +625,26 @@ export class LiteGraphClass {
         return classObj;
     }
 
+    wrapObjectAsNodeCollection(obj, objectNameId){
+        if(typeof(obj)!=="object"){ // && typeof(obj)!=="function"){
+            return;
+        }
+        const propsDescr = Object.getOwnPropertyDescriptors(obj);
+        Object.keys(propsDescr).forEach((propertyName) => {
+            console.debug("cyclingProps", objectNameId, propertyName, obj, typeof(obj[propertyName]));
+            if(typeof(obj[propertyName])=="function"){
+                // .arguments
+                try{
+                    console.info("**",obj[propertyName]["arguments"]);
+                }catch(e){
+                    
+                }
+                this.wrapFunctionAsNode(objectNameId+"/"+propertyName, obj[propertyName]);
+            }else{
+                // GETTER SETTER
+            }
+        });
+    }
 
     /**
      * Removes all previously registered node's types

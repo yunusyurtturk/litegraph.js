@@ -60,4 +60,5 @@ LiteGraph.use_deferred_actions = false; // disabling deferred
 LiteGraph.reprocess_slot_while_node_configure = true;
 
 LiteGraph.properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 
+LiteGraph.properties_allow_output_binding = true; // [true!] allow create and bind outputs, will update output slots when node executed 
 

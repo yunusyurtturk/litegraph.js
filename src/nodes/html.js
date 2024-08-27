@@ -8,13 +8,14 @@ import { LiteGraph } from "../litegraph.js";
 function nodeEmpower_htmlElement(nodeX){
     nodeX.htmlCreateElement = (function(){
         if(this._added) return;
-        if(typeof(graphcanvas)!=="undefined" && graphcanvas){
+        const myGCanvas = this.graph?.getCanvas();
+        if(myGCanvas){
             const htEl = document.createElement("div");
             this._el = htEl;
             this._el.classList.add('lg-html-element');
             this._el.style.position = "absolute";
             // this._el.style.pointerEvents = "";
-            graphcanvas.canvas?.parentNode?.appendChild(this._el);
+            myGCanvas.canvas?.parentNode?.appendChild(this._el);
             this._el_cont = document.createElement("div");
             this._el_cont.style.display = "flex";
             // this._el_cont.style.alignItems = "center";
@@ -28,8 +29,8 @@ function nodeEmpower_htmlElement(nodeX){
             this._el.appendChild(this._el_cont);
             this._added = true;
             this.htmlRefreshElement();
-            const htGraph = graphcanvas.graph;
-            graphcanvas.registerCallbackHandler("onOpenSubgraph",function(info, graph, prev_graph){
+            const htGraph = myGCanvas.graph;
+            myGCanvas.registerCallbackHandler("onOpenSubgraph",function(info, graph, prev_graph){
                // should hide or remove?
                 if(htGraph == graph){
                     console.debug("htmlEmpoweredNode","restore on onOpenSubgraph",this,graph);
@@ -40,7 +41,7 @@ function nodeEmpower_htmlElement(nodeX){
                     htEl.style.display = "none";
                 }
             });
-            graphcanvas.registerCallbackHandler("onCloseSubgraph",function(info, graph, prev_graph, subgraph_node){
+            myGCanvas.registerCallbackHandler("onCloseSubgraph",function(info, graph, prev_graph, subgraph_node){
                 // should restore hide or recreate? 
                 if(htGraph == graph){
                     console.debug("htmlEmpoweredNode","restore on onCloseSubgraph",this,graph);
@@ -61,16 +62,27 @@ function nodeEmpower_htmlElement(nodeX){
         }
         if(!this.pos) return;
         if(!this.size) return;
-        const absPos = graphcanvas.convertOffsetToCanvas(this.pos);
+        const myGCanvas = this.graph?.getCanvas();
+        if(!myGCanvas){
+            console.warn("htmlRefreshElement","has no graphcanvas",this);
+            return;
+        }
+        const absPos = myGCanvas.convertOffsetToCanvas(this.pos);
         this._el.style.left = absPos[0] +"px";
         this._el.style.top = (absPos[1]+this.getSlotsHeight()) +"px";
-        this._el.style.width = Math.round(this.size[0]*graphcanvas.ds.scale) +"px";
-        this._el.style.height = (Math.round(this.size[1]*graphcanvas.ds.scale)-this.getSlotsHeight()) +"px";
+        this._el.style.width = Math.round(this.size[0]*myGCanvas.ds.scale) +"px";
+        this._el.style.height = (Math.round(this.size[1]*myGCanvas.ds.scale)-this.getSlotsHeight()) +"px";
     }).bind(nodeX);
     nodeX.setHtml = function(html){
         this._html = html;
-        if(!this._el||!this._el_cont) this.htmlRefreshElement();
-        this._el_cont.innerHTML = this._html;
+        if( typeof(this._el)=="undefined"||typeof(this._el_cont)=="undefined"
+            || !this._el||!this._el_cont
+        ){
+            this.htmlRefreshElement();
+        }
+        if(typeof(this._el_cont)!=="undefined"){
+            this._el_cont.innerHTML = this._html;
+        }
     }
     nodeX.registerCallbackHandler("onConfigure",function(info){
         console.info("empoweredHtmlNode",this,"onConfigure",...arguments);
@@ -128,7 +140,7 @@ class HtmlNode {
     static desc = "Have html inside a node";
 
     constructor() {
-        this.addInput("html", "html");
+        this.addInput("html", "string,html", {param_bind: true});
         this.addOutput("element", "htmlelement");
         this.properties = { html: "" }; // scale_content: false
         this._added = false;
@@ -137,7 +149,7 @@ class HtmlNode {
     }
     refreshSlots(){
         this.htmlRefreshElement?.();
-        var sHtml = this.getInputData(0);
+        var sHtml = this.getInputOrProperty("html");
         if (sHtml) {
             try{
                 this.setHtml?.(sHtml); // this._html = sHtml;
@@ -219,12 +231,18 @@ function htmlJsonViewerHelper(json, collapsible=false) {
     };
     function createItem(key, value, type){
         var element = TEMPLATES.item.replace('%KEY%', key);
-        if(type == 'string') {
-            element = element.replace('%VALUE%', '"' + value + '"');
-        } else {
-            element = element.replace('%VALUE%', value);
+        try{
+            if(type == 'string') {
+                element = element.replace('%VALUE%', '"' + value + '"');
+            } else {
+                element = element.replace('%VALUE%', value);
+            }
+            element = element.replace('%TYPE%', type);
+        }catch(e){
+            console.warn("html createItem error", type, value, e);
+            element = element.replace('%VALUE%', "[ERR]");
+            element = element.replace('%TYPE%', type);
         }
-        element = element.replace('%TYPE%', type);
         return element;
     }
     function createCollapsibleItem(key, value, type, children){
@@ -238,20 +256,29 @@ function htmlJsonViewerHelper(json, collapsible=false) {
         element = element.replace('%CHILDREN%', children);
         return element;
     }
-    function handleChildren(key, value, type) {
+    function handleChildren(key, value, type, already_processed) {
+        if(!already_processed) already_processed = [];
         var html = '';
         for(var item in value) { 
             var _key = item,
                 _val = value[item];
-            html += handleItem(_key, _val);
+            if(typeof(_val)!=="object" || !already_processed.includes(_val)){
+                if(typeof(_val)=="object"){
+                    already_processed.push(_val);
+                }
+                html += handleItem(_key, _val, already_processed);
+            }else{
+                html += createItem(_key, "[OBJ_CYCLE]");
+            }
         }
         return createCollapsibleItem(key, value, type, html);
     }
 
-    function handleItem(key, value) {
+    function handleItem(key, value, already_processed) {
+        if(!already_processed) already_processed = [];
         var type = typeof value;
-        if(typeof value === 'object') {        
-            return handleChildren(key, value, type);
+        if(typeof value === 'object') {
+            return handleChildren(key, value, type, already_processed);
         }
         return createItem(key, value, type);
     }

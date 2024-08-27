@@ -47,6 +47,8 @@ export class ContextMenu {
     #bindEvents() {
         const root = this.root;
 
+        LiteGraph.log_info("**contextmenu**", "binding events on root", root, this);
+
         root.style.pointerEvents = "none";
         setTimeout(() => {
             root.style.pointerEvents = "auto";

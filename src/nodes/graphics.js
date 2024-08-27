@@ -187,6 +187,7 @@ class ColorPalette {
     constructor() {
         this.addInput("f", "number");
         this.addOutput("Color", "color");
+        this.addOutput("Hex", "string");
         this.properties = {
             colorA: "#444444",
             colorB: "#44AAFF",
@@ -199,16 +200,16 @@ class ColorPalette {
         var c = [];
 
         if (this.properties.colorA != null) {
-            c.push(hex2num(this.properties.colorA));
+            c.push(LiteGraph.hex2num(this.properties.colorA));
         }
         if (this.properties.colorB != null) {
-            c.push(hex2num(this.properties.colorB));
+            c.push(LiteGraph.hex2num(this.properties.colorB));
         }
         if (this.properties.colorC != null) {
-            c.push(hex2num(this.properties.colorC));
+            c.push(LiteGraph.hex2num(this.properties.colorC));
         }
         if (this.properties.colorD != null) {
-            c.push(hex2num(this.properties.colorD));
+            c.push(LiteGraph.hex2num(this.properties.colorD));
         }
 
         var f = this.getInputData(0);
@@ -250,8 +251,10 @@ class ColorPalette {
             result[i] /= 255;
         }
 
-        this.boxcolor = colorToString(result);
+        const hexColor = LiteGraph.colorToString(result);
+        this.boxcolor = hexColor;
         this.setOutputData(0, result);
+        this.setOutputData(1, hexColor);
     }
 }
 LiteGraph.registerNodeType("color/palette", ColorPalette);

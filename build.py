@@ -6,6 +6,8 @@ import re
 
 # ** CAREFUL THIS NOT A STANDARD BUILDER nor BUILD **
 
+# NEED FIX should exclude >>> "import  >> as being a string break the code ..
+
 # BUILDER v 0.31
 # will export .js bundled
 # will export .mini.js bundled
@@ -30,6 +32,10 @@ for arg in sys.argv:
         options["prettify"] = False
     if arg == "--update-version":
         options["update-version"] = True
+
+# not including
+# "./src/nodes/network_osc.js",
+# "./src/nodes/nodejs_only/nodejs_network.js",
 
 lib_js_files = [
     "./src/global.js",
@@ -65,7 +71,7 @@ lib_nodes_files = [
     "./src/nodes/audio.js",
     "./src/nodes/network.js",
     "./src/nodes/objects.js",
-    "./src/nodes/libraries.js",
+    # "./src/nodes/libraries.js",
     "./src/nodes/html.js",
 ]
 

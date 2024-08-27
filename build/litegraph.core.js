@@ -221,6 +221,7 @@ export class LiteGraphClass {
     reprocess_slot_while_node_configure = false; // reprocess inputs and output node slots comparing by name, will fix index changes, works on dynamics
 
     properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
+    properties_allow_output_binding = false; // [true!] allow create and bind outputs, will update output slots when node executed 
 
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
@@ -651,6 +652,26 @@ export class LiteGraphClass {
         return classObj;
     }
 
+    wrapObjectAsNodeCollection(obj, objectNameId) {
+        if (typeof(obj) !== "object") { // && typeof(obj)!=="function"){
+            return;
+        }
+        const propsDescr = Object.getOwnPropertyDescriptors(obj);
+        Object.keys(propsDescr).forEach((propertyName) => {
+            console.debug("cyclingProps", objectNameId, propertyName, obj, typeof(obj[propertyName]));
+            if (typeof(obj[propertyName]) == "function") {
+                // .arguments
+                try {
+                    console.info("**", obj[propertyName]["arguments"]);
+                } catch (e) {
+
+                }
+                this.wrapFunctionAsNode(objectNameId + "/" + propertyName, obj[propertyName]);
+            } else {
+                // GETTER SETTER
+            }
+        });
+    }
 
     /**
      * Removes all previously registered node's types
@@ -1318,7 +1339,7 @@ export class CallbackHandler {
     constructor(ref) {
         this.callbacks_handlers = {};
         this.ob_ref = ref;
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks", ref);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("CallbackHandler Initialize callbacks", ref);
     }
 
     /**
@@ -1341,7 +1362,7 @@ export class CallbackHandler {
         opts = Object.assign(def_opts, opts);
 
         if (typeof(callback) !== "function") {
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_error("registerCallbackHandler", "Invalid callback");
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_error("registerCallbackHandler", "Invalid callback");
             return false;
         }
 
@@ -1353,7 +1374,7 @@ export class CallbackHandler {
         }
         const h_id = this.callbacks_handlers[name].last_id++;
 
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler", "new callback handler", name, h_id);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("registerCallbackHandler", "new callback handler", name, h_id);
 
         this.callbacks_handlers[name].handlers.push({
             id: h_id,
@@ -1365,7 +1386,7 @@ export class CallbackHandler {
         // sort descending
         this.callbacks_handlers[name].handlers.sort((a, b) => b.priority - a.priority);
 
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("registerCallbackHandler","sorted",this.callbacks_handlers[name]);
 
         return h_id; // return the cbhandle id
     };
@@ -1376,11 +1397,11 @@ export class CallbackHandler {
      * @returns {boolean} true if found
      */
     unregisterCallbackHandler(name, h_id) {
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking in handlers",this.callbacks_handlers,name,h_id);
         if (typeof(this.callbacks_handlers[name]) !== "undefined") {
             const nHandlers = this.callbacks_handlers[name].handlers.length;
             this.callbacks_handlers[name].handlers = this.callbacks_handlers[name].handlers.filter(function(obj) {
-                // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
+                // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("unregisterCallbackHandler","Checking handle",obj.id,h_id);
                 if (obj.id === h_id) {
                     LiteGraph.log_info("unregisterCallbackHandler", name, h_id);
                 }
@@ -1414,7 +1435,7 @@ export class CallbackHandler {
         opts = Object.assign(def_opts, opts);
         var cbHandle = this;
 
-        if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("**processCallbackHandlers**", ...arguments);
+        if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("**processCallbackHandlers**", ...arguments);
 
         // ensure callback name is present on this
         if (typeof(this.callbacks_handlers[name]) == "undefined") {
@@ -1425,7 +1446,7 @@ export class CallbackHandler {
         }
 
         var aArgs = ([].slice.call(arguments)).slice(2);
-        // if(this.debug&&LiteGraph!==undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
+        // if (typeof(this)=="object" && typeof(this.debug)!=="undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("Cleaned arguments (slice 2)",aArgs,"original",arguments);
 
         // previous implementation of converting arguments
         // using shorter ([].slice.call(arguments)).slice(2)
@@ -1519,13 +1540,13 @@ export class CallbackHandler {
 
             // eventually prevent cb marked as default
             if (preventDefCb && cbhX.is_default) {
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "preventing default registered", cbhX);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "preventing default registered", cbhX);
                 continue;
             }
 
             // execute default if already processed the ones >= 0
             if (cbhX.priority < 0 && !defCbChecked) {
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "process default passed", "nextCb:", cbhX);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_verbose("processCallbackHandlers", "process default passed", "nextCb:", cbhX);
                 executeDefaultCb();
                 if (breakCycle) break;
             }
@@ -1548,16 +1569,16 @@ export class CallbackHandler {
             // call method on ref object (LiteGraph, LGraphNode, LGraphCanvas, ...) in the method `this` will than correctly set
             stepRet = cbhX.callback.call(this.ob_ref, oCbInfo, ...aArgs);
 
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "callback executed", stepRet, oCbInfo);
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "callback executed", stepRet, oCbInfo);
 
             // push result
             checkStepRet();
-            if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "result checked", "cbRet", cbRet, "aResChain", aResChain, "cbResPriority", cbResPriority, "defCbChecked", defCbChecked, "preventDefCb", preventDefCb, "breakCycle", breakCycle);
+            if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "result checked", "cbRet", cbRet, "aResChain", aResChain, "cbResPriority", cbResPriority, "defCbChecked", defCbChecked, "preventDefCb", preventDefCb, "breakCycle", breakCycle);
             if (breakCycle) break;
 
             if (cbhX.data.call_once) {
                 this.unregisterCallbackHandler(name, cbhX.id);
-                if (this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "unregistered call_once", oCbInfo);
+                if (typeof(this) == "object" && typeof(this.debug) !== "undefined" && this.debug && LiteGraph !== undefined) LiteGraph.log_debug("processCallbackHandlers", "unregistered call_once", oCbInfo);
             }
 
         } // end cycle
@@ -1625,6 +1646,8 @@ export class ContextMenu {
 
     #bindEvents() {
         const root = this.root;
+
+        LiteGraph.log_info("**contextmenu**", "binding events on root", root, this);
 
         root.style.pointerEvents = "none";
         setTimeout(() => {
@@ -2798,6 +2821,13 @@ export class LGraph {
         // graphcanvas.graph = null; // ?!
         LiteGraph.log_debug("lgraph", "detachCanvas", pos, this.list_of_graphcanvas, this);
         this.list_of_graphcanvas.splice(pos, 1);
+    }
+
+    getCanvas() {
+        if (!this.list_of_graphcanvas) {
+            return;
+        }
+        return this.list_of_graphcanvas[0];
     }
 
     /**
@@ -4965,6 +4995,7 @@ export class LGraphCanvas {
         }
 
         if (!skip_events) {
+
             this.bindEvents();
         }
     }
@@ -4994,6 +5025,8 @@ export class LGraphCanvas {
         var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document; // multiwindows
+
+        LiteGraph.log_info("[lgraphcanvas]", "BINDing events", canvas, document);
 
         // Pointer
         this._mousedown_callback = this.processMouseDown.bind(this);
@@ -5031,6 +5064,8 @@ export class LGraphCanvas {
         var canvas = this.canvas;
         var ref_window = this.getCanvasWindow();
         var document = ref_window.document;
+
+        LiteGraph.log_info("[lgraphcanvas]", "UNbinding events", canvas, document);
 
         // Pointer
         canvas.removeEventListener("pointerdown", this._mousedown_callback); //, true);
@@ -6149,8 +6184,10 @@ export class LGraphCanvas {
         if (this.set_canvas_dirty_on_mouse_event)
             this.dirty_canvas = true;
 
-        if (!this.graph)
+        if (!this.graph) {
+            LiteGraph.log_warn("lgraphcanvas", "processMouseUp", "has not graph", this);
             return;
+        }
 
         var window = this.getCanvasWindow();
         var document = window.document;
@@ -6158,7 +6195,7 @@ export class LGraphCanvas {
 
         // restore the mousemove event back to the canvas
         if (!this.options.skip_events) {
-            LiteGraph.log_verbose("pointerevents: processMouseUp adjustEventListener");
+            LiteGraph.log_verbose("pointerevents: processMouseUp restoreEventListener");
             document.removeEventListener("pointermove", this._mousemove_callback, true);
             this.canvas.addEventListener("pointermove", this._mousemove_callback);
             document.removeEventListener("pointerup", this._mouseup_callback, true);
@@ -6175,7 +6212,7 @@ export class LGraphCanvas {
             this.block_click = false; // used to avoid sending twice a click in a immediate button
         }
 
-        LiteGraph.log_verbose("pointerevents: processMouseUp which: " + e.which);
+        LiteGraph.log_debug("pointerevents: processMouseUp which: " + e.which);
 
         if (e.which == 1) {
 
@@ -8712,8 +8749,13 @@ export class LGraphCanvas {
             text = String(data);
         else if (data.toToolTip)
             text = data.toToolTip();
-        else
-            text = "[" + data.constructor.name + "]";
+        else {
+            try {
+                text = "[" + data.constructor.name + "]";
+            } catch (e) {
+                text = "[" + typeof(data) + "]";
+            }
+        }
 
         if (text == null)
             return;
@@ -9957,6 +9999,7 @@ export class LGraphCanvas {
                             );
                         this.dirty_canvas = true;
                         break;
+                    case "boolean":
                     case "toggle":
                         if (event.type == "pointerdown") {
                             w.value = !w.value;
@@ -10740,6 +10783,9 @@ export class LGraphCanvas {
                 value = JSON.stringify(value);
             let info = node.getPropertyInfo(i);
             let info_type = info && info !== null ? info.type : "string";
+            let readonly = info && info !== null ? (info.readonly ? true : false) : false;
+            let prevent_input_bind = info && info !== null ? (info.prevent_input_bind ? true : false) : false;
+            let prevent_output_bind = info && info !== null ? (info.prevent_output_bind ? true : false) : false;
             let propName = info && info !== null && info.label ? info.label : i;
 
             // parse combo
@@ -10759,7 +10805,7 @@ export class LGraphCanvas {
             let callbacks_on_element_created = []; // can pass in element construction function
 
             // allow property binding
-            if (LiteGraph.properties_allow_input_binding) {
+            if (!prevent_input_bind && !readonly && LiteGraph.properties_allow_input_binding) {
                 let relSlotOb = node.findInputSlot(propName, true);
                 let hasSlotByName = relSlotOb !== -1;
                 let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
@@ -10772,22 +10818,22 @@ export class LGraphCanvas {
                         :
                         (hasSlotByName ?
                             "<span class='property_input_exist'>" +
-                            "<input type='button' class='btn_confirm btn_bind_property_to_input' value='link input' />" +
+                            "<input type='button' class='btn_bind_in btn_bind_property_to_input' value='link input' />" +
                             "</span>" :
                             "<span class=''>" +
-                            "<input type='button' class='btn_confirm btn_bind_property_to_input' value='create input' />" +
+                            "<input type='button' class='btn_bind_in btn_bind_property_to_input' value='create input' />" +
                             "</span>"
                         )
                     ) +
                     "</span>";
                 callbacks_on_element_created.push(function(el, menu) {
                     LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "calling callback_on_element_created", propName, el, slotBinded, relSlotOb);
-                    let btnConfirm = el.querySelector('.btn_confirm');
+                    let btnConfirm = el.querySelector('.btn_bind_in');
                     if (!btnConfirm) {
                         el.disabled = "disabled";
-                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_confirm not found", propName, el);
+                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_bind_in not found", propName, el);
                     } else {
-                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_confirm binding!", btnConfirm, propName);
+                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", ".btn_bind_in binding!", btnConfirm, propName);
                         btnConfirm.addEventListener("click", function(ev) {
                             relSlotOb = node.findInputSlot(propName, true);
                             hasSlotByName = relSlotOb !== -1;
@@ -10807,6 +10853,61 @@ export class LGraphCanvas {
                                 menu.close?.(ev, true);
                             } else {
                                 LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "callback_on_element_created", "properties_allow_input_binding", "btnConfirm", "Property already binded", relSlotOb, propName);
+                            }
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        });
+                    }
+                });
+            }
+            if (!prevent_output_bind && LiteGraph.properties_allow_output_binding) {
+                let relSlotOb = node.findOutputSlot(propName, true);
+                let hasSlotByName = relSlotOb !== -1;
+                let slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                htmlEntry += "<span class='property_output_bind'>" +
+                    (slotBinded
+                        // output exists and is binded
+                        ?
+                        "<span class='property_output_binded'>linked</span>"
+                        // output is not binded or does not exist
+                        :
+                        (hasSlotByName ?
+                            "<span class='property_output_exist'>" +
+                            "<input type='button' class='btn_bind_out btn_bind_property_to_output' value='link output' />" +
+                            "</span>" :
+                            "<span class=''>" +
+                            "<input type='button' class='btn_bind_out btn_bind_property_to_output' value='create output' />" +
+                            "</span>"
+                        )
+                    ) +
+                    "</span>";
+                callbacks_on_element_created.push(function(el, menu) {
+                    LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output calling callback_on_element_created", propName, el, slotBinded, relSlotOb);
+                    let btnConfirm = el.querySelector('.btn_bind_out');
+                    if (!btnConfirm) {
+                        el.disabled = "disabled";
+                        LiteGraph.log_warn("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output .btn_bind_out not found", propName, el);
+                    } else {
+                        LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output .btn_bind_out binding!", btnConfirm, propName);
+                        btnConfirm.addEventListener("click", function(ev) {
+                            relSlotOb = node.findOutputSlot(propName, true);
+                            hasSlotByName = relSlotOb !== -1;
+                            slotBinded = hasSlotByName ? relSlotOb.param_bind : false;
+                            if (!slotBinded) {
+                                if (!hasSlotByName) {
+                                    LiteGraph.log_info("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "CREATING NEW OUTPUT ON NODE", relSlotOb, propName);
+                                    // propName
+                                    node.addOutput(propName, info_type, {
+                                        removable: true,
+                                        nameLocked: true
+                                    });
+                                    relSlotOb = node.findOutputSlot(propName, true);
+                                }
+                                LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "Linking property to output", relSlotOb);
+                                relSlotOb.param_bind = true;
+                                menu.close?.(ev, true);
+                            } else {
+                                LiteGraph.log_debug("lgraphcanvas", "showLinkMenu", "onShowMenuNodeProperties", "output callback_on_element_created", "properties_allow_output_binding", "btnConfirm", "Property already binded", relSlotOb, propName);
                             }
                             ev.preventDefault();
                             ev.stopPropagation();
@@ -10871,7 +10972,8 @@ export class LGraphCanvas {
             entries.push({
                 content: htmlEntry,
                 value: i,
-                callbacks_on_element_created: callbacks_on_element_created
+                callbacks_on_element_created: callbacks_on_element_created,
+                readonly: readonly
             });
         }
         if (!entries.length) {
@@ -10890,15 +10992,18 @@ export class LGraphCanvas {
         );
 
         function inner_clicked(v, options, event, parent_menu, rel_node) {
-            LiteGraph.log_debug("lgraphcanvas", "onShowMenuNodeProperties", "inncer_clicked", this, ...arguments);
+            LiteGraph.log_debug("lgraphcanvas", "onShowMenuNodeProperties", "inner_clicked", this, ...arguments);
             if (!node) {
                 return;
             }
+            console.warn("**showeditproperty**", v, options);
             if (!this.disabled && !v.disabled) {
-                var rect = this.getBoundingClientRect();
-                canvas.showEditPropertyValue(node, v.value, {
-                    position: [rect.left, rect.top]
-                });
+                if (!v.readonly) {
+                    var rect = this.getBoundingClientRect();
+                    canvas.showEditPropertyValue(node, v.value, {
+                        position: [rect.left, rect.top]
+                    });
+                }
             }
         }
 
@@ -11760,6 +11865,10 @@ export class LGraphCanvas {
 
         function select(name) {
             if (name) {
+                if (!that || typeof(that) !== "object" || typeof(that.processCallbackHandlers) == "undefined") {
+                    LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "that reference is wrong", that, dialog, this, options);
+                    return;
+                }
                 let r = that.processCallbackHandlers("onSearchBoxSelection", {
                     def_cb: that.onSearchBoxSelection
                 }, name, event, graphcanvas);
@@ -14478,7 +14587,7 @@ export class LGraphNode {
 
         let ob_input = this.inputs[slot];
         let link_id = ob_input.link;
-        let link = this.graph.links[link_id];
+        let link = this.graph?.links[link_id];
         if (!link) {
             // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "getInputData", "No link", link_id, slot, this);
             return null;
@@ -14890,6 +14999,11 @@ export class LGraphNode {
             this.graph.nodes_executedAction[this.id] = options.action_call;
         }
 
+        // update output slot binded to properties
+        if (LiteGraph.properties_allow_output_binding) {
+            this.doUpdateBindedOutputProperties();
+        }
+
         this.execute_triggered = 2; // helper to draw currently executing, the nFrames it will be used (-- each step), means "how old" is the event
 
         this.processCallbackHandlers("onAfterExecuteNode", {
@@ -15125,14 +15239,32 @@ export class LGraphNode {
         let thisNode = this;
         this.inputs.forEach((ob_input) => {
             if (ob_input.param_bind) {
-                LiteGraph.log_debug("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
+                LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
                 if (thisNode.properties && typeof(thisNode.properties[ob_input.name]) !== "undefined") {
                     let inputData = thisNode.getInputData(ob_input.name);
-                    // thisNode.properties[ob_input.name] = link.data;
-                    LiteGraph.log_debug("lgraphnode", "doUpdateBindedInputProperties", "update value", ob_input.name, inputData, thisNode);
-                    this.setProperty(ob_input.name, inputData);
+                    if (inputData !== null) {
+                        // thisNode.properties[ob_input.name] = link.data;
+                        LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "update value", ob_input.name, inputData, thisNode);
+                        this.setProperty(ob_input.name, inputData);
+                    }
                 } else {
-                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedInputProperties", "inexisting property", ob_input.name, inputData, thisNode);
+                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedInputProperties", "inexisting property", ob_input.name, thisNode);
+                }
+            }
+        });
+    }
+
+    doUpdateBindedOutputProperties() {
+        let thisNode = this;
+        this.outputs.forEach((ob_output) => {
+            if (ob_output.param_bind) {
+                LiteGraph.log_verbose("lgraphnode", "doUpdateBindedOutputProperties", "has bind", ob_output, thisNode);
+                if (thisNode.properties && typeof(thisNode.properties[ob_output.name]) !== "undefined") {
+                    let propertyData = this.properties[ob_output.name];
+                    LiteGraph.log_verbose("lgraphnode", "doUpdateBindedOutputProperties", "update value", ob_output.name, propertyData, thisNode);
+                    this.setOutputData(ob_output.name, propertyData);
+                } else {
+                    LiteGraph.log_warn("lgraphnode", "doUpdateBindedOutputProperties", "inexisting property", ob_output.name, outputData, thisNode);
                 }
             }
         });
