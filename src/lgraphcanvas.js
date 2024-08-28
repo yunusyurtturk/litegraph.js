@@ -5303,7 +5303,7 @@ export class LGraphCanvas {
                                 if ( w.options.max != null && w.value > w.options.max ) {
                                     w.value = w.options.max;
                                 }
-                            } else if (delta) { // clicked in arrow, used for combos
+                            } else if (delta) { // clicked on arrow, used for combos
                                 var index = -1;
                                 this.last_mouseclick = 0; // avoids double click event
                                 if(values.constructor === Object)
@@ -5318,20 +5318,50 @@ export class LGraphCanvas {
                                 }
                                 if( values.constructor === Array )
                                     w.value = values[index];
-                                else
-                                    w.value = index;
+                                else{
+                                    // combo arrow
+                                    console.debug("ARROW_ComboOrOtherWidget","clickCHECK",w,index,values);
+                                    if(values != values_list){
+                                        w.value = Object.keys(values)[index];
+                                    }else{
+                                        w.value = index;
+                                    }
+                                }
                             } else { // combo clicked
-                                var text_values = values != values_list ? Object.values(values) : values;
-                                let inner_clicked = function(v) {
-                                    if(values != values_list)
-                                        v = text_values.indexOf(v);
-                                    this.value = v;
-                                    inner_value_change(this, v, old_value);
+                                // var text_values = values != values_list ? Object.values(values) : values;
+                                var entries = [];
+                                if(values != values_list){
+                                    Object.keys(values).forEach((element) => {
+                                        entries.push({ value: element, content: values[element] });
+                                    });
+                                }else{
+                                    // using simple
+                                    entries = values;
+                                }
+                                console.debug("ComboOrOtherWidget","filling from",values,"to",entries);
+                                let inner_clicked = function(v, cnv, node, pos, event, value_original) {
+                                    console.debug("ComboOrOtherWidget","inner_clicked",...arguments);
+                                    console.debug("ComboOrOtherWidget","inner_clicked",v,entries,values,values_list,"old_value",old_value);
+                                    if(typeof v == "object" && typeof v.value !== "undefined"){
+                                        console.debug("ComboOrOtherWidget","inner_clicked","using object key value",v);
+                                        this.value = v.value;
+                                        inner_value_change(this, v.value, old_value);
+                                    }else{
+                                        // if(values != values_list){
+                                        //     console.debug("ComboOrOtherWidget","inner_clicked","value from key?",v,);
+                                        //     // using simples
+                                        //     v = entries.indexOf(v);
+                                        // }
+                                        console.debug("ComboOrOtherWidget","inner_clicked","using simple",v);
+                                        // using simples
+                                        this.value = v;
+                                        inner_value_change(this, v, old_value);
+                                    }
                                     that.dirty_canvas = true;
                                     return false;
                                 }
                                 LiteGraph.ContextMenu(
-                                    text_values, {
+                                    entries, {
                                         scale: Math.max(1, this.ds.scale),
                                         event: event,
                                         className: "dark",
@@ -5405,6 +5435,7 @@ export class LGraphCanvas {
 
         function inner_value_change(widget, value, old_value) {
             LiteGraph.log_debug("inner_value_change for processNodeWidgets",widget,value);
+            const value_original = value;
             // value changed
             if( old_value != w.value ) {
                 node.processCallbackHandlers("onWidgetChanged",{
@@ -5421,7 +5452,7 @@ export class LGraphCanvas {
                 node.setProperty( widget.options.property, value );
             }
             if (widget.callback) {
-                widget.callback(widget.value, that, node, pos, event);
+                widget.callback(widget.value, that, node, pos, event, value_original);
             }
         }
 

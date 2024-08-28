@@ -1,5 +1,6 @@
 import { LiteGraph } from "./litegraph.js";
 import { CallbackHandler } from "./callbackhandler.js";
+import { LGraphNode } from "./lgraphnode.js";
 
 /**
  * extracted from base nodes
@@ -110,6 +111,7 @@ export class Subgraph {
             for (let i = 0; i < this.outputs.length; i++) {
                 let output = this.outputs[i];
                 let value = this.subgraph.getOutputData(output.name);
+                LiteGraph.log_verbose("subgraph","onExecute","outputDataSet", i, value);
                 this.setOutputData(i, value);
             }
         }
@@ -768,6 +770,7 @@ export class GraphOutput {
 
     onExecute() {
         this._value = this.getInputData(0);
+        // setting graph output by name
         this.graph.setOutputData(this.properties.name, this._value);
     }
 
@@ -802,3 +805,138 @@ export class GraphOutput {
 // LiteGraph.registerNodeType("graph/subgraph", Subgraph);
 // LiteGraph.registerNodeType("graph/input", GraphInput);
 // LiteGraph.registerNodeType("graph/output", GraphOutput);
+
+export class NodeFunction extends LGraphNode {
+
+    static title = "NodeFunction";
+    static desc = "Subgraph as function";
+
+    constructor() {
+        // this.size = [140, 80];
+        // this.properties = { subgraph: null };
+        // this.enabled = true;
+        super(...arguments);
+        this._subgraph = null;
+        this._linking = false;
+        this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event){
+            console.debug("SUBGRAPHLINK", ...arguments);
+            if(node._linking){
+                node._linking = false;
+                widget.name = "subgraph_link";
+            }else{
+                node._linking = true;
+                widget.name = "click on subgraph";
+            }
+        });
+        this.addWidget("button", "refresh", null, this.refreshFunctions);
+        this.addWidget("button", "CALL", null, this.btnExecute);
+        this._wCombo = this.addWidget("combo", "functions", "", this.functionChange, {values: []});
+        this._subMap = [];
+        this._subGFuncNode = null;
+    }
+
+    btnExecute(value, canvas, node, pos, event, value_second){
+        console.error("SELFEXECUTE", this, ...arguments);
+        node.doExecute();
+    }
+
+    functionChange(value, canvas, node, pos, event, value_second){
+        console.error("FUNCTIONCHANGE", "this", this);
+        console.error("FUNCTIONCHANGE", "arguments", ...arguments);
+        console.error("FUNCTIONCHANGE", "node", node);
+        node.setFunction(null, canvas, node, pos, event);
+    }
+
+    refreshFunctions(widget, canvas, node, pos, event){
+        const aSubgraphs = node.graph?.findNodesByClass(Subgraph);
+        console.debug("NODEFUNCTION refreshFunctions", node, aSubgraphs, node._wCombo);
+        node._wCombo.options.values = {};
+        node._subMap = [];
+        if(aSubgraphs && aSubgraphs.length){
+            aSubgraphs.forEach(element => {
+                // using array
+                // node._wCombo.options.values.push(element.title);
+                // using object
+                node._wCombo.options.values[element.id] = element.title;
+                node._subMap.push(element.id);
+            });
+        }else{
+            // empty
+        }
+    }
+
+    setFunction(widget, canvas, node, pos, event){
+        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
+        const subGFuncNode = node.graph.getNodeById(node._wCombo.value);
+        if(subGFuncNode){
+            this._subGFuncNode = subGFuncNode;
+            console.error("NODEFUNCTION CALL", "this?", this);
+            node.refreshSlots(this._subGFuncNode);
+        }else{
+            console.error("NODEFUNCTION CALL", "nodeNotFound", node._wCombo.value);
+        }
+    }
+
+    refreshSlots(nodeFrom){
+        // const nodeFrom = this._subGFuncNode;
+        console.debug("REFRESHSLOTS",this);
+        if(nodeFrom !== undefined && nodeFrom !== null && nodeFrom){
+            this.inputs = LiteGraph.cloneObject(nodeFrom.inputs) ?? [];
+            this.inputs.forEach((element, index) => {
+                element.links = [];
+            });
+            this.outputs = LiteGraph.cloneObject(nodeFrom.outputs) ?? [];
+            this.outputs.forEach((element, index) => {
+                element.links = [];
+            });
+            this.autoSize();
+        }else{
+            this.inputs = [];
+            this.outputs = [];
+        }
+        this.bindEvents();
+    }
+
+    bindEvents(){
+        const nodeFrom = this._subGFuncNode;
+        const thisFNode = this;
+        console.debug("BINDEVENTS", this);
+        if(nodeFrom !== undefined && nodeFrom !== null && nodeFrom){
+            this.onExecute = function(){
+                console.debug("NODEFUNCTION executing", this);
+                // should execute subgraph passing right values
+                this.inputs.forEach((element, index) => {
+                    const iVal = this.getInputData(index);
+                    nodeFrom.inputs[index].hard_coded_value = iVal;
+                    console.debug("read and set input data", index, iVal);
+                });
+                // --
+                console.debug("execute function node", nodeFrom);
+                nodeFrom.doExecute();
+                // --
+                this.outputs.forEach((element, index) => {
+                    // nodeFrom.outputs[index].hard_coded_value ?
+                    const oVal = nodeFrom.getOutputData(index);
+                    // BAD // set to related graph output
+                    // BAD nodeFrom.graph.setOutputData(element.name, oVal);
+                    // BAD console.debug("read and set graph output data", index, element, oVal);
+                    // set to node output, not enough ?
+                    this.setOutputData(index, oVal);
+                    console.debug("read and set output node data", index, oVal);
+                });
+                // --
+                // than clean inputs
+                this.inputs.forEach((element, index) => {
+                    delete(nodeFrom.inputs[index].hard_coded_value);
+                    console.debug("clean hard coded input data", index);
+                });
+            }
+        }else{
+            this.onExecute = function(){
+                // no action
+                console.debug("NODEFUNCTION has no functionset", this);
+            }
+        }
+    }
+
+}

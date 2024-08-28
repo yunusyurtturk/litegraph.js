@@ -511,6 +511,12 @@ export class LGraphNode {
         }
 
         let ob_input = this.inputs[slot];
+
+        if(typeof(ob_input.hard_coded_value)!="undefined"){
+            console.debug("HARD_CODED_INPUT", this, ob_input, ob_input.hard_coded_value);
+            return ob_input.hard_coded_value;
+        }
+
         let link_id = ob_input.link;
         let link = this.graph?.links[link_id];
         if (!link) {
@@ -874,7 +880,7 @@ export class LGraphNode {
         // enable this to give the event an ID
         options.action_call ??= `${this.id}_exec_${LiteGraph.uuidv4()}`; // TODO replace all ath.floor(Math.random()*9999) by LiteGraph.uuidv4
 
-        if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
+        if (this.graph?.nodes_executing && this.graph?.nodes_executing[this.id]) {
             LiteGraph.log_debug("lgraphNODE", "doExecute", "already executing! Prevent! "+this.id+":"+this.order);
             return;
         }

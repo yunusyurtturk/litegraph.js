@@ -3,7 +3,7 @@ import { LGraph } from "./lgraph.js";
 import { LGraphNode } from "./lgraphnode.js";
 import { LGraphGroup } from "./lgraphgroup.js";
 import { LGraphCanvas } from "./lgraphcanvas.js";
-import { Subgraph, GraphInput, GraphOutput } from "./subgraph.js";
+import { Subgraph, GraphInput, GraphOutput, NodeFunction } from "./subgraph.js";
 import { DragAndScale } from "./dragandscale.js";
 import { ContextMenu } from "./contextmenu.js";
 import { CallbackHandler } from "./callbackhandler.js";
@@ -245,6 +245,7 @@ export class LiteGraphClass {
         this.registerNodeType("graph/subgraph", Subgraph);
         this.registerNodeType("graph/input", GraphInput);
         this.registerNodeType("graph/output", GraphOutput);
+        this.registerNodeType("graph/function", NodeFunction);
     }
 
     callbackhandler_setup(){
