@@ -828,14 +828,15 @@ export class NodeFunction extends LGraphNode {
                 widget.name = "click on subgraph";
             }
         });
-        this.addWidget("button", "refresh", null, this.refreshFunctions);
-        this.addWidget("button", "CALL", null, this.btnExecute);
-        this._wCombo = this.addWidget("combo", "functions", "", this.functionChange, {values: []});
+        this.addWidget("button", "refresh", null, this.refreshFunctions_byEvent);
+        this.addWidget("button", "CALL", null, this.onBtnExecute);
+        this._wCombo = this.addWidget("combo", "functions", this.functionChange, {values: []});
         this._subMap = [];
         this._subGFuncNode = null;
+        this.properties = {func_subgraph_id: null};
     }
 
-    btnExecute(value, canvas, node, pos, event, value_second){
+    onBtnExecute(value, canvas, node, pos, event, value_second){
         console.error("SELFEXECUTE", this, ...arguments);
         node.doExecute();
     }
@@ -844,53 +845,104 @@ export class NodeFunction extends LGraphNode {
         console.error("FUNCTIONCHANGE", "this", this);
         console.error("FUNCTIONCHANGE", "arguments", ...arguments);
         console.error("FUNCTIONCHANGE", "node", node);
-        node.setFunction(null, canvas, node, pos, event);
+        node.btnSetFunction(null, canvas, node, pos, event);
     }
 
-    refreshFunctions(widget, canvas, node, pos, event){
-        const aSubgraphs = node.graph?.findNodesByClass(Subgraph);
-        console.debug("NODEFUNCTION refreshFunctions", node, aSubgraphs, node._wCombo);
-        node._wCombo.options.values = {};
-        node._subMap = [];
+    onConfigure(){
+        this.ensureSubFunction();
+    }
+
+    // SETTING initial onExecute: will override when setting a proper function
+    // eg. in a node.js env there will be no add and no chance to check if related node has already been added before this
+    onExecute(){
+        this.ensureSubFunction();
+    }
+
+    onAdded(){
+        if(this.properties["func_subgraph_id"] !== null && this.properties["func_subgraph_id"] !== undefined){
+            this._wCombo.value = this.properties["func_subgraph_id"];
+        }
+        this.refreshFunctions();
+    }
+
+    refreshFunctions_byEvent(widget, canvas, node, pos, event){
+        node.refreshFunctions.bind(node);
+    }
+    refreshFunctions(){
+        const aSubgraphs = this.graph?.findNodesByClass(Subgraph);
+        console.debug("NODEFUNCTION refreshFunctions", this, aSubgraphs, this._wCombo);
+        this._wCombo.options.values = {};
+        this._subMap = [];
         if(aSubgraphs && aSubgraphs.length){
             aSubgraphs.forEach(element => {
                 // using array
-                // node._wCombo.options.values.push(element.title);
+                // this._wCombo.options.values.push(element.title);
                 // using object
-                node._wCombo.options.values[element.id] = element.title;
-                node._subMap.push(element.id);
+                this._wCombo.options.values[element.id] = element.title;
+                this._subMap.push(element.id);
+                if(this.properties["func_subgraph_id"] === element.id){
+                    this._wCombo.value = element.id;
+                }
             });
         }else{
             // empty
         }
     }
 
-    setFunction(widget, canvas, node, pos, event){
-        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
-        const subGFuncNode = node.graph.getNodeById(node._wCombo.value);
-        if(subGFuncNode){
-            this._subGFuncNode = subGFuncNode;
-            console.error("NODEFUNCTION CALL", "this?", this);
-            node.refreshSlots(this._subGFuncNode);
-        }else{
-            console.error("NODEFUNCTION CALL", "nodeNotFound", node._wCombo.value);
+    ensureSubFunction(){
+        if(!this._subGFuncNode){
+            if(this.properties["func_subgraph_id"] !== null && this.properties["func_subgraph_id"] !== undefined){
+                // this.refreshFunctions();
+                this.lookForFuncNodeById(this.properties["func_subgraph_id"]);
+                this.refreshFunctions();
+            }
         }
     }
 
-    refreshSlots(nodeFrom){
+    lookForFuncNodeById(nId){
+        const subGFuncNode = this.graph.getNodeById(nId);
+        if(subGFuncNode){
+            console.error("NODEFUNCTION CALL", "this?", this);
+            this.updateSubFunction(subGFuncNode);
+        }else{
+            console.error("NODEFUNCTION CALL", "nodeNotFound", nId);
+            this.updateSubFunction(false);
+        }
+    }
+
+    btnSetFunction(widget, canvas, node, pos, event){
+        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
+        this.lookForFuncNodeById(node._wCombo.value);
+    }
+
+    updateSubFunction(nodeFrom){
+        // const nodeFrom = this._subGFuncNode;
+        this._subGFuncNode = nodeFrom;
         // const nodeFrom = this._subGFuncNode;
         console.debug("REFRESHSLOTS",this);
         if(nodeFrom !== undefined && nodeFrom !== null && nodeFrom){
-            this.inputs = LiteGraph.cloneObject(nodeFrom.inputs) ?? [];
-            this.inputs.forEach((element, index) => {
-                element.links = [];
+            this.properties["func_subgraph_id"] = nodeFrom.id;
+            // this.inputs = LiteGraph.cloneObject(nodeFrom.inputs) ?? [];
+            nodeFrom.inputs.forEach((element, index) => {
+                // element.links = [];
+                if(typeof this.inputs[index] !== "undefined" && this.inputs[index].type == element.type){
+                    // keep (links?)
+                }else{
+                    this.inputs[index] = {name: element.name, type: element.type};
+                }
             });
-            this.outputs = LiteGraph.cloneObject(nodeFrom.outputs) ?? [];
-            this.outputs.forEach((element, index) => {
-                element.links = [];
+            // this.outputs = LiteGraph.cloneObject(nodeFrom.outputs) ?? [];
+            nodeFrom.outputs.forEach((element, index) => {
+                // element.links = [];
+                if(typeof this.outputs[index] !== "undefined" && this.outputs[index].type == element.type){
+                    // keep (links?)
+                }else{
+                    this.outputs[index] = {name: element.name, type: element.type};
+                }
             });
             this.autoSize();
         }else{
+            this.properties["func_subgraph_id"] = null;
             this.inputs = [];
             this.outputs = [];
         }
