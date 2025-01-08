@@ -1,39 +1,41 @@
-import { LiteGraph } from "./litegraph.js";
+import { LiteGraph } from "../litegraph.js";
 
 //LiteGraph library related nodes
-(function(global) {
 
-    // --------------------------
+// --------------------------
 
-    function LGLibrary(){
+class LGLibrary{
+    constructor(){
         this.addOutput("ref", "object");
         this._value = null;
         this._properties = [];
         this.setOutputData(0, LiteGraph);
     }
-    LGLibrary.title = "LGLib";
-    LGLibrary.desc = "LiteGraph object reference";
-    LGLibrary.prototype.onExecute = function(param, options) {
+    static title = "LGLib";
+    static desc = "LiteGraph object reference";
+    onExecute(param, options) {
         this.setOutputData(0, LiteGraph);
     };
-    LGLibrary.prototype.onAction = function(action, param, options){
+    onAction(action, param, options){
         // should probably execute on action
     };
-    LGLibrary.prototype.onGetInputs = function() {
+    onGetInputs() {
         //return [["in", 0]];
     };
-    LGLibrary.prototype.onGetOutputs = function() {
+    onGetOutputs() {
         //return [["out", 0]];
     };
-    LGLibrary.prototype.getTitle = function() {
+    getTitle() {
         return "LiteGraph";
     };
-    LiteGraph.registerNodeType("litegraph/litegraph", LGLibrary);
+}
+LiteGraph.registerNodeType("litegraph/litegraph", LGLibrary);
 
-    
-    // --------------------------
 
-    function LGGraph(){
+// --------------------------
+
+class LGGraph{
+    constructor(){
         this.addInput("start", LiteGraph.ACTION);
         this.addInput("stop", LiteGraph.ACTION);
         this.addInput("step", LiteGraph.ACTION);
@@ -43,13 +45,13 @@ import { LiteGraph } from "./litegraph.js";
         this._properties = [];
         this.setOutputData(0, this.graph);
     }
-    LGGraph.title = "Graph";
-    LGGraph.desc = "Graph object reference";
-    LGGraph.prototype.onExecute = function(param, options) {
+    static title = "Graph";
+    static desc = "Graph object reference";
+    onExecute(param, options) {
         this.setOutputData(0, this.graph);
         this.triggerSlot(1, param, null, options);
     };
-    LGGraph.prototype.onAction = function(action, param, options){
+    onAction(action, param, options){
         console.debug("GraphAction",action);
         switch(action){
             case "start":
@@ -62,23 +64,22 @@ import { LiteGraph } from "./litegraph.js";
             break;
             case "step":
                 if(this.graph.onBeforeStep)
-					this.graph.onBeforeStep();
+                    this.graph.onBeforeStep();
                 this.graph.runStep(1, !this.graph.catch_errors);
                 console.debug("this.graph.runStep(1, !this.graph.catch_errors);",this,this.graph);
-				if(this.graph.onAfterStep)
-					this.graph.onAfterStep();
+                if(this.graph.onAfterStep)
+                    this.graph.onAfterStep();
             break;
         }
     };
-    LGGraph.prototype.onGetInputs = function() {
+    onGetInputs() {
         //return [["in", 0]];
     };
-    LGGraph.prototype.onGetOutputs = function() {
+    onGetOutputs() {
         //return [["out", 0]];
     };
-    LGGraph.prototype.getTitle = function() {
+    getTitle() {
         return "Graph";
     };
-    LiteGraph.registerNodeType("litegraph/graph", LGGraph);
-
-})(this);
+}
+LiteGraph.registerNodeType("litegraph/graph", LGGraph);
