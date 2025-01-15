@@ -191,8 +191,11 @@ class LGWebSocket {
 
     disconnectSocket() {
         if (this._ws) {
+            console.log("WS close connection");
             this._ws.close();
             this._ws = null;
+        }else{
+            console.log("WS no connection to close");
         }
     }
 
@@ -236,7 +239,7 @@ class LGWebSocket {
         return [["out", 0]];
     }
 
-    onRemove() {
+    onRemoved() {
         this.disconnectSocket();
     }
 }
@@ -482,7 +485,7 @@ class WebRTCNode {
         }
     }
 
-    onRemove() {
+    onRemoved() {
         if (this.peerConnection) {
             this.peerConnection.close();
         }

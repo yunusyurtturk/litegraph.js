@@ -182,7 +182,7 @@ class OSCNode {
         }
     }
 
-    onRemove() {
+    onRemoved() {
         if (this._osc) {
             this._osc.close();
         }

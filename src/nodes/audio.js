@@ -790,7 +790,7 @@ class LGAudioConvolver {
         this.addOutput("out", "audio");
     }
 
-    onRemove() {
+    onRemoved() {
         if (this._dropped_url) {
             URL.revokeObjectURL(this._dropped_url);
         }

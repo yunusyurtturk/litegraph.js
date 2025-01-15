@@ -1169,12 +1169,12 @@ export class LGraphNode {
         let thisNode = this;
         this.inputs.forEach((ob_input) => {
             if(ob_input.param_bind){
-                LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
+                LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
                 if(thisNode.properties && ob_input.name in thisNode.properties){
                     let inputData = thisNode.getInputData(ob_input.name, LiteGraph?.properties_input_binding_check_ancestors);
                     if(inputData!==null){
                         // thisNode.properties[ob_input.name] = link.data;
-                        LiteGraph.log_debug("lgraphnode","doUpdateBindedInputProperties","update value",ob_input.name,inputData,thisNode);
+                        LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","update value",ob_input.name,inputData,thisNode);
                         this.setProperty(ob_input.name, inputData);
                     }
                 }else{

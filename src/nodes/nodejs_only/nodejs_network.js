@@ -336,7 +336,7 @@ class UDPNode {
         return [["data", 0]];
     }
 
-    onRemove() {
+    onRemoved() {
         if (this._dgram) {
             this._dgram.close();
         }
