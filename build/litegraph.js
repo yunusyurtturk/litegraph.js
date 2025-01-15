@@ -264,6 +264,7 @@ export class LiteGraphClass {
         this.registerNodeType("graph/subgraph", Subgraph);
         this.registerNodeType("graph/input", GraphInput);
         this.registerNodeType("graph/output", GraphOutput);
+        this.registerNodeType("graph/function", NodeFunction);
     }
 
     callbackhandler_setup() {
@@ -9930,7 +9931,7 @@ export class LGraphCanvas {
                                 if (w.options.max != null && w.value > w.options.max) {
                                     w.value = w.options.max;
                                 }
-                            } else if (delta) { // clicked in arrow, used for combos
+                            } else if (delta) { // clicked on arrow, used for combos
                                 var index = -1;
                                 this.last_mouseclick = 0; // avoids double click event
                                 if (values.constructor === Object)
@@ -9945,20 +9946,53 @@ export class LGraphCanvas {
                                 }
                                 if (values.constructor === Array)
                                     w.value = values[index];
-                                else
-                                    w.value = index;
+                                else {
+                                    // combo arrow
+                                    console.debug("ARROW_ComboOrOtherWidget", "clickCHECK", w, index, values);
+                                    if (values != values_list) {
+                                        w.value = Object.keys(values)[index];
+                                    } else {
+                                        w.value = index;
+                                    }
+                                }
                             } else { // combo clicked
-                                var text_values = values != values_list ? Object.values(values) : values;
-                                let inner_clicked = function(v) {
-                                    if (values != values_list)
-                                        v = text_values.indexOf(v);
-                                    this.value = v;
-                                    inner_value_change(this, v, old_value);
+                                // var text_values = values != values_list ? Object.values(values) : values;
+                                var entries = [];
+                                if (values != values_list) {
+                                    Object.keys(values).forEach((element) => {
+                                        entries.push({
+                                            value: element,
+                                            content: values[element]
+                                        });
+                                    });
+                                } else {
+                                    // using simple
+                                    entries = values;
+                                }
+                                console.debug("ComboOrOtherWidget", "filling from", values, "to", entries);
+                                let inner_clicked = function(v, cnv, node, pos, event, value_original) {
+                                    console.debug("ComboOrOtherWidget", "inner_clicked", ...arguments);
+                                    console.debug("ComboOrOtherWidget", "inner_clicked", v, entries, values, values_list, "old_value", old_value);
+                                    if (typeof v == "object" && typeof v.value !== "undefined") {
+                                        console.debug("ComboOrOtherWidget", "inner_clicked", "using object key value", v);
+                                        this.value = v.value;
+                                        inner_value_change(this, v.value, old_value);
+                                    } else {
+                                        // if(values != values_list){
+                                        //     console.debug("ComboOrOtherWidget","inner_clicked","value from key?",v,);
+                                        //     // using simples
+                                        //     v = entries.indexOf(v);
+                                        // }
+                                        console.debug("ComboOrOtherWidget", "inner_clicked", "using simple", v);
+                                        // using simples
+                                        this.value = v;
+                                        inner_value_change(this, v, old_value);
+                                    }
                                     that.dirty_canvas = true;
                                     return false;
                                 }
                                 LiteGraph.ContextMenu(
-                                    text_values, {
+                                    entries, {
                                         scale: Math.max(1, this.ds.scale),
                                         event: event,
                                         className: "dark",
@@ -10034,6 +10068,7 @@ export class LGraphCanvas {
 
         function inner_value_change(widget, value, old_value) {
             LiteGraph.log_debug("inner_value_change for processNodeWidgets", widget, value);
+            const value_original = value;
             // value changed
             if (old_value != w.value) {
                 node.processCallbackHandlers("onWidgetChanged", {
@@ -10053,7 +10088,7 @@ export class LGraphCanvas {
                 node.setProperty(widget.options.property, value);
             }
             if (widget.callback) {
-                widget.callback(widget.value, that, node, pos, event);
+                widget.callback(widget.value, that, node, pos, event, value_original);
             }
         }
 
@@ -14586,6 +14621,12 @@ export class LGraphNode {
         }
 
         let ob_input = this.inputs[slot];
+
+        if (typeof(ob_input.hard_coded_value) != "undefined") {
+            console.debug("HARD_CODED_INPUT", this, ob_input, ob_input.hard_coded_value);
+            return ob_input.hard_coded_value;
+        }
+
         let link_id = ob_input.link;
         let link = this.graph?.links[link_id];
         if (!link) {
@@ -14960,7 +15001,7 @@ export class LGraphNode {
         // enable this to give the event an ID
         options.action_call ??= `${this.id}_exec_${LiteGraph.uuidv4()}`; // TODO replace all ath.floor(Math.random()*9999) by LiteGraph.uuidv4
 
-        if (this.graph.nodes_executing && this.graph.nodes_executing[this.id]) {
+        if (this.graph?.nodes_executing && this.graph?.nodes_executing[this.id]) {
             LiteGraph.log_debug("lgraphNODE", "doExecute", "already executing! Prevent! " + this.id + ":" + this.order);
             return;
         }
@@ -17087,7 +17128,7 @@ export class LGraphNode {
         });
 
 
-        LiteGraph.log_info("lgraphnode", "syncByProperty", {
+        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
             only_in_source: only_in_source,
             only_in_target: only_in_target,
             ob_from: ob_from,
@@ -17286,6 +17327,7 @@ export class Subgraph {
             for (let i = 0; i < this.outputs.length; i++) {
                 let output = this.outputs[i];
                 let value = this.subgraph.getOutputData(output.name);
+                LiteGraph.log_verbose("subgraph", "onExecute", "outputDataSet", i, value);
                 this.setOutputData(i, value);
             }
         }
@@ -17948,6 +17990,7 @@ export class GraphOutput {
 
     onExecute() {
         this._value = this.getInputData(0);
+        // setting graph output by name
         this.graph.setOutputData(this.properties.name, this._value);
     }
 
@@ -17982,6 +18025,203 @@ export class GraphOutput {
 // LiteGraph.registerNodeType("graph/subgraph", Subgraph);
 // LiteGraph.registerNodeType("graph/input", GraphInput);
 // LiteGraph.registerNodeType("graph/output", GraphOutput);
+
+export class NodeFunction extends LGraphNode {
+
+    static title = "NodeFunction";
+    static desc = "Subgraph as function";
+
+    constructor() {
+        // this.size = [140, 80];
+        // this.properties = { subgraph: null };
+        // this.enabled = true;
+        super(...arguments);
+        this._subgraph = null;
+        this._linking = false;
+        this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event) {
+            console.debug("SUBGRAPHLINK", ...arguments);
+            if (node._linking) {
+                node._linking = false;
+                widget.name = "subgraph_link";
+            } else {
+                node._linking = true;
+                widget.name = "click on subgraph";
+            }
+        });
+        this.addWidget("button", "refresh", null, this.refreshFunctions_byEvent);
+        this.addWidget("button", "CALL", null, this.onBtnExecute);
+        this._wCombo = this.addWidget("combo", "functions", this.functionChange, {
+            values: []
+        });
+        this._subMap = [];
+        this._subGFuncNode = null;
+        this.properties = {
+            func_subgraph_id: null
+        };
+    }
+
+    onBtnExecute(value, canvas, node, pos, event, value_second) {
+        console.error("SELFEXECUTE", this, ...arguments);
+        node.doExecute();
+    }
+
+    functionChange(value, canvas, node, pos, event, value_second) {
+        console.error("FUNCTIONCHANGE", "this", this);
+        console.error("FUNCTIONCHANGE", "arguments", ...arguments);
+        console.error("FUNCTIONCHANGE", "node", node);
+        node.btnSetFunction(null, canvas, node, pos, event);
+    }
+
+    onConfigure() {
+        this.ensureSubFunction();
+    }
+
+    // SETTING initial onExecute: will override when setting a proper function
+    // eg. in a node.js env there will be no add and no chance to check if related node has already been added before this
+    onExecute() {
+        this.ensureSubFunction();
+    }
+
+    onAdded() {
+        if (this.properties["func_subgraph_id"] !== null && this.properties["func_subgraph_id"] !== undefined) {
+            this._wCombo.value = this.properties["func_subgraph_id"];
+        }
+        this.refreshFunctions();
+    }
+
+    refreshFunctions_byEvent(widget, canvas, node, pos, event) {
+        node.refreshFunctions.bind(node);
+    }
+    refreshFunctions() {
+        const aSubgraphs = this.graph?.findNodesByClass(Subgraph);
+        console.debug("NODEFUNCTION refreshFunctions", this, aSubgraphs, this._wCombo);
+        this._wCombo.options.values = {};
+        this._subMap = [];
+        if (aSubgraphs && aSubgraphs.length) {
+            aSubgraphs.forEach(element => {
+                // using array
+                // this._wCombo.options.values.push(element.title);
+                // using object
+                this._wCombo.options.values[element.id] = element.title;
+                this._subMap.push(element.id);
+                if (this.properties["func_subgraph_id"] === element.id) {
+                    this._wCombo.value = element.id;
+                }
+            });
+        } else {
+            // empty
+        }
+    }
+
+    ensureSubFunction() {
+        if (!this._subGFuncNode) {
+            if (this.properties["func_subgraph_id"] !== null && this.properties["func_subgraph_id"] !== undefined) {
+                // this.refreshFunctions();
+                this.lookForFuncNodeById(this.properties["func_subgraph_id"]);
+                this.refreshFunctions();
+            }
+        }
+    }
+
+    lookForFuncNodeById(nId) {
+        const subGFuncNode = this.graph.getNodeById(nId);
+        if (subGFuncNode) {
+            console.error("NODEFUNCTION CALL", "this?", this);
+            this.updateSubFunction(subGFuncNode);
+        } else {
+            console.error("NODEFUNCTION CALL", "nodeNotFound", nId);
+            this.updateSubFunction(false);
+        }
+    }
+
+    btnSetFunction(widget, canvas, node, pos, event) {
+        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
+        this.lookForFuncNodeById(node._wCombo.value);
+    }
+
+    updateSubFunction(nodeFrom) {
+        // const nodeFrom = this._subGFuncNode;
+        this._subGFuncNode = nodeFrom;
+        // const nodeFrom = this._subGFuncNode;
+        console.debug("REFRESHSLOTS", this);
+        if (nodeFrom !== undefined && nodeFrom !== null && nodeFrom) {
+            this.properties["func_subgraph_id"] = nodeFrom.id;
+            // this.inputs = LiteGraph.cloneObject(nodeFrom.inputs) ?? [];
+            nodeFrom.inputs.forEach((element, index) => {
+                // element.links = [];
+                if (typeof this.inputs[index] !== "undefined" && this.inputs[index].type == element.type) {
+                    // keep (links?)
+                } else {
+                    this.inputs[index] = {
+                        name: element.name,
+                        type: element.type
+                    };
+                }
+            });
+            // this.outputs = LiteGraph.cloneObject(nodeFrom.outputs) ?? [];
+            nodeFrom.outputs.forEach((element, index) => {
+                // element.links = [];
+                if (typeof this.outputs[index] !== "undefined" && this.outputs[index].type == element.type) {
+                    // keep (links?)
+                } else {
+                    this.outputs[index] = {
+                        name: element.name,
+                        type: element.type
+                    };
+                }
+            });
+            this.autoSize();
+        } else {
+            this.properties["func_subgraph_id"] = null;
+            this.inputs = [];
+            this.outputs = [];
+        }
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        const nodeFrom = this._subGFuncNode;
+        const thisFNode = this;
+        console.debug("BINDEVENTS", this);
+        if (nodeFrom !== undefined && nodeFrom !== null && nodeFrom) {
+            this.onExecute = function() {
+                console.debug("NODEFUNCTION executing", this);
+                // should execute subgraph passing right values
+                this.inputs.forEach((element, index) => {
+                    const iVal = this.getInputData(index);
+                    nodeFrom.inputs[index].hard_coded_value = iVal;
+                    console.debug("read and set input data", index, iVal);
+                });
+                // --
+                console.debug("execute function node", nodeFrom);
+                nodeFrom.doExecute();
+                // --
+                this.outputs.forEach((element, index) => {
+                    // nodeFrom.outputs[index].hard_coded_value ?
+                    const oVal = nodeFrom.getOutputData(index);
+                    // BAD // set to related graph output
+                    // BAD nodeFrom.graph.setOutputData(element.name, oVal);
+                    // BAD console.debug("read and set graph output data", index, element, oVal);
+                    // set to node output, not enough ?
+                    this.setOutputData(index, oVal);
+                    console.debug("read and set output node data", index, oVal);
+                });
+                // --
+                // than clean inputs
+                this.inputs.forEach((element, index) => {
+                    delete(nodeFrom.inputs[index].hard_coded_value);
+                    console.debug("clean hard coded input data", index);
+                });
+            }
+        } else {
+            this.onExecute = function() {
+                // no action
+                console.debug("NODEFUNCTION has no functionset", this);
+            }
+        }
+    }
+
+}
 
 // this needs to be called after all classes has been included, before registering nodes and creating canvas
 // will setup callback handlers and LiteGraph.CLASSES references ( eg. LitegGraph.LGraph, .. )
@@ -38583,12 +38823,13 @@ class LGWebSocket {
 
             let json;
             try {
-                json = JSON.stringify({
+                json = {
                     type: 0,
                     channel: i,
                     data: data,
-                });
+                };
                 if (room) json.room = room;
+                json = JSON.stringify(json);
             } catch (err) {
                 console.error("Error stringifying data:", err);
                 continue;
@@ -38597,7 +38838,6 @@ class LGWebSocket {
             if (only_changes && this._last_sent_data[i] === json) {
                 continue;
             }
-
             this._last_sent_data[i] = json;
             try {
                 this._ws.send(json);
@@ -38620,7 +38860,7 @@ class LGWebSocket {
         if (typeof process !== 'undefined' && process.versions && process.versions.node) {
             if (!this.properties.runOnServerToo) {
                 if (!this._hasWarned) {
-                    console.warn("WebSocket connection is not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
+                    console.warn("WsClient: not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
                     this._hasWarned = true;
                 }
                 return;
@@ -38671,6 +38911,8 @@ class LGWebSocket {
                 return;
             }
 
+            // TODO data.channel is i, or 1 default : this.setOutputData(i, this._last_received_data[i]);
+
             if (data?.type === 1) {
                 if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
@@ -38718,10 +38960,10 @@ class LGWebSocket {
         if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
-        const msg = JSON.stringify({
+        const msg = {
             type: 1,
             data: data
-        });
+        }; //JSON.stringify();
         try {
             this._ws.send(msg);
             console.log("WS sent:", msg);
@@ -39910,7 +40152,9 @@ class HtmlNode {
     static desc = "Have html inside a node";
 
     constructor() {
-        this.addInput("html", "html");
+        this.addInput("html", "string,html", {
+            param_bind: true
+        });
         this.addOutput("element", "htmlelement");
         this.properties = {
             html: ""
@@ -39921,7 +40165,7 @@ class HtmlNode {
     }
     refreshSlots() {
         this.htmlRefreshElement?.();
-        var sHtml = this.getInputData(0);
+        var sHtml = this.getInputOrProperty("html");
         if (sHtml) {
             try {
                 this.setHtml?.(sHtml); // this._html = sHtml;

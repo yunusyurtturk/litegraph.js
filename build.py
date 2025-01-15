@@ -35,7 +35,6 @@ for arg in sys.argv:
 
 # not including
 # "./src/nodes/network_osc.js",
-# "./src/nodes/nodejs_only/nodejs_network.js",
 
 lib_js_files = [
     "./src/global.js",
@@ -75,6 +74,11 @@ lib_nodes_files = [
     "./src/nodes/html.js",
 ]
 
+lib_nodejs_nodes_files = [
+    "./src/nodes/nodejs_only/nodejs_network.js",
+    "./src/nodes/nodejs_only/nodejs_network_v2.js",
+]
+
 # lib_basicnodes_files = [
     # "./src/nodes/base.js",
     # "./src/nodes/events.js",
@@ -111,6 +115,10 @@ js_files_lists = [
     {
         "output_filename": "litegraph.full.js",
         "js_files": lib_js_files + lib_nodes_files + lib_editor_files + lib_extensions_files
+    },
+    {
+        "output_filename": "litegraph_nodejs.full.js",
+        "js_files": lib_js_files + lib_nodes_files + lib_nodejs_nodes_files + lib_editor_files + lib_extensions_files
     },
     {
         "output_filename": "litegraph.full.mini.js",
@@ -267,12 +275,23 @@ def convert_es6_to_commonjs(data):
 
     return data
 
+def uncomment_nodejs_code(input_code):
+    pattern = r"//>>NODEJS_ENABLE_CODE_START>>\n(.*?)//<<NODEJS_ENABLE_CODE_END<<"
+
+    def uncomment(match):
+        code_block = match.group(1)
+        uncommented_code = re.sub(r"^//", "", code_block, flags=re.MULTILINE)
+        return f"//>>NODEJS_ENABLE_CODE_START>>\n{uncommented_code}//<<NODEJS_ENABLE_CODE_END<<"
+
+    return re.sub(pattern, uncomment, input_code, flags=re.DOTALL)
+
 def reprocess_files_for_node(input_filepath, output_filepath):
     print(f"Reprocessing {input_filepath} for Node.js", end=" ")
     try:
         with open(input_filepath, "r") as file:
             data = file.read()
         new_data = convert_es6_to_commonjs(data)
+        new_data = uncomment_nodejs_code(new_data)
         with open(output_filepath, "w") as output_file:
             output_file.write(new_data)
         print("\033[92mDone\033[0m")
