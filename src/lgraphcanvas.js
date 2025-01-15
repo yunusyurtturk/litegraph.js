@@ -7981,7 +7981,7 @@ export class LGraphCanvas {
                     this.querySelector(".property_value").innerText = this.value ? "on" : "off";
                     innerChange(propname, this.value );
                 });
-            } else if (type == "string" || type == "number") {
+            } else if (type == "string" || type == "number" || type == "undefined") {
                 value_element.setAttribute("contenteditable",true);
                 value_element.addEventListener("keydown", function(e) {
                     if(e.code == "Enter" && (type != "string" || !e.shiftKey)) { // allow for multiline

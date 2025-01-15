@@ -66,3 +66,4 @@ LiteGraph.reprocess_slot_while_node_configure = true;
 
 LiteGraph.properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 
 LiteGraph.properties_allow_output_binding = true; // [true!] allow create and bind outputs, will update output slots when node executed 
+LiteGraph.properties_input_binding_check_ancestors = true; // [true!] when executing a node it will update binding, there when getting data will ensure data is updated

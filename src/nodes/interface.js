@@ -66,7 +66,8 @@ class WidgetButton {
         ) {
             LiteGraph.log_info("WidgetButton","clicked inside");
             this.clicked = true;
-            this.setOutputData(1, this.clicked);
+            // execute instead just reading input (force update)
+            this.doExecute();
             this.triggerSlot(0, this.properties.message);
             return true;
         }else{

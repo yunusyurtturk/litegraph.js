@@ -7,13 +7,14 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("send_trig", LiteGraph.ACTION);
-        this.addOutput("trig_received", LiteGraph.EVENT);
+        this.addInput("event_data", LiteGraph.ACTION);
+        this.addOutput("on_received", LiteGraph.EVENT);
         this.addInput("in", 0);
         this.addOutput("out", 0);
         this.properties = {
             url: "ws://127.0.0.1:8080",
             room: false,
+            auto_send_input: false,
             only_send_changes: true,
             runOnServerToo: false
         };
@@ -41,42 +42,48 @@ class LGWebSocket {
         const room = this.properties.room;
         const only_changes = this.properties.only_send_changes;
 
-        for (let i = 1; i < this.inputs.length; ++i) {
-            const data = this.getInputData(i);
-            if (data == null) {
-                continue;
-            }
+        if(this.properties.auto_send_input){
+            for (let i = 1; i < this.inputs.length; ++i) {
+                const data = this.getInputData(i);
+                if (data == null) {
+                    continue;
+                }
 
-            let json;
-            try {
-                json = {
-                    type: 0,
-                    channel: i,
-                    data: data,
-                };
-                if (room) json.room = room;
-                json = JSON.stringify(json);
-            } catch (err) {
-                console.error("Error stringifying data:", err);
-                continue;
-            }
+                let json;
+                try {
+                    json = {
+                        type: 0,
+                        channel: i,
+                        data: data,
+                    };
+                    if (room) json.room = room;
+                    json = JSON.stringify(json);
+                } catch (err) {
+                    console.error("Error stringifying data:", err);
+                    continue;
+                }
 
-            if (only_changes && this._last_sent_data[i] === json) {
-                continue;
-            }
-            this._last_sent_data[i] = json;
-            try {
-                this._ws.send(json);
-                console.log("WS sent by execute:", i, json);
-            } catch (err) {
-                console.error("Error sending data:", err);
+                if (only_changes && this._last_sent_data[i] === json) {
+                    continue;
+                }
+                this._last_sent_data[i] = json;
+                try {
+                    this._ws.send(json);
+                    console.log("WS sent by execute:", i, json);
+                } catch (err) {
+                    console.error("Error sending data:", err);
+                }
             }
         }
 
-        for (let i = 1; i < this.outputs.length; ++i) {
-            this.setOutputData(i, this._last_received_data[i]);
-        }
+        // force update output?
+        // for (let i = 1; i < this.outputs.length; ++i) {
+        //     if(i in this._last_received_data){
+        //         this.setOutputData(i, this._last_received_data[i]);
+        //     }
+        // }
 
+        // reset color
         if (this.boxcolor === "#AFA") {
             this.boxcolor = "#6C6";
         }
@@ -138,30 +145,37 @@ class LGWebSocket {
             }
             
             // TODO data.channel is i, or 1 default : this.setOutputData(i, this._last_received_data[i]);
-            
+
+            const channelX = data.channel !== undefined ? data.channel : 1;
+            const dataData_defined = typeof(data.data) !== "undefined";
+            const dataX = dataData_defined ? data.data : data;
+            // data.type == 1 comes from unknown source: it will create a temporary LiteGraph object
             if (data?.type === 1) {
                 if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
+                        console.debug("WS executing LiteGraph object:", obj, data.data);
                         const obj = new LiteGraph[data.data.object_class](data.data);
-                        this.triggerSlot(0, obj);
-                        console.debug("WS received object:", obj);
+                        // channelX = data.data.object_class;
+                        dataX = data.data.object_class;
+                        console.debug("WS created temporary LG object:", obj);
                     } catch (err) {
                         console.error("WS Error creating object:", err);
                     }
-                } else if (data.data !== undefined) {
-                    this.triggerSlot(0, data.data);
+                } else if (dataData_defined) {
                     console.debug("WS type1 received data:", data.data);
                 } else {
                     console.debug("WS type1 received UNKNOWN data:", data);
                 }
             } else {
-                if (data.data !== undefined) {
-                    this._last_received_data[data.channel !== undefined ? data.channel : 0] = data.data;
+                if (dataData_defined) {
                     console.debug("WS received channel data:", data.channel, data.data);
                 } else {
                     console.debug("WS received UNKNOWN data:", data);
                 }
             }
+            this._last_received_data[channelX] = dataX;
+            this.setOutputData(channelX, dataX);
+            this.triggerSlot(0, dataX);
         };
 
         this._ws.onerror = (err) => {
