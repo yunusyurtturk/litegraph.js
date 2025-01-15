@@ -49,12 +49,13 @@ class LGWebSocket {
 
             let json;
             try {
-                json = JSON.stringify({
+                json = {
                     type: 0,
                     channel: i,
                     data: data,
-                });
+                };
                 if (room) json.room = room;
+                json = JSON.stringify(json);
             } catch (err) {
                 console.error("Error stringifying data:", err);
                 continue;
@@ -63,7 +64,6 @@ class LGWebSocket {
             if (only_changes && this._last_sent_data[i] === json) {
                 continue;
             }
-
             this._last_sent_data[i] = json;
             try {
                 this._ws.send(json);
@@ -86,7 +86,7 @@ class LGWebSocket {
         if (typeof process !== 'undefined' && process.versions && process.versions.node) {
             if (!this.properties.runOnServerToo) {
                 if (!this._hasWarned) {
-                    console.warn("WebSocket connection is not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
+                    console.warn("WsClient: not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
                     this._hasWarned = true;
                 }
                 return;
@@ -136,7 +136,9 @@ class LGWebSocket {
                 console.debug("WS: received message for different room");
                 return;
             }
-
+            
+            // TODO data.channel is i, or 1 default : this.setOutputData(i, this._last_received_data[i]);
+            
             if (data?.type === 1) {
                 if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
@@ -184,7 +186,7 @@ class LGWebSocket {
         if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
-        const msg = JSON.stringify({ type: 1, data: data });
+        const msg = { type: 1, data: data }; //JSON.stringify();
         try {
             this._ws.send(msg);
             console.log("WS sent:", msg);

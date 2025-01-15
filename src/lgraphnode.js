@@ -2952,7 +2952,7 @@ export class LGraphNode {
         });
 
 
-        LiteGraph.log_info("lgraphnode", "syncByProperty", {
+        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
             only_in_source: only_in_source,
             only_in_target: only_in_target,
             ob_from: ob_from,
