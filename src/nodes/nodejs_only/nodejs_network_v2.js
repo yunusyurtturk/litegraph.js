@@ -1,6 +1,12 @@
 // WIP (not yet good) TESTING on NODE litegraph-executor
 
-const WebSocket = require('ws');
+// conditional include (only on server)
+// if(typeof(require)!=="undefined"){
+//     const WebSocket = require('ws');
+// }
+//>>NODEJS_ENABLE_CODE_START>>
+//const WebSocket = require('ws');
+//<<NODEJS_ENABLE_CODE_END<<
 
 class LocalWebSocketServer {
     static title = "WebSocket Server";
@@ -17,31 +23,47 @@ class LocalWebSocketServer {
         this.retryTimeout = 5000; // Retry interval in milliseconds
         this.retryLimit = 5; // Max number of retries
         this.retryCount = 0;
+
+        if (typeof process === 'undefined' || process.browser) {
+            console.warn("WebSocket Server node is designed to run in Node.js, not in a browser.");
+            this.boxcolor = "#FF0000";
+            this.title = "WSServer (run on server)";
+        } else {
+            this.startServer();
+        }
     }
 
     onPropertyChanged(name, value) {
         console.log(`Property changed: ${name} = ${value}`);
         if (name === 'port' && this.status === 'running') {
-            this.stopServer(() => {
-                this.properties.port = value;
-                if (this.properties.should_autoconnect) {
-                    console.log(`WebSocket autoconnect on property change, port ${this.properties.port}`);
-                    this.startServer();
-                }
-            });
+            if(this.properties.port !== value){
+                this.stopServer(() => {
+                    this.properties.port = value;
+                    if (this.properties.should_autoconnect) {
+                        console.log(`WSServer autoconnect on property change, port ${this.properties.port}`);
+                        this.startServer();
+                    }
+                });
+            }else{
+                console.log(`WSServer port unchanged ${this.properties.port}`);
+            }
         } else {
             this.properties[name] = value;
         }
     }
 
     startServer() {
+        if (typeof process === 'undefined' || process.browser) {
+            console.warn("WebSocket Server node is designed to run in Node.js, not in a browser.");
+            return false;
+        }
         if (this.status === 'starting' || this.status === 'running') {
             console.log('WebSocket server is already starting or running.');
             return;
         }
 
         this.status = 'starting';
-        console.log(`WebSocket will start on port ${this.properties.port}`);
+        console.log(`WSServer will start on port ${this.properties.port}`);
 
         try {
             this.server = new WebSocket.Server({ port: this.properties.port });
@@ -50,7 +72,7 @@ class LocalWebSocketServer {
             this.server.on('listening', () => {
                 this.status = 'running';
                 this.retryCount = 0; // Reset retry count on successful start
-                console.log(`WebSocket server listening on port ${this.properties.port}`);
+                console.log(`WSServer server listening on port ${this.properties.port}`);
                 this.onStarted();
             });
 
@@ -114,13 +136,10 @@ class LocalWebSocketServer {
     }
 
     _onMessage(ws, message) {
-        console.log('Received:', message, ws);
+        const receivedMessage = typeof message === 'string' ? message : message.toString();
+        console.log('Received:', receivedMessage);
         // Echo the message back to all connected clients
-        this.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(message);
-            }
-        });
+        this.sendToAllClients(receivedMessage);
     }
 
     stopServer(callback) {
@@ -168,7 +187,7 @@ class LocalWebSocketServer {
         }
 
         if (this.status === 'stopped' && this.properties.should_autoconnect) {
-            console.log(`WebSocket autoconnect on execute, port ${this.properties.port}`);
+            console.log(`WSServer autoconnect on execute, port ${this.properties.port}`);
             this.startServer();
         }
 
@@ -254,7 +273,7 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 //             this.server = new WebSocket.Server({ port: this.properties.port }, () => {
 //                 this.status = 'running';
 //                 this.onStarted();
-//                 console.log(`WebSocket server started on port ${this.properties.port}`);
+//                 console.log(`WSServer server started on port ${this.properties.port}`);
 //             });
 //         }catch(e){
 //             console.warn("WebSocketServer","failed",e);
