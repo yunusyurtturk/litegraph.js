@@ -893,7 +893,7 @@ export class LGraphNode {
         if (LiteGraph.ensureUniqueExecutionAndActionCall) {
             // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
             if(this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! "+options.action_call);
+                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! "+options.action_call, this);
                 return;
             }
         }
@@ -1117,8 +1117,9 @@ export class LGraphNode {
                 let target_connection = node.inputs[link_info.target_slot];
                 
                 // METHOD 1 ancestors
-                if (LiteGraph.refreshAncestorsOnActions)
+                if (LiteGraph.refreshAncestorsOnActions){
                     node.refreshAncestors({action: target_connection.name, param: param, options: options});
+                }
 
                 // if using use_deferred_actions (alternative to ancestors) instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute) {

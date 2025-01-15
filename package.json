@@ -1,5 +1,5 @@
 {
-    "name": "@mr_pebble/litegraph",
+    "name": "@litegraph/litegraph",
     "version": "0.10.10",
     "description": "A flow graph node editor on the web.",
     "main": "build/litegraph.js",
@@ -16,9 +16,9 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/daniel-lewis-ab/litegraph.js.git"
+        "url": "git+https://github.com/atlasan/litegraph.js.git"
     },
-    "author": "Daniel Lewis",
+    "author": "Various",
     "license": "MIT",
     "files": [
         "build",
@@ -26,9 +26,9 @@
         "src/litegraph.d.ts"
     ],
     "bugs": {
-        "url": "https://github.com/daniel-lewis-ab/litegraph.js/issues"
+        "url": "https://github.com/atlasan/litegraph.js/issues"
     },
-    "homepage": "https://github.com/daniel-lewis-ab/litegraph.js#readme",
+    "homepage": "https://github.com/atlasan/litegraph.js#readme",
     "devDependencies": {
         "@stylistic/eslint-plugin": "^2.1.0",
         "@types/jest": "^28.1.3",
@@ -50,7 +50,6 @@
     "dependencies": {
         "js-beautify": "^1.15.1",
         "osc": "^2.4.4",
-        "uglifyjs": "^2.4.11",
-        "ws": "^8.18.0"
+        "uglifyjs": "^2.4.11"
     }
 }

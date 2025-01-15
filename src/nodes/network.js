@@ -7,10 +7,13 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("event_data", LiteGraph.ACTION);
+        this.addInput("message_data", LiteGraph.ACTION);
+        this.addInput("DATA_1", 0, {nameLocked: true, removable: true});
+        this.addInput("EV_1", LiteGraph.ACTION, {nameLocked: true, removable: true});
         this.addOutput("on_received", LiteGraph.EVENT);
-        this.addInput("in", 0);
-        this.addOutput("out", 0);
+        this.addOutput("data_rec", 0);
+        this.addOutput("DATA_1", 0, {nameLocked: true, removable: true});
+        this.addOutput("EV_1", LiteGraph.EVENT, {nameLocked: true, removable: true});
         this.properties = {
             url: "ws://127.0.0.1:8080",
             room: false,
@@ -149,6 +152,7 @@ class LGWebSocket {
             const channelX = data.channel !== undefined ? data.channel : 1;
             const dataData_defined = typeof(data.data) !== "undefined";
             const dataX = dataData_defined ? data.data : data;
+            const slotX = data?.action || 0;
             // data.type == 1 comes from unknown source: it will create a temporary LiteGraph object
             if (data?.type === 1) {
                 if (data.data?.object_class && LiteGraph[data.data.object_class]) {
@@ -174,8 +178,18 @@ class LGWebSocket {
                 }
             }
             this._last_received_data[channelX] = dataX;
-            this.setOutputData(channelX, dataX);
+            console.debug("WS updating data and triggers:", "channelX", channelX, "dataX", dataX, "slotX", slotX);
+            // set any data to default data_rec slot
+            this.setOutputData(1, dataX);
+            // if not an action, set output data to specific channel
+            if(slotX==0){
+                this.setOutputData("DATA_"+channelX, dataX);
+            }
             this.triggerSlot(0, dataX);
+            // if an action, trigger relative slot
+            if(slotX!==0){
+                this.triggerSlot(slotX, dataX);
+            }
         };
 
         this._ws.onerror = (err) => {
@@ -225,18 +239,35 @@ class LGWebSocket {
         const msg = JSON.stringify(oMsg);
         try {
             this._ws.send(msg);
-            console.log("WS sent by Action:", oMsg);
+            console.log("WS sent by Action:", oMsg, action, param);
         } catch (err) {
             console.error("Error sending data by action:", err);
         }
     }
 
     onGetInputs() {
-        return [["in", 0]];
+        let nIn = 1;
+        let nAct = 1;
+        this.inputs.forEach(element => {
+            console.warn(element);
+            if(element.name.startsWith("DATA_")) nIn++;
+            if(element.name.startsWith("EV_")) nAct++;
+        });
+        return [["DATA_"+nIn, 0, {nameLocked: true, removable: true}]
+                , ["EV_"+nAct, LiteGraph.ACTION, {nameLocked: true, removable: true}]
+            ];
     }
 
     onGetOutputs() {
-        return [["out", 0]];
+        let nOut = 1;
+        let nEv = 1;
+        this.inputs.forEach(element => {
+            if(element.name.startsWith("DATA_")) nOut++;
+            if(element.name.startsWith("EV_")) nEv++;
+        });
+        return [["DATA_"+nOut, 0, {nameLocked: true, removable: true}]
+                , ["EV_"+nEv, LiteGraph.EVENT, {nameLocked: true, removable: true}]
+            ];
     }
 
     onRemoved() {
