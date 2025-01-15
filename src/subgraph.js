@@ -226,6 +226,7 @@ export class Subgraph {
         LiteGraph.log_debug("subgraph","onSubgraphTrigger",...arguments);
         var slot = this.findOutputSlot(event);
         if (slot != -1) {
+            LiteGraph.log_debug("subgraph","onSubgraphTrigger","triggerSlot",slot);
             this.triggerSlot(slot);
         }
     }
@@ -818,19 +819,19 @@ export class NodeFunction extends LGraphNode {
         super(...arguments);
         this._subgraph = null;
         this._linking = false;
-        this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event){
-            console.debug("SUBGRAPHLINK", ...arguments);
-            if(node._linking){
-                node._linking = false;
-                widget.name = "subgraph_link";
-            }else{
-                node._linking = true;
-                widget.name = "click on subgraph";
-            }
-        });
+        // this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event){
+        //     console.debug("SUBGRAPHLINK", ...arguments);
+        //     if(node._linking){
+        //         node._linking = false;
+        //         widget.name = "subgraph_link";
+        //     }else{
+        //         node._linking = true;
+        //         widget.name = "click on subgraph";
+        //     }
+        // });
         this.addWidget("button", "refresh", null, this.refreshFunctions_byEvent);
+        this._wCombo = this.addWidget("combo", "functions", null, this.functionChange, {values: []});
         this.addWidget("button", "CALL", null, this.onBtnExecute);
-        this._wCombo = this.addWidget("combo", "functions", this.functionChange, {values: []});
         this._subMap = [];
         this._subGFuncNode = null;
         this.properties = {func_subgraph_id: null};
@@ -846,9 +847,11 @@ export class NodeFunction extends LGraphNode {
         console.error("FUNCTIONCHANGE", "arguments", ...arguments);
         console.error("FUNCTIONCHANGE", "node", node);
         node.btnSetFunction(null, canvas, node, pos, event);
+        node.title = "Func: "+node.title;
     }
 
     onConfigure(){
+        this.refreshFunctions();
         this.ensureSubFunction();
     }
 
@@ -873,15 +876,17 @@ export class NodeFunction extends LGraphNode {
         console.debug("NODEFUNCTION refreshFunctions", this, aSubgraphs, this._wCombo);
         this._wCombo.options.values = {};
         this._subMap = [];
+        const ths = this;
         if(aSubgraphs && aSubgraphs.length){
+            console.debug("NODEFUNCTION subgraphs", aSubgraphs);
             aSubgraphs.forEach(element => {
                 // using array
                 // this._wCombo.options.values.push(element.title);
                 // using object
-                this._wCombo.options.values[element.id] = element.title;
-                this._subMap.push(element.id);
-                if(this.properties["func_subgraph_id"] === element.id){
-                    this._wCombo.value = element.id;
+                ths._wCombo.options.values[element.id] = element.title;
+                ths._subMap.push(element.id);
+                if(ths.properties["func_subgraph_id"] === element.id){
+                    ths._wCombo.value = element.id;
                 }
             });
         }else{
@@ -902,16 +907,16 @@ export class NodeFunction extends LGraphNode {
     lookForFuncNodeById(nId){
         const subGFuncNode = this.graph.getNodeById(nId);
         if(subGFuncNode){
-            console.error("NODEFUNCTION CALL", "this?", this);
+            console.error("NODEFUNCTION FOUND", "this?", this);
             this.updateSubFunction(subGFuncNode);
         }else{
-            console.error("NODEFUNCTION CALL", "nodeNotFound", nId);
+            console.error("NODEFUNCTION NOT FOUND", "nodeNotFound", nId);
             this.updateSubFunction(false);
         }
     }
 
     btnSetFunction(widget, canvas, node, pos, event){
-        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
+        console.debug("NODEFUNCTION SET", node, node._wCombo.value);
         this.lookForFuncNodeById(node._wCombo.value);
     }
 
@@ -962,12 +967,23 @@ export class NodeFunction extends LGraphNode {
                     nodeFrom.inputs[index].hard_coded_value = iVal;
                     console.debug("read and set input data", index, iVal);
                 });
+                // WIP : try to bind internal subgraph events to this node connected events
+                this.outputs.forEach((element, index) => {
+                    // nodeFrom.outputs[index].hard_coded_value ?
+                    if(element.type == LiteGraph.EVENT){
+                        console.warn("NODEFUNCTION event", "should prevent default and call custom");
+                        // hack onSubgraphTrigger
+                        // ? var slot = this.findOutputSlot(event);
+                        console.warn("NODEFUNCTION event", "hack output slot", element, nodeFrom, nodeFrom.outputs, index);
+                        console.warn("NODEFUNCTION event", "hack output slot", nodeFrom.outputs[index], element);
+                        nodeFrom.outputs[index].hard_coded_output = element;
+                    }
+                });
                 // --
                 console.debug("execute function node", nodeFrom);
                 nodeFrom.doExecute();
                 // --
                 this.outputs.forEach((element, index) => {
-                    // nodeFrom.outputs[index].hard_coded_value ?
                     const oVal = nodeFrom.getOutputData(index);
                     // BAD // set to related graph output
                     // BAD nodeFrom.graph.setOutputData(element.name, oVal);
@@ -982,6 +998,12 @@ export class NodeFunction extends LGraphNode {
                     delete(nodeFrom.inputs[index].hard_coded_value);
                     console.debug("clean hard coded input data", index);
                 });
+                // this.outputs.forEach((element, index) => {
+                //     if(element.type == LiteGraph.EVENT){
+                //         delete(nodeFrom.outputs[index].hard_coded_output);
+                //         console.debug("clean hard coded output slot", index);
+                //     }
+                // });
             }
         }else{
             this.onExecute = function(){

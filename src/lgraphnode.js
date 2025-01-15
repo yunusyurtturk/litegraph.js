@@ -512,6 +512,7 @@ export class LGraphNode {
 
         let ob_input = this.inputs[slot];
 
+        // hard coded input force returning that value, used in subgraph as functions to drive calling multiple times the same node
         if(typeof(ob_input.hard_coded_value)!="undefined"){
             console.debug("HARD_CODED_INPUT", this, ob_input, ob_input.hard_coded_value);
             return ob_input.hard_coded_value;
@@ -1032,6 +1033,8 @@ export class LGraphNode {
         if (!this.outputs) {
             return;
         }
+        var output = null;
+        // drive event for subgraph as functions (similarly to hard_coded_value)
         if(slot === null) {
             LiteGraph.log_error("lgraphnode", "triggerSlot","wrong slot",slot);
             return;
@@ -1040,9 +1043,13 @@ export class LGraphNode {
             // LiteGraph.log_warn("lgraphnode", "triggerSlot","slot must be a number, use node.trigger('name') if you want to use a string");
             slot = this.getOutputSlot(slot);
         }
-        var output = this.outputs[slot];
+        output = this.outputs[slot];
         if (!output) {
             return;
+        }
+        if(typeof(output.hard_coded_output)!="undefined"){
+            LiteGraph.log_debug("HARD_CODED_OUTPUT", this, output, output.hard_coded_output);
+            output = output.hard_coded_output;
         }
 
         var links = output.links;
@@ -1103,12 +1110,13 @@ export class LGraphNode {
                 if (LiteGraph.refreshAncestorsOnActions)
                     node.refreshAncestors({action: target_connection.name, param: param, options: options});
 
-                // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
+                // if using use_deferred_actions (alternative to ancestors) instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
                     node._waiting_actions ??= [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
                     LiteGraph.log_debug("lgraphnode", "triggerSlot","push to deferred", target_connection.name, param, options, link_info.target_slot);//+this.id+":"+this.order+" :: "+target_connection.name);
                 } else {
+                    // trigger now the action
                     // wrap node.onAction(target_connection.name, param);
                     LiteGraph.log_debug("lgraphnode", "triggerSlot","call actionDo", node, target_connection.name, param, options, link_info.target_slot);
                     node.actionDo( target_connection.name, param, options, link_info.target_slot );

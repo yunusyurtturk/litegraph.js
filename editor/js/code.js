@@ -126,6 +126,9 @@ window.addEventListener("load", (event) => {
 	addDemo("Audio Reverb", "examples/audio_reverb.json");
 	addDemo("MIDI Generation", "examples/midi_generation.json");
 	addDemo("Copy Paste", "examples/copypaste.json");
+	addDemo("Feat. Autoconnect", "examples/features/extension_autoconnect.JSON");
+	addDemo("Websocket Client", "examples/websocket/client.JSON");
+	addDemo("WIP Function", "examples/wip_testing/testing_subgraph_as_function.JSON");
 	addDemo("autobackup", function(){
 		var data = localStorage.getItem("litegraphg demo backup");
 		if(!data)
