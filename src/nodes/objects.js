@@ -421,15 +421,16 @@ class objMethodWidget {
                 }
 
                 // call execute
-                console.debug?.("NodeObjMethod Execute",parValues);
+                console.debug?.("NodeObjMethod Execute", this._function, this._obin, parValues);
                 try{
                     if(this._isClass){
                         var r = new this._function(parValues); // this._function.apply(this, parValues);
                     }else{
-                        var r = this._function(parValues); // this._function.apply(this, parValues);
+                        // TODO: spread arguments
+                        var r = this._function.call(this._obin, parValues); // this._function.apply(this, parValues);
                     }
-                    this.triggerSlot(0);
                     this.setOutputData(2, r); // update method result
+                    this.triggerSlot(0);
                     this.boxcolor = "#0F0";
                 }catch(e){
                     console.warn("[NodeObjMethod]","execute error",e);
