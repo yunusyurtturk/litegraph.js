@@ -18,7 +18,7 @@ import { getGlobalObject, setGlobalVariable, getGlobalVariable } from './global.
  */
 export class LiteGraphClass {
 
-    VERSION = "a0.11.0";
+    VERSION = "a0.11.1";
 
     LLink = null; //LLink;
     LGraph = null; //LGraph;

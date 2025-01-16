@@ -270,7 +270,8 @@ class objMethodWidget {
 
     updateFromInput(v) {
         var that = this;
-        var data = this.getInputData(0);
+        let refresh_ancestors = true;
+        var data = this.getInputData(0, refresh_ancestors);
         if (data != null) {
             this._obin = data;
             if(this._obin) { // } && typeof this._obin == "Object"){
@@ -329,9 +330,14 @@ class objMethodWidget {
         this.refreshMethodAndInputs();
     }
 
-    refreshMethodAndInputs() {
+    onConfigure() {
+        this.updateFromInput();
+        this.refreshMethodAndInputs();
+    }
+
+    refreshMethodAndInputs(actVal) {
         // TODO fixthis :: property is not yet updated?
-        var actVal = this.widg_prop.value; // this.properties.method
+        actVal = actVal || this.properties.method; //this.widg_prop.value; // this.properties.method
         if(actVal && this._obin && typeof this._obin[actVal] !== "undefined") {
 
             // if changed, reset inputs
@@ -398,7 +404,7 @@ class objMethodWidget {
                 this.removeInput(3); // not i
             }
         }
-        this.refreshMethodAndInputs();
+        this.refreshMethodAndInputs(this.widg_prop.value);
     }
 
     onAction(action) {
@@ -430,6 +436,7 @@ class objMethodWidget {
                     this.boxcolor = "#F00";
                 }
             }else{
+                console.warn?.("NodeObjMethod Execute has not method", parValues);
                 this.setOutputData(1, null);
                 this.setOutputData(2, null);
             }
@@ -454,8 +461,9 @@ class objMethodWidget {
     }
 
     onPropertyChanged(name, value) {
-        if(name == "value") {
+        if(name == "method") { //} "value") {
             this.widg_prop.value = value;
+            this.refreshMethodAndInputs(value);
         }
     }
 
