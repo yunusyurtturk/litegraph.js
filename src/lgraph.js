@@ -402,7 +402,9 @@ export class LGraph {
      * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
      * @returns {Array} An array of nodes in the calculated execution order.
      *
-     * @TODO:This whole concept is a mistake.  Should call graph back from output nodes
+     * @TODO: mrpebble: This whole concept is a mistake. Should call graph back from output nodes
+     * ADDENDUM: atlasan: actually ancestor solution will trigger output nodes when needed, it is not a mistake as it's working his way
+     *                      so let's investigate, develop, try and document better
      */
     computeExecutionOrder(only_onExecute, set_level) {
         var L = [];

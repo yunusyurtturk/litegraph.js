@@ -876,6 +876,8 @@ export class LGraphNode {
         if (this.mode === LiteGraph.NEVER){
             LiteGraph.log_verbose("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
             return;
+        }else{
+            LiteGraph.log_debug("lgraphNODE", "doExecute", this.id, this.title);
         }
 
         // enable this to give the event an ID
@@ -1049,13 +1051,21 @@ export class LGraphNode {
             LiteGraph.log_error("lgraphnode", "triggerSlot","wrong slot",slot);
             return;
         }
+        if (this.mode === LiteGraph.NEVER){
+            return;
+        }
         if(slot.constructor !== Number){
             // LiteGraph.log_warn("lgraphnode", "triggerSlot","slot must be a number, use node.trigger('name') if you want to use a string");
+            LiteGraph.log_verbose("lgraphnode", "triggerSlot","slot not a number, find it", slot, param);
             slot = this.getOutputSlot(slot);
+            LiteGraph.log_verbose("lgraphnode", "triggerSlot","looked for slot not a number", slot);
         }
         output = this.outputs[slot];
         if (!output) {
+            LiteGraph.log_debug("lgraphNODE", "triggerSlot", "output slot not found", slot, param);
             return;
+        }else{
+            LiteGraph.log_debug("lgraphNODE", "triggerSlot", output, slot, param);
         }
         if(typeof(output.hard_coded_output)!="undefined"){
             LiteGraph.log_debug("HARD_CODED_OUTPUT", this, output, output.hard_coded_output);
@@ -1067,13 +1077,9 @@ export class LGraphNode {
             return;
         }
 
-        if (this.mode === LiteGraph.NEVER){
-            return;
-        }
-
         // check for ancestors calls
         if (this.graph && this.graph.ancestorsCall) {
-            // LiteGraph.log_debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
+            LiteGraph.log_debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
             return;
         }
 
@@ -1091,12 +1097,14 @@ export class LGraphNode {
             var link_info = this.graph.links[links[k]];
             if (!link_info) {
                 // not connected
+                LiteGraph.log_debug("lgraphNODE", "triggerSlot", "invalid link", k, links[k], output, slot, param);
                 continue;
             }
             link_info._last_time = LiteGraph.getTime();
             var node = this.graph.getNodeById(link_info.target_id);
             if (!node) {
                 // node not found?
+                LiteGraph.log_debug("lgraphNODE", "triggerSlot", "link has not node", link_info, output, slot, param);
                 continue;
             }
             var target_slot = node.inputs[link_info.target_slot];
@@ -1118,6 +1126,7 @@ export class LGraphNode {
                 
                 // METHOD 1 ancestors
                 if (LiteGraph.refreshAncestorsOnActions){
+                    LiteGraph.log_debug("lgraphNODE", "triggerSlot", "refreshAncestorsOnActions", target_connection.name, output, slot, options);
                     node.refreshAncestors({action: target_connection.name, param: param, options: options});
                 }
 
@@ -1852,16 +1861,20 @@ export class LGraphNode {
      */
     getSlot(is_input, slot_index_or_name, returnObj = false){
         if(!is_input || is_input===LiteGraph.OUTPUT){
-            if(this.outputs[slot_index_or_name]!=="undefined"){
+            if(typeof(this.outputs[slot_index_or_name])!=="undefined"){
+                LiteGraph.log_verbose("lgraphnode","getSlot","output slot_index_or_name found", slot_index_or_name, this.outputs[slot_index_or_name]);
                 return !returnObj ? slot_index_or_name : this.outputs[slot_index_or_name];
             }else{
-                return this.findInputSlot(slot_index_or_name, returnObj);
+                LiteGraph.log_verbose("lgraphnode","getSlot","output slot_index_or_name NOT found, find it", slot_index_or_name);
+                return this.findOutputSlot(slot_index_or_name, returnObj);
             }
         }else{
-            if(this.inputs[slot_index_or_name]!=="undefined"){
+            if(typeof(this.inputs[slot_index_or_name])!=="undefined"){
+                LiteGraph.log_verbose("lgraphnode","getSlot","input slot_index_or_name found", slot_index_or_name, this.inputs[slot_index_or_name]);
                 return !returnObj ? slot_index_or_name : this.inputs[slot_index_or_name];
             }else{
-                return this.findOutputSlot(slot_index_or_name, returnObj);
+                LiteGraph.log_verbose("lgraphnode","getSlot","input slot_index_or_name NOT found, find it", slot_index_or_name);
+                return this.findInputSlot(slot_index_or_name, returnObj);
             }
         }
     }
