@@ -157,15 +157,17 @@ class objPropertyWidget {
     }
 
     updateFromInput() {
-        var data = this.getInputData(0);
+        let refresh_ancestors = true;
+        var data = this.getInputData(0, refresh_ancestors);
         if (data != null) {
             this._obin = data;
             if(this._obin) { // } && typeof this._obin == "Object"){
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try{
                     this._objProperties = Object.keys(this._obin);
-                    if(this._objProperties && this._objProperties.sort)
+                    if(this._objProperties && this._objProperties.sort){
                         this._objProperties = this._objProperties.sort();
+                    }
                 }catch(e) {
                     console.error?.(this.name, "updateFromInput error", e);
                 }
@@ -191,7 +193,7 @@ class objPropertyWidget {
         this.setOutputData(0, this._value);
     }
 
-    onConnectionChanged(connection, slot, connected, link_info) {
+    onConnectionsChange(connection, slot, connected, link_info) {
         // only process the inputs
         if (connection != LiteGraph.INPUT) {
             return;
@@ -200,12 +202,12 @@ class objPropertyWidget {
     }
 
     onExecute() {
-        this.updateFromInput();
+        //this.updateFromInput();
     }
 
     onAction() {
         // should probably execute on action
-        this.updateFromInput();
+        //this.updateFromInput();
     }
 
     onGetInputs() {
@@ -331,6 +333,16 @@ class objMethodWidget {
     }
 
     onConfigure() {
+        this.updateFromInput();
+        this.refreshMethodAndInputs();
+    }
+
+    onConnectionsChange(connection, slot, connected, link_info) {
+        console.debug("onConnectionsChange", this.name, connection, slot, connected);
+        // only process the inputs
+        if (connection != LiteGraph.INPUT) {
+            return;
+        }
         this.updateFromInput();
         this.refreshMethodAndInputs();
     }

@@ -677,7 +677,7 @@ class Watch {
         this.value = 0;
     }
 
-    onConnectionChanged(connection, slot, connected, link_info) {
+    onConnectionChange(connection, slot, connected, link_info) {
         // only process the inputs
         if (connection != LiteGraph.INPUT) {
             return;
