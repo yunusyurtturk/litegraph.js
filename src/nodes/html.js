@@ -179,7 +179,7 @@ class JsonViewerNode{
     static desc = "Show and navigate a value structure";
     constructor() {
         this.addInput("value", 0);
-        this.properties = { html: "" }; // scale_content: false
+        this.properties = { html: "", collapsed: false, max_depth: 6 }; // scale_content: false
         this._added = false;
         this._html = "";
         this.size = [210, 210/1.618];
@@ -189,7 +189,7 @@ class JsonViewerNode{
     }
     refreshSlots(){
         this.htmlRefreshElement?.();
-        var sHtml = htmlJsonViewerHelper(this.getInputData(0));
+        var sHtml = htmlJsonViewerHelper(this.getInputData(0), this.properties.collapsed, this.properties.max_depth);
         if (sHtml) {
             try{
                 this.setHtml?.(sHtml); // this._html = sHtml;
@@ -212,7 +212,7 @@ class JsonViewerNode{
 }
 LiteGraph.registerNodeType("html/json_viewer", JsonViewerNode);
 // helper function 
-function htmlJsonViewerHelper(json, collapsible=false) {
+function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
     var TEMPLATES = {
         item:   '<div class="json__item">'
                     +'<div class="json__key">%KEY%</div>'
@@ -247,7 +247,7 @@ function htmlJsonViewerHelper(json, collapsible=false) {
     }
     function createCollapsibleItem(key, value, type, children){
         var tpl = 'itemCollapsible';   
-        if(collapsible) {
+        if(collapsed) {
             tpl = 'itemCollapsibleOpen';
         }
         var element = TEMPLATES[tpl].replace('%KEY%', key);
@@ -256,29 +256,33 @@ function htmlJsonViewerHelper(json, collapsible=false) {
         element = element.replace('%CHILDREN%', children);
         return element;
     }
-    function handleChildren(key, value, type, already_processed) {
+    function handleChildren(key, value, type, already_processed, max_depth=6, cur_depth=0) {
         if(!already_processed) already_processed = [];
         var html = '';
-        for(var item in value) { 
-            var _key = item,
-                _val = value[item];
-            if(typeof(_val)!=="object" || !already_processed.includes(_val)){
-                if(typeof(_val)=="object"){
-                    already_processed.push(_val);
+        if(cur_depth >= max_depth){
+            html += createItem(_key, "[MAX_DEPTH]");
+        }else{
+            for(var item in value) { 
+                var _key = item,
+                    _val = value[item];
+                if(typeof(_val)!=="object" || !already_processed.includes(_val)){
+                    if(typeof(_val)=="object"){
+                        already_processed.push(_val);
+                    }
+                    html += handleItem(_key, _val, already_processed, max_depth, cur_depth+1);
+                }else{
+                    html += createItem(_key, "[OBJ_CYCLE]");
                 }
-                html += handleItem(_key, _val, already_processed);
-            }else{
-                html += createItem(_key, "[OBJ_CYCLE]");
             }
         }
         return createCollapsibleItem(key, value, type, html);
     }
 
-    function handleItem(key, value, already_processed) {
+    function handleItem(key, value, already_processed, max_depth=6, cur_depth=0) {
         if(!already_processed) already_processed = [];
         var type = typeof value;
         if(typeof value === 'object') {
-            return handleChildren(key, value, type, already_processed);
+            return handleChildren(key, value, type, already_processed, max_depth, cur_depth);
         }
         return createItem(key, value, type);
     }
@@ -286,10 +290,10 @@ function htmlJsonViewerHelper(json, collapsible=false) {
     function parseObject(obj) {
         var _result = '<div class="html__json">';
         for(var item in obj) { 
-            var key = item,
-                value = obj[item];
-
-            _result += handleItem(key, value);
+            var key = item;
+            var value = obj[item];
+            var type = typeof value;
+            _result += handleItem(key, value, type, max_depth, 0);
         }
         _result += '</div>';
         return _result;
