@@ -16,7 +16,7 @@ class LGWebSocket {
         this.addOutput("EV_1", LiteGraph.EVENT, {nameLocked: true, removable: true});
         this.properties = {
             url: "ws://127.0.0.1:8080",
-            room: false,
+            room: null,
             auto_send_input: false,
             only_send_changes: true,
             runOnServerToo: false

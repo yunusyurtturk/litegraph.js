@@ -425,6 +425,12 @@ class objMethodWidget {
         if(action == "refresh") {
             this.updateFromInput();
         }else if(action == "execute" || action == "new") {
+            if (!this._function || typeof(this._function) == "function") {
+                console.debug?.("NodeObjMethod Execute", "force recheck input and method");
+                // force check
+                this.updateFromInput();
+                this.refreshMethodAndInputs();
+            }
             if(this._function && typeof(this._function) == "function") {
 
                 var parValues = [];
@@ -439,7 +445,7 @@ class objMethodWidget {
                         var r = new this._function(parValues); // this._function.apply(this, parValues);
                     }else{
                         // TODO: spread arguments
-                        var r = this._function.call(this._obin, parValues); // this._function.apply(this, parValues);
+                        var r = this._function.call(this._obin, ...parValues); // this._function.apply(this, parValues);
                     }
                     this.setOutputData(2, r); // update method result
                     this.triggerSlot(0);

@@ -348,14 +348,14 @@ class ConstantArray {
         this.widget = this.addWidget(
             "text",
             "array",
-            this.properties?.value,
+            this.properties.value,
             "value",
         );
         this.addWidget(
             "combo",
             "persistent",
-            this.properties?.persistent,
-            false,
+            this.properties.persistent,
+            "persistent",
             {values: [true, false]},
         );
         this.widgets_up = true;
@@ -363,26 +363,36 @@ class ConstantArray {
     }
 
     onPropertyChanged(name, value) {
-        this.widget.value = value;
-        if (value == null || value == "") {
-            return;
+        if(name=="value"){
+            this.widget.value = value; // force widget update (is it needed?)
+            // if (value == null || value == "") {
+            //     return;
+            // }
+            // this._value = value;
         }
+        this.processArray();
+    }
 
-        try {
-            if (value[0] != "[") this._value = JSON.parse("[" + value + "]");
-            else this._value = JSON.parse(value);
-            this.boxcolor = "#AEA";
-        } catch (err) {
-            this.boxcolor = "red";
+    processArray(){
+        if (!this.properties.value || !this.properties?.persistent || this.properties?.persistent==="false"){
+            // var v = this.getInputOrProperty("array"); //getInputData(0);
+            // this._value = v;
+            this._value = new Array();
+            try {
+                if (this.properties.value && typeof(this.properties.value[0] !== "undefined") && this.properties.value[0] != "["){
+                    this._value = JSON.parse("[" + this.properties.value + "]");
+                }
+                else this._value = JSON.parse(this.properties.value);
+                this.boxcolor = "#AEA";
+            } catch (err) {
+                this.boxcolor = "red";
+            }
         }
     }
 
     onExecute() {
-        var v = this.getInputOrProperty("array"); //getInputData(0);
-        this._value = v;
+        this.processArray();
         // clone
-        if (!this._value || !this.properties?.persistent || this.properties?.persistent==="false")
-            this._value = new Array();
         // this._value.length = v.length;
         // for (var i = 0; i < v.length; ++i)
         //     this._value[i] = v[i];
@@ -390,6 +400,10 @@ class ConstantArray {
         // TODO restart here, convert and reprocess ad array
         this.setOutputData(0, this._value);
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
+    }
+
+    onAdded(){
+        this.processArray();
     }
 }
 ConstantArray.prototype.setValue = ConstantNumber.prototype.setValue;
@@ -444,7 +458,8 @@ class SetArray {
         if (!arr) return;
         var v = this.getInputData(1);
         if (v === undefined) return;
-        if (this.properties?.index) arr[Math.floor(this.properties?.index)] = v;
+        let aK = Math.floor(this.properties?.index);
+        if(typeof(arr[aK])!=="undefined") arr[aK] = v;
         this.setOutputData(0, arr);
     }
 }
@@ -677,7 +692,7 @@ class Watch {
         this.value = 0;
     }
 
-    onConnectionChange(connection, slot, connected, link_info) {
+    onConnectionsChange(connection, slot, connected, link_info) {
         // only process the inputs
         if (connection != LiteGraph.INPUT) {
             return;
