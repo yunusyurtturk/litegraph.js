@@ -103,7 +103,7 @@ class WatchValue {
             }
         };
     
-        const isExpandable = (value) => typeof value === "object" && value !== null;
+        const isExpandable = (value) => ["object","function"].indexOf(typeof(value))>-1 && value !== null;
     
         const renderKeyValue = (key, value, depth, y, parentKey) => {
             if(y >= this.size[1]){
@@ -112,7 +112,7 @@ class WatchValue {
 
             const x = WatchValue.padding + depth * 20;
         
-            console.debug("Render:",key,"::",parentKey);
+            console.debug("Render:",key,"::",parentKey,":value:",typeof(value),value);
             drawText(`"${key}":`, WatchValue.COLORS.key, x, y);
         
             if (isExpandable(value)) {
@@ -186,7 +186,7 @@ class WatchValue {
             }
         
             drawText("]", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
-        } else if (typeof data === "object" && data !== null) {
+        } else if (["object","function"].indexOf(typeof(data))>-1 && data !== null) {
             drawText("{", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
             currentY += WatchValue.lineHeight;
         
@@ -296,7 +296,7 @@ class WatchValue {
     expandUpToDepth(data, maxDepth, currentDepth = 0, parentKey = "") {
         if (currentDepth >= maxDepth) return;
 
-        if (typeof data === "object" && data !== null) {
+        if (["object","function"].indexOf(typeof(data))>-1 && data !== null) {
             const nodeId = `${parentKey}`;
             this.state.expandedNodes.add(nodeId);
 

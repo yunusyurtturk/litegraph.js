@@ -229,12 +229,23 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
                                     +'%CHILDREN%'
                                 +'</label>'
     };
-    function createItem(key, value, type){
+    function createItem(key, value, type, max_depth=6, cur_depth=0){
         var element = TEMPLATES.item.replace('%KEY%', key);
         try{
             if(type == 'string') {
                 element = element.replace('%VALUE%', '"' + value + '"');
             } else {
+                if(type === 'object' || type === 'array') {
+                    if(value.constructor === Array){
+                        value = "array ["+value.length+"]";
+                        // TODO should cut array (value)
+                    }else{
+                        value = "object {"+Object.keys(value).length+"}";
+                    }
+                    if(cur_depth >= max_depth){
+                        value += " [MAX_DEPTH]";
+                    }
+                }
                 element = element.replace('%VALUE%', value);
             }
             element = element.replace('%TYPE%', type);
@@ -251,7 +262,15 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
             tpl = 'itemCollapsibleOpen';
         }
         var element = TEMPLATES[tpl].replace('%KEY%', key);
-        element = element.replace('%VALUE%', type);
+        if(typeof value === 'object') {
+            if(value.constructor === Array){
+                value = "array";
+                // TODO should cut array (value)
+            }else{
+                value = "object";
+            }
+        }
+        element = element.replace('%VALUE%', value);
         element = element.replace('%TYPE%', type);
         element = element.replace('%CHILDREN%', children);
         return element;
@@ -259,20 +278,16 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
     function handleChildren(key, value, type, already_processed, max_depth=6, cur_depth=0) {
         if(!already_processed) already_processed = [];
         var html = '';
-        if(cur_depth >= max_depth){
-            html += createItem(_key, "[MAX_DEPTH]");
-        }else{
-            for(var item in value) { 
-                var _key = item,
-                    _val = value[item];
-                if(typeof(_val)!=="object" || !already_processed.includes(_val)){
-                    if(typeof(_val)=="object"){
-                        already_processed.push(_val);
-                    }
-                    html += handleItem(_key, _val, already_processed, max_depth, cur_depth+1);
-                }else{
-                    html += createItem(_key, "[OBJ_CYCLE]");
+        for(var item in value) { 
+            var _key = item;
+            var _val = value[item];
+            if(typeof(_val)!=="object" || !already_processed.includes(_val)){
+                if(typeof(_val)=="object"){
+                    already_processed.push(_val);
                 }
+                html += handleItem(_key, _val, already_processed, max_depth, cur_depth+1);
+            }else{
+                html += createItem(_key, "[OBJ_CYCLE]");
             }
         }
         return createCollapsibleItem(key, value, type, html);
@@ -281,10 +296,18 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
     function handleItem(key, value, already_processed, max_depth=6, cur_depth=0) {
         if(!already_processed) already_processed = [];
         var type = typeof value;
-        if(typeof value === 'object') {
-            return handleChildren(key, value, type, already_processed, max_depth, cur_depth);
+        if(type === 'object') {
+            // if(value.constructor === Array){
+            //     type = "array";
+            //     // TODO should cut array (value)
+            // }
+            if(cur_depth >= max_depth){
+                // value += " [MAX_DEPTH]";
+            }else{
+                return handleChildren(key, value, type, already_processed, max_depth, cur_depth);
+            }
         }
-        return createItem(key, value, type);
+        return createItem(key, value, type, max_depth, cur_depth);
     }
 
     function parseObject(obj) {
@@ -293,7 +316,7 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
             var key = item;
             var value = obj[item];
             var type = typeof value;
-            _result += handleItem(key, value, type, max_depth, 0);
+            _result += handleItem(key, value, false, max_depth, 0);
         }
         _result += '</div>';
         return _result;

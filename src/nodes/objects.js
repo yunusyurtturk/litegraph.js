@@ -446,6 +446,7 @@ class objMethodWidget {
                     }else{
                         // TODO: spread arguments
                         var r = this._function.call(this._obin, ...parValues); // this._function.apply(this, parValues);
+                        console.debug?.("NodeObjMethod Execute", "result", r);
                     }
                     this.setOutputData(2, r); // update method result
                     this.triggerSlot(0);
