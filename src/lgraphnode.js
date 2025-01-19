@@ -1719,6 +1719,7 @@ export class LGraphNode {
             LiteGraph.NODE_TITLE_HEIGHT + bottom_offset :
             nodeSize[1] + LiteGraph.NODE_TITLE_HEIGHT + bottom_offset;
 
+        // TODO should retrieve bounding back if overriding
         this.processCallbackHandlers("onBounding",{
             def_cb: this.onBounding
         }, out)
@@ -2685,6 +2686,7 @@ export class LGraphNode {
         ]);
     }
 
+    // XXX: not used, could implement background image (? should do it graphcanvas to share same image or trust cache)
     loadImage(url) {
         var img = new Image();
         img.src = LiteGraph.node_images_path + url;
