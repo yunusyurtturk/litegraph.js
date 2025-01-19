@@ -94,7 +94,7 @@ class WatchValue {
         }
     }
 
-    renderJSON(data, depth = 0, offsetY = 0, parentKey = "") {
+    renderJSON(data, depth = 0, offsetY = 6, parentKey = "") {
 
         const drawText = (text, color, x, y) => {
             this.ctx.fillStyle = color;
@@ -214,6 +214,28 @@ class WatchValue {
             }
         
             drawText("}", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+        }else{
+            let dataType = typeof(data);
+            let dataColor = WatchValue.COLORS.string;
+            if(dataType === "boolean"){
+                dataType = "bool";
+                dataColor = WatchValue.COLORS.boolean;
+            }else if(data === null){
+                dataType = "null";
+                dataColor = WatchValue.COLORS.null;
+            }else if (dataType === "string") {
+                dataColor = WatchValue.COLORS.string;
+            } else if (dataType === "number") {
+                dataColor = WatchValue.COLORS.number;
+            }
+            if (dataType === "undefined") {
+                dataColor = WatchValue.COLORS.null;
+                dataType = "";
+            }else{
+                dataType = `"${dataType}": `;
+                drawText(dataType, dataColor, 18, currentY);
+            }
+            drawText(data, dataColor, 18 + this.ctx.measureText(dataType).width, currentY);
         }
     
         return currentY + WatchValue.lineHeight;
@@ -279,7 +301,7 @@ class WatchValue {
         this.ctx.textBaseline = "top";
 
         this.clickRegions = [];
-        let totalHeight = this.renderJSON(this.value, 0, -this.state.scrollOffset);
+        let totalHeight = this.renderJSON(this.value, 0, 6-this.state.scrollOffset);
         // Scroll boundaries
         // if (this.state.scrollOffset > totalHeight - myCanvas.height) {
         //     this.state.scrollOffset = Math.max(totalHeight - myCanvas.height, 0);
