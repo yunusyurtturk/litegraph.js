@@ -179,7 +179,7 @@ class JsonViewerNode{
     static desc = "Show and navigate a value structure";
     constructor() {
         this.addInput("value", 0);
-        this.properties = { html: "", collapsed: false, max_depth: 6 }; // scale_content: false
+        this.properties = { html: "", collapsed: false, max_depth: 3 }; // scale_content: false
         this._added = false;
         this._html = "";
         this.size = [210, 210/1.618];
@@ -231,53 +231,68 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
     };
     function createItem(key, value, type, max_depth=6, cur_depth=0){
         var element = TEMPLATES.item.replace('%KEY%', key);
-        try{
-            if(type == 'string') {
-                element = element.replace('%VALUE%', '"' + value + '"');
-            } else {
-                if(type === 'object' || type === 'array') {
-                    if(value.constructor === Array){
-                        value = "array ["+value.length+"]";
-                        // TODO should cut array (value)
-                    }else{
-                        value = "object {"+Object.keys(value).length+"}";
+        if(value===null){
+            element = element.replace('%VALUE%', "[NULL]");
+            element = element.replace('%TYPE%', "null");
+        }else{
+            try{
+                if(type == 'string') {
+                    element = element.replace('%VALUE%', '"' + value + '"');
+                } else {
+                    if(type === 'object' || type === 'array' || type === 'function') {
+                        if(value.constructor === Array){
+                            value = "array ["+value.length+"]";
+                            // TODO should cut array (value)
+                        }else if(type === 'function'){
+                            value = type+" {"+value.constructor+"}";
+                        }else{
+                            value = type+" {"+Object.keys(value).length+"}";
+                        }
+                        if(cur_depth >= max_depth){
+                            value += " [MAX_DEPTH]";
+                        }
                     }
-                    if(cur_depth >= max_depth){
-                        value += " [MAX_DEPTH]";
-                    }
+                    element = element.replace('%VALUE%', value);
                 }
-                element = element.replace('%VALUE%', value);
+                element = element.replace('%TYPE%', type);
+            }catch(e){
+                console.warn("html createItem error", type, value, e);
+                element = element.replace('%VALUE%', "[ERR]");
+                element = element.replace('%TYPE%', type);
             }
-            element = element.replace('%TYPE%', type);
-        }catch(e){
-            console.warn("html createItem error", type, value, e);
-            element = element.replace('%VALUE%', "[ERR]");
-            element = element.replace('%TYPE%', type);
         }
         return element;
     }
-    function createCollapsibleItem(key, value, type, children){
+    function createCollapsibleItem(key, value, type, html_children){
         var tpl = 'itemCollapsible';   
         if(collapsed) {
             tpl = 'itemCollapsibleOpen';
         }
         var element = TEMPLATES[tpl].replace('%KEY%', key);
-        if(typeof value === 'object') {
-            if(value.constructor === Array){
-                value = "array";
-                // TODO should cut array (value)
-            }else{
-                value = "object";
+        if(value===null){
+            type = "[NULL]";
+            value = "null";
+        }else{
+            if(typeof value === 'object') {
+                if(value.constructor === Array){
+                    value = "array ["+value.length+"]";
+                    // TODO should cut array (value)
+                }else{
+                    value = "object {"+Object.keys(value).length+"}"
+                }
+            }else if(typeof(value) == "function"){
+                value = "function";
             }
         }
         element = element.replace('%VALUE%', value);
         element = element.replace('%TYPE%', type);
-        element = element.replace('%CHILDREN%', children);
+        element = element.replace('%CHILDREN%', html_children);
         return element;
     }
     function handleChildren(key, value, type, already_processed, max_depth=6, cur_depth=0) {
         if(!already_processed) already_processed = [];
-        var html = '';
+        let html = '';
+        let nItems = 0;
         for(var item in value) { 
             var _key = item;
             var _val = value[item];
@@ -289,8 +304,13 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
             }else{
                 html += createItem(_key, "[OBJ_CYCLE]");
             }
+            nItems++;
         }
-        return createCollapsibleItem(key, value, type, html);
+        if(nItems){
+            return createCollapsibleItem(key, value, type, html);
+        }else{
+            return createItem(key, value, type, max_depth, cur_depth);
+        }
     }
 
     function handleItem(key, value, already_processed, max_depth=6, cur_depth=0) {

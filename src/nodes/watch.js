@@ -128,13 +128,26 @@ class WatchValue {
                     nodeId,
                 });
         
-                const color =
-                this.state.hoverNodeId === nodeId ? WatchValue.COLORS.hover : WatchValue.COLORS.bracket;
+                const color = this.state.hoverNodeId === nodeId ? WatchValue.COLORS.hover : WatchValue.COLORS.bracket;
                 drawText(isExpanded ? "-" : "+", color, toggleX, y);
         
                 if (isExpanded) {
                     return this.renderJSON(value, depth + 1, y + WatchValue.lineHeight, nodeId);
                 }
+
+                if(typeof value === 'object') {
+                    if(value.constructor === Array){
+                        value = "array ["+value.length+"]";
+                        // TODO should cut array (value)
+                    }else{
+                        value = "object {"+Object.keys(value).length+"}"
+                    }
+                }else if(typeof(value) == "function"){
+                    value = "function";
+                }
+
+                drawValue(value, x + this.ctx.measureText(`"${key}": `).width, y);
+
             } else {
                 drawValue(value, x + this.ctx.measureText(`"${key}": `).width, y);
             }
@@ -176,17 +189,19 @@ class WatchValue {
                 const loadMoreY = currentY;
                 drawText("... Load More", WatchValue.COLORS.loadMore, WatchValue.padding + (depth + 1) * 20, loadMoreY);
                 this.clickRegions.push({
-                x: WatchValue.padding + (depth + 1) * 20,
-                y: loadMoreY,
-                width: this.ctx.measureText("... Load More").width,
-                height: WatchValue.lineHeight,
-                nodeId: `loadMore-${nodeId}`,
+                    x: WatchValue.padding + (depth + 1) * 20,
+                    y: loadMoreY,
+                    width: this.ctx.measureText("... Load More").width,
+                    height: WatchValue.lineHeight,
+                    nodeId: `loadMore-${nodeId}`,
                 });
                 currentY += WatchValue.lineHeight;
             }
         
             drawText("]", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+
         } else if (["object","function"].indexOf(typeof(data))>-1 && data !== null) {
+
             drawText("{", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
             currentY += WatchValue.lineHeight;
         
@@ -204,11 +219,11 @@ class WatchValue {
                 const loadMoreY = currentY;
                 drawText("... Load More", WatchValue.COLORS.loadMore, WatchValue.padding + (depth + 1) * 20, loadMoreY);
                 this.clickRegions.push({
-                x: WatchValue.padding + (depth + 1) * 20,
-                y: loadMoreY,
-                width: this.ctx.measureText("... Load More").width,
-                height: WatchValue.lineHeight,
-                nodeId: `loadMore-${nodeId}`,
+                    x: WatchValue.padding + (depth + 1) * 20,
+                    y: loadMoreY,
+                    width: this.ctx.measureText("... Load More").width,
+                    height: WatchValue.lineHeight,
+                    nodeId: `loadMore-${nodeId}`,
                 });
                 currentY += WatchValue.lineHeight;
             }

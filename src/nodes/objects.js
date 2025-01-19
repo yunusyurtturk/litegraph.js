@@ -309,8 +309,10 @@ class objMethodWidget {
                     }
                     if(this._methods && this._methods.sort) this._methods = this._methods.sort();
                     console.debug(this.name, "got methods", this._methods);
+                    this.boxcolor = "#0F0";
                 }catch(e) {
                     console.warn?.("Err on methods get",e);
+                    this.boxcolor = "#F00";
                 }
                 if(this._methods) {
                     // this.removeWidget();
@@ -322,9 +324,11 @@ class objMethodWidget {
                 console.debug?.("Invalid obj",data);
                 this._function = null;
                 this._methods = [];
+                this.boxcolor = "#F00";
             }
         }else{
             console.debug(this.name, "empty data");
+            this.boxcolor = "#000";
         }
         if(!this.widg_prop.options) this.widg_prop.options = {}; // reset widget options
         this.widg_prop.options.values = this._methods; // set widget options
