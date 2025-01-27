@@ -446,7 +446,7 @@ class objMethodWidget {
                 console.debug?.("NodeObjMethod Execute", this._function, this._obin, parValues);
                 try{
                     if(this._isClass){
-                        var r = new this._function(parValues); // this._function.apply(this, parValues);
+                        var r = new this._function(...parValues); // this._function.apply(this, parValues);
                     }else{
                         // TODO: spread arguments
                         var r = this._function.call(this._obin, ...parValues); // this._function.apply(this, parValues);

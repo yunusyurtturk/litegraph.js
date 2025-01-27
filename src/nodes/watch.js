@@ -43,6 +43,7 @@ class WatchValue {
         this.clickRegions = [];
         this.ctx = null;
         this.properties = {"clip_area": true}
+        this.clip_area = true;
     }
 
     onExecute() {
@@ -112,7 +113,7 @@ class WatchValue {
 
             const x = WatchValue.padding + depth * 20;
         
-            console.debug("Render:",key,"::",parentKey,":value:",typeof(value),value);
+            // console.debug("Render:",key,"::",parentKey,":value:",typeof(value),value);
             drawText(`"${key}":`, WatchValue.COLORS.key, x, y);
         
             if (isExpandable(value)) {

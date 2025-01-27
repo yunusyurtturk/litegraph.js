@@ -72,6 +72,7 @@ lib_nodes_files = [
     "./src/nodes/objects.js",
     # "./src/nodes/libraries.js",
     "./src/nodes/html.js",
+    "./src/nodes/watch.js",
 ]
 
 lib_nodejs_nodes_files = [

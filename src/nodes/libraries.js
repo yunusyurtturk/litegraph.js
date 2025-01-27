@@ -193,8 +193,11 @@ class CDNLibInclude {
 
                 script.type = "module"; // this.properties.module ? "module" : "text/javascript";
                 script.textContent = "import * as "+this.properties.name+" from '"+url+"';";
+                // script.textContent = "import { LiteGraph } from '../litegraph.js';";
                 script.textContent += " "+"window."+this.properties.name+" = "+this.properties.name+";";
-                script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = "+this.properties.name+";";
+                // script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = "+this.properties.name+";";
+                script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = {};";
+                script.textContent += " "+"Object.assign(LiteGraph.libraries."+this.properties.name+", "+this.properties.name+");";
                 try{
                     console.debug?.("Lib script load",this.properties.name,url);
                     document.head.appendChild(script);
