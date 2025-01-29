@@ -721,7 +721,7 @@ class Watch {
         } else if (o.constructor === Array) {
             var str = "[";
             for (var i = 0; i < o.length; ++i) {
-                str += Watch.toString(o[i]) + (i + 1 != o.length ? "," : "");
+                str += WatchAdvanced.toString(o[i]) + (i + 1 != o.length ? "," : "");
             }
             str += "]";
             return str;
@@ -736,10 +736,224 @@ class Watch {
 
     onDrawBackground() {
         // show the current value
-        this.inputs[0].label = Watch.toString(this.value);
+        this.inputs[0].label = WatchAdvanced.toString(this.value);
     }
 }
 LiteGraph.registerNodeType("basic/watch", Watch);
+
+
+class WatchAdvanced{
+    static title = "WatchA";
+    static desc = "Show value of input, improved formatting";
+
+    constructor() {
+        this.size = [60, 30];
+        this.addInput("value", 0, { label: "" });
+        this.addProperty("font_family","Arial","string");
+        this.addProperty("font_size",14,"number"); //, "==", "enum", { values: GenericCompare.values });
+        this.addProperty("clip",false,"toggle");
+        this.value = 0;
+        this.value_last = 0;
+        this.contlines = {};
+        this.changed = true;
+    }
+
+    onExecute() {
+        if (this.inputs[0]) {
+            this.value = WatchAdvanced.toString(this.getInputData(0));
+            if (this.value !== this.value_last){
+                this.changed = true;
+                this.value_last = this.value;
+            }
+        }
+    };
+
+    getTitle() {
+        if (this.flags.collapsed) {
+            return this.inputs[0].label;
+        }
+        return this.title;
+    };
+
+    static toString = function(o) {
+        if (o == null) {
+            return "null";
+        } else if (o.constructor === Number) {
+            return o.toFixed(3);
+        } else if (o.constructor === Object) {
+            var str = "";
+            try{
+                str = JSON.stringify(o,null,2);
+            }catch(e){
+                str = "{OBJ}";
+            }
+            return str;
+        } else if (o.constructor === Array) {
+            var str = "[";
+            for (var i = 0; i < o.length; ++i) {
+                str += WatchAdvanced.toString(o[i]) + (i + 1 != o.length ? "," : "");
+            }
+            str += "]";
+            return str;
+        } else {
+            return String(o);
+        }
+    };
+
+    onDrawBackground(ctx) {
+        //show the current value
+        //this.inputs[0].label = WatchAdvanced.toString(this.value);
+        if (this.flags.collapsed)
+            return;
+        var lS = this.properties.font_size || 9;
+        var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT - 0.5;
+        // var oTMultiRet = {lines: [], maxW: 0, height:0}
+        ctx.font = lS+"px"
+                    +" "
+                    +(this.properties.font_family ? this.properties.font_family+"" : "Arial");
+        ctx.fillStyle = "#FFF";
+        if(this.changed){
+            var text = this.value; //WatchAdvanced.toString(this.value);
+            this.contlines = LiteGraph.canvasFillTextMultiline(ctx, text, 15, LiteGraph.NODE_TITLE_HEIGHT, this.size[0], lS, 0, y/lS); // context, text, x, y, maxWidth, lineHeight, startLine, endLine
+            this.changed = false;
+            console.debug("calculated multiline",this.contlines);
+        }else{
+            //console.debug("not changed",this.contlines);
+            
+        }
+        var nL = this.contlines.lines.length;
+        var nL_dif = this.contlines.lines_tot - nL;
+        //if(nL_dif > 0) nL -= 2; // show less? stay inside with .. +x lines message 
+        for(var iL=0; iL<nL; iL++){
+            ctx.fillText(this.contlines.lines[iL], 15, LiteGraph.NODE_TITLE_HEIGHT+(lS*iL));
+        }
+        if(nL_dif > 0){
+            ctx.fillText("... +"+nL_dif+" lines", 15, LiteGraph.NODE_TITLE_HEIGHT+(lS*(iL+1)));
+        }
+        this.clip_area = this.properties.clip;
+    };
+
+    fullWidth(menuitem,contextmenu,options,e,that_node,options_node){
+        if(!that_node) that_node = this;
+        if(!that_node || !that_node.size) return;
+        if(that_node.contlines && that_node.contlines.lines_tot){
+            if(that_node.size[0] != that_node.contlines.maxW + 15){
+                that_node.size[0] = that_node.contlines.maxW + 15;
+            }else{
+                that_node.size[0] = that_node.contlines.width + 15;
+            }
+        }else{
+            that_node.size[0] = 90;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    fullHeight(menuitem,contextmenu,options,e,that_node,options_node){
+        if(!that_node) that_node = this;
+        if(!that_node || !that_node.size) return;
+        if(that_node.contlines && that_node.contlines.lines_tot){
+            if(that_node.size[1] != that_node.properties.font_size*that_node.contlines.lines_tot){
+                that_node.size[1] = that_node.properties.font_size*that_node.contlines.lines_tot;
+            }else{
+                that_node.size[1] = 90;
+            }
+        }else{
+            that_node.size[1] = that_node.size_basic ? that_node.size_basic[0] : 30;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    showFull(menuitem,contextmenu,options,e,that_node,options_node){
+        /*console.debug("menuitem",menuitem);
+        console.debug("contextmenu",contextmenu);
+        console.debug("options",options);
+        console.debug("e",e);
+        console.debug("that_node",that_node);
+        console.debug("options_node",options_node);*/
+        if(!that_node) that_node = this;
+        if(!that_node || !that_node.size) return;
+        if(that_node.contlines && that_node.contlines.lines_tot){
+            if(that_node.size[1] < that_node.properties.font_size*that_node.contlines.lines_tot){
+                that_node.size[0] = that_node.contlines.maxW + 15;
+                that_node.size[1] = that_node.properties.font_size*that_node.contlines.lines_tot;
+                //that_node.properties.clip = false;
+            }else{
+                // should recalculate to know the size
+                that_node.size[0] = that_node.contlines.width + 15;
+                //that_node.size[1] = 120;
+                that_node.size[1] = 90;
+                //that_node.properties.clip = true;
+            }
+        }else{
+            that_node.size[1] = that_node.size_basic ? that_node.size_basic[1] : 30;
+            that_node.size[0] = that_node.size_basic ? that_node.size_basic[0] : 90;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    // context menu (right click) OVERRIDE 
+    // getMenuOptions(lgcanvas){ }
+
+    // context menu (right click) ADD
+    getExtraMenuOptions(lgcanvas){
+        return [{
+            content: "Toggle full",
+            has_submenu: false,
+            callback: this.showFull
+        },{
+            content: "Full Width",
+            callback: this.fullWidth
+        },{
+            content: "Full Height",
+            callback: this.fullHeight
+        }
+        ,null
+        ,{
+            content: "TODO - Copy",
+            callback: this.copyContent
+        }];
+    }
+
+    copyContent(menuitem,contextmenu,options,e,that_node,options_node){
+        //
+    }
+
+    onPropertyChanged(property, value){
+        this.changed = true;
+    }
+
+    onDblClick(e, pos, lgcanvas){
+        // use right click Fill view
+        // this.showFull();
+    }
+
+    onResize(size){
+        if(!this.resizeStart){
+            this.resizeStart = this.size;
+            this.changed = true;
+        }
+        // if(typeof this.flags !== "undefined"){
+        //     if(typeof this.flags.resizing !== "undefined" && !this.flags.resizing){
+        //         this.changed = true;
+        //     }
+        // }
+    }
+    onResizeEnd(lgcanvas){
+        if(typeof this.flags !== "undefined"){
+            if(typeof this.flags.resizing !== "undefined" && !this.flags.resizing){
+                this.resizeEnd = this.size;
+                if(this.resizeStart[0] != this.resizeEnd[0] || this.resizeStart[1] != this.resizeEnd[1]){
+                    this.changed = true;
+                }
+                this.resizeStart = false;
+            }
+        }
+    }
+}
+LiteGraph.registerNodeType("basic/watch_advanced", WatchAdvanced);
 
 
 // in case one type doesnt match other type but you want to connect them anyway
