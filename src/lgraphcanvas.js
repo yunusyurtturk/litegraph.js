@@ -8888,8 +8888,15 @@ export class LGraphCanvas {
         if(r!==null && (typeof(r)=="object")){
             if(typeof(r.return_value)=="object"){
                 if(typeof(r.return_value.length)!=="undefined" && r.return_value.length){
-                    extra.push(null);
-                    options = extra.concat(r.return_value);
+                    options = options.concat(r.return_value);
+                }else{
+                    LiteGraph.log_warn("getExtraMenuOptions", "not array", r.return_value);
+                }
+            }else{
+                if(typeof(r.length)!=="undefined" && r.length){
+                    options = options.concat(r);
+                }else{
+                    // LiteGraph.log_verbose("getExtraMenuOptions", "not returning additional options", r);
                 }
             }
         }

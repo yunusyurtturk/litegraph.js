@@ -1,4 +1,4 @@
-import { LiteGraph } from "../litegraph";
+import { LiteGraph } from "../litegraph.js";
 
 export let registerExtension_keyhelper = function(graphcanvas){
 
@@ -6,9 +6,8 @@ export let registerExtension_keyhelper = function(graphcanvas){
     // graphcanvas.cb_handler.debug = true;
 
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
-
     let ext = "key_helper";
-    let debug = false;
+    let debug = true;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown",function(oCbInfo, keyEvent){
@@ -26,7 +25,7 @@ export let registerExtension_keyhelper = function(graphcanvas){
         }
 
         switch(keyEvent.keyCode){
-            case 39: //ArrowLeft
+            case 39: //ArrowRight
                 if(nSel){
 
                     // ---- ADD NEW NODE CONNECTED TO SELECTED ONE  ----
