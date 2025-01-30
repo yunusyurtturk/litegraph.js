@@ -1557,7 +1557,16 @@ export class LGraphNode {
 
     /**
      * returns all the info available about a property of this node.
-     *
+     * common info are
+     *  .type (.widget is used if present), "string" is used if both undefined
+     *      "code", "boolean", "string", "number", "undefined", "enum", "combo"
+        .readonly
+        .prevent_input_bind
+        .prevent_output_bind
+        .label
+        .values (Array (or Object))
+            values are than passed down to LGraphCanvas-Panel, to Widget and to ContextMenu
+     * 
      * @method getPropertyInfo
      * @param {String} property name of the property
      * @return {Object} the object with all the available info
@@ -1610,6 +1619,8 @@ export class LGraphNode {
         /* if(!info.property){
             info.property = property;
         } */
+        // todo map types to common (bool-boolean, ..)
+        // THINK: should map porpertyType, widgetType, basic_nodeType ..
         if(info.widget == "combo"){
             info.type = "enum";
         }
@@ -1675,10 +1686,59 @@ export class LGraphNode {
         return w;
     }
 
+    /**Look for a widget by name
+     * @method findWidget
+     * @param {*} name 
+     * @param {*} returnObj 
+     * @returns {number|object}
+     */
+    findWidget(name, returnObj) {
+        if (!this.widgets) {
+            return -1;
+        }
+        //LiteGraph.log_debug("lgraphnode", "findWidget", this, name, returnObj);
+        for (var i = 0, l = this.widgets.length; i < l; ++i) {
+            if (name == this.widgets[i].name) {
+                return !returnObj ? i : this.widgets[i];
+            }
+        }
+        return -1;
+    }
+
     addCustomWidget(custom_widget) {
         this.widgets ??= [];
         this.widgets.push(custom_widget);
         return custom_widget;
+    }
+
+    /**Add a button widget that triggers an action
+     * @method addActionWidget
+     * @param {*} action_name 
+     * @param {*} action_slot 
+     */
+    addActionWidget(action_name, action_slot){
+        let wNode = this;
+        let options = {};
+        let param = null;
+        let callback = ()=>{
+            wNode.actionDo(action_name, param, options = {}, action_slot);
+        };
+        this.addWidget("button", action_name, null, callback, options);
+    }
+
+    /**Toggle a button widget for an action
+     * @method toggleActionWidget
+     * @param {*} action_name 
+     * @param {*} action_slot 
+     */
+    toggleActionWidget(action_name, action_slot){
+        const widgetIndex = this.findWidget(action_name, false); //this.widgets?.find((widget) => widget && widget.name === action_name);
+        LiteGraph.log_debug("lgraphnode", "toggleActionWidget", this, action_name, action_slot, widgetIndex, widgetIndex>-1?"REMOVE":"ADD");
+        if(widgetIndex>-1){
+            this.widgets.splice(widgetIndex, 1);
+        }else{
+            this.addActionWidget(action_name, action_slot);
+        }
     }
 
     /**

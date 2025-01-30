@@ -689,7 +689,7 @@ class Watch {
     constructor() {
         this.size = [60, 30];
         this.addInput("value", 0, { label: "" });
-        this.value = 0;
+        this.value = null;
     }
 
     onConnectionsChange(connection, slot, connected, link_info) {

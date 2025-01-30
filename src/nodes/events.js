@@ -517,7 +517,7 @@ class SemaphoreEvent {
     }
 
     onExecute() {
-        this.setOutputData(1, this._ready);
+        this.setOutputData(2, this._ready);
         this.boxcolor = this._ready ? "#9F9" : "#FA5";
     }
 
