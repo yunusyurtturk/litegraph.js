@@ -1,5 +1,7 @@
 import { LiteGraph } from "../litegraph.js";
 
+// TODO :: MIDI WORKS WITH ACTIONS SLOTS REVISE: (CANT ASSIGN MULTIPLE, WHEN IT SHOULD WITH THIS DATA TYPE, AND DATA SEEMS NOT PASSED BY (eg. MIDI Show using his input does not seems to work))
+
 var MIDI_COLOR = "#243";
 
 class MIDIEvent {
@@ -1054,6 +1056,8 @@ class LGMIDIGenerator {
             duration: 0.5,
             mode: "sequence",
         };
+        // TODO add property with addProperty and specify combo mode sequence,random
+        // TODO how to play all instantly? (use multiple nodes..)
 
         this.notes_pitches = LGMIDIGenerator.processScale(this.properties.notes);
         this.sequence_index = 0;
