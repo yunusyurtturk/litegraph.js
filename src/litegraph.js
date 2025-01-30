@@ -207,6 +207,8 @@ export class LiteGraphClass {
     properties_allow_output_binding = false; // [true!] allow create and bind outputs, will update output slots when node executed 
     properties_input_binding_check_ancestors = false; // [true!] when executing a node it will update binding, there when getting data will ensure data is updated
 
+    allow_action_widget_button = true; // [true!] allow linking an action to a button widget to call it
+
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
     cb_handler = false;

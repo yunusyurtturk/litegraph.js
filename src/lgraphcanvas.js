@@ -6170,13 +6170,18 @@ export class LGraphCanvas {
             let info = node.getPropertyInfo(i);
             let info_type = info && info!==null ? info.type : "string";
             let readonly = info && info!==null ? (info.readonly?true:false) : false;
-            let prevent_input_bind = info && info!==null ? (info.prevent_input_bind?true:false) : false;
+            let prevent_input_bind = readonly || (info && info!==null) ? (readonly || info.prevent_input_bind?true:false) : false;
             let prevent_output_bind = info && info!==null ? (info.prevent_output_bind?true:false) : false;
             let propName = info && info!==null && info.label ? info.label : i;
 
-            // parse combo
-            if(info_type == "enum" || info_type == "combo"){
+            // parse combo (and parse single number and number in string)
+            if( info_type == "enum" || info_type == "combo"
+                || info_type == "number"
+            ){
                 value = LGraphCanvas.getPropertyPrintableValue( value, info.values );
+            // TODO add option to format numbers in string
+            // }else if((info_type == "string" && !isNaN(value) && !isNaN(parseFloat(value)))){
+            //     value = LGraphCanvas.getPropertyPrintableValue( value, info.values );
             }
 
             // value could contain invalid html characters, clean that
@@ -7959,6 +7964,9 @@ export class LGraphCanvas {
             value_element.innerText = str_value;
             elem.dataset["property"] = name;
             elem.dataset["type"] = options.type || type;
+            // if(elem.dataset["type"]=="number"){
+            //     elem.dataset["precision"] = options.precision || 3;
+            // }
             elem.options = options;
             elem.value = value;
 
@@ -8046,6 +8054,12 @@ export class LGraphCanvas {
 
     static getPropertyPrintableValue(value, values) {
         if(!values)
+            if( typeof(value)=="number"){
+                return parseFloat(value.toFixed(5));
+            // TODO add option to format numbers in string
+            // }else if((typeof(value) == "string" && !isNaN(value) && !isNaN(parseFloat(value)))){
+            //     return parseFloat(Number(value).toFixed(5));
+            }
             return String(value);
 
         if(values.constructor === Array) {
@@ -8986,6 +9000,9 @@ export class LGraphCanvas {
             options.title = slotOb.type || "*";
             if (slotOb.type == LiteGraph.ACTION) {
                 options.title = "Action";
+                if(LiteGraph.allow_action_widget_button){
+                    menu_info.push({ content: "Toggle widget", callback: node.toggleActionWidget(slotOb.name, slot) });
+                }
             } else if (slotOb.type == LiteGraph.EVENT) {
                 options.title = "Event";
             }
