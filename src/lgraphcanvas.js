@@ -625,6 +625,7 @@ export class LGraphCanvas {
         if(this.pointer_is_down && e.isPrimary !== undefined && !e.isPrimary) {
             this.userInput_isNotPrimary = true;
             // DBG("pointerevents: userInput_isNotPrimary start");
+            LiteGraph.log_debug("lgraphcanvas","processUserInputDown","userInput_isNotPrimary",e);
         } else {
             this.userInput_isNotPrimary = false;
         }
@@ -690,7 +691,7 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"));
+        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y,"previousClick",this.last_mouseclick,"diffTimeClick",(this.last_mouseclick?LiteGraph.getTime()-this.last_mouseclick:"notlast"),"userInput_isNotPrimary",this.userInput_isNotPrimary);
         LiteGraph.log_verbose("coordinates",x,y,this.viewport, "canvas coordinates", e.canvasX, e.canvasY);
 
         this.ds.viewport = this.viewport;
@@ -6624,7 +6625,7 @@ export class LGraphCanvas {
                     return true;
 
                 }else{
-                    LiteGraph.log_warn("lgraphcanvas","createDefaultNodeForSlot","failed creating "+nodeNewType);
+                    LiteGraph.log_warn("lgraphcanvas","createDefaultNodeForSlot","failed creating", nodeNewType);
                 }
             }
         }
@@ -9008,7 +9009,7 @@ export class LGraphCanvas {
             if (slotOb.type == LiteGraph.ACTION) {
                 options.title = "Action";
                 if(LiteGraph.allow_action_widget_button){
-                    menu_info.push({ content: "Toggle widget", callback: node.toggleActionWidget(slotOb.name, slot) });
+                    menu_info.push({ content: "Toggle widget", callback: ()=>{ node.toggleActionWidget(slotOb.name, slot); } });
                 }
             } else if (slotOb.type == LiteGraph.EVENT) {
                 options.title = "Event";

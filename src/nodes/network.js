@@ -7,13 +7,13 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("message_data", LiteGraph.ACTION);
-        this.addInput("DATA_1", 0, {nameLocked: true, removable: true});
-        this.addInput("EV_1", LiteGraph.ACTION, {nameLocked: true, removable: true});
-        this.addOutput("on_received", LiteGraph.EVENT);
-        this.addOutput("data_rec", 0);
-        this.addOutput("DATA_1", 0, {nameLocked: true, removable: true});
-        this.addOutput("EV_1", LiteGraph.EVENT, {nameLocked: true, removable: true});
+        this.addInput("msg_w_data", LiteGraph.ACTION, {nameLocked: true, removable: false});
+        this.addInput("DATA_1", 0, {nameLocked: false, removable: true});
+        this.addInput("EV_1", LiteGraph.ACTION, {nameLocked: false, removable: true});
+        this.addOutput("onReceived", LiteGraph.EVENT);
+        this.addOutput("dataRec", 0, {nameLocked: true, removable: false});
+        this.addOutput("DATA_1", 0, {nameLocked: false, removable: true});
+        this.addOutput("EV_1", LiteGraph.EVENT, {nameLocked: false, removable: true});
         this.properties = {
             url: "ws://127.0.0.1:8080",
             room: null,
@@ -34,7 +34,7 @@ class LGWebSocket {
     }
 
     onExecute() {
-        if (!this._ws && this.properties.url) {
+        if (!this._ws && this.properties.url && !this._ws?.readyState == WebSocket.CONNECTING) {
             this.connectSocket();
         }
 
@@ -179,7 +179,7 @@ class LGWebSocket {
             }
             this._last_received_data[channelX] = dataX;
             console.debug("WS updating data and triggers:", "channelX", channelX, "dataX", dataX, "slotX", slotX);
-            // set any data to default data_rec slot
+            // set any data to default dataRec slot
             this.setOutputData(1, dataX);
             // if not an action, set output data to specific channel
             if(slotX==0){
@@ -275,6 +275,94 @@ class LGWebSocket {
     }
 }
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
+
+class LGSocketIO {
+
+    static title = "Socket.IO Client";
+    static desc = "Connect to a Socket.IO server to send and receive data";
+
+    constructor() {
+        this.size = [60, 20];
+        this.addInput("SEND", LiteGraph.ACTION);
+        this.addInput("type", "string", { nameLocked: true, removable: false, param_bind: true });
+        this.addInput("content", "string", { nameLocked: true, removable: false, param_bind: true });
+        this.addOutput("onReceived", LiteGraph.EVENT);
+        this.addOutput("dataRec", 0);
+        this.properties = {
+            url: "http://127.0.0.1:3000",
+            room: null,
+            auto_send_input: false,
+            only_send_changes: true,
+            runOnServerToo: false
+        };
+        this.addProperty("type", "message", "string");
+        this.addProperty("content", "", "string");
+        this._socket = null;
+        this._last_sent_data = [];
+        this._last_received_data = [];
+        // TODO check library io is available
+    }
+
+    onPropertyChanged(name, _value) {
+        if (name === "url") {
+            this.connectSocket();
+        }
+    }
+
+    onExecute() {
+        if (!this._socket && this.properties.url){ // TODO && !this.state == "connecting") {
+            this.connectSocket();
+        }
+    }
+
+    connectSocket() {
+        try{
+            if (this._socket) {
+                this._socket.disconnect();
+            }
+
+            this.boxcolor = "#00F";
+
+            this._socket = io(this.properties.url);
+            
+            this._socket.on("connect", () => {
+                console.log("Connected to Socket.IO server");
+                if (this.properties.room) {
+                    this._socket.emit("join", this.properties.room);
+                }
+                this.boxcolor = "#0F0";
+            });
+
+            this._socket.on("message", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
+
+            this._socket.on("disconnect", () => {
+                console.log("Disconnected from Socket.IO server");
+                this.boxcolor = "#FF0";
+            });
+        }catch(e){
+            console?.warn("network/SocketIO", "error", e);
+            this.boxcolor = "#F00";
+        }
+    }
+
+    onAction(action, param) {
+        if (!this._socket){
+            return;
+        }
+        if (action === "msg_w_data") {
+            this._socket.emit("message", param);
+        }
+        if (action === "SEND") {
+            this._socket.emit(this.getInputOrProperty("type"), this.getInputOrProperty("content"));
+        }
+    }
+}
+
+LiteGraph.registerNodeType("network/SocketIO", LGSocketIO);
 
 
 
