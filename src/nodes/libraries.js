@@ -1,40 +1,304 @@
 
 import { LiteGraph } from "../litegraph.js";
 
-// WIP
-// https://api.cdnjs.com/libraries
-// dynamically load libraries and to to expose global object and methods
-const libraries_known = {
-    // "jquery": {"obj":"jQuery","name":"jquery", "latest":"..URL.."}
-    "fullPage.js": {"obj":"fullPage","name":"fullPage.js", "latest":"https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/4.0.25/fullpage.min.js"}
-};
-const libraries_loaded = {
-    // "vue":{},
-};
-LiteGraph.libraries = {}; // STORING REFERENCES
-// should make a class for this, and add this to graph, serialize data to get that back when loading back
-/**/
 
-function camelize(str) {
-    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(letter, index) {
-        return index == 0 ? letter.toLowerCase() : letter.toUpperCase();
-    }).replace(/\s+/g, '');
+class LibraryManager {
+    constructor() {
+        this.libraries_known = {};  
+        this.libraries_loaded = {}; 
+        this.libraries_state = {};  
+    }
+
+    registerLibrary(key, version, files, globalObject) {
+        this.libraries_known[key] = { key, version, files, globalObject };
+        this.libraries_state[key] = "not_loaded";
+    }
+
+    async loadLibrary(key, callback) {
+        if (!this.libraries_known[key]) {
+            console.error(`Library ${key} not registered.`);
+            return;
+        }
+
+        if (this.libraries_state[key] === "loading") {
+            console.warn(`Library ${key} is already loading.`);
+            return;
+        }
+
+        if (this.libraries_state[key] === "loaded") {
+            console.warn(`Library ${key} is already loaded.`);
+            callback && callback(this.libraries_loaded[key]);
+            return;
+        }
+
+        this.libraries_state[key] = "loading";
+        const library = this.libraries_known[key];
+
+        for (const fileX of library.files) {
+            // Detect required imports before loading
+            const requiredImports = await this.detectRequiredImports(fileX);
+
+            // Load only the necessary remapped files
+            const promises = requiredImports.map(file => this.loadScript(file));
+
+            Promise.all(promises)
+                .then(() => {
+                    this.loadScript(fileX, key).then(()=>{
+                        this.libraries_state[key] = "loaded";
+                        this.libraries_loaded[key] = window[key] || {};
+                        console.log(`Library ${key} loaded.`);
+                        callback && callback(this.libraries_loaded[key]);
+                    })
+                    .catch(error => {
+                        this.libraries_state[key] = "error";
+                        console.error(`Error loading ${key}:`, error);
+                    });
+                })
+                .catch(error => {
+                    this.libraries_state[key] = "error";
+                    console.error(`Error loading required imports ${key}:`, error);
+                });
+        }
+    }
+
+    // **📌 Detect only the required imports using the source map**
+    async detectRequiredImports(scriptURL) {
+        try {
+            // Step 1: Fetch the script content
+            const response = await fetch(scriptURL);
+            if (!response.ok) throw new Error(`Failed to fetch ${scriptURL}`);
+            const scriptText = await response.text();
+    
+            // Step 2: Extract all bare imports from the script
+            const importMatches = [...scriptText.matchAll(/import\s+.*?["']([^"']+)["']/g)];
+            const bareImports = importMatches.map(match => match[1]).filter(spec => !spec.startsWith("."));
+    
+            // Step 3: Find the source map URL
+            const sourceMapMatch = scriptText.match(/\/\/# sourceMappingURL=(.+)/);
+            if (!sourceMapMatch) {
+                console.warn(`No source map found in ${scriptURL}`);
+                return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+            }
+    
+            const sourceMapURL = new URL(sourceMapMatch[1], scriptURL).href;
+            console.log(`Found source map: ${sourceMapURL}`);
+    
+            // Step 4: Fetch the source map JSON
+            const mapResponse = await fetch(sourceMapURL);
+            if (!mapResponse.ok) throw new Error(`Failed to fetch source map: ${sourceMapURL}`);
+            const sourceMap = await mapResponse.json();
+    
+            // Step 5: Correctly resolve only the required imports
+            const resolvedFiles = bareImports
+                .map(importName => {
+                    // Check if `sourcesContent` or `sources` contains the module
+                    const exactMatch = sourceMap.sources.find(src => src.endsWith(`/${importName}.js`));
+                    return exactMatch ? new URL(exactMatch, scriptURL).href : null;
+                })
+                .filter(Boolean); // Remove nulls
+    
+            console.log(`✅ Correctly resolved imports:`, resolvedFiles);
+            return resolvedFiles.length > 0 ? resolvedFiles : []; // DO NOT, return only extra : NO OLD Use original file if no matches found
+        } catch (error) {
+            console.error(`❌ Error resolving imports for ${scriptURL}:`, error);
+            return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+        }
+    }
+
+    // **🔍 Detect and Load JavaScript as Module or CommonJS**
+    async loadScript(url, globalObject="lastscript") {
+        console.debug("Load script", url, globalObject);
+        return new Promise(async (resolve, reject) => {
+            let isModule = await this.isESModule(url);
+            console.debug("loadScript", isModule?"MODULE":"COMMONJS", url);
+            if (isModule) {
+                let script = document.createElement("script");
+                script.type = "module";
+                script.textContent = `
+                    import { LiteGraph } from '../src/litegraph.js';
+                    import * as ${globalObject} from '${url}';
+                    window.${globalObject} = ${globalObject};
+                    LiteGraph.libraries.${globalObject} = ${globalObject};
+                    console.warn('LOADLIBOBJECT',window.${globalObject});
+                    alert('loaded ${globalObject}');
+                `;
+                document.head.appendChild(script);
+                resolve();
+            } else {
+                let script = document.createElement("script");
+                script.type = "text/javascript";
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            }
+        });
+    }
+
+    // **🔍 Check if a script is an ES Module**
+    async isESModule(url) {
+        try {
+            let response = await fetch(url);
+            let text = await response.text();
+            return /export\s|import\s/.test(text); // Detect ES Module keywords
+        } catch (e) {
+            return false; // Default to CommonJS if fetch fails
+        }
+    }
+
+    // Load CSS
+    loadCSS(href) {
+        return new Promise((resolve, reject) => {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = href;
+            link.onload = resolve;
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
+    // Unload a library
+    unloadLibrary(key) {
+        if (!this.libraries_known[key]) {
+            console.error(`Library ${key} not registered.`);
+            return;
+        }
+
+        if (this.libraries_state[key] !== "loaded") {
+            console.warn(`Library ${key} is not loaded.`);
+            return;
+        }
+
+        const library = this.libraries_known[key];
+        library.files.forEach(file => {
+            if (file.endsWith(".js")) {
+                document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
+            } else if (file.endsWith(".css")) {
+                document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
+            }
+        });
+
+        this.libraries_state[key] = "not_loaded";
+        delete this.libraries_loaded[key];
+        console.log(`Library ${key} unloaded.`);
+    }
+
+    // Get the state of a library
+    getLibraryState(key) {
+        return this.libraries_state[key] || "unknown";
+    }
 }
 
-// CDN LIBRARY SEARCH
+// Attach LibraryManager to LiteGraph
+LiteGraph.libraries = new LibraryManager();
+
+
+// Utility function to format names
+function camelize(str) {
+    return str.replace(/[^a-zA-Z0-9_$]/g, '_').replace(/^[0-9]/, '_$&');
+}
+
+// LiteGraph Node: CDNLibInclude
+class CDNLibInclude {
+    static title = "Lib Load";
+    static desc = "Load and include a JS library (CDN or URL)";
+
+    constructor() {
+        this.addInput("load", LiteGraph.ACTION);
+        this.addInput("lib_spec", "object,cdn_lib");
+        this.addInput("url", "string,url", { param_bind: true });
+        this.addInput("name", "string", { param_bind: true });
+        this.addOutput("ready", LiteGraph.EVENT);
+        this.addOutput("error", LiteGraph.EVENT);
+
+        this.addProperty("module", true, "boolean");
+        this.addProperty("url", "", "string");
+        this.addProperty("name", "", "string");
+
+        this.addWidget("string", "url", "", "url", {});
+        this.addWidget("string", "name", "", "name", {});
+        this.addWidget("toggle", "module", false, "module", {});
+    }
+
+    load() {
+        const that = this;
+        let url = this.getInputOrProperty("url");
+        let name = this.getInputOrProperty("name");
+        let lib_spec = {};
+
+        if (!url) {
+            lib_spec = this.getInputOrProperty("lib_spec");
+            if (lib_spec && typeof lib_spec === "object" && lib_spec.latest) {
+                url = lib_spec.latest;
+                name = camelize(lib_spec.name);
+            }
+        } else {
+            if (url && name) {
+                lib_spec = { name, latest: url };
+            } else {
+                this.boxcolor = "#F00";
+                return;
+            }
+        }
+
+        if (lib_spec.latest) {
+            this.setProperty("name", name);
+            this.setProperty("url", url);
+
+            LiteGraph.libraries.registerLibrary(name, "latest", [url], name);
+            LiteGraph.libraries.loadLibrary(name, () => {
+                that.on_loaded(lib_spec);
+            });
+        } else {
+            this.boxcolor = "#F00";
+        }
+    }
+
+    on_loaded(lib_spec) {
+        console.debug?.("Loaded library", lib_spec);
+        if (lib_spec && lib_spec.name) {
+            this.trigger("ready");
+            this.boxcolor = "#0F0";
+        } else {
+            this.on_error(lib_spec);
+        }
+    }
+
+    on_error(lib_spec, e) {
+        this.trigger("error");
+        this.boxcolor = "#F00";
+        console.warn?.("Lib loading failed", lib_spec, e);
+    }
+
+    onAction(evt) {
+        if (evt === "load") {
+            this.load();
+        }
+    }
+
+    onExecute() {}
+
+    onGetInputs() {}
+
+    onGetOutputs() {}
+}
+// Register the node
+LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
+
 
 class CDNLibSearch {
     constructor() {
         this.addInput("search", LiteGraph.ACTION);
-        // this.addInput("name", "string"); in optionals
         this.addProperty("name", "", "string");
         this.addOutput("ready", LiteGraph.EVENT);
         this.addOutput("results", "array");
-        this.addOutput("first name", "object");
+        this.addOutput("first name", "string");
         this.addOutput("first object", "object");
-        // this.addOutput("error", LiteGraph.EVENT); // in optionals
+        this.addOutput("error", LiteGraph.EVENT);
+
         this.addWidget("string", "name", this.properties.name, "name");
-        // this.addWidget("button", "Fetch", null, this.fetch.bind(this));
+
         this._data = null;
         this._fetching = null;
         this.base_url = "https://api.cdnjs.com/libraries";
@@ -44,223 +308,145 @@ class CDNLibSearch {
     static desc = "Search and fetch CDN libraries";
 
     search() {
-        var that = this;
-        var url = this.base_url;
-        var name = this.getInputOrProperty("name");
-        if(name && name!=="") {
-            url += "?search="+name;
+        const that = this;
+        let url = this.base_url;
+        const name = this.getInputOrProperty("name");
+
+        if (name && name !== "") {
+            url += "?search=" + encodeURIComponent(name);
         }
+
         this._fetching = fetch(url)
             .then((resp) => {
-                if(!resp.ok) {
+                if (!resp.ok) {
                     this.boxcolor = "#F00";
                     that.trigger("error");
-                }else{
-                    this.boxcolor = "#0F0";
-                    return resp.text();
+                    return null;
                 }
+                return resp.json();
             })
             .then((data) => {
+                if (!data || !data.results) {
+                    that.boxcolor = "#F00";
+                    that.trigger("error");
+                    return;
+                }
+
                 that._data = data;
-                that._fetching = null;
+                that.boxcolor = "#0F0";
 
-                // var libsNames = [];
-                // for(var iL in data.results){
-                // libsNames.push(data.results[iL]["name"]);
-                // }
+                if (data.results.length > 0) {
+                    const firstLib = data.results[0];
 
-                if(this._data && typeof(this._data)=="string") {
-                    try{
-                        this._data = JSON.parse(this._data);
-                    }catch(e) {
-                        console.warn?.("Not a JSON resp",this._data);
-                    }
+                    // Extract details
+                    const lib_spec = {
+                        name: firstLib.name,
+                        latest: firstLib.latest,
+                        files: [firstLib.latest] // Assuming the latest file URL is the main script
+                    };
+
+                    // Register in LibraryManager
+                    LiteGraph.libraries.registerLibrary(lib_spec.name, "latest", lib_spec.files, lib_spec.name);
+
+                    // Set output data
+                    that.setOutputData(1, data.results);  // Full results array
+                    that.setOutputData(2, firstLib.name); // First library name
+                    that.setOutputData(3, lib_spec);      // First library object
+                } else {
+                    that.setOutputData(2, null);
+                    that.setOutputData(3, null);
                 }
 
-                if(this._data && typeof(this._data)=="object") {
-                    if(this._data.results && this._data.results.length && this._data.results[0]["name"]) {
-                        this.setOutputData(1, this._data.results); // array of result libs
-                        this.setOutputData(2, this._data.results[0]["name"]);
-                        this.setOutputData(3, this._data.results[0]);
-                    }else{
-                    // no results?
-                        this.setOutputData(2, null);
-                        this.setOutputData(3, null);
-                    }
-                }else{
-                    this.setOutputData(2, null);
-                    this.setOutputData(3, null);
-                }
                 that.trigger("ready");
+            })
+            .catch((error) => {
+                console.error("CDN Search error:", error);
+                that.boxcolor = "#F00";
+                that.trigger("error");
             });
     }
 
     onAction(evt) {
-        if(evt == "search")
+        if (evt === "search") {
             this.search();
-    }
-
-    onExecute() {
-        // this.setOutputData(1, this._data); // "data"
-        // if(this._data && typeof(this._data)=="string"){
-        //     try{
-        //         this._data = JSON.parse(this._data);
-        //     }catch(e){
-        //         console.warn?.("Not a JSON resp",this._data);
-        //     }
-        // }
-        // if(this._data && typeof(this._data)=="object"){
-        //     if(this._data.results && this._data.results.length){
-        //         this.setOutputData(2, this._data.results[0]);
-        //     }
-        // }else{
-        //     this.setOutputData(2, null);
-        // }
+        }
     }
 
     onGetInputs() {
-        return [["name","string"]];
+        return [["name", "string"]];
     }
 
     onGetOutputs() {
-        return [["error",LiteGraph.EVENT]];
+        return [
+            ["error", LiteGraph.EVENT],
+            ["results", "array"],
+            ["first name", "string"],
+            ["first object", "object"]
+        ];
     }
 }
+
+// Register the node
 LiteGraph.registerNodeType("libraries/search_CDN_lib", CDNLibSearch);
 
 
-// CDN LIBRARY LOAD INCLUDE
-
-class CDNLibInclude {
-
-    static title = "Lib Load";
-    static desc = "Load and include a JS library (CDN or url)";
-
+class CDNLibrarySelector {
     constructor() {
-        this.addInput("load", LiteGraph.ACTION);
-        this.addInput("lib_spec", "object,cdn_lib");
-        this.addInput("url", "string,url", {param_bind: true});
-        this.addInput("name", "string", {param_bind: true});
-        this.addOutput("ready", LiteGraph.EVENT);
-        this.addOutput("error", LiteGraph.EVENT);
-        // this.addOutput("error", LiteGraph.EVENT); // in optionals
-        // this.addWidget("button", "load", null, this.load.bind(this));
-        // this.addProperty("type", "text/javascript", "enum", {values:["text/javascript", "module"]});
-        this.addProperty("module", true, "boolean");
-        this.addProperty("url", "", "string", {});
-        this.addProperty("name", "", "string", {});
-        this.addWidget("string", "url", "", "url", {});
-        this.addWidget("string", "name", "", "name", {});
-        this.addWidget("toggle", "module", false, "module", {});
+        this.addInput("refresh", LiteGraph.ACTION);
+        this.addOutput("selected lib", "object");
+        this.addOutput("libraries", "array");
+
+        this.addProperty("selectedLibrary", "", "string");
+
+        this.librariesList = this.getLibraries(); // Initial list
+
+        this.addWidget("combo", "Library", this.properties.selectedLibrary, (v) => {
+            this.properties.selectedLibrary = v;
+        }, { values: this.librariesList });
+
+        this.addWidget("button", "Refresh", null, () => this.refreshLibraries());
     }
 
-    load() {
-        var that = this;
-        var url = this.getInputOrProperty("url");
-        var name = this.getInputOrProperty("name");
-        let lib_spec = {};
-        if(!url){
-            lib_spec = this.getInputOrProperty("lib_spec");
-            if(lib_spec && typeof(lib_spec)=="object" && lib_spec.latest) {
-                url = lib_spec.latest;
-                name = lib_spec.name;
-                
-                // Step 1: Remove all invalid characters except underscores and dollar signs
-                let validName = name.replace(/[^a-zA-Z0-9_$]/g, '_');
-                // Step 2: Ensure the name doesn't start with a digit
-                if (/^[0-9]/.test(validName)) {
-                    validName = '_' + validName;
-                }
-                name = validName;
+    static title = "Library Selector";
+    static desc = "Select and output a registered library";
 
-            }
-        }else{
-            if(url && name){
-                lib_spec = {name: name, latest: url}; //namename
-            }else{
-                // TODO should color red, invalid
-            }
-        }
-        if(lib_spec && lib_spec.latest){
-            url = lib_spec.latest;
-            name = lib_spec.name;
-            name = camelize(name);
-            this.setProperty("name",name);
-            this.setProperty("url",url);
-            
-            var script = document.createElement("script");
-            if(this.properties.module){
-
-                script.type = "module"; // this.properties.module ? "module" : "text/javascript";
-                script.textContent = "import * as "+this.properties.name+" from '"+url+"';";
-                // script.textContent = "import { LiteGraph } from '../litegraph.js';";
-                script.textContent += " "+"window."+this.properties.name+" = "+this.properties.name+";";
-                // script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = "+this.properties.name+";";
-                script.textContent += " "+"LiteGraph.libraries."+this.properties.name+" = {};";
-                script.textContent += " "+"Object.assign(LiteGraph.libraries."+this.properties.name+", "+this.properties.name+");";
-                try{
-                    console.debug?.("Lib script load",this.properties.name,url);
-                    document.head.appendChild(script);
-                    // wait for load
-                    this.boxcolor = "#770";
-                }catch(e){
-                    console.warn?.("Lib script failed",this.properties.name,url,e);
-                    this.boxcolor = "#F00";
-                }
-
-            }else{
-
-                script.type = this.properties.module ? "module" : "text/javascript";
-                script.onload = function(a) {
-                    that.on_loaded(lib_spec, a);
-                    that.boxcolor = "#0F0";
-                }
-                script.onerror = function(e) {
-                    that.on_error(lib_spec, e);
-                    that.boxcolor = "#F00";
-                }
-                script.src = url;
-                document.head.appendChild(script);
-
-            }
-            
-        }else{
-            this.boxcolor = "#F00";
-        }
+    // Get list of registered libraries
+    getLibraries() {
+        return Object.keys(LiteGraph.libraries.libraries_known);
     }
 
-    on_loaded(ob_lib, a) {
-        console.debug?.("Loaded library",ob_lib,a);
-        if(ob_lib && ob_lib.name) {
-            this.trigger("ready");
-            libraries_loaded[ob_lib.name] = ob_lib;
-            this.boxcolor = "#0F0";
-        }else{
-            this.on_error(ob_lib);
-        }
+    // Refresh library list
+    refreshLibraries() {
+        this.librariesList = this.getLibraries();
+        this.widgets[0].options.values = this.librariesList;
+        this.setDirtyCanvas(true);
     }
 
-    on_error(ob_lib, e) {
-        this.trigger("error");
-        this.boxcolor = "#F00";
-        console.warn?.("Lib loading failed",ob_lib,e);
-    }
-
-    onAction(evt) {
-        if(evt == "load") {
-            this.load();
+    onAction(event) {
+        if (event === "refresh") {
+            this.refreshLibraries();
         }
     }
 
     onExecute() {
-        // ?
+        this.refreshLibraries();
+
+        const selectedLib = this.properties.selectedLibrary;
+        if (selectedLib && LiteGraph.libraries.libraries_known[selectedLib]) {
+            this.setOutputData(0, LiteGraph.libraries.libraries_known[selectedLib]);
+        }
+        
+        this.setOutputData(1, this.librariesList);
     }
 
     onGetInputs() {
-        // return [["name","string"]];
+        return [["refresh", LiteGraph.ACTION]];
     }
+
     onGetOutputs() {
-        // return [["error",LiteGraph.EVENT]];
+        return [["selected lib", "object"], ["libraries", "array"]];
     }
 }
-LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
+
+// Register the node
+LiteGraph.registerNodeType("libraries/selector", CDNLibrarySelector);

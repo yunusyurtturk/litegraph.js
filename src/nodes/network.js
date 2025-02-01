@@ -276,8 +276,17 @@ class LGWebSocket {
 }
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
-class LGSocketIO {
 
+// TODO move and implement library inclusion
+// add minimum version
+// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.libraries[identifier] for not modules
+// manage loaded etc
+// nodepack with inclusion aside
+// manage local script repository too
+LiteGraph.libraries.registerLibrary("socket.io", "4.8.1", ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"], "socket.io");
+LiteGraph.libraries.loadLibrary("socket.io");
+
+class LGSocketIO {
     static title = "Socket.IO Client";
     static desc = "Connect to a Socket.IO server to send and receive data";
 
@@ -331,6 +340,30 @@ class LGSocketIO {
                     this._socket.emit("join", this.properties.room);
                 }
                 this.boxcolor = "#0F0";
+
+                const engine = this._socket.io.engine;
+                console.log(engine.transport.name); // in most cases, prints "polling"
+
+                engine.once("upgrade", () => {
+                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
+                    console.log("SocketIO","upgrade",engine.transport.name); // in most cases, prints "websocket"
+                });
+
+                engine.on("packet", ({ type, data }) => {
+                    // console.debug("SockeIO", "packet", "called for each packet received", arguments);
+                });
+
+                engine.on("packetCreate", ({ type, data }) => {
+                    // console.debug("SockeIO", "packetCreate", "called for each packet sent", arguments);
+                });
+
+                engine.on("drain", () => {
+                    // console.debug("SockeIO", "drain", "called when the write buffer is drained", arguments);
+                });
+
+                engine.on("close", (reason) => {
+                    // console.debug("SockeIO", "close", "called when the underlying connection is closed", arguments);
+                });
             });
 
             this._socket.on("message", (data) => {
@@ -338,11 +371,41 @@ class LGSocketIO {
                 this.setOutputData(1, data);
                 this.triggerSlot(0, data);
             });
+            /* TODO tmp remove, use custom event and output instead */
+            this._socket.on("chatMessage", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
 
+            this._socket.on("reconnect_attempt", () => {
+                console.log("reconnect_attempt to Socket.IO server");
+                this.boxcolor = "#07F";
+            });
+
+            socket.io.on("reconnect", () => {
+                console.log("reconnect to Socket.IO server");
+                this.boxcolor = "#0F3";
+            });
+            
             this._socket.on("disconnect", () => {
                 console.log("Disconnected from Socket.IO server");
                 this.boxcolor = "#FF0";
             });
+
+            this._socket.on("connect_error", (error) => {
+                if (socket.active) {
+                  // temporary failure, the socket will automatically try to reconnect
+                  console.log("Temporary failure Socket.IO connect, retry");
+                  this.boxcolor = "#FF0";
+                } else {
+                  // the connection was denied by the server
+                  // in that case, `socket.connect()` must be manually called in order to reconnect
+                  console.log("Error on Socket.IO connect", error.message);
+                  this.boxcolor = "#F00";
+                }
+            });
+
         }catch(e){
             console?.warn("network/SocketIO", "error", e);
             this.boxcolor = "#F00";
