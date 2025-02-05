@@ -141,7 +141,11 @@ class WatchValue {
                         value = "array ["+value.length+"]";
                         // TODO should cut array (value)
                     }else{
-                        value = "object {"+Object.keys(value).length+"}"
+                        if(Object.keys(value).length){
+                            value = "object {"+Object.keys(value).length+"}"
+                        }else{
+                            value = "object " + String(value);
+                        }
                     }
                 }else if(typeof(value) == "function"){
                     value = "function";
