@@ -885,39 +885,25 @@ export class LiteGraphClass {
     }
 
     /**
-     * Returns if the types of two slots are compatible (taking into account wildcards, etc)
+     * Returns if the types of two slots are compatible (supports multiple types per slot, wildcards, and events)
      * @method isValidConnection
      * @param {String} type_a
      * @param {String} type_b
      * @return {Boolean} true if they can be connected
      */
     isValidConnection(type_a, type_b) {
-        if (type_a === "" || type_a === "*") type_a = 0;
-        if (type_b === "" || type_b === "*") type_b = 0;
+        if (!type_a || !type_b) return true; // Empty types are universal
 
-        if (!type_a || !type_b || type_a === type_b || (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION)) {
-            return true;
-        }
+        // Handle wildcard cases
+        if (type_a === "*" || type_b === "*") return true;
+        if (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION) return true;
 
-        type_a = String(type_a).toLowerCase();
-        type_b = String(type_b).toLowerCase();
+        // Normalize type strings (lowercase, split multiple types by `|` or `,`)
+        let typesA = String(type_a).toLowerCase().split(/[|,]/);
+        let typesB = String(type_b).toLowerCase().split(/[|,]/);
 
-        if (!type_a.includes(",") && !type_b.includes(",")) {
-            return type_a === type_b;
-        }
-
-        const supported_types_a = type_a.split(",");
-        const supported_types_b = type_b.split(",");
-
-        for (const supported_type_a of supported_types_a) {
-            for (const supported_type_b of supported_types_b) {
-                if (this.isValidConnection(supported_type_a, supported_type_b)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        // Check if any type in `typesA` matches any type in `typesB`
+        return typesA.some(a => typesB.includes(a));
     }
 
 
