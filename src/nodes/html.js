@@ -17,9 +17,12 @@ function nodeEmpower_htmlElement(nodeX){
             // this._el.style.pointerEvents = "";
             myGCanvas.canvas?.parentNode?.appendChild(this._el);
             this._el_cont = document.createElement("div");
-            this._el_cont.style.display = "flex";
-            // this._el_cont.style.alignItems = "center";
-            this._el_cont.style.justifyContent = "center";
+            
+            // centered content
+            // this._el_cont.style.display = "flex";
+            // // this._el_cont.style.alignItems = "center";
+            // this._el_cont.style.justifyContent = "center";
+
             this._el_cont.style.overflow = "auto";
             this._el_cont.style.position = "relative";
             this._el_cont.style.width = "100%";
@@ -381,6 +384,7 @@ class HtmlEventListener {
         this.addOutput("on_event", LiteGraph.EVENT);
         this.addOutput("last_event", "");
         this.addOutput("current_event", "");
+        this.addOutput("all_listeners", "[htmlelement_listener]");
         this.addProperty("eventType", "");
         this.addWidget("combo","eventType",this.properties["eventType"],"eventType",{values: ["click","dblclick", "mouseover","mousedown","mouseup","mousemove","mouseout","keydown","keyup","keypress","load","unload","mousewheel","contextmenu", "focus","change","blur","pointerdown","pointerup","pointermove","pointerover","pointerout","pointerenter","pointerleave","pointercancel","gotpointercapture","lostpointercapture", "touchstart","touchmove","touchend","touchcancel","submit","scroll","resize","hashchange"]});
         // this.properties = {eventType: "" };
@@ -393,6 +397,10 @@ class HtmlEventListener {
             action = this.id+"_"+(action?action:"action")+"_exectoact_"+LiteGraph.uuidv4();
             this.onAction(action, param, options);
         } else this.setOutputData(3,null);
+        var sSel = this.getInputData(0);
+        if (sSel){
+            this.setOutputData(4,sSel.attributes["data-listeners"]);
+        }
     }
 
     onAction(action) {
@@ -413,17 +421,23 @@ class HtmlEventListener {
                         }
                         sSel.addEventListener(eventType, fEv);
                         sSel.attributes["data-listener-"+eventType] = fEv;
+                        if(!sSel.attributes["data-listeners"]){
+                            sSel.attributes["data-listeners"] = [];
+                        }
+                        sSel.attributes["data-listeners"].push(eventType);
+                        that.setOutputData(4,sSel.attributes["data-listeners"]);
                     }else{
                         fEv = sSel.attributes["data-listener-"+eventType];
                     }
                     res = {element: sSel, function: fEv, event: eventType};
+                    console.debug("event listener added", res);
+                    this.setOutputData(0,res);
                     break;
             }
         }else{
             console.log?.("no el to add event");
             // this.setOutputData(2,null); // clean ?
         }
-        this.setOutputData(0,res);
     }
 }
 LiteGraph.registerNodeType("html/event_listener", HtmlEventListener);
@@ -454,6 +468,7 @@ class HtmlEventListenerRemove {
         var res = false;
         if (oLis && oLis.element && oLis.function && oLis.event && oLis.element.removeEventListener) {
             oLis.element.attributes["data-listener-"+oLis.event] = false;
+            delete(oLis.element.attributes["data-listeners"][oLis.event]);
             oLis.element.removeEventListener(oLis.event, oLis.function);
             res = true;
         }else{
