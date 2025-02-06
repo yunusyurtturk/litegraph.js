@@ -1258,7 +1258,7 @@ export class LGraphNode {
     /**
      * Add a new input or output slot to use in this node.
      * @param {string} name - Name of the slot.
-     * @param {string} type - Type of the slot ("vec3", "number", etc). For a generic type, use "0".
+     * @param {string} type - Type of the slot ("vec3", "number", etc). For a generic type, use 0.
      * @param {Object} extra_info - Additional information for the slot (e.g., label, color, position).
      * @param {boolean} isInput - Whether the slot being added is an input slot.
      * @returns {Object} The newly added slot (input or output).
@@ -1949,58 +1949,71 @@ export class LGraphNode {
     // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
 
     /**
-     * returns the first free input slot, can filter by types
+     * Returns the first free input slot, can filter by types (supports multiple types per slot).
      * @method findInputSlotFree
      * @param {object} options
      * @return {number|object} the slot (-1 if not found)
      */
     findInputSlotFree(optsIn = {}) {
-        var optsDef = {
+        let optsDef = {
             returnObj: false,
             typesNotAccepted: [],
         };
-        var opts = Object.assign(optsDef,optsIn);
-        if (!this.inputs) {
-            return -1;
-        }
-        for (var i = 0, l = this.inputs.length; i < l; ++i) {
-            if (this.inputs[i].link && this.inputs[i].link != null) {
-                continue;
+        let opts = Object.assign(optsDef, optsIn);
+
+        if (!this.inputs) return -1;
+
+        for (let i = 0, l = this.inputs.length; i < l; ++i) {
+            let slot = this.inputs[i];
+
+            if (slot.link != null) continue; // Skip occupied slots
+
+            if (opts.typesNotAccepted.length > 0) {
+                let slotTypes = slot.type ? slot.type.split("|") : [];
+                let isNotAccepted = slotTypes.some(type => opts.typesNotAccepted.includes(type));
+
+                if (isNotAccepted) continue; // Skip unwanted types
             }
-            if (opts.typesNotAccepted && opts.typesNotAccepted.includes && opts.typesNotAccepted.includes(this.inputs[i].type)) {
-                continue;
-            }
-            return !opts.returnObj ? i : this.inputs[i];
+
+            return opts.returnObj ? slot : i;
         }
+
         return -1;
     }
 
     /**
-     * returns the first output slot free, can filter by types
+     * Returns the first free output slot, can filter by types (supports multiple types per slot).
      * @method findOutputSlotFree
      * @param {object} options
      * @return {number|object} the slot (-1 if not found)
      */
     findOutputSlotFree(optsIn = {}) {
-        var optsDef = {
+        let optsDef = {
             returnObj: false,
             typesNotAccepted: [],
         };
-        var opts = Object.assign(optsDef,optsIn);
-        if (!this.outputs) {
-            return -1;
-        }
+        let opts = Object.assign(optsDef, optsIn);
+
+        if (!this.outputs) return -1;
+
         for (let i = 0, l = this.outputs.length; i < l; ++i) {
-            if (this.outputs[i].links && this.outputs[i].links != null) {
-                continue;
+            let slot = this.outputs[i];
+
+            if (slot.links && slot.links.length > 0) continue; // Skip occupied slots
+
+            if (opts.typesNotAccepted.length > 0) {
+                let slotTypes = slot.type ? slot.type.split("|") : [];
+                let isNotAccepted = slotTypes.some(type => opts.typesNotAccepted.includes(type));
+
+                if (isNotAccepted) continue; // Skip unwanted types
             }
-            if (opts.typesNotAccepted && opts.typesNotAccepted.includes && opts.typesNotAccepted.includes(this.outputs[i].type)) {
-                continue;
-            }
-            return !opts.returnObj ? i : this.outputs[i];
+
+            return opts.returnObj ? slot : i;
         }
+
         return -1;
     }
+
 
     /**
      * findSlotByType for INPUTS
@@ -2017,186 +2030,174 @@ export class LGraphNode {
     }
 
     /**
-     * returns the output (or input) slot with a given type, -1 if not found
+     * Returns the output (or input) slot with a given type, -1 if not found.
      * @method findSlotByType
-     * @param {boolean} is_input use inputs (true), or outputs (false)
-     * @param {string} type the type of the slot to look for (multi type by ,) 
-     * @param {boolean} returnObj if the obj itself wanted
-     * @param {boolean} preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
-     * @return {number|object} the slot (-1 if not found)
+     * @param {boolean} is_input Use inputs (true) or outputs (false)
+     * @param {string|number} type The type of the slot to look for (supports multiple types separated by "," or "|")
+     * @param {boolean} returnObj If true, returns the slot object instead of index
+     * @param {boolean} preferFreeSlot If true, prioritizes free slots
+     * @param {boolean} doNotUseOccupied If true, ignores already occupied slots
+     * @return {number|object} The slot index or object (-1 if not found)
      */
-    findSlotByType(
-        is_input = false,
-        type,
-        returnObj = false,
-        preferFreeSlot = false,
-        doNotUseOccupied = false,
-    ) {
-        var aSlots = is_input ? this.inputs : this.outputs;
-        if (!aSlots) {
-            return -1;
+    findSlotByType(is_input = false, type, returnObj = false, preferFreeSlot = false, doNotUseOccupied = false) {
+        let slots = is_input ? this.inputs : this.outputs;
+        if (!slots || slots.length === 0) return -1;
+
+        // Normalize input type
+        let normalizedTypes;
+        if (typeof type === "number") {
+            normalizedTypes = [type]; // Directly use the number type
+        } else if (typeof type === "string" && type.length > 0) {
+            normalizedTypes = type.toLowerCase().split(/[|,]/).map(t => (t === "_event_" ? LiteGraph.EVENT : t));
+        } else {
+            normalizedTypes = [0]; // Default to general type
         }
-        // !! empty string type is considered 0, * !!
-        if (!type || type == "" || type == "*") type = 0;
-        // cycle for this slots
-        for (let i = 0, l = aSlots.length; i < l; ++i) {
-            let aSource = (type+"").toLowerCase().split(",");
-            let aDest = aSlots[i].type=="0" || aSlots[i].type=="*"
-                            ? 0
-                            : aSlots[i].type;
-            aDest = (aDest+"").toLowerCase().split(",");
-            // cycle for the slot types
-            for(let sI=0;sI<aSource.length;sI++) {
-                for(let dI=0;dI<aDest.length;dI++) {
-                    if (aSource[sI]=="_event_") aSource[sI] = LiteGraph.EVENT;
-                    if (aDest[sI]=="_event_") aDest[sI] = LiteGraph.EVENT;
-                    if (aSource[sI]=="*") aSource[sI] = 0;
-                    if (aDest[sI]=="*") aDest[sI] = 0;
-                    if (aSource[sI] == aDest[dI]) {
-                        if (preferFreeSlot
-                            && (
-                                (aSlots[i].link && aSlots[i].link !== null)
-                                || (aSlots[i].links && aSlots[i].links !== null)
-                            )
-                        ){
-                            LiteGraph.log_verbose("lgraphnode","findSlotByType","preferFreeSlot but has link",aSource[sI],aDest[dI],"from types",type,"checked types",aSlots[i].type);
+
+        let fallbackSlot = -1;
+
+        for (let i = 0, l = slots.length; i < l; ++i) {
+            let slot = slots[i];
+
+            // Normalize slot type
+            let slotTypes;
+            if (typeof slot.type === "number") {
+                slotTypes = [slot.type]; // Directly use the number type
+            } else if (typeof slot.type === "string") {
+                slotTypes = slot.type.toLowerCase().split(/[|,]/).map(t => (t === "_event_" ? LiteGraph.EVENT : t));
+            } else {
+                slotTypes = [0]; // Default to general type
+            }
+
+            for (let sourceType of normalizedTypes) {
+                for (let slotType of slotTypes) {
+                    if (LiteGraph.isValidConnection(sourceType, slotType)) {
+                        let isOccupied = slot.link !== null || (slot.links && slot.links.length > 0);
+
+                        if (preferFreeSlot && isOccupied) {
+                            LiteGraph.log_verbose("lgraphnode", "findSlotByType", "preferFreeSlot but has link", sourceType, slotType, "for slot", i);
+                            fallbackSlot = fallbackSlot === -1 ? i : fallbackSlot;
                             continue;
                         }
-                        LiteGraph.log_verbose("lgraphnode","findSlotByType","found right type",i,aSlots[i],"from types",type,"checked types",aSlots[i].type);
-                        return !returnObj ? i : aSlots[i];
-                    }else{
-                        LiteGraph.log_verbose("lgraphnode","findSlotByType","slot not right type",aSource[sI],aDest[dI],"from types",type,"checked types",aSlots[i].type);
+
+                        LiteGraph.log_verbose("lgraphnode", "findSlotByType", "found right type", i, slot);
+                        return returnObj ? slot : i;
                     }
                 }
             }
         }
-        // if didnt find some, checking if need to force on already placed ones
-        if (preferFreeSlot && !doNotUseOccupied) {
-            for (let i = 0, l = aSlots.length; i < l; ++i) {
-                let aSource = (type+"").toLowerCase().split(",");
-                let aDest = aSlots[i].type=="0"||aSlots[i].type=="*"?"0":aSlots[i].type;
-                aDest = (aDest+"").toLowerCase().split(",");
-                for(let sI=0;sI<aSource.length;sI++) {
-                    for(let dI=0;dI<aDest.length;dI++) {
-                        if (aSource[sI]=="*") aSource[sI] = 0;
-                        if (aDest[sI]=="*") aDest[sI] = 0;
-                        if (aSource[sI] == aDest[dI]) {
-                            return !returnObj ? i : aSlots[i];
-                        }
-                    }
-                }
-            }
+
+        // If no free slot was found, check if we can use occupied ones
+        if (preferFreeSlot && !doNotUseOccupied && fallbackSlot !== -1) {
+            LiteGraph.log_verbose("lgraphnode", "findSlotByType", "Returning occupied slot", fallbackSlot);
+            return returnObj ? slots[fallbackSlot] : fallbackSlot;
         }
+
         return -1;
     }
 
+
+
     /**
-     * connect this node output to the input of another node BY TYPE
+     * Connect this node output to the input of another node BY TYPE.
      * @method connectByType
-     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
-     * @param {LGraphNode} node the target node
-     * @param {string} target_type the input slot type of the target node
-     * @return {Object} the link_info is created, otherwise null
+     * @param {number|string} slot Slot number or name of the output slot
+     * @param {LGraphNode} target_node The target node
+     * @param {string} target_slotType The expected input slot type of the target node
+     * @return {Object|null} Link info if created, otherwise null
      */
     connectByType(slot, target_node, target_slotType = "*", optsIn = {}) {
-        var optsDef = {
+        let opts = Object.assign({
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
             generalTypeInCase: true,
             preferFreeSlot: false,
-        };
-        var opts = Object.assign(optsDef,optsIn);
-        if (target_node && target_node.constructor === Number) {
+        }, optsIn);
+
+        if (typeof target_node === "number") {
             target_node = this.graph.getNodeById(target_node);
         }
-        // look for free slots
-        var target_slot = target_node.findInputSlotByType(target_slotType, false, true);
-        if (target_slot >= 0 && target_slot !== null) {
-            LiteGraph.log_debug("lgraphnode","connectByType","type "+target_slotType+" for "+target_slot)
-            return this.connect(slot, target_node, target_slot);
-        }else{
-            // LiteGraph.log?.("type "+target_slotType+" not found or not free?")
-            if (opts.createEventInCase && target_slotType == LiteGraph.EVENT) {
-                // WILL CREATE THE onTrigger IN SLOT
-                LiteGraph.log_debug("lgraphnode","connectByType","connect WILL CREATE THE onTrigger "+target_slotType+" to "+target_node);
-                return this.connect(slot, target_node, -1);
-            }
-            // connect to the first general output slot if not found a specific type and
-            if (opts.generalTypeInCase) {
-                target_slot = target_node.findInputSlotByType(0, false, true, true);
-                LiteGraph.log_debug("lgraphnode","connectByType","connect TO a general type (*, 0), if not found the specific type ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
-                if (target_slot >= 0) {
-                    return this.connect(slot, target_node, target_slot);
-                }
-            }
-            // connect to the first free input slot if not found a specific type and this output is general
-            if (opts.firstFreeIfOutputGeneralInCase && (target_slotType == 0 || target_slotType == "*" || target_slotType == "")) {
-                target_slot = target_node.findInputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
-                LiteGraph.log_debug("lgraphnode","connectByType","connect TO TheFirstFREE ",target_slotType," to ",target_node,"RES_SLOT:",target_slot);
-                if (target_slot >= 0) {
-                    return this.connect(slot, target_node, target_slot);
-                }
-            }
-            LiteGraph.log_debug("lgraphnode","connectByType","no way to connect type: ",target_slotType," to targetNODE ",target_node);
-            // TODO filter
+        if (!target_node) return null;
 
-            return null;
+        let target_slot = target_node.findSlotByType(true, target_slotType, false, opts.preferFreeSlot);
+        if (target_slot >= 0) {
+            LiteGraph.log_debug("lgraphnode", "connectByType", "Connecting type", target_slotType, "to slot", target_slot);
+            return this.connect(slot, target_node, target_slot);
         }
+
+        if (opts.createEventInCase && target_slotType === LiteGraph.EVENT) {
+            LiteGraph.log_debug("lgraphnode", "connectByType", "Creating onTrigger for", target_slotType, "on", target_node);
+            return this.connect(slot, target_node, -1);
+        }
+
+        if (opts.generalTypeInCase) {
+            target_slot = target_node.findSlotByType(true, 0, false, true);
+            if (target_slot >= 0) {
+                return this.connect(slot, target_node, target_slot);
+            }
+        }
+
+        if (opts.firstFreeIfOutputGeneralInCase && [0, "*", ""].includes(target_slotType)) {
+            target_slot = target_node.findInputSlotFree({ typesNotAccepted: [LiteGraph.EVENT] });
+            if (target_slot >= 0) {
+                return this.connect(slot, target_node, target_slot);
+            }
+        }
+
+        LiteGraph.log_debug("lgraphnode", "connectByType", "No way to connect type", target_slotType, "to target", target_node);
+        return null;
     }
 
     /**
-     * connect this node input to the output of another node BY TYPE
-     * @method connectByType
-     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
-     * @param {LGraphNode} node the target node
-     * @param {string} target_type the output slot type of the target node
-     * @return {Object} the link_info is created, otherwise null
+     * Connect this node input to the output of another node BY TYPE.
+     * @method connectByTypeOutput
+     * @param {number|string} slot Slot number or name of the input slot
+     * @param {LGraphNode} source_node The source node
+     * @param {string} source_slotType The expected output slot type of the source node
+     * @return {Object|null} Link info if created, otherwise null
      */
     connectByTypeOutput(slot, source_node, source_slotType = "*", optsIn = {}) {
-        var optsDef = {
+        let opts = Object.assign({
             createEventInCase: true,
             firstFreeIfInputGeneralInCase: true,
             generalTypeInCase: true,
-        };
-        var opts = Object.assign(optsDef,optsIn);
-        if (source_node && source_node.constructor === Number) {
+        }, optsIn);
+
+        if (typeof source_node === "number") {
             source_node = this.graph.getNodeById(source_node);
         }
-        var source_slot = source_node.findOutputSlotByType(source_slotType, false, true);
-        if (source_slot >= 0 && source_slot !== null) {
-            LiteGraph.log_debug("lgraphnode","connectByTypeOutput","type "+source_slotType+" for "+source_slot)
+        if (!source_node) return null;
+
+        let source_slot = source_node.findSlotByType(false, source_slotType, false, opts.preferFreeSlot);
+        if (source_slot >= 0) {
+            LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "Connecting type", source_slotType, "to slot", source_slot);
             return source_node.connect(source_slot, this, slot);
-        }else{
-
-            // connect to the first general output slot if not found a specific type and
-            if (opts.generalTypeInCase) {
-                source_slot = source_node.findOutputSlotByType(0, false, true, true);
-                if (source_slot >= 0) {
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-
-            if (opts.createEventInCase && source_slotType == LiteGraph.EVENT) {
-                // WILL CREATE THE onExecuted OUT SLOT
-                if (LiteGraph.do_add_triggers_slots) {
-                    source_slot = source_node.addOnExecutedOutput();
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-            // connect to the first free output slot if not found a specific type and this input is general
-            if (opts.firstFreeIfInputGeneralInCase && (source_slotType == 0 || source_slotType == "*" || source_slotType == "" || source_slotType == "undefined")) {
-                source_slot = source_node.findOutputSlotFree({typesNotAccepted: [LiteGraph.EVENT] });
-                if (source_slot >= 0) {
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-
-            LiteGraph.log_debug("lgraphnode","connectByTypeOutput","no way to connect (not found or not free?) byOUT type: ",source_slotType," to sourceNODE ",source_node);
-            // TODO filter
-
-            return null;
         }
+
+        if (opts.generalTypeInCase) {
+            source_slot = source_node.findSlotByType(false, 0, false, true);
+            if (source_slot >= 0) {
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        if (opts.createEventInCase && source_slotType === LiteGraph.EVENT) {
+            if (LiteGraph.do_add_triggers_slots) {
+                source_slot = source_node.addOnExecutedOutput();
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        if (opts.firstFreeIfInputGeneralInCase && [0, "*", "", "undefined"].includes(source_slotType)) {
+            source_slot = source_node.findOutputSlotFree({ typesNotAccepted: [LiteGraph.EVENT] });
+            if (source_slot >= 0) {
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "No way to connect type", source_slotType, "to source", source_node);
+        return null;
     }
+
 
     /**
      * connect this node output to the input of another node
