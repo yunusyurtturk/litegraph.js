@@ -120,8 +120,9 @@ class LibraryManager {
                     window.${globalObject} = ${globalObject};
                     LiteGraph.libraries.${globalObject} = ${globalObject};
                     console.warn('LOADLIBOBJECT',window.${globalObject});
-                    alert('loaded ${globalObject}');
+                    // alert('loaded ${globalObject}');
                 `;
+                //alert(script.textContent);
                 document.head.appendChild(script);
                 resolve();
             } else {
@@ -186,7 +187,7 @@ class LibraryManager {
 
     // Get the state of a library
     getLibraryState(key) {
-        return this.libraries_state[key] || "unknown";
+        return this.libraries_state[key] || false; //"unknown";
     }
 }
 

@@ -1147,8 +1147,8 @@ class MathFormula {
     static desc = "Compute formula";
 
     constructor() {
-        this.addInput("x", "number");
-        this.addInput("y", "number");
+        this.addInput("x", "number", {nameLocked: true});
+        this.addInput("y", "number", {nameLocked: true});
         this.addOutput("", "number");
         this.properties = { x: 1.0, y: 1.0, formula: "x+y" };
         this.code_widget = this.addWidget(
@@ -1163,6 +1163,12 @@ class MathFormula {
             LiteGraph.allow_scripts = v;
         });
         this._func = null;
+    }
+
+    onPropertyChanged(name, value) {
+        if (name == "formula") {
+            this.code_widget.value = value;
+        }
     }
 
     onExecute() {

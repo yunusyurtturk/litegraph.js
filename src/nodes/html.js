@@ -108,7 +108,7 @@ function nodeEmpower_htmlElement(nodeX){
     });
 }
 
-class DOMSelector {
+export class DOMSelector {
 
     static title = "DOMSelector";
     static desc = "Execute a selection query on the document returning the corresponging DOM element";
@@ -134,7 +134,7 @@ class DOMSelector {
 }
 LiteGraph.registerNodeType("html/dom_selector", DOMSelector);
 
-class HtmlNode {
+export class HtmlNode {
 
     static title = "Html Node";
     static desc = "Have html inside a node";
@@ -174,7 +174,7 @@ class HtmlNode {
 }
 LiteGraph.registerNodeType("html/node_html", HtmlNode);
 
-class JsonViewerNode{
+export class JsonViewerNode{
     static title = "Json View";
     static desc = "Show and navigate a value structure";
     constructor() {
@@ -346,7 +346,7 @@ function htmlJsonViewerHelper(json, collapsed=false, max_depth=6) {
 
 
 
-class DOMSelectorAll {
+export class DOMSelectorAll {
 
     static title = "DOMSelectorAll";
     static desc = "Execute a querySelectorAll() on the document returning the corresponding Elements";
@@ -369,7 +369,7 @@ class DOMSelectorAll {
 LiteGraph.registerNodeType("html/dom_selector_all", DOMSelectorAll);
 
 
-class HtmlEventListener {
+export class HtmlEventListener {
 
     static title = "HTML Listener";
     static desc = "Add an event listener on an html element";
@@ -429,7 +429,7 @@ class HtmlEventListener {
 LiteGraph.registerNodeType("html/event_listener", HtmlEventListener);
 
 
-class HtmlEventListenerRemove {
+export class HtmlEventListenerRemove {
 
     static title = "HTML Remove Listener";
     static desc = "Remove an event listener by passing his reference";
@@ -466,7 +466,7 @@ class HtmlEventListenerRemove {
 LiteGraph.registerNodeType("html/event_listener_remove", HtmlEventListenerRemove);
 
 
-class HtmlValue {
+export class HtmlValue {
 
     static title = "HTML GET Value";
     static desc = "Get the value (or the text content) of an HTML element";
@@ -504,7 +504,7 @@ class HtmlValue {
 LiteGraph.registerNodeType("html/element_value", HtmlValue);
 
 
-class HtmlValueSet {
+export class HtmlValueSet {
 
     static title = "HTML SET Value";
     static desc = "Set the value (or the text content) of an HTML element";
@@ -550,7 +550,7 @@ class HtmlValueSet {
 LiteGraph.registerNodeType("html/element_value_set", HtmlValueSet);
 
 
-class HtmlCreateElement {
+export class HtmlCreateElement {
 
     static title = "HTML Create El";
     static desc = "Create an HTML element";
@@ -601,7 +601,7 @@ class HtmlCreateElement {
 LiteGraph.registerNodeType("html/create_element", HtmlCreateElement);
 
 
-class HtmlAppendChild {
+export class HtmlAppendChild {
 
     static title = "HTML Append Child";
     static desc = "Append an HTML element to another";
@@ -637,7 +637,7 @@ class HtmlAppendChild {
 LiteGraph.registerNodeType("html/append_child", HtmlAppendChild);
 
 
-class HtmlRemoveElement {
+export class HtmlRemoveElement {
 
     static title = "HTML Remove element";
     static desc = "Remove an HTML element";
@@ -671,7 +671,7 @@ class HtmlRemoveElement {
 LiteGraph.registerNodeType("html/remove_element", HtmlRemoveElement);
 
 
-class HtmlElementStyle {
+export class HtmlElementStyle {
 
     static title = "HTML Css";
     static desc = "HTML Element apply Css Style";
