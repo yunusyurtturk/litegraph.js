@@ -279,12 +279,12 @@ LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
 // TODO move and implement library inclusion
 // add minimum version
-// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.libraries[identifier] for not modules
+// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.LibraryManager[identifier] for not modules
 // manage loaded etc
 // nodepack with inclusion aside
 // manage local script repository too
-LiteGraph.libraries.registerLibrary("socket.io", "4.8.1", ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"], "socket.io");
-LiteGraph.libraries.loadLibrary("socket.io");
+LiteGraph.LibraryManager.registerLibrary("socket.io", "4.8.1", "socket.io", [], ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"]);
+LiteGraph.LibraryManager.loadLibrary("socket.io");
 
 class LGSocketIO {
     static title = "Socket.IO Client";

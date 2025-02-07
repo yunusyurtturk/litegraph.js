@@ -3,19 +3,19 @@ import { HtmlNode } from "./html.js";
 
 class ThreeJsHelper {
     static checkLib(){
-        let state = LiteGraph?.libraries.getLibraryState("threejs");
+        let state = LiteGraph?.LibraryManager.getLibraryState("threejs");
         if(!state || state == "unknown" || state == "not_loaded"){
             // TODO move and implement library inclusion
             // add minimum version
-            // add and use global identifier :: check if exists after inclusion and tie with LiteGraph.libraries[identifier] for not modules
+            // add and use global identifier :: check if exists after inclusion and tie with LiteGraph.LibraryManager[identifier] for not modules
             // manage loaded etc
             // nodepack with inclusion aside
             // manage local script repository too
-            LiteGraph.libraries.registerLibrary("threejs", "0.172.0", ["https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js"], "threejs");
-            LiteGraph.libraries.loadLibrary("threejs");
+            LiteGraph.LibraryManager.registerLibrary("threejs", "0.172.0", "threejs", [], ["https://cdnjs.cloudflare.com/ajax/libs/three.js/0.172.0/three.module.js"]);
+            LiteGraph.LibraryManager.loadLibrary("threejs");
             return false;
         }else{
-            return LiteGraph.libraries.threejs;
+            return LiteGraph.LibraryManager.threejs;
         }
     }
 }
@@ -46,6 +46,10 @@ class ThreeJsObject {
         this.checkObject();
         this.updateObject();
         this.setOutputData(0, this._object);
+    }
+
+    onAdded(){
+        ThreeJsHelper.checkLib();
     }
 
     checkObject() {

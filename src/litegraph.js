@@ -8,6 +8,7 @@ import { DragAndScale } from "./dragandscale.js";
 import { ContextMenu } from "./contextmenu.js";
 import { CallbackHandler } from "./callbackhandler.js";
 import { getGlobalObject, setGlobalVariable, getGlobalVariable } from './global.js';
+import { LibraryManager } from "./librarymanager.js";
 
 /**
  * @class LiteGraph
@@ -239,6 +240,7 @@ export class LiteGraphClass {
         this.ContextMenuClass = ContextMenu;
         this.ContextMenu = function(){ return new ContextMenu(...arguments); };
         this.CallbackHandler = CallbackHandler;
+        this.LibraryManager = new LibraryManager();
 
         // base inclusion
         this.includeBasicNodes();
@@ -1278,9 +1280,15 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
 }
 
 export const root = getGlobalObject();
+
+// export var getGlobalObject = getGlobalObject;
+// export var setGlobalVariable = setGlobalVariable;
+// export var getGlobalVariable = getGlobalVariable;
+
 if(!getGlobalVariable("LiteGraph")){
     setGlobalVariable("LiteGraph", new LiteGraphClass());
     let LGInst = getGlobalVariable("LiteGraph");
     LGInst.log_info("LiteGraph instantiated",LGInst.getTime());
+    LGInst.root = root;
 }
-export var LiteGraph = getGlobalVariable("LiteGraph");
+export const LiteGraph = getGlobalVariable("LiteGraph");

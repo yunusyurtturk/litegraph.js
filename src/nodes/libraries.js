@@ -1,198 +1,198 @@
 
 import { LiteGraph } from "../litegraph.js";
 
+// WIP moved standalone, CLEAN
+// class LibraryManager {
+//     constructor() {
+//         this.libraries_known = {};  
+//         this.libraries_loaded = {}; 
+//         this.libraries_state = {};  
+//     }
 
-class LibraryManager {
-    constructor() {
-        this.libraries_known = {};  
-        this.libraries_loaded = {}; 
-        this.libraries_state = {};  
-    }
+//     registerLibrary(key, version, files, globalObject) {
+//         this.libraries_known[key] = { key, version, files, globalObject };
+//         this.libraries_state[key] = "not_loaded";
+//     }
 
-    registerLibrary(key, version, files, globalObject) {
-        this.libraries_known[key] = { key, version, files, globalObject };
-        this.libraries_state[key] = "not_loaded";
-    }
+//     async loadLibrary(key, callback) {
+//         if (!this.libraries_known[key]) {
+//             console.error(`Library ${key} not registered.`);
+//             return;
+//         }
 
-    async loadLibrary(key, callback) {
-        if (!this.libraries_known[key]) {
-            console.error(`Library ${key} not registered.`);
-            return;
-        }
+//         if (this.libraries_state[key] === "loading") {
+//             console.warn(`Library ${key} is already loading.`);
+//             return;
+//         }
 
-        if (this.libraries_state[key] === "loading") {
-            console.warn(`Library ${key} is already loading.`);
-            return;
-        }
+//         if (this.libraries_state[key] === "loaded") {
+//             console.warn(`Library ${key} is already loaded.`);
+//             callback && callback(this.libraries_loaded[key]);
+//             return;
+//         }
 
-        if (this.libraries_state[key] === "loaded") {
-            console.warn(`Library ${key} is already loaded.`);
-            callback && callback(this.libraries_loaded[key]);
-            return;
-        }
+//         this.libraries_state[key] = "loading";
+//         const library = this.libraries_known[key];
 
-        this.libraries_state[key] = "loading";
-        const library = this.libraries_known[key];
+//         for (const fileX of library.files) {
+//             // Detect required imports before loading
+//             const requiredImports = await this.detectRequiredImports(fileX);
 
-        for (const fileX of library.files) {
-            // Detect required imports before loading
-            const requiredImports = await this.detectRequiredImports(fileX);
+//             // Load only the necessary remapped files
+//             const promises = requiredImports.map(file => this.loadScript(file));
 
-            // Load only the necessary remapped files
-            const promises = requiredImports.map(file => this.loadScript(file));
+//             Promise.all(promises)
+//                 .then(() => {
+//                     this.loadScript(fileX, key).then(()=>{
+//                         this.libraries_state[key] = "loaded";
+//                         this.libraries_loaded[key] = window[key] || {};
+//                         console.log(`Library ${key} loaded.`);
+//                         callback && callback(this.libraries_loaded[key]);
+//                     })
+//                     .catch(error => {
+//                         this.libraries_state[key] = "error";
+//                         console.error(`Error loading ${key}:`, error);
+//                     });
+//                 })
+//                 .catch(error => {
+//                     this.libraries_state[key] = "error";
+//                     console.error(`Error loading required imports ${key}:`, error);
+//                 });
+//         }
+//     }
 
-            Promise.all(promises)
-                .then(() => {
-                    this.loadScript(fileX, key).then(()=>{
-                        this.libraries_state[key] = "loaded";
-                        this.libraries_loaded[key] = window[key] || {};
-                        console.log(`Library ${key} loaded.`);
-                        callback && callback(this.libraries_loaded[key]);
-                    })
-                    .catch(error => {
-                        this.libraries_state[key] = "error";
-                        console.error(`Error loading ${key}:`, error);
-                    });
-                })
-                .catch(error => {
-                    this.libraries_state[key] = "error";
-                    console.error(`Error loading required imports ${key}:`, error);
-                });
-        }
-    }
-
-    // **📌 Detect only the required imports using the source map**
-    async detectRequiredImports(scriptURL) {
-        try {
-            // Step 1: Fetch the script content
-            const response = await fetch(scriptURL);
-            if (!response.ok) throw new Error(`Failed to fetch ${scriptURL}`);
-            const scriptText = await response.text();
+//     // **📌 Detect only the required imports using the source map**
+//     async detectRequiredImports(scriptURL) {
+//         try {
+//             // Step 1: Fetch the script content
+//             const response = await fetch(scriptURL);
+//             if (!response.ok) throw new Error(`Failed to fetch ${scriptURL}`);
+//             const scriptText = await response.text();
     
-            // Step 2: Extract all bare imports from the script
-            const importMatches = [...scriptText.matchAll(/import\s+.*?["']([^"']+)["']/g)];
-            const bareImports = importMatches.map(match => match[1]).filter(spec => !spec.startsWith("."));
+//             // Step 2: Extract all bare imports from the script
+//             const importMatches = [...scriptText.matchAll(/import\s+.*?["']([^"']+)["']/g)];
+//             const bareImports = importMatches.map(match => match[1]).filter(spec => !spec.startsWith("."));
     
-            // Step 3: Find the source map URL
-            const sourceMapMatch = scriptText.match(/\/\/# sourceMappingURL=(.+)/);
-            if (!sourceMapMatch) {
-                console.warn(`No source map found in ${scriptURL}`);
-                return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
-            }
+//             // Step 3: Find the source map URL
+//             const sourceMapMatch = scriptText.match(/\/\/# sourceMappingURL=(.+)/);
+//             if (!sourceMapMatch) {
+//                 console.warn(`No source map found in ${scriptURL}`);
+//                 return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+//             }
     
-            const sourceMapURL = new URL(sourceMapMatch[1], scriptURL).href;
-            console.log(`Found source map: ${sourceMapURL}`);
+//             const sourceMapURL = new URL(sourceMapMatch[1], scriptURL).href;
+//             console.log(`Found source map: ${sourceMapURL}`);
     
-            // Step 4: Fetch the source map JSON
-            const mapResponse = await fetch(sourceMapURL);
-            if (!mapResponse.ok) throw new Error(`Failed to fetch source map: ${sourceMapURL}`);
-            const sourceMap = await mapResponse.json();
+//             // Step 4: Fetch the source map JSON
+//             const mapResponse = await fetch(sourceMapURL);
+//             if (!mapResponse.ok) throw new Error(`Failed to fetch source map: ${sourceMapURL}`);
+//             const sourceMap = await mapResponse.json();
     
-            // Step 5: Correctly resolve only the required imports
-            const resolvedFiles = bareImports
-                .map(importName => {
-                    // Check if `sourcesContent` or `sources` contains the module
-                    const exactMatch = sourceMap.sources.find(src => src.endsWith(`/${importName}.js`));
-                    return exactMatch ? new URL(exactMatch, scriptURL).href : null;
-                })
-                .filter(Boolean); // Remove nulls
+//             // Step 5: Correctly resolve only the required imports
+//             const resolvedFiles = bareImports
+//                 .map(importName => {
+//                     // Check if `sourcesContent` or `sources` contains the module
+//                     const exactMatch = sourceMap.sources.find(src => src.endsWith(`/${importName}.js`));
+//                     return exactMatch ? new URL(exactMatch, scriptURL).href : null;
+//                 })
+//                 .filter(Boolean); // Remove nulls
     
-            console.log(`✅ Correctly resolved imports:`, resolvedFiles);
-            return resolvedFiles.length > 0 ? resolvedFiles : []; // DO NOT, return only extra : NO OLD Use original file if no matches found
-        } catch (error) {
-            console.error(`❌ Error resolving imports for ${scriptURL}:`, error);
-            return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
-        }
-    }
+//             console.log(`✅ Correctly resolved imports:`, resolvedFiles);
+//             return resolvedFiles.length > 0 ? resolvedFiles : []; // DO NOT, return only extra : NO OLD Use original file if no matches found
+//         } catch (error) {
+//             console.error(`❌ Error resolving imports for ${scriptURL}:`, error);
+//             return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+//         }
+//     }
 
-    // **🔍 Detect and Load JavaScript as Module or CommonJS**
-    async loadScript(url, globalObject="lastscript") {
-        console.debug("Load script", url, globalObject);
-        return new Promise(async (resolve, reject) => {
-            let isModule = await this.isESModule(url);
-            console.debug("loadScript", isModule?"MODULE":"COMMONJS", url);
-            if (isModule) {
-                let script = document.createElement("script");
-                script.type = "module";
-                script.textContent = `
-                    import { LiteGraph } from '../src/litegraph.js';
-                    import * as ${globalObject} from '${url}';
-                    window.${globalObject} = ${globalObject};
-                    LiteGraph.libraries.${globalObject} = ${globalObject};
-                    console.warn('LOADLIBOBJECT',window.${globalObject});
-                    // alert('loaded ${globalObject}');
-                `;
-                //alert(script.textContent);
-                document.head.appendChild(script);
-                resolve();
-            } else {
-                let script = document.createElement("script");
-                script.type = "text/javascript";
-                script.src = url;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }
-        });
-    }
+//     // **🔍 Detect and Load JavaScript as Module or CommonJS**
+//     async loadScript(url, globalObject="lastscript") {
+//         console.debug("Load script", url, globalObject);
+//         return new Promise(async (resolve, reject) => {
+//             let isModule = await this.isESModule(url);
+//             console.debug("loadScript", isModule?"MODULE":"COMMONJS", url);
+//             if (isModule) {
+//                 let script = document.createElement("script");
+//                 script.type = "module";
+//                 script.textContent = `
+//                     import { LiteGraph } from '../src/litegraph.js';
+//                     import * as ${globalObject} from '${url}';
+//                     window.${globalObject} = ${globalObject};
+//                     LiteGraph.LibraryManager?.${globalObject} = ${globalObject};
+//                     console.warn('LOADLIBOBJECT',window.${globalObject});
+//                     // alert('loaded ${globalObject}');
+//                 `;
+//                 //alert(script.textContent);
+//                 document.head.appendChild(script);
+//                 resolve();
+//             } else {
+//                 let script = document.createElement("script");
+//                 script.type = "text/javascript";
+//                 script.src = url;
+//                 script.onload = resolve;
+//                 script.onerror = reject;
+//                 document.head.appendChild(script);
+//             }
+//         });
+//     }
 
-    // **🔍 Check if a script is an ES Module**
-    async isESModule(url) {
-        try {
-            let response = await fetch(url);
-            let text = await response.text();
-            return /export\s|import\s/.test(text); // Detect ES Module keywords
-        } catch (e) {
-            return false; // Default to CommonJS if fetch fails
-        }
-    }
+//     // **🔍 Check if a script is an ES Module**
+//     async isESModule(url) {
+//         try {
+//             let response = await fetch(url);
+//             let text = await response.text();
+//             return /export\s|import\s/.test(text); // Detect ES Module keywords
+//         } catch (e) {
+//             return false; // Default to CommonJS if fetch fails
+//         }
+//     }
 
-    // Load CSS
-    loadCSS(href) {
-        return new Promise((resolve, reject) => {
-            const link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = href;
-            link.onload = resolve;
-            link.onerror = reject;
-            document.head.appendChild(link);
-        });
-    }
+//     // Load CSS
+//     loadCSS(href) {
+//         return new Promise((resolve, reject) => {
+//             const link = document.createElement("link");
+//             link.rel = "stylesheet";
+//             link.href = href;
+//             link.onload = resolve;
+//             link.onerror = reject;
+//             document.head.appendChild(link);
+//         });
+//     }
 
-    // Unload a library
-    unloadLibrary(key) {
-        if (!this.libraries_known[key]) {
-            console.error(`Library ${key} not registered.`);
-            return;
-        }
+//     // Unload a library
+//     unloadLibrary(key) {
+//         if (!this.libraries_known[key]) {
+//             console.error(`Library ${key} not registered.`);
+//             return;
+//         }
 
-        if (this.libraries_state[key] !== "loaded") {
-            console.warn(`Library ${key} is not loaded.`);
-            return;
-        }
+//         if (this.libraries_state[key] !== "loaded") {
+//             console.warn(`Library ${key} is not loaded.`);
+//             return;
+//         }
 
-        const library = this.libraries_known[key];
-        library.files.forEach(file => {
-            if (file.endsWith(".js")) {
-                document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
-            } else if (file.endsWith(".css")) {
-                document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
-            }
-        });
+//         const library = this.libraries_known[key];
+//         library.files.forEach(file => {
+//             if (file.endsWith(".js")) {
+//                 document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
+//             } else if (file.endsWith(".css")) {
+//                 document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
+//             }
+//         });
 
-        this.libraries_state[key] = "not_loaded";
-        delete this.libraries_loaded[key];
-        console.log(`Library ${key} unloaded.`);
-    }
+//         this.libraries_state[key] = "not_loaded";
+//         delete this.libraries_loaded[key];
+//         console.log(`Library ${key} unloaded.`);
+//     }
 
-    // Get the state of a library
-    getLibraryState(key) {
-        return this.libraries_state[key] || false; //"unknown";
-    }
-}
+//     // Get the state of a library
+//     getLibraryState(key) {
+//         return this.libraries_state[key] || false; //"unknown";
+//     }
+// }
 
-// Attach LibraryManager to LiteGraph
-LiteGraph.libraries = new LibraryManager();
+// // Attach LibraryManager to LiteGraph
+// LiteGraph.LibraryManager = new LibraryManager();
 
 
 // Utility function to format names
@@ -203,7 +203,61 @@ function camelize(str) {
 // LiteGraph Node: CDNLibInclude
 class CDNLibInclude {
     static title = "Lib Load";
-    static desc = "Load and include a JS library (CDN or URL)";
+    static desc = "Load by LibraryManager";
+
+    constructor() {
+        this.addInput("load", LiteGraph.ACTION);
+        this.addInput("name", "string", { param_bind: true });
+        this.addOutput("ready", LiteGraph.EVENT);
+        this.addOutput("error", LiteGraph.EVENT);
+
+        this.addProperty("name", "", "string");
+
+        this.addWidget("string", "name", "", "name", {});
+    }
+
+    load() {
+        const that = this;
+        let name = this.getInputOrProperty("name");
+    
+        this.setProperty("name", name);
+
+        LiteGraph.LibraryManager?.loadLibrary(name, () => {
+            that.on_loaded(name);
+        });
+    }
+
+    on_loaded(name) {
+        console.debug?.("Loaded library", name);
+        this.trigger("ready");
+        this.boxcolor = "#0F0";
+    }
+
+    on_error(name, e) {
+        this.trigger("error");
+        this.boxcolor = "#F00";
+        console.warn?.("Lib loading failed", name, e);
+    }
+
+    onAction(evt) {
+        if (evt === "load") {
+            this.load();
+        }
+    }
+
+    onExecute() {}
+
+    onGetInputs() {}
+
+    onGetOutputs() {}
+}
+// Register the node
+LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
+
+
+class CDNLibRegister {
+    static title = "Lib Register";
+    static desc = "Register a JS library (by url or object)";
 
     constructor() {
         this.addInput("load", LiteGraph.ACTION);
@@ -222,7 +276,7 @@ class CDNLibInclude {
         this.addWidget("toggle", "module", false, "module", {});
     }
 
-    load() {
+    register() {
         const that = this;
         let url = this.getInputOrProperty("url");
         let name = this.getInputOrProperty("name");
@@ -247,10 +301,8 @@ class CDNLibInclude {
             this.setProperty("name", name);
             this.setProperty("url", url);
 
-            LiteGraph.libraries.registerLibrary(name, "latest", [url], name);
-            LiteGraph.libraries.loadLibrary(name, () => {
-                that.on_loaded(lib_spec);
-            });
+            LiteGraph.LibraryManager?.registerLibrary(name, "latest", name, [], [url]);
+            
         } else {
             this.boxcolor = "#F00";
         }
@@ -269,12 +321,12 @@ class CDNLibInclude {
     on_error(lib_spec, e) {
         this.trigger("error");
         this.boxcolor = "#F00";
-        console.warn?.("Lib loading failed", lib_spec, e);
+        console.warn?.("Lib registration failed", lib_spec, e);
     }
 
     onAction(evt) {
-        if (evt === "load") {
-            this.load();
+        if (evt === "register") {
+            this.register();
         }
     }
 
@@ -285,7 +337,7 @@ class CDNLibInclude {
     onGetOutputs() {}
 }
 // Register the node
-LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
+LiteGraph.registerNodeType("libraries/register", CDNLibRegister);
 
 
 class CDNLibSearch {
@@ -347,7 +399,7 @@ class CDNLibSearch {
                     };
 
                     // Register in LibraryManager
-                    LiteGraph.libraries.registerLibrary(lib_spec.name, "latest", lib_spec.files, lib_spec.name);
+                    LiteGraph.LibraryManager?.registerLibrary(lib_spec.name, "latest", lib_spec.name, [], lib_spec.files);
 
                     // Set output data
                     that.setOutputData(1, data.results);  // Full results array
@@ -413,7 +465,7 @@ class CDNLibrarySelector {
 
     // Get list of registered libraries
     getLibraries() {
-        return Object.keys(LiteGraph.libraries.libraries_known);
+        return Object.keys(LiteGraph.LibraryManager?.libraries_known);
     }
 
     // Refresh library list
@@ -433,8 +485,8 @@ class CDNLibrarySelector {
         this.refreshLibraries();
 
         const selectedLib = this.properties.selectedLibrary;
-        if (selectedLib && LiteGraph.libraries.libraries_known[selectedLib]) {
-            this.setOutputData(0, LiteGraph.libraries.libraries_known[selectedLib]);
+        if (selectedLib && LiteGraph.LibraryManager?.libraries_known[selectedLib]) {
+            this.setOutputData(0, LiteGraph.LibraryManager?.libraries_known[selectedLib]);
         }
         
         this.setOutputData(1, this.librariesList);

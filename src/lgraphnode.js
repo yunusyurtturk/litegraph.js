@@ -877,7 +877,7 @@ export class LGraphNode {
             LiteGraph.log_verbose("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
             return;
         }else{
-            LiteGraph.log_debug("lgraphNODE", "doExecute", this.id, this.title);
+            LiteGraph.log_verbose("lgraphNODE", "doExecute", this.id, this.title);
         }
 
         // enable this to give the event an ID

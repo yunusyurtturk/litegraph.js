@@ -2,11 +2,9 @@
 import { LiteGraph } from "../litegraph.js";
 
 // Ensure jQuery is loaded using LibraryManager
-LiteGraph.libraries.registerLibrary("jquery", "latest", [
-    "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"
-], "jQuery");
+LiteGraph.LibraryManager.registerLibrary("jquery", "latest", "jQuery", [], ["https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"]);
 
-LiteGraph.libraries.loadLibrary("jquery", () => {
+LiteGraph.LibraryManager.loadLibrary("jquery", () => {
     console.log("✅ jQuery Loaded Successfully");
 });
 
@@ -19,7 +17,7 @@ export class JQueryBaseNode {
     }
 
     checkJQuery() {
-        if (!window.jQuery) {
+        if (typeof($)!=="function") {
             console.warn("⚠️ jQuery is not available.");
             return false;
         }
