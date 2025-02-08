@@ -49,6 +49,7 @@ lib_js_files = [
     "./src/lgraphnode.js",
     "./src/llink.js",
     "./src/subgraph.js",
+    "./src/librarymanager.js",
     "./src/init_litegraph.js",
 ]
 
@@ -70,9 +71,11 @@ lib_nodes_files = [
     "./src/nodes/audio.js",
     "./src/nodes/network.js",
     "./src/nodes/objects.js",
-    # "./src/nodes/libraries.js",
+    "./src/nodes/libraries.js",
     "./src/nodes/html.js",
     "./src/nodes/watch.js",
+    "./src/nodes/litegraph_nodes.js",
+    "./src/nodes/others.js",
 ]
 
 lib_nodejs_nodes_files = [
@@ -142,15 +145,19 @@ def concatenate_js_files(js_files, output_filename, output_folder, remove_import
         try:
             with open(js_file, "r", encoding="utf-8") as f:
                 file_data = f.read()
+                # if remove_imports:
+                #     file_data = re.sub(r'import\s+.*?;\n', '', file_data)
                 if remove_imports:
-                    file_data = re.sub(r'import\s+.*?;\n', '', file_data)
+                    # Regular expression to match import statements at the beginning of a line
+                    file_data = re.sub(r'^\s*import\s+[^"\'].*?;\s*\n', '', file_data, flags=re.MULTILINE)
                 concatenated_data += file_data + "\n"
                 print("\033[92mOK\033[0m")
         except FileNotFoundError:
             print("\033[91mJS File not found\033[0m")
 
+    print(f"Concatenated JS files saving to: {output_filename}")
     output_path = os.path.join(output_folder, output_filename)
-    with open(output_path, "w") as output_file:
+    with open(output_path, "w", encoding="utf-8") as output_file:
         output_file.write(concatenated_data)
     print(f"Concatenated JS files saved to: {output_filename}")
 
@@ -161,17 +168,25 @@ def pack_js_files(input_filepath, output_filename, output_folder, minify=True):
     if minify:
         print(f"Processing {input_filepath} ", end="")
         if os.path.exists(input_filepath):
-            minified_js = subprocess.run(["uglifyjs", input_filepath, "-c"], stdout=subprocess.PIPE, text=True, shell=True)
+            # minified_js = subprocess.run(["uglifyjs", input_filepath, "-c"], stdout=subprocess.PIPE, text=True, shell=True)
+            minified_js = subprocess.run(
+                ["uglifyjs", input_filepath, "-c"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,  # Capture errors too
+                text=True,
+                shell=True,
+                encoding="utf-8"  # ✅ Ensure UTF-8 encoding
+            )
             packed_data = "/*packed*/\n" + minified_js.stdout + "\n"
             print("\033[92mMinified\033[0m")
         else:
             print("\033[91mJS File not found\033[0m")
             return
     else:
-        with open(input_filepath, "r") as input_file:
+        with open(input_filepath, "r", encoding="utf-8") as input_file:
             packed_data = input_file.read()
 
-    with open(os.path.join(output_folder, output_filename), "w") as output_file:
+    with open(os.path.join(output_folder, output_filename), "w", encoding="utf-8") as output_file:
         output_file.write(packed_data)
     print(f"Concatenated and minified JS files saved to: {output_filename}")
 
@@ -289,11 +304,11 @@ def uncomment_nodejs_code(input_code):
 def reprocess_files_for_node(input_filepath, output_filepath):
     print(f"Reprocessing {input_filepath} for Node.js", end=" ")
     try:
-        with open(input_filepath, "r") as file:
+        with open(input_filepath, "r", encoding="utf-8") as file:
             data = file.read()
         new_data = convert_es6_to_commonjs(data)
         new_data = uncomment_nodejs_code(new_data)
-        with open(output_filepath, "w") as output_file:
+        with open(output_filepath, "w", encoding="utf-8") as output_file:
             output_file.write(new_data)
         print("\033[92mDone\033[0m")
     except FileNotFoundError:

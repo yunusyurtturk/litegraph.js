@@ -61,7 +61,7 @@ import { LiteGraph } from "../litegraph.js";
 //         }
 //     }
 
-//     // **📌 Detect only the required imports using the source map**
+//     // **Detect only the required imports using the source map**
 //     async detectRequiredImports(scriptURL) {
 //         try {
 //             // Step 1: Fetch the script content
@@ -97,15 +97,15 @@ import { LiteGraph } from "../litegraph.js";
 //                 })
 //                 .filter(Boolean); // Remove nulls
     
-//             console.log(`✅ Correctly resolved imports:`, resolvedFiles);
+//             console.log(`Correctly resolved imports:`, resolvedFiles);
 //             return resolvedFiles.length > 0 ? resolvedFiles : []; // DO NOT, return only extra : NO OLD Use original file if no matches found
 //         } catch (error) {
-//             console.error(`❌ Error resolving imports for ${scriptURL}:`, error);
+//             console.error(`Error resolving imports for ${scriptURL}:`, error);
 //             return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
 //         }
 //     }
 
-//     // **🔍 Detect and Load JavaScript as Module or CommonJS**
+//     // **Detect and Load JavaScript as Module or CommonJS**
 //     async loadScript(url, globalObject="lastscript") {
 //         console.debug("Load script", url, globalObject);
 //         return new Promise(async (resolve, reject) => {
@@ -136,7 +136,7 @@ import { LiteGraph } from "../litegraph.js";
 //         });
 //     }
 
-//     // **🔍 Check if a script is an ES Module**
+//     // **Check if a script is an ES Module**
 //     async isESModule(url) {
 //         try {
 //             let response = await fetch(url);

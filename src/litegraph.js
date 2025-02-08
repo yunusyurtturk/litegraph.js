@@ -1279,7 +1279,9 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
         });
 }
 
-export const root = getGlobalObject();
+// if(typeof(root) == "undefined" || !root){
+//     var root = getGlobalObject();
+// }
 
 // export var getGlobalObject = getGlobalObject;
 // export var setGlobalVariable = setGlobalVariable;
@@ -1289,6 +1291,6 @@ if(!getGlobalVariable("LiteGraph")){
     setGlobalVariable("LiteGraph", new LiteGraphClass());
     let LGInst = getGlobalVariable("LiteGraph");
     LGInst.log_info("LiteGraph instantiated",LGInst.getTime());
-    LGInst.root = root;
+    LGInst.root = getGlobalObject();
 }
 export const LiteGraph = getGlobalVariable("LiteGraph");

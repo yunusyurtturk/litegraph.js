@@ -5,7 +5,7 @@ import { LiteGraph } from "../litegraph.js";
 LiteGraph.LibraryManager.registerLibrary("jquery", "latest", "jQuery", [], ["https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"]);
 
 LiteGraph.LibraryManager.loadLibrary("jquery", () => {
-    console.log("✅ jQuery Loaded Successfully");
+    console.log("jQuery Loaded Successfully");
 });
 
 // Base class for jQuery nodes
@@ -18,7 +18,7 @@ export class JQueryBaseNode {
 
     checkJQuery() {
         if (typeof($)!=="function") {
-            console.warn("⚠️ jQuery is not available.");
+            console.warn("jQuery is not available.");
             return false;
         }
         return true;
@@ -159,20 +159,20 @@ export class JQueryAnimate extends JQueryBaseNode {
         let easing = this.getInputOrProperty("easing");
 
         if (!elements || elements.length === 0) {
-            console.warn("⚠️ JQueryAnimate: No elements found to animate.");
+            console.warn("JQueryAnimate: No elements found to animate.");
             this.trigger("onFail");
             return;
         }
 
         if (!properties || typeof properties !== "object") {
-            console.warn("⚠️ JQueryAnimate: Invalid animation properties.");
+            console.warn("JQueryAnimate: Invalid animation properties.");
             this.trigger("onFail");
             return;
         }
 
         // Ensure easing is valid, fallback to "swing"
         if (typeof easing !== "string" || !$.easing[easing]) {
-            console.warn(`⚠️ JQueryAnimate: Invalid easing '${easing}', defaulting to 'swing'.`);
+            console.warn(`JQueryAnimate: Invalid easing '${easing}', defaulting to 'swing'.`);
             easing = "swing";
         }
 

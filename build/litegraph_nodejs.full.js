@@ -1,30 +1,48 @@
 // global.js
+
+// Function to get the global object (browser or server)
 export function getGlobalObject() {
-    if (typeof globalThis !== 'undefined') {
-        return globalThis;
-    }
-    if (typeof self !== 'undefined') {
-        return self;
-    }
-    if (typeof window !== 'undefined') {
-        return window;
-    }
-    if (typeof global !== 'undefined') {
-        return global;
-    }
+    if (typeof globalThis !== 'undefined') return globalThis;
+    if (typeof self !== 'undefined') return self;
+    if (typeof window !== 'undefined') return window;
+    if (typeof global !== 'undefined') return global;
     throw new Error('Unable to determine global object');
 }
 
+// Function to set a global variable
 export function setGlobalVariable(key, value) {
     const globalObject = getGlobalObject();
     globalObject[key] = value;
 }
 
+// Function to get a global variable
 export function getGlobalVariable(key) {
     const globalObject = getGlobalObject();
     return globalObject[key];
 }
 
+// Function to check if running in a browser environment
+export function isBrowser() {
+    return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+// Function to check if running in a Node.js environment
+export function isNode() {
+    return typeof process !== 'undefined' && process.versions && process.versions.node;
+}
+
+// Function to check if running in a Bun.js environment
+export function isBun() {
+    return typeof Bun !== 'undefined';
+}
+
+// Function to detect the runtime environment
+export function getRuntime() {
+    if (isBrowser()) return 'browser';
+    if (isBun()) return 'bun';
+    if (isNode()) return 'node';
+    return 'unknown';
+}
 
 /**
  * @class LiteGraph
@@ -35,7 +53,7 @@ export function getGlobalVariable(key) {
  */
 export class LiteGraphClass {
 
-    VERSION = "a0.11.0";
+    VERSION = "a0.11.1";
 
     LLink = null; //LLink;
     LGraph = null; //LGraph;
@@ -222,6 +240,9 @@ export class LiteGraphClass {
 
     properties_allow_input_binding = false; // [true!] allow create and bind inputs, will update binded property value on node execute 
     properties_allow_output_binding = false; // [true!] allow create and bind outputs, will update output slots when node executed 
+    properties_input_binding_check_ancestors = false; // [true!] when executing a node it will update binding, there when getting data will ensure data is updated
+
+    allow_action_widget_button = true; // [true!] allow linking an action to a button widget to call it
 
     log_methods = ['error', 'warn', 'info', 'log', 'debug'];
 
@@ -255,6 +276,7 @@ export class LiteGraphClass {
             return new ContextMenu(...arguments);
         };
         this.CallbackHandler = CallbackHandler;
+        this.LibraryManager = new LibraryManager();
 
         // base inclusion
         this.includeBasicNodes();
@@ -911,39 +933,25 @@ export class LiteGraphClass {
     }
 
     /**
-     * Returns if the types of two slots are compatible (taking into account wildcards, etc)
+     * Returns if the types of two slots are compatible (supports multiple types per slot, wildcards, and events)
      * @method isValidConnection
      * @param {String} type_a
      * @param {String} type_b
      * @return {Boolean} true if they can be connected
      */
     isValidConnection(type_a, type_b) {
-        if (type_a === "" || type_a === "*") type_a = 0;
-        if (type_b === "" || type_b === "*") type_b = 0;
+        if (!type_a || !type_b) return true; // Empty types are universal
 
-        if (!type_a || !type_b || type_a === type_b || (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION)) {
-            return true;
-        }
+        // Handle wildcard cases
+        if (type_a === "*" || type_b === "*") return true;
+        if (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION) return true;
 
-        type_a = String(type_a).toLowerCase();
-        type_b = String(type_b).toLowerCase();
+        // Normalize type strings (lowercase, split multiple types by `|` or `,`)
+        let typesA = String(type_a).toLowerCase().split(/[|,]/);
+        let typesB = String(type_b).toLowerCase().split(/[|,]/);
 
-        if (!type_a.includes(",") && !type_b.includes(",")) {
-            return type_a === type_b;
-        }
-
-        const supported_types_a = type_a.split(",");
-        const supported_types_b = type_b.split(",");
-
-        for (const supported_type_a of supported_types_a) {
-            for (const supported_type_b of supported_types_b) {
-                if (this.isValidConnection(supported_type_a, supported_type_b)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        // Check if any type in `typesA` matches any type in `typesB`
+        return typesA.some(a => typesB.includes(a));
     }
 
 
@@ -1294,7 +1302,7 @@ export class LiteGraphClass {
     }
 }
 
-// !� TODO MOVE THESE HELPERS ?!
+// !¿ TODO MOVE THESE HELPERS ?!
 // timer that works everywhere
 // if (typeof performance != "undefined") {
 //     LiteGraphClass.getTime = performance.now.bind(performance);
@@ -1321,14 +1329,21 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
         });
 }
 
-export const root = getGlobalObject();
+// if(typeof(root) == "undefined" || !root){
+//     var root = getGlobalObject();
+// }
+
+// export var getGlobalObject = getGlobalObject;
+// export var setGlobalVariable = setGlobalVariable;
+// export var getGlobalVariable = getGlobalVariable;
+
 if (!getGlobalVariable("LiteGraph")) {
     setGlobalVariable("LiteGraph", new LiteGraphClass());
     let LGInst = getGlobalVariable("LiteGraph");
     LGInst.log_info("LiteGraph instantiated", LGInst.getTime());
+    LGInst.root = getGlobalObject();
 }
-export var LiteGraph = getGlobalVariable("LiteGraph");
-
+export const LiteGraph = getGlobalVariable("LiteGraph");
 /**
  * WIP
  * intended to replace direct (single) assignment of callbacks [ event entrypoint ]
@@ -1600,7 +1615,6 @@ export class CallbackHandler {
         // TODO would be probably better to always return an object to than check for result and make easier code in implementation
     }
 }
-
 export class ContextMenu {
 
     /**
@@ -2205,7 +2219,6 @@ export class ContextMenu {
     }
 }
 
-
 // used by some widgets to render a curve editor
 export class CurveEditor {
     constructor(points) {
@@ -2367,7 +2380,6 @@ export class CurveEditor {
         return closest;
     }
 }
-
 
 /**
  * Class responsible for handling scale and offset transformations for an HTML element,
@@ -2623,7 +2635,6 @@ export class DragAndScale {
         this.offset[1] = 0;
     }
 }
-
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -3024,7 +3035,9 @@ export class LGraph {
      * @param {boolean} set_level - If true, assigns levels to the nodes based on their connections.
      * @returns {Array} An array of nodes in the calculated execution order.
      *
-     * @TODO:This whole concept is a mistake.  Should call graph back from output nodes
+     * @TODO: mrpebble: This whole concept is a mistake. Should call graph back from output nodes
+     * ADDENDUM: atlasan: actually ancestor solution will trigger output nodes when needed, it is not a mistake as it's working his way
+     *                      so let's investigate, develop, try and document better
      */
     computeExecutionOrder(only_onExecute, set_level) {
         var L = [];
@@ -4589,7 +4602,6 @@ export class LGraph {
     }
 }
 
-
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -5212,6 +5224,7 @@ export class LGraphCanvas {
         if (this.pointer_is_down && e.isPrimary !== undefined && !e.isPrimary) {
             this.userInput_isNotPrimary = true;
             // DBG("pointerevents: userInput_isNotPrimary start");
+            LiteGraph.log_debug("lgraphcanvas", "processUserInputDown", "userInput_isNotPrimary", e);
         } else {
             this.userInput_isNotPrimary = false;
         }
@@ -5277,7 +5290,7 @@ export class LGraphCanvas {
 
         var x = e.clientX;
         var y = e.clientY;
-        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "pointerId:" + e.pointerId + " which:" + e.which + " isPrimary:" + e.isPrimary + " :: x y " + x + " " + y, "previousClick", this.last_mouseclick, "diffTimeClick", (this.last_mouseclick ? LiteGraph.getTime() - this.last_mouseclick : "notlast"));
+        LiteGraph.log_debug("lgraphcanvas", "processMouseDown", "pointerId:" + e.pointerId + " which:" + e.which + " isPrimary:" + e.isPrimary + " :: x y " + x + " " + y, "previousClick", this.last_mouseclick, "diffTimeClick", (this.last_mouseclick ? LiteGraph.getTime() - this.last_mouseclick : "notlast"), "userInput_isNotPrimary", this.userInput_isNotPrimary);
         LiteGraph.log_verbose("coordinates", x, y, this.viewport, "canvas coordinates", e.canvasX, e.canvasY);
 
         this.ds.viewport = this.viewport;
@@ -10819,13 +10832,18 @@ export class LGraphCanvas {
             let info = node.getPropertyInfo(i);
             let info_type = info && info !== null ? info.type : "string";
             let readonly = info && info !== null ? (info.readonly ? true : false) : false;
-            let prevent_input_bind = info && info !== null ? (info.prevent_input_bind ? true : false) : false;
+            let prevent_input_bind = readonly || (info && info !== null) ? (readonly || info.prevent_input_bind ? true : false) : false;
             let prevent_output_bind = info && info !== null ? (info.prevent_output_bind ? true : false) : false;
             let propName = info && info !== null && info.label ? info.label : i;
 
-            // parse combo
-            if (info_type == "enum" || info_type == "combo") {
+            // parse combo (and parse single number and number in string)
+            if (info_type == "enum" || info_type == "combo" ||
+                info_type == "number"
+            ) {
                 value = LGraphCanvas.getPropertyPrintableValue(value, info.values);
+                // TODO add option to format numbers in string
+                // }else if((info_type == "string" && !isNaN(value) && !isNaN(parseFloat(value)))){
+                //     value = LGraphCanvas.getPropertyPrintableValue( value, info.values );
             }
 
             // value could contain invalid html characters, clean that
@@ -11281,7 +11299,7 @@ export class LGraphCanvas {
                     return true;
 
                 } else {
-                    LiteGraph.log_warn("lgraphcanvas", "createDefaultNodeForSlot", "failed creating " + nodeNewType);
+                    LiteGraph.log_warn("lgraphcanvas", "createDefaultNodeForSlot", "failed creating", nodeNewType);
                 }
             }
         }
@@ -12649,6 +12667,9 @@ export class LGraphCanvas {
             value_element.innerText = str_value;
             elem.dataset["property"] = name;
             elem.dataset["type"] = options.type || type;
+            // if(elem.dataset["type"]=="number"){
+            //     elem.dataset["precision"] = options.precision || 3;
+            // }
             elem.options = options;
             elem.value = value;
 
@@ -12671,7 +12692,7 @@ export class LGraphCanvas {
                     this.querySelector(".property_value").innerText = this.value ? "on" : "off";
                     innerChange(propname, this.value);
                 });
-            } else if (type == "string" || type == "number") {
+            } else if (type == "string" || type == "number" || type == "undefined") {
                 value_element.setAttribute("contenteditable", true);
                 value_element.addEventListener("keydown", function(e) {
                     if (e.code == "Enter" && (type != "string" || !e.shiftKey)) { // allow for multiline
@@ -12737,7 +12758,13 @@ export class LGraphCanvas {
 
     static getPropertyPrintableValue(value, values) {
         if (!values)
-            return String(value);
+            if (typeof(value) == "number") {
+                return parseFloat(value.toFixed(5));
+                // TODO add option to format numbers in string
+                // }else if((typeof(value) == "string" && !isNaN(value) && !isNaN(parseFloat(value)))){
+                //     return parseFloat(Number(value).toFixed(5));
+            }
+        return String(value);
 
         if (values.constructor === Array) {
             return String(value);
@@ -13586,8 +13613,15 @@ export class LGraphCanvas {
         if (r !== null && (typeof(r) == "object")) {
             if (typeof(r.return_value) == "object") {
                 if (typeof(r.return_value.length) !== "undefined" && r.return_value.length) {
-                    extra.push(null);
-                    options = extra.concat(r.return_value);
+                    options = options.concat(r.return_value);
+                } else {
+                    LiteGraph.log_warn("getExtraMenuOptions", "not array", r.return_value);
+                }
+            } else {
+                if (typeof(r.length) !== "undefined" && r.length) {
+                    options = options.concat(r);
+                } else {
+                    // LiteGraph.log_verbose("getExtraMenuOptions", "not returning additional options", r);
                 }
             }
         }
@@ -13712,6 +13746,14 @@ export class LGraphCanvas {
             options.title = slotOb.type || "*";
             if (slotOb.type == LiteGraph.ACTION) {
                 options.title = "Action";
+                if (LiteGraph.allow_action_widget_button) {
+                    menu_info.push({
+                        content: "Toggle widget",
+                        callback: () => {
+                            node.toggleActionWidget(slotOb.name, slot);
+                        }
+                    });
+                }
             } else if (slotOb.type == LiteGraph.EVENT) {
                 options.title = "Event";
             }
@@ -13939,7 +13981,6 @@ var margin_area = new Float32Array(4);
 var link_bounding = new Float32Array(4);
 var tempA = new Float32Array(2);
 var tempB = new Float32Array(2);
-
 export class LGraphGroup {
 
     static opts = {
@@ -14103,7 +14144,6 @@ export class LGraphGroup {
     isPointInside = LiteGraph.LGraphNode.prototype.isPointInside;
     setDirtyCanvas = LiteGraph.LGraphNode.prototype.setDirtyCanvas;
 }
-
 
 /*
 title: string
@@ -14622,6 +14662,7 @@ export class LGraphNode {
 
         let ob_input = this.inputs[slot];
 
+        // hard coded input force returning that value, used in subgraph as functions to drive calling multiple times the same node
         if (typeof(ob_input.hard_coded_value) != "undefined") {
             console.debug("HARD_CODED_INPUT", this, ob_input, ob_input.hard_coded_value);
             return ob_input.hard_coded_value;
@@ -14996,6 +15037,8 @@ export class LGraphNode {
         if (this.mode === LiteGraph.NEVER) {
             LiteGraph.log_verbose("lgraphNODE", "doExecute", "prevent execution in mode NEVER", this.id);
             return;
+        } else {
+            LiteGraph.log_verbose("lgraphNODE", "doExecute", this.id, this.title);
         }
 
         // enable this to give the event an ID
@@ -15013,7 +15056,7 @@ export class LGraphNode {
         if (LiteGraph.ensureUniqueExecutionAndActionCall) {
             // if(this.action_call && options && options.action_call && this.action_call == options.action_call){
             if (this.graph.nodes_executedAction[this.id] && options && options.action_call && this.graph.nodes_executedAction[this.id] == options.action_call) {
-                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! " + options.action_call);
+                LiteGraph.log_debug("lgraphNODE", "doExecute", "!! NODE already ACTION THIS STEP !! " + options.action_call, this);
                 return;
             }
         }
@@ -15089,6 +15132,11 @@ export class LGraphNode {
             }
         }
 
+        // update binded properties
+        if (LiteGraph.properties_allow_input_binding) {
+            this.doUpdateBindedInputProperties();
+        }
+
         this.graph.nodes_actioning[this.id] = (action ? action : "actioning"); // .push(this.id);
 
         // this.onAction(action, param, options, action_slot);
@@ -15097,6 +15145,11 @@ export class LGraphNode {
         }, action, param, options, action_slot);
 
         this.graph.nodes_actioning[this.id] = false; // .pop();
+
+        // update output slot binded to properties
+        if (LiteGraph.properties_allow_output_binding) {
+            this.doUpdateBindedOutputProperties();
+        }
 
         // save execution/action ref
         if (options && options.action_call) {
@@ -15153,17 +15206,31 @@ export class LGraphNode {
         if (!this.outputs) {
             return;
         }
+        var output = null;
+        // drive event for subgraph as functions (similarly to hard_coded_value)
         if (slot === null) {
             LiteGraph.log_error("lgraphnode", "triggerSlot", "wrong slot", slot);
             return;
         }
+        if (this.mode === LiteGraph.NEVER) {
+            return;
+        }
         if (slot.constructor !== Number) {
             // LiteGraph.log_warn("lgraphnode", "triggerSlot","slot must be a number, use node.trigger('name') if you want to use a string");
+            LiteGraph.log_verbose("lgraphnode", "triggerSlot", "slot not a number, find it", slot, param);
             slot = this.getOutputSlot(slot);
+            LiteGraph.log_verbose("lgraphnode", "triggerSlot", "looked for slot not a number", slot);
         }
-        var output = this.outputs[slot];
+        output = this.outputs[slot];
         if (!output) {
+            LiteGraph.log_debug("lgraphNODE", "triggerSlot", "output slot not found", slot, param);
             return;
+        } else {
+            LiteGraph.log_debug("lgraphNODE", "triggerSlot", output, slot, param);
+        }
+        if (typeof(output.hard_coded_output) != "undefined") {
+            LiteGraph.log_debug("HARD_CODED_OUTPUT", this, output, output.hard_coded_output);
+            output = output.hard_coded_output;
         }
 
         var links = output.links;
@@ -15171,13 +15238,9 @@ export class LGraphNode {
             return;
         }
 
-        if (this.mode === LiteGraph.NEVER) {
-            return;
-        }
-
         // check for ancestors calls
         if (this.graph && this.graph.ancestorsCall) {
-            // LiteGraph.log_debug("ancestors call, prevent triggering slot "+slot+" on "+this.id+":"+this.order);
+            LiteGraph.log_debug("ancestors call, prevent triggering slot " + slot + " on " + this.id + ":" + this.order);
             return;
         }
 
@@ -15195,12 +15258,14 @@ export class LGraphNode {
             var link_info = this.graph.links[links[k]];
             if (!link_info) {
                 // not connected
+                LiteGraph.log_debug("lgraphNODE", "triggerSlot", "invalid link", k, links[k], output, slot, param);
                 continue;
             }
             link_info._last_time = LiteGraph.getTime();
             var node = this.graph.getNodeById(link_info.target_id);
             if (!node) {
                 // node not found?
+                LiteGraph.log_debug("lgraphNODE", "triggerSlot", "link has not node", link_info, output, slot, param);
                 continue;
             }
             var target_slot = node.inputs[link_info.target_slot];
@@ -15225,19 +15290,22 @@ export class LGraphNode {
                 let target_connection = node.inputs[link_info.target_slot];
 
                 // METHOD 1 ancestors
-                if (LiteGraph.refreshAncestorsOnActions)
+                if (LiteGraph.refreshAncestorsOnActions) {
+                    LiteGraph.log_debug("lgraphNODE", "triggerSlot", "refreshAncestorsOnActions", target_connection.name, output, slot, options);
                     node.refreshAncestors({
                         action: target_connection.name,
                         param: param,
                         options: options
                     });
+                }
 
-                // instead of executing them now, it will be executed in the next graph loop, to ensure data flow
+                // if using use_deferred_actions (alternative to ancestors) instead of executing them now, it will be executed in the next graph loop, to ensure data flow
                 if (LiteGraph.use_deferred_actions && node.onExecute) {
                     node._waiting_actions ??= [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
                     LiteGraph.log_debug("lgraphnode", "triggerSlot", "push to deferred", target_connection.name, param, options, link_info.target_slot); //+this.id+":"+this.order+" :: "+target_connection.name);
                 } else {
+                    // trigger now the action
                     // wrap node.onAction(target_connection.name, param);
                     LiteGraph.log_debug("lgraphnode", "triggerSlot", "call actionDo", node, target_connection.name, param, options, link_info.target_slot);
                     node.actionDo(target_connection.name, param, options, link_info.target_slot);
@@ -15281,8 +15349,8 @@ export class LGraphNode {
         this.inputs.forEach((ob_input) => {
             if (ob_input.param_bind) {
                 LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
-                if (thisNode.properties && typeof(thisNode.properties[ob_input.name]) !== "undefined") {
-                    let inputData = thisNode.getInputData(ob_input.name);
+                if (thisNode.properties && ob_input.name in thisNode.properties) {
+                    let inputData = thisNode.getInputData(ob_input.name, LiteGraph?.properties_input_binding_check_ancestors);
                     if (inputData !== null) {
                         // thisNode.properties[ob_input.name] = link.data;
                         LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "update value", ob_input.name, inputData, thisNode);
@@ -15364,7 +15432,7 @@ export class LGraphNode {
     /**
      * Add a new input or output slot to use in this node.
      * @param {string} name - Name of the slot.
-     * @param {string} type - Type of the slot ("vec3", "number", etc). For a generic type, use "0".
+     * @param {string} type - Type of the slot ("vec3", "number", etc). For a generic type, use 0.
      * @param {Object} extra_info - Additional information for the slot (e.g., label, color, position).
      * @param {boolean} isInput - Whether the slot being added is an input slot.
      * @returns {Object} The newly added slot (input or output).
@@ -15671,11 +15739,20 @@ export class LGraphNode {
 
     /**
      * returns all the info available about a property of this node.
-     *
+     * common info are
+     *  .type (.widget is used if present), "string" is used if both undefined
+     *      "code", "boolean", "string", "number", "undefined", "enum", "combo"
+        .readonly
+        .prevent_input_bind
+        .prevent_output_bind
+        .label
+        .values (Array (or Object))
+            values are than passed down to LGraphCanvas-Panel, to Widget and to ContextMenu
+     * 
      * @method getPropertyInfo
      * @param {String} property name of the property
      * @return {Object} the object with all the available info
-     */
+    */
     getPropertyInfo(property) {
         var info = null;
 
@@ -15724,6 +15801,8 @@ export class LGraphNode {
         /* if(!info.property){
             info.property = property;
         } */
+        // todo map types to common (bool-boolean, ..)
+        // THINK: should map porpertyType, widgetType, basic_nodeType ..
         if (info.widget == "combo") {
             info.type = "enum";
         }
@@ -15791,10 +15870,59 @@ export class LGraphNode {
         return w;
     }
 
+    /**Look for a widget by name
+     * @method findWidget
+     * @param {*} name 
+     * @param {*} returnObj 
+     * @returns {number|object}
+     */
+    findWidget(name, returnObj) {
+        if (!this.widgets) {
+            return -1;
+        }
+        //LiteGraph.log_debug("lgraphnode", "findWidget", this, name, returnObj);
+        for (var i = 0, l = this.widgets.length; i < l; ++i) {
+            if (name == this.widgets[i].name) {
+                return !returnObj ? i : this.widgets[i];
+            }
+        }
+        return -1;
+    }
+
     addCustomWidget(custom_widget) {
         this.widgets ??= [];
         this.widgets.push(custom_widget);
         return custom_widget;
+    }
+
+    /**Add a button widget that triggers an action
+     * @method addActionWidget
+     * @param {*} action_name 
+     * @param {*} action_slot 
+     */
+    addActionWidget(action_name, action_slot) {
+        let wNode = this;
+        let options = {};
+        let param = null;
+        let callback = () => {
+            wNode.actionDo(action_name, param, options = {}, action_slot);
+        };
+        this.addWidget("button", action_name, null, callback, options);
+    }
+
+    /**Toggle a button widget for an action
+     * @method toggleActionWidget
+     * @param {*} action_name 
+     * @param {*} action_slot 
+     */
+    toggleActionWidget(action_name, action_slot) {
+        const widgetIndex = this.findWidget(action_name, false); //this.widgets?.find((widget) => widget && widget.name === action_name);
+        LiteGraph.log_debug("lgraphnode", "toggleActionWidget", this, action_name, action_slot, widgetIndex, widgetIndex > -1 ? "REMOVE" : "ADD");
+        if (widgetIndex > -1) {
+            this.widgets.splice(widgetIndex, 1);
+        } else {
+            this.addActionWidget(action_name, action_slot);
+        }
     }
 
     /**
@@ -15835,6 +15963,7 @@ export class LGraphNode {
             LiteGraph.NODE_TITLE_HEIGHT + bottom_offset :
             nodeSize[1] + LiteGraph.NODE_TITLE_HEIGHT + bottom_offset;
 
+        // TODO should retrieve bounding back if overriding
         this.processCallbackHandlers("onBounding", {
             def_cb: this.onBounding
         }, out)
@@ -15985,16 +16114,20 @@ export class LGraphNode {
      */
     getSlot(is_input, slot_index_or_name, returnObj = false) {
         if (!is_input || is_input === LiteGraph.OUTPUT) {
-            if (this.outputs[slot_index_or_name] !== "undefined") {
+            if (typeof(this.outputs[slot_index_or_name]) !== "undefined") {
+                LiteGraph.log_verbose("lgraphnode", "getSlot", "output slot_index_or_name found", slot_index_or_name, this.outputs[slot_index_or_name]);
                 return !returnObj ? slot_index_or_name : this.outputs[slot_index_or_name];
             } else {
-                return this.findInputSlot(slot_index_or_name, returnObj);
+                LiteGraph.log_verbose("lgraphnode", "getSlot", "output slot_index_or_name NOT found, find it", slot_index_or_name);
+                return this.findOutputSlot(slot_index_or_name, returnObj);
             }
         } else {
-            if (this.inputs[slot_index_or_name] !== "undefined") {
+            if (typeof(this.inputs[slot_index_or_name]) !== "undefined") {
+                LiteGraph.log_verbose("lgraphnode", "getSlot", "input slot_index_or_name found", slot_index_or_name, this.inputs[slot_index_or_name]);
                 return !returnObj ? slot_index_or_name : this.inputs[slot_index_or_name];
             } else {
-                return this.findOutputSlot(slot_index_or_name, returnObj);
+                LiteGraph.log_verbose("lgraphnode", "getSlot", "input slot_index_or_name NOT found, find it", slot_index_or_name);
+                return this.findInputSlot(slot_index_or_name, returnObj);
             }
         }
     }
@@ -16008,58 +16141,71 @@ export class LGraphNode {
     // TODO refactor: USE SINGLE findInput/findOutput functions! :: merge options
 
     /**
-     * returns the first free input slot, can filter by types
+     * Returns the first free input slot, can filter by types (supports multiple types per slot).
      * @method findInputSlotFree
      * @param {object} options
      * @return {number|object} the slot (-1 if not found)
      */
     findInputSlotFree(optsIn = {}) {
-        var optsDef = {
+        let optsDef = {
             returnObj: false,
             typesNotAccepted: [],
         };
-        var opts = Object.assign(optsDef, optsIn);
-        if (!this.inputs) {
-            return -1;
-        }
-        for (var i = 0, l = this.inputs.length; i < l; ++i) {
-            if (this.inputs[i].link && this.inputs[i].link != null) {
-                continue;
+        let opts = Object.assign(optsDef, optsIn);
+
+        if (!this.inputs) return -1;
+
+        for (let i = 0, l = this.inputs.length; i < l; ++i) {
+            let slot = this.inputs[i];
+
+            if (slot.link != null) continue; // Skip occupied slots
+
+            if (opts.typesNotAccepted.length > 0) {
+                let slotTypes = slot.type ? slot.type.split("|") : [];
+                let isNotAccepted = slotTypes.some(type => opts.typesNotAccepted.includes(type));
+
+                if (isNotAccepted) continue; // Skip unwanted types
             }
-            if (opts.typesNotAccepted && opts.typesNotAccepted.includes && opts.typesNotAccepted.includes(this.inputs[i].type)) {
-                continue;
-            }
-            return !opts.returnObj ? i : this.inputs[i];
+
+            return opts.returnObj ? slot : i;
         }
+
         return -1;
     }
 
     /**
-     * returns the first output slot free, can filter by types
+     * Returns the first free output slot, can filter by types (supports multiple types per slot).
      * @method findOutputSlotFree
      * @param {object} options
      * @return {number|object} the slot (-1 if not found)
      */
     findOutputSlotFree(optsIn = {}) {
-        var optsDef = {
+        let optsDef = {
             returnObj: false,
             typesNotAccepted: [],
         };
-        var opts = Object.assign(optsDef, optsIn);
-        if (!this.outputs) {
-            return -1;
-        }
+        let opts = Object.assign(optsDef, optsIn);
+
+        if (!this.outputs) return -1;
+
         for (let i = 0, l = this.outputs.length; i < l; ++i) {
-            if (this.outputs[i].links && this.outputs[i].links != null) {
-                continue;
+            let slot = this.outputs[i];
+
+            if (slot.links && slot.links.length > 0) continue; // Skip occupied slots
+
+            if (opts.typesNotAccepted.length > 0) {
+                let slotTypes = slot.type ? slot.type.split("|") : [];
+                let isNotAccepted = slotTypes.some(type => opts.typesNotAccepted.includes(type));
+
+                if (isNotAccepted) continue; // Skip unwanted types
             }
-            if (opts.typesNotAccepted && opts.typesNotAccepted.includes && opts.typesNotAccepted.includes(this.outputs[i].type)) {
-                continue;
-            }
-            return !opts.returnObj ? i : this.outputs[i];
+
+            return opts.returnObj ? slot : i;
         }
+
         return -1;
     }
+
 
     /**
      * findSlotByType for INPUTS
@@ -16076,190 +16222,178 @@ export class LGraphNode {
     }
 
     /**
-     * returns the output (or input) slot with a given type, -1 if not found
+     * Returns the output (or input) slot with a given type, -1 if not found.
      * @method findSlotByType
-     * @param {boolean} is_input use inputs (true), or outputs (false)
-     * @param {string} type the type of the slot to look for (multi type by ,) 
-     * @param {boolean} returnObj if the obj itself wanted
-     * @param {boolean} preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
-     * @return {number|object} the slot (-1 if not found)
+     * @param {boolean} is_input Use inputs (true) or outputs (false)
+     * @param {string|number} type The type of the slot to look for (supports multiple types separated by "," or "|")
+     * @param {boolean} returnObj If true, returns the slot object instead of index
+     * @param {boolean} preferFreeSlot If true, prioritizes free slots
+     * @param {boolean} doNotUseOccupied If true, ignores already occupied slots
+     * @return {number|object} The slot index or object (-1 if not found)
      */
-    findSlotByType(
-        is_input = false,
-        type,
-        returnObj = false,
-        preferFreeSlot = false,
-        doNotUseOccupied = false,
-    ) {
-        var aSlots = is_input ? this.inputs : this.outputs;
-        if (!aSlots) {
-            return -1;
+    findSlotByType(is_input = false, type, returnObj = false, preferFreeSlot = false, doNotUseOccupied = false) {
+        let slots = is_input ? this.inputs : this.outputs;
+        if (!slots || slots.length === 0) return -1;
+
+        // Normalize input type
+        let normalizedTypes;
+        if (typeof type === "number") {
+            normalizedTypes = [type]; // Directly use the number type
+        } else if (typeof type === "string" && type.length > 0) {
+            normalizedTypes = type.toLowerCase().split(/[|,]/).map(t => (t === "_event_" ? LiteGraph.EVENT : t));
+        } else {
+            normalizedTypes = [0]; // Default to general type
         }
-        // !! empty string type is considered 0, * !!
-        if (!type || type == "" || type == "*") type = 0;
-        // cycle for this slots
-        for (let i = 0, l = aSlots.length; i < l; ++i) {
-            let aSource = (type + "").toLowerCase().split(",");
-            let aDest = aSlots[i].type == "0" || aSlots[i].type == "*" ?
-                0 :
-                aSlots[i].type;
-            aDest = (aDest + "").toLowerCase().split(",");
-            // cycle for the slot types
-            for (let sI = 0; sI < aSource.length; sI++) {
-                for (let dI = 0; dI < aDest.length; dI++) {
-                    if (aSource[sI] == "_event_") aSource[sI] = LiteGraph.EVENT;
-                    if (aDest[sI] == "_event_") aDest[sI] = LiteGraph.EVENT;
-                    if (aSource[sI] == "*") aSource[sI] = 0;
-                    if (aDest[sI] == "*") aDest[sI] = 0;
-                    if (aSource[sI] == aDest[dI]) {
-                        if (preferFreeSlot &&
-                            (
-                                (aSlots[i].link && aSlots[i].link !== null) ||
-                                (aSlots[i].links && aSlots[i].links !== null)
-                            )
-                        ) {
-                            LiteGraph.log_verbose("lgraphnode", "findSlotByType", "preferFreeSlot but has link", aSource[sI], aDest[dI], "from types", type, "checked types", aSlots[i].type);
+
+        let fallbackSlot = -1;
+
+        for (let i = 0, l = slots.length; i < l; ++i) {
+            let slot = slots[i];
+
+            // Normalize slot type
+            let slotTypes;
+            if (typeof slot.type === "number") {
+                slotTypes = [slot.type]; // Directly use the number type
+            } else if (typeof slot.type === "string") {
+                slotTypes = slot.type.toLowerCase().split(/[|,]/).map(t => (t === "_event_" ? LiteGraph.EVENT : t));
+            } else {
+                slotTypes = [0]; // Default to general type
+            }
+
+            for (let sourceType of normalizedTypes) {
+                for (let slotType of slotTypes) {
+                    if (LiteGraph.isValidConnection(sourceType, slotType)) {
+                        let isOccupied = slot.link !== null || (slot.links && slot.links.length > 0);
+
+                        if (preferFreeSlot && isOccupied) {
+                            LiteGraph.log_verbose("lgraphnode", "findSlotByType", "preferFreeSlot but has link", sourceType, slotType, "for slot", i);
+                            fallbackSlot = fallbackSlot === -1 ? i : fallbackSlot;
                             continue;
                         }
-                        LiteGraph.log_verbose("lgraphnode", "findSlotByType", "found right type", i, aSlots[i], "from types", type, "checked types", aSlots[i].type);
-                        return !returnObj ? i : aSlots[i];
-                    } else {
-                        LiteGraph.log_verbose("lgraphnode", "findSlotByType", "slot not right type", aSource[sI], aDest[dI], "from types", type, "checked types", aSlots[i].type);
+
+                        LiteGraph.log_verbose("lgraphnode", "findSlotByType", "found right type", i, slot);
+                        return returnObj ? slot : i;
                     }
                 }
             }
         }
-        // if didnt find some, checking if need to force on already placed ones
-        if (preferFreeSlot && !doNotUseOccupied) {
-            for (let i = 0, l = aSlots.length; i < l; ++i) {
-                let aSource = (type + "").toLowerCase().split(",");
-                let aDest = aSlots[i].type == "0" || aSlots[i].type == "*" ? "0" : aSlots[i].type;
-                aDest = (aDest + "").toLowerCase().split(",");
-                for (let sI = 0; sI < aSource.length; sI++) {
-                    for (let dI = 0; dI < aDest.length; dI++) {
-                        if (aSource[sI] == "*") aSource[sI] = 0;
-                        if (aDest[sI] == "*") aDest[sI] = 0;
-                        if (aSource[sI] == aDest[dI]) {
-                            return !returnObj ? i : aSlots[i];
-                        }
-                    }
-                }
-            }
+
+        // If no free slot was found, check if we can use occupied ones
+        if (preferFreeSlot && !doNotUseOccupied && fallbackSlot !== -1) {
+            LiteGraph.log_verbose("lgraphnode", "findSlotByType", "Returning occupied slot", fallbackSlot);
+            return returnObj ? slots[fallbackSlot] : fallbackSlot;
         }
+
         return -1;
     }
 
+
+
     /**
-     * connect this node output to the input of another node BY TYPE
+     * Connect this node output to the input of another node BY TYPE.
      * @method connectByType
-     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
-     * @param {LGraphNode} node the target node
-     * @param {string} target_type the input slot type of the target node
-     * @return {Object} the link_info is created, otherwise null
+     * @param {number|string} slot Slot number or name of the output slot
+     * @param {LGraphNode} target_node The target node
+     * @param {string} target_slotType The expected input slot type of the target node
+     * @return {Object|null} Link info if created, otherwise null
      */
     connectByType(slot, target_node, target_slotType = "*", optsIn = {}) {
-        var optsDef = {
+        let opts = Object.assign({
             createEventInCase: true,
             firstFreeIfOutputGeneralInCase: true,
             generalTypeInCase: true,
             preferFreeSlot: false,
-        };
-        var opts = Object.assign(optsDef, optsIn);
-        if (target_node && target_node.constructor === Number) {
+        }, optsIn);
+
+        if (typeof target_node === "number") {
             target_node = this.graph.getNodeById(target_node);
         }
-        // look for free slots
-        var target_slot = target_node.findInputSlotByType(target_slotType, false, true);
-        if (target_slot >= 0 && target_slot !== null) {
-            LiteGraph.log_debug("lgraphnode", "connectByType", "type " + target_slotType + " for " + target_slot)
-            return this.connect(slot, target_node, target_slot);
-        } else {
-            // LiteGraph.log?.("type "+target_slotType+" not found or not free?")
-            if (opts.createEventInCase && target_slotType == LiteGraph.EVENT) {
-                // WILL CREATE THE onTrigger IN SLOT
-                LiteGraph.log_debug("lgraphnode", "connectByType", "connect WILL CREATE THE onTrigger " + target_slotType + " to " + target_node);
-                return this.connect(slot, target_node, -1);
-            }
-            // connect to the first general output slot if not found a specific type and
-            if (opts.generalTypeInCase) {
-                target_slot = target_node.findInputSlotByType(0, false, true, true);
-                LiteGraph.log_debug("lgraphnode", "connectByType", "connect TO a general type (*, 0), if not found the specific type ", target_slotType, " to ", target_node, "RES_SLOT:", target_slot);
-                if (target_slot >= 0) {
-                    return this.connect(slot, target_node, target_slot);
-                }
-            }
-            // connect to the first free input slot if not found a specific type and this output is general
-            if (opts.firstFreeIfOutputGeneralInCase && (target_slotType == 0 || target_slotType == "*" || target_slotType == "")) {
-                target_slot = target_node.findInputSlotFree({
-                    typesNotAccepted: [LiteGraph.EVENT]
-                });
-                LiteGraph.log_debug("lgraphnode", "connectByType", "connect TO TheFirstFREE ", target_slotType, " to ", target_node, "RES_SLOT:", target_slot);
-                if (target_slot >= 0) {
-                    return this.connect(slot, target_node, target_slot);
-                }
-            }
-            LiteGraph.log_debug("lgraphnode", "connectByType", "no way to connect type: ", target_slotType, " to targetNODE ", target_node);
-            // TODO filter
+        if (!target_node) return null;
 
-            return null;
+        let target_slot = target_node.findSlotByType(true, target_slotType, false, opts.preferFreeSlot);
+        if (target_slot >= 0) {
+            LiteGraph.log_debug("lgraphnode", "connectByType", "Connecting type", target_slotType, "to slot", target_slot);
+            return this.connect(slot, target_node, target_slot);
         }
+
+        if (opts.createEventInCase && target_slotType === LiteGraph.EVENT) {
+            LiteGraph.log_debug("lgraphnode", "connectByType", "Creating onTrigger for", target_slotType, "on", target_node);
+            return this.connect(slot, target_node, -1);
+        }
+
+        if (opts.generalTypeInCase) {
+            target_slot = target_node.findSlotByType(true, 0, false, true);
+            if (target_slot >= 0) {
+                return this.connect(slot, target_node, target_slot);
+            }
+        }
+
+        if (opts.firstFreeIfOutputGeneralInCase && [0, "*", ""].includes(target_slotType)) {
+            target_slot = target_node.findInputSlotFree({
+                typesNotAccepted: [LiteGraph.EVENT]
+            });
+            if (target_slot >= 0) {
+                return this.connect(slot, target_node, target_slot);
+            }
+        }
+
+        LiteGraph.log_debug("lgraphnode", "connectByType", "No way to connect type", target_slotType, "to target", target_node);
+        return null;
     }
 
     /**
-     * connect this node input to the output of another node BY TYPE
-     * @method connectByType
-     * @param {number|string} slot (could be the number of the slot or the string with the name of the slot)
-     * @param {LGraphNode} node the target node
-     * @param {string} target_type the output slot type of the target node
-     * @return {Object} the link_info is created, otherwise null
+     * Connect this node input to the output of another node BY TYPE.
+     * @method connectByTypeOutput
+     * @param {number|string} slot Slot number or name of the input slot
+     * @param {LGraphNode} source_node The source node
+     * @param {string} source_slotType The expected output slot type of the source node
+     * @return {Object|null} Link info if created, otherwise null
      */
     connectByTypeOutput(slot, source_node, source_slotType = "*", optsIn = {}) {
-        var optsDef = {
+        let opts = Object.assign({
             createEventInCase: true,
             firstFreeIfInputGeneralInCase: true,
             generalTypeInCase: true,
-        };
-        var opts = Object.assign(optsDef, optsIn);
-        if (source_node && source_node.constructor === Number) {
+        }, optsIn);
+
+        if (typeof source_node === "number") {
             source_node = this.graph.getNodeById(source_node);
         }
-        var source_slot = source_node.findOutputSlotByType(source_slotType, false, true);
-        if (source_slot >= 0 && source_slot !== null) {
-            LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "type " + source_slotType + " for " + source_slot)
+        if (!source_node) return null;
+
+        let source_slot = source_node.findSlotByType(false, source_slotType, false, opts.preferFreeSlot);
+        if (source_slot >= 0) {
+            LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "Connecting type", source_slotType, "to slot", source_slot);
             return source_node.connect(source_slot, this, slot);
-        } else {
-
-            // connect to the first general output slot if not found a specific type and
-            if (opts.generalTypeInCase) {
-                source_slot = source_node.findOutputSlotByType(0, false, true, true);
-                if (source_slot >= 0) {
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-
-            if (opts.createEventInCase && source_slotType == LiteGraph.EVENT) {
-                // WILL CREATE THE onExecuted OUT SLOT
-                if (LiteGraph.do_add_triggers_slots) {
-                    source_slot = source_node.addOnExecutedOutput();
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-            // connect to the first free output slot if not found a specific type and this input is general
-            if (opts.firstFreeIfInputGeneralInCase && (source_slotType == 0 || source_slotType == "*" || source_slotType == "" || source_slotType == "undefined")) {
-                source_slot = source_node.findOutputSlotFree({
-                    typesNotAccepted: [LiteGraph.EVENT]
-                });
-                if (source_slot >= 0) {
-                    return source_node.connect(source_slot, this, slot);
-                }
-            }
-
-            LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "no way to connect (not found or not free?) byOUT type: ", source_slotType, " to sourceNODE ", source_node);
-            // TODO filter
-
-            return null;
         }
+
+        if (opts.generalTypeInCase) {
+            source_slot = source_node.findSlotByType(false, 0, false, true);
+            if (source_slot >= 0) {
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        if (opts.createEventInCase && source_slotType === LiteGraph.EVENT) {
+            if (LiteGraph.do_add_triggers_slots) {
+                source_slot = source_node.addOnExecutedOutput();
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        if (opts.firstFreeIfInputGeneralInCase && [0, "*", "", "undefined"].includes(source_slotType)) {
+            source_slot = source_node.findOutputSlotFree({
+                typesNotAccepted: [LiteGraph.EVENT]
+            });
+            if (source_slot >= 0) {
+                return source_node.connect(source_slot, this, slot);
+            }
+        }
+
+        LiteGraph.log_debug("lgraphnode", "connectByTypeOutput", "No way to connect type", source_slotType, "to source", source_node);
+        return null;
     }
+
 
     /**
      * connect this node output to the input of another node
@@ -16828,6 +16962,7 @@ export class LGraphNode {
         ]);
     }
 
+    // XXX: not used, could implement background image (? should do it graphcanvas to share same image or trust cache)
     loadImage(url) {
         var img = new Image();
         img.src = LiteGraph.node_images_path + url;
@@ -17213,7 +17348,6 @@ export class LLink {
     }
 }
 
-
 /**
  * extracted from base nodes
  */
@@ -17442,6 +17576,7 @@ export class Subgraph {
         LiteGraph.log_debug("subgraph", "onSubgraphTrigger", ...arguments);
         var slot = this.findOutputSlot(event);
         if (slot != -1) {
+            LiteGraph.log_debug("subgraph", "onSubgraphTrigger", "triggerSlot", slot);
             this.triggerSlot(slot);
         }
     }
@@ -18038,21 +18173,21 @@ export class NodeFunction extends LGraphNode {
         super(...arguments);
         this._subgraph = null;
         this._linking = false;
-        this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event) {
-            console.debug("SUBGRAPHLINK", ...arguments);
-            if (node._linking) {
-                node._linking = false;
-                widget.name = "subgraph_link";
-            } else {
-                node._linking = true;
-                widget.name = "click on subgraph";
-            }
-        });
+        // this.addWidget("button", "subgraph_link", null, function(widget, canvas, node, pos, event){
+        //     console.debug("SUBGRAPHLINK", ...arguments);
+        //     if(node._linking){
+        //         node._linking = false;
+        //         widget.name = "subgraph_link";
+        //     }else{
+        //         node._linking = true;
+        //         widget.name = "click on subgraph";
+        //     }
+        // });
         this.addWidget("button", "refresh", null, this.refreshFunctions_byEvent);
-        this.addWidget("button", "CALL", null, this.onBtnExecute);
-        this._wCombo = this.addWidget("combo", "functions", this.functionChange, {
+        this._wCombo = this.addWidget("combo", "functions", null, this.functionChange, {
             values: []
         });
+        this.addWidget("button", "CALL", null, this.onBtnExecute);
         this._subMap = [];
         this._subGFuncNode = null;
         this.properties = {
@@ -18070,9 +18205,11 @@ export class NodeFunction extends LGraphNode {
         console.error("FUNCTIONCHANGE", "arguments", ...arguments);
         console.error("FUNCTIONCHANGE", "node", node);
         node.btnSetFunction(null, canvas, node, pos, event);
+        node.title = "Func: " + node.title;
     }
 
     onConfigure() {
+        this.refreshFunctions();
         this.ensureSubFunction();
     }
 
@@ -18097,15 +18234,17 @@ export class NodeFunction extends LGraphNode {
         console.debug("NODEFUNCTION refreshFunctions", this, aSubgraphs, this._wCombo);
         this._wCombo.options.values = {};
         this._subMap = [];
+        const ths = this;
         if (aSubgraphs && aSubgraphs.length) {
+            console.debug("NODEFUNCTION subgraphs", aSubgraphs);
             aSubgraphs.forEach(element => {
                 // using array
                 // this._wCombo.options.values.push(element.title);
                 // using object
-                this._wCombo.options.values[element.id] = element.title;
-                this._subMap.push(element.id);
-                if (this.properties["func_subgraph_id"] === element.id) {
-                    this._wCombo.value = element.id;
+                ths._wCombo.options.values[element.id] = element.title;
+                ths._subMap.push(element.id);
+                if (ths.properties["func_subgraph_id"] === element.id) {
+                    ths._wCombo.value = element.id;
                 }
             });
         } else {
@@ -18126,16 +18265,16 @@ export class NodeFunction extends LGraphNode {
     lookForFuncNodeById(nId) {
         const subGFuncNode = this.graph.getNodeById(nId);
         if (subGFuncNode) {
-            console.error("NODEFUNCTION CALL", "this?", this);
+            console.error("NODEFUNCTION FOUND", "this?", this);
             this.updateSubFunction(subGFuncNode);
         } else {
-            console.error("NODEFUNCTION CALL", "nodeNotFound", nId);
+            console.error("NODEFUNCTION NOT FOUND", "nodeNotFound", nId);
             this.updateSubFunction(false);
         }
     }
 
     btnSetFunction(widget, canvas, node, pos, event) {
-        console.debug("NODEFUNCTION CALL", node, node._wCombo.value);
+        console.debug("NODEFUNCTION SET", node, node._wCombo.value);
         this.lookForFuncNodeById(node._wCombo.value);
     }
 
@@ -18192,12 +18331,23 @@ export class NodeFunction extends LGraphNode {
                     nodeFrom.inputs[index].hard_coded_value = iVal;
                     console.debug("read and set input data", index, iVal);
                 });
+                // WIP : try to bind internal subgraph events to this node connected events
+                this.outputs.forEach((element, index) => {
+                    // nodeFrom.outputs[index].hard_coded_value ?
+                    if (element.type == LiteGraph.EVENT) {
+                        console.warn("NODEFUNCTION event", "should prevent default and call custom");
+                        // hack onSubgraphTrigger
+                        // ? var slot = this.findOutputSlot(event);
+                        console.warn("NODEFUNCTION event", "hack output slot", element, nodeFrom, nodeFrom.outputs, index);
+                        console.warn("NODEFUNCTION event", "hack output slot", nodeFrom.outputs[index], element);
+                        nodeFrom.outputs[index].hard_coded_output = element;
+                    }
+                });
                 // --
                 console.debug("execute function node", nodeFrom);
                 nodeFrom.doExecute();
                 // --
                 this.outputs.forEach((element, index) => {
-                    // nodeFrom.outputs[index].hard_coded_value ?
                     const oVal = nodeFrom.getOutputData(index);
                     // BAD // set to related graph output
                     // BAD nodeFrom.graph.setOutputData(element.name, oVal);
@@ -18212,6 +18362,12 @@ export class NodeFunction extends LGraphNode {
                     delete(nodeFrom.inputs[index].hard_coded_value);
                     console.debug("clean hard coded input data", index);
                 });
+                // this.outputs.forEach((element, index) => {
+                //     if(element.type == LiteGraph.EVENT){
+                //         delete(nodeFrom.outputs[index].hard_coded_output);
+                //         console.debug("clean hard coded output slot", index);
+                //     }
+                // });
             }
         } else {
             this.onExecute = function() {
@@ -18222,11 +18378,328 @@ export class NodeFunction extends LGraphNode {
     }
 
 }
+// export const root = getGlobalObject();
 
+export class LibraryManager {
+    constructor() {
+        this.libraries_known = {};
+        this.libraries_loaded = {};
+        this.libraries_state = {};
+        this.fs = null;
+        this.path = null;
+
+        // Dynamically import Node.js modules (avoid errors in browsers)
+        if (!isBrowser()) {
+            this.importNodeModules();
+        }
+
+        setGlobalVariable("LibraryManager", this);
+    }
+
+    async importNodeModules() {
+        // ERROR in NuNu when packing
+        // try {
+        //     this.fs = await import("fs").then(m => m.default || m);
+        // } catch (e) {
+        //     console.warn("Error importing 'fs':", e);
+        // }
+
+        // try {
+        //     this.path = await import("path").then(m => m.default || m);
+        // } catch (e) {
+        //     console.warn("Error importing 'path':", e);
+        // }
+    }
+
+    /**
+     * Register a library with flexible options (structured object or simple format).
+     */
+    registerLibrary(...args) {
+        let library = {};
+
+        if (typeof args[0] === "object" && !Array.isArray(args[0])) {
+            const {
+                key,
+                version,
+                globalObject,
+                browser = {},
+                server = {}
+            } = args[0];
+
+            library = {
+                key,
+                version,
+                globalObject,
+                localPaths: this.ensureArray(browser.local),
+                remoteUrls: this.ensureArray(browser.remote),
+                npmPackages: this.ensureArray(server.npm),
+                serverRemoteUrls: this.ensureArray(server.remote),
+            };
+        } else {
+            const [key, version, globalObject, localPaths, remoteUrls, npmPackages, serverRemoteUrls] = args;
+
+            library = {
+                key,
+                version,
+                globalObject,
+                localPaths: this.ensureArray(localPaths),
+                remoteUrls: this.ensureArray(remoteUrls),
+                npmPackages: this.ensureArray(npmPackages),
+                serverRemoteUrls: this.ensureArray(serverRemoteUrls),
+            };
+        }
+
+        this.libraries_known[library.key] = library;
+        this.libraries_state[library.key] = "not_loaded";
+    }
+
+    /**
+     * Helper function to ensure a value is always an array.
+     */
+    ensureArray(value) {
+        return Array.isArray(value) ? value : value ? [value] : [];
+    }
+
+    camelize(str) {
+        return str.replace(/[^a-zA-Z0-9_$]/g, '_').replace(/^[0-9]/, '_$&');
+    }
+
+    // **Load a library dynamically (includes all specified files)**
+    async loadLibrary(key, callback) {
+        if (!this.libraries_known[key]) {
+            console.error(`Library ${key} not registered.`);
+            return;
+        }
+
+        if (this.libraries_state[key] === "loading") {
+            console.warn(`Library ${key} is already loading.`);
+            return;
+        }
+
+        if (this.libraries_state[key] === "loaded") {
+            console.warn(`Library ${key} is already loaded.`);
+            callback && callback(this.libraries_loaded[key]);
+            return;
+        }
+
+        this.libraries_state[key] = "loading";
+        const library = this.libraries_known[key];
+
+        try {
+            let loadedModules = [];
+
+            if (isBrowser()) {
+                loadedModules = await this.loadBrowserLibrary(library);
+            } else if (isNode() || isBun()) {
+                loadedModules = await this.loadServerLibrary(library);
+            }
+
+            this.libraries_state[key] = "loaded";
+            this.libraries_loaded[key] = loadedModules;
+            console.log(`Library ${key} loaded.`);
+            callback && callback(loadedModules);
+        } catch (error) {
+            this.libraries_state[key] = "error";
+            console.error(`Failed to load library ${key}:`, error);
+        }
+    }
+
+    // **Load all specified browser files**
+    async loadBrowserLibrary(library) {
+        const loadedScripts = [];
+
+        for (const localPath of library.localPaths) {
+            console.log(`Loading local browser script: ${localPath}`);
+            try {
+                loadedScripts.push(await this.loadScript(localPath, library.globalObject));
+            } catch (error) {
+                console.warn(`Failed to load local file: ${localPath}`);
+            }
+        }
+
+        for (const remoteUrl of library.remoteUrls) {
+            console.log(`Loading remote browser script: ${remoteUrl}`);
+            try {
+                loadedScripts.push(await this.loadScript(remoteUrl, library.globalObject));
+            } catch (error) {
+                console.warn(`Failed to load remote script: ${remoteUrl}`);
+            }
+        }
+
+        if (loadedScripts.length === 0) {
+            throw new Error(`Could not load any files for ${library.key}`);
+        }
+
+        return loadedScripts;
+    }
+
+    // **Load all specified server files (Node.js/Bun)**
+    async loadServerLibrary(library) {
+        const loadedModules = [];
+
+        // if (this.fs && this.path) {
+        //     for (const localPath of library.localPaths) {
+        //         const resolvedPath = this.path.resolve(localPath);
+        //         if (this.fs.existsSync(resolvedPath)) {
+        //             console.log(`Loading local module: ${resolvedPath}`);
+        //             try {
+        //                 loadedModules.push(await import(resolvedPath));
+        //             } catch (error) {
+        //                 console.warn(`Failed to import local module: ${resolvedPath}`, error);
+        //             }
+        //         }
+        //     }
+        // }
+
+        for (const npmPackage of library.npmPackages) {
+            console.log(`Loading NPM package: ${npmPackage}`);
+            try {
+                loadedModules.push(await import(npmPackage));
+            } catch (error) {
+                console.warn(`Failed to import NPM package: ${npmPackage}`, error);
+            }
+        }
+
+        for (const remoteUrl of library.serverRemoteUrls) {
+            console.log(`Loading remote module: ${remoteUrl}`);
+            try {
+                loadedModules.push(await import(remoteUrl));
+            } catch (error) {
+                console.warn(`Failed to import remote module: ${remoteUrl}`, error);
+            }
+        }
+
+        if (loadedModules.length === 0) {
+            throw new Error(`Could not load any files for ${library.key}`);
+        }
+
+        return loadedModules;
+    }
+
+    // // **Load a script dynamically in a browser**
+    // loadScript(url, globalObject) {
+    //     return new Promise((resolve, reject) => {
+    //         console.log(`Loading script: ${url}`);
+    //         const script = document.createElement("script");
+    //         script.src = url;
+    //         script.type = "text/javascript";
+    //         script.onload = () => resolve(window[globalObject]);
+    //         script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+    //         document.head.appendChild(script);
+    //     });
+    // }
+
+    // **Detect and Load JavaScript as Module or CommonJS**
+    async loadScript(url, globalObject = "library_last") {
+        /* TODO get slugged file name as default */
+        console.debug("Load script", url, globalObject);
+        return new Promise(async (resolve, reject) => {
+            let isModule = await this.isESModule(url);
+            console.debug("loadScript", isModule ? "MODULE" : "COMMONJS", url);
+            if (isModule) {
+                let script = document.createElement("script");
+                script.type = "module";
+                // WIP CLEAN importing module
+
+                const jsName = this.camelize(globalObject);
+
+                script.textContent = `
+                    var root = {};
+                    if (typeof globalThis !== 'undefined') root = globalThis;
+                    else if (typeof self !== 'undefined') root = self;
+                    else if (typeof window !== 'undefined') root = window;
+                    else if (typeof global !== 'undefined') root = global;
+                    if (LibraryManager){
+                        LibraryManager.${jsName} = ${jsName};
+                        console.log('LibraryManager attached ${jsName}',LibraryManager.${jsName});
+                    }
+                    if (root.LibraryManager){
+                        root.LibraryManager.${jsName} = ${jsName};
+                        console.log('rootLibraryManager attached ${jsName}',root.LibraryManager.${jsName});
+                    }
+                    // LiteGraph.LibraryManager.${jsName} = ${jsName};
+                    // alert('loaded ${jsName}');
+                `;
+                //alert(script.textContent);
+                document.head.appendChild(script);
+                resolve();
+            } else {
+                let script = document.createElement("script");
+                script.type = "text/javascript";
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            }
+        });
+    }
+
+    // **Check if a script is an ES Module**
+    async isESModule(url) {
+        try {
+            let response = await fetch(url);
+            let text = await response.text();
+            return /export\s|import\s/.test(text); // Detect ES Module keywords
+        } catch (e) {
+            return false; // Default to CommonJS if fetch fails
+        }
+    }
+
+    // Load CSS
+    loadCSS(href) {
+        return new Promise((resolve, reject) => {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = href;
+            link.onload = resolve;
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
+    // **Unload a library**
+    unloadLibrary(key) {
+        if (!this.libraries_known[key]) {
+            console.error(`Library ${key} not registered.`);
+            return;
+        }
+
+        if (this.libraries_state[key] !== "loaded") {
+            console.warn(`Library ${key} is not loaded.`);
+            return;
+        }
+
+        const library = this.libraries_known[key];
+        library.localPaths.forEach(file => {
+            if (file.endsWith(".js")) {
+                document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
+            } else if (file.endsWith(".css")) {
+                document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
+            }
+        });
+        library.remoteUrls.forEach(file => {
+            if (file.endsWith(".js")) {
+                document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
+            } else if (file.endsWith(".css")) {
+                document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
+            }
+        });
+
+        this.libraries_state[key] = "not_loaded";
+        delete this.libraries_loaded[key];
+        console.log(`Library ${key} unloaded.`);
+    }
+
+    // **Get the state of a library**
+    getLibraryState(key) {
+        return this.libraries_state[key] || false;
+    }
+}
+
+export default LibraryManager;
 // this needs to be called after all classes has been included, before registering nodes and creating canvas
 // will setup callback handlers and LiteGraph.CLASSES references ( eg. LitegGraph.LGraph, .. )
 LiteGraph.initialize();
-
 class Time {
 
     static title = "Time";
@@ -18584,14 +19057,14 @@ class ConstantArray {
         this.widget = this.addWidget(
             "text",
             "array",
-            this.properties?.value,
+            this.properties.value,
             "value",
         );
         this.addWidget(
             "combo",
             "persistent",
-            this.properties?.persistent,
-            false, {
+            this.properties.persistent,
+            "persistent", {
                 values: [true, false]
             },
         );
@@ -18600,26 +19073,35 @@ class ConstantArray {
     }
 
     onPropertyChanged(name, value) {
-        this.widget.value = value;
-        if (value == null || value == "") {
-            return;
+        if (name == "value") {
+            this.widget.value = value; // force widget update (is it needed?)
+            // if (value == null || value == "") {
+            //     return;
+            // }
+            // this._value = value;
         }
+        this.processArray();
+    }
 
-        try {
-            if (value[0] != "[") this._value = JSON.parse("[" + value + "]");
-            else this._value = JSON.parse(value);
-            this.boxcolor = "#AEA";
-        } catch (err) {
-            this.boxcolor = "red";
+    processArray() {
+        if (!this.properties.value || !this.properties?.persistent || this.properties?.persistent === "false") {
+            // var v = this.getInputOrProperty("array"); //getInputData(0);
+            // this._value = v;
+            this._value = new Array();
+            try {
+                if (this.properties.value && typeof(this.properties.value[0] !== "undefined") && this.properties.value[0] != "[") {
+                    this._value = JSON.parse("[" + this.properties.value + "]");
+                } else this._value = JSON.parse(this.properties.value);
+                this.boxcolor = "#AEA";
+            } catch (err) {
+                this.boxcolor = "red";
+            }
         }
     }
 
     onExecute() {
-        var v = this.getInputOrProperty("array"); //getInputData(0);
-        this._value = v;
+        this.processArray();
         // clone
-        if (!this._value || !this.properties?.persistent || this.properties?.persistent === "false")
-            this._value = new Array();
         // this._value.length = v.length;
         // for (var i = 0; i < v.length; ++i)
         //     this._value[i] = v[i];
@@ -18627,6 +19109,10 @@ class ConstantArray {
         // TODO restart here, convert and reprocess ad array
         this.setOutputData(0, this._value);
         this.setOutputData(1, this._value ? this._value.length || 0 : 0);
+    }
+
+    onAdded() {
+        this.processArray();
     }
 }
 ConstantArray.prototype.setValue = ConstantNumber.prototype.setValue;
@@ -18686,7 +19172,8 @@ class SetArray {
         if (!arr) return;
         var v = this.getInputData(1);
         if (v === undefined) return;
-        if (this.properties?.index) arr[Math.floor(this.properties?.index)] = v;
+        let aK = Math.floor(this.properties?.index);
+        if (typeof(arr[aK]) !== "undefined") arr[aK] = v;
         this.setOutputData(0, arr);
     }
 }
@@ -18923,10 +19410,10 @@ class Watch {
         this.addInput("value", 0, {
             label: ""
         });
-        this.value = 0;
+        this.value = null;
     }
 
-    onConnectionChanged(connection, slot, connected, link_info) {
+    onConnectionsChange(connection, slot, connected, link_info) {
         // only process the inputs
         if (connection != LiteGraph.INPUT) {
             return;
@@ -18955,7 +19442,7 @@ class Watch {
         } else if (o.constructor === Array) {
             var str = "[";
             for (var i = 0; i < o.length; ++i) {
-                str += Watch.toString(o[i]) + (i + 1 != o.length ? "," : "");
+                str += WatchAdvanced.toString(o[i]) + (i + 1 != o.length ? "," : "");
             }
             str += "]";
             return str;
@@ -18970,10 +19457,224 @@ class Watch {
 
     onDrawBackground() {
         // show the current value
-        this.inputs[0].label = Watch.toString(this.value);
+        this.inputs[0].label = WatchAdvanced.toString(this.value);
     }
 }
 LiteGraph.registerNodeType("basic/watch", Watch);
+
+
+class WatchAdvanced {
+    static title = "WatchA";
+    static desc = "Show value of input, improved formatting";
+
+    constructor() {
+        this.size = [60, 30];
+        this.addInput("value", 0, {
+            label: ""
+        });
+        this.addProperty("font_family", "Arial", "string");
+        this.addProperty("font_size", 14, "number"); //, "==", "enum", { values: GenericCompare.values });
+        this.addProperty("clip", false, "toggle");
+        this.value = 0;
+        this.value_last = 0;
+        this.contlines = {};
+        this.changed = true;
+    }
+
+    onExecute() {
+        if (this.inputs[0]) {
+            this.value = WatchAdvanced.toString(this.getInputData(0));
+            if (this.value !== this.value_last) {
+                this.changed = true;
+                this.value_last = this.value;
+            }
+        }
+    };
+
+    getTitle() {
+        if (this.flags.collapsed) {
+            return this.inputs[0].label;
+        }
+        return this.title;
+    };
+
+    static toString = function(o) {
+        if (o == null) {
+            return "null";
+        } else if (o.constructor === Number) {
+            return o.toFixed(3);
+        } else if (o.constructor === Object) {
+            var str = "";
+            try {
+                str = JSON.stringify(o, null, 2);
+            } catch (e) {
+                str = "{OBJ}";
+            }
+            return str;
+        } else if (o.constructor === Array) {
+            var str = "[";
+            for (var i = 0; i < o.length; ++i) {
+                str += WatchAdvanced.toString(o[i]) + (i + 1 != o.length ? "," : "");
+            }
+            str += "]";
+            return str;
+        } else {
+            return String(o);
+        }
+    };
+
+    onDrawBackground(ctx) {
+        //show the current value
+        //this.inputs[0].label = WatchAdvanced.toString(this.value);
+        if (this.flags.collapsed)
+            return;
+        var lS = this.properties.font_size || 9;
+        var y = this.size[1] - LiteGraph.NODE_TITLE_HEIGHT - 0.5;
+        // var oTMultiRet = {lines: [], maxW: 0, height:0}
+        ctx.font = lS + "px" +
+            " " +
+            (this.properties.font_family ? this.properties.font_family + "" : "Arial");
+        ctx.fillStyle = "#FFF";
+        if (this.changed) {
+            var text = this.value; //WatchAdvanced.toString(this.value);
+            this.contlines = LiteGraph.canvasFillTextMultiline(ctx, text, 15, LiteGraph.NODE_TITLE_HEIGHT, this.size[0], lS, 0, y / lS); // context, text, x, y, maxWidth, lineHeight, startLine, endLine
+            this.changed = false;
+            console.debug("calculated multiline", this.contlines);
+        } else {
+            //console.debug("not changed",this.contlines);
+
+        }
+        var nL = this.contlines.lines.length;
+        var nL_dif = this.contlines.lines_tot - nL;
+        //if(nL_dif > 0) nL -= 2; // show less? stay inside with .. +x lines message 
+        for (var iL = 0; iL < nL; iL++) {
+            ctx.fillText(this.contlines.lines[iL], 15, LiteGraph.NODE_TITLE_HEIGHT + (lS * iL));
+        }
+        if (nL_dif > 0) {
+            ctx.fillText("... +" + nL_dif + " lines", 15, LiteGraph.NODE_TITLE_HEIGHT + (lS * (iL + 1)));
+        }
+        this.clip_area = this.properties.clip;
+    };
+
+    fullWidth(menuitem, contextmenu, options, e, that_node, options_node) {
+        if (!that_node) that_node = this;
+        if (!that_node || !that_node.size) return;
+        if (that_node.contlines && that_node.contlines.lines_tot) {
+            if (that_node.size[0] != that_node.contlines.maxW + 15) {
+                that_node.size[0] = that_node.contlines.maxW + 15;
+            } else {
+                that_node.size[0] = that_node.contlines.width + 15;
+            }
+        } else {
+            that_node.size[0] = 90;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    fullHeight(menuitem, contextmenu, options, e, that_node, options_node) {
+        if (!that_node) that_node = this;
+        if (!that_node || !that_node.size) return;
+        if (that_node.contlines && that_node.contlines.lines_tot) {
+            if (that_node.size[1] != that_node.properties.font_size * that_node.contlines.lines_tot) {
+                that_node.size[1] = that_node.properties.font_size * that_node.contlines.lines_tot;
+            } else {
+                that_node.size[1] = 90;
+            }
+        } else {
+            that_node.size[1] = that_node.size_basic ? that_node.size_basic[0] : 30;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    showFull(menuitem, contextmenu, options, e, that_node, options_node) {
+        /*console.debug("menuitem",menuitem);
+        console.debug("contextmenu",contextmenu);
+        console.debug("options",options);
+        console.debug("e",e);
+        console.debug("that_node",that_node);
+        console.debug("options_node",options_node);*/
+        if (!that_node) that_node = this;
+        if (!that_node || !that_node.size) return;
+        if (that_node.contlines && that_node.contlines.lines_tot) {
+            if (that_node.size[1] < that_node.properties.font_size * that_node.contlines.lines_tot) {
+                that_node.size[0] = that_node.contlines.maxW + 15;
+                that_node.size[1] = that_node.properties.font_size * that_node.contlines.lines_tot;
+                //that_node.properties.clip = false;
+            } else {
+                // should recalculate to know the size
+                that_node.size[0] = that_node.contlines.width + 15;
+                //that_node.size[1] = 120;
+                that_node.size[1] = 90;
+                //that_node.properties.clip = true;
+            }
+        } else {
+            that_node.size[1] = that_node.size_basic ? that_node.size_basic[1] : 30;
+            that_node.size[0] = that_node.size_basic ? that_node.size_basic[0] : 90;
+        }
+        that_node.changed = true;
+        that_node.setDirtyCanvas(true, true);
+    }
+
+    // context menu (right click) OVERRIDE 
+    // getMenuOptions(lgcanvas){ }
+
+    // context menu (right click) ADD
+    getExtraMenuOptions(lgcanvas) {
+        return [{
+            content: "Toggle full",
+            has_submenu: false,
+            callback: this.showFull
+        }, {
+            content: "Full Width",
+            callback: this.fullWidth
+        }, {
+            content: "Full Height",
+            callback: this.fullHeight
+        }, null, {
+            content: "TODO - Copy",
+            callback: this.copyContent
+        }];
+    }
+
+    copyContent(menuitem, contextmenu, options, e, that_node, options_node) {
+        //
+    }
+
+    onPropertyChanged(property, value) {
+        this.changed = true;
+    }
+
+    onDblClick(e, pos, lgcanvas) {
+        // use right click Fill view
+        // this.showFull();
+    }
+
+    onResize(size) {
+        if (!this.resizeStart) {
+            this.resizeStart = this.size;
+            this.changed = true;
+        }
+        // if(typeof this.flags !== "undefined"){
+        //     if(typeof this.flags.resizing !== "undefined" && !this.flags.resizing){
+        //         this.changed = true;
+        //     }
+        // }
+    }
+    onResizeEnd(lgcanvas) {
+        if (typeof this.flags !== "undefined") {
+            if (typeof this.flags.resizing !== "undefined" && !this.flags.resizing) {
+                this.resizeEnd = this.size;
+                if (this.resizeStart[0] != this.resizeEnd[0] || this.resizeStart[1] != this.resizeEnd[1]) {
+                    this.changed = true;
+                }
+                this.resizeStart = false;
+            }
+        }
+    }
+}
+LiteGraph.registerNodeType("basic/watch_advanced", WatchAdvanced);
 
 
 // in case one type doesnt match other type but you want to connect them anyway
@@ -19266,7 +19967,6 @@ class GenericCompare {
     };
 }
 LiteGraph.registerNodeType("basic/CompareValues", GenericCompare);
-
 
 // Show value inside the debug console
 class LogEvent {
@@ -19819,7 +20519,7 @@ class SemaphoreEvent {
     }
 
     onExecute() {
-        this.setOutputData(1, this._ready);
+        this.setOutputData(2, this._ready);
         this.boxcolor = this._ready ? "#9F9" : "#FA5";
     }
 
@@ -19903,7 +20603,6 @@ class DataStore {
 }
 LiteGraph.registerNodeType("basic/data_store", DataStore);
 
-
 class WidgetButton {
 
     static title = "Button";
@@ -19970,7 +20669,8 @@ class WidgetButton {
         ) {
             LiteGraph.log_info("WidgetButton", "clicked inside");
             this.clicked = true;
-            this.setOutputData(1, this.clicked);
+            // execute instead just reading input (force update)
+            this.doExecute();
             this.triggerSlot(0, this.properties.message);
             return true;
         } else {
@@ -20768,7 +21468,6 @@ class WidgetPanel {
 }
 LiteGraph.registerNodeType("widget/panel", WidgetPanel);
 
-
 class GamepadInput {
 
     static title = "Gamepad";
@@ -21146,7 +21845,6 @@ GamepadInput.UP = 4;
 GamepadInput.DOWN = 8;
 
 LiteGraph.registerNodeType("input/gamepad", GamepadInput);
-
 
 // Converter
 class Converter {
@@ -22336,8 +23034,12 @@ class MathFormula {
     static desc = "Compute formula";
 
     constructor() {
-        this.addInput("x", "number");
-        this.addInput("y", "number");
+        this.addInput("x", "number", {
+            nameLocked: true
+        });
+        this.addInput("y", "number", {
+            nameLocked: true
+        });
         this.addOutput("", "number");
         this.properties = {
             x: 1.0,
@@ -22356,6 +23058,12 @@ class MathFormula {
             LiteGraph.allow_scripts = v;
         });
         this._func = null;
+    }
+
+    onPropertyChanged(name, value) {
+        if (name == "formula") {
+            this.code_widget.value = value;
+        }
     }
 
     onExecute() {
@@ -22623,7 +23331,6 @@ class Math3DXYZWToVec4 {
     }
 }
 LiteGraph.registerNodeType("math3d/xyzw-to-vec4", Math3DXYZWToVec4);
-
 
 class Math3DMat4 {
 
@@ -23274,7 +23981,6 @@ if (typeof(glMatrix) !== "undefined") {
     console.warn?.("No glmatrix found, some Math3D nodes may not work");
 }
 
-
 function toString(a) {
     if (a && a.constructor === Object) {
         try {
@@ -23409,7 +24115,6 @@ class StringToTable {
     }
 }
 LiteGraph.registerNodeType("string/toTable", StringToTable);
-
 
 class Selector {
 
@@ -23822,8 +24527,6 @@ class logicWhile {
     }
 }
 LiteGraph.registerNodeType("logic/CycleWHILE", logicWhile);
-
-
 
 class GraphicsPlot {
 
@@ -24820,7 +25523,6 @@ class ImageWebcam {
     static is_webcam_open = false;
 }
 LiteGraph.registerNodeType("graphics/webcam", ImageWebcam);
-
 
 // TODO move this
 // LiteGraph.LGraphCanvas.link_type_colors["Texture"] = "#987";
@@ -30691,7 +31393,6 @@ class LGraphCubemapToTexture2D {
 LiteGraph.registerNodeType("texture/cubemapToTexture2D", LGraphCubemapToTexture2D);
 
 
-
 var SHADERNODES_COLOR = "#345";
 
 var LGShaders = (LiteGraph.Shaders = {});
@@ -32804,9 +33505,9 @@ class LGraphShaderRemap {
 }
 registerShaderNode("math/remap", LGraphShaderRemap);
 
-
 // @BUG: Gotta finish cleaning the file up so this doesn't cause the whole thing to crash
-// 
+// import { GL } from "../../editor/js/libs/litegl.js";
+
 var view_matrix = new Float32Array(16);
 var projection_matrix = new Float32Array(16);
 var viewprojection_matrix = new Float32Array(16);
@@ -34779,7 +35480,6 @@ if (typeof GL != "undefined") {
 	*/
 }
 
-
 // Works with Litegl.js to create WebGL nodes
 
 // Texture Lens
@@ -35575,6 +36275,7 @@ class LGraphFXVigneting {
 }
 LiteGraph.registerNodeType("fx/vigneting", LGraphFXVigneting);
 
+// TODO :: MIDI WORKS WITH ACTIONS SLOTS REVISE: (CANT ASSIGN MULTIPLE, WHEN IT SHOULD WITH THIS DATA TYPE, AND DATA SEEMS NOT PASSED BY (eg. MIDI Show using his input does not seems to work))
 
 var MIDI_COLOR = "#243";
 
@@ -36650,6 +37351,8 @@ class LGMIDIGenerator {
             duration: 0.5,
             mode: "sequence",
         };
+        // TODO add property with addProperty and specify combo mode sequence,random
+        // TODO how to play all instantly? (use multiple nodes..)
 
         this.notes_pitches = LGMIDIGenerator.processScale(this.properties.notes);
         this.sequence_index = 0;
@@ -37246,7 +37949,6 @@ class LGMIDIKeys {
     ];
 }
 LiteGraph.registerNodeType("midi/keys", LGMIDIKeys);
-
 
 class LGAudio {
 
@@ -38048,7 +38750,7 @@ class LGAudioConvolver {
         this.addOutput("out", "audio");
     }
 
-    onRemove() {
+    onRemoved() {
         if (this._dropped_url) {
             URL.revokeObjectURL(this._dropped_url);
         }
@@ -38773,7 +39475,6 @@ class LGAudioDestination {
 }
 LiteGraph.registerNodeType("audio/destination", LGAudioDestination);
 
-
 class LGWebSocket {
 
     static title = "WS Client";
@@ -38781,13 +39482,35 @@ class LGWebSocket {
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("send_trig", LiteGraph.ACTION);
-        this.addOutput("trig_received", LiteGraph.EVENT);
-        this.addInput("in", 0);
-        this.addOutput("out", 0);
+        this.addInput("msg_w_data", LiteGraph.ACTION, {
+            nameLocked: true,
+            removable: false
+        });
+        this.addInput("DATA_1", 0, {
+            nameLocked: false,
+            removable: true
+        });
+        this.addInput("EV_1", LiteGraph.ACTION, {
+            nameLocked: false,
+            removable: true
+        });
+        this.addOutput("onReceived", LiteGraph.EVENT);
+        this.addOutput("dataRec", 0, {
+            nameLocked: true,
+            removable: false
+        });
+        this.addOutput("DATA_1", 0, {
+            nameLocked: false,
+            removable: true
+        });
+        this.addOutput("EV_1", LiteGraph.EVENT, {
+            nameLocked: false,
+            removable: true
+        });
         this.properties = {
             url: "ws://127.0.0.1:8080",
-            room: false,
+            room: null,
+            auto_send_input: false,
             only_send_changes: true,
             runOnServerToo: false
         };
@@ -38804,7 +39527,7 @@ class LGWebSocket {
     }
 
     onExecute() {
-        if (!this._ws && this.properties.url) {
+        if (!this._ws && this.properties.url && !this._ws?.readyState == WebSocket.CONNECTING) {
             this.connectSocket();
         }
 
@@ -38815,42 +39538,48 @@ class LGWebSocket {
         const room = this.properties.room;
         const only_changes = this.properties.only_send_changes;
 
-        for (let i = 1; i < this.inputs.length; ++i) {
-            const data = this.getInputData(i);
-            if (data == null) {
-                continue;
-            }
+        if (this.properties.auto_send_input) {
+            for (let i = 1; i < this.inputs.length; ++i) {
+                const data = this.getInputData(i);
+                if (data == null) {
+                    continue;
+                }
 
-            let json;
-            try {
-                json = {
-                    type: 0,
-                    channel: i,
-                    data: data,
-                };
-                if (room) json.room = room;
-                json = JSON.stringify(json);
-            } catch (err) {
-                console.error("Error stringifying data:", err);
-                continue;
-            }
+                let json;
+                try {
+                    json = {
+                        type: 0,
+                        channel: i,
+                        data: data,
+                    };
+                    if (room) json.room = room;
+                    json = JSON.stringify(json);
+                } catch (err) {
+                    console.error("Error stringifying data:", err);
+                    continue;
+                }
 
-            if (only_changes && this._last_sent_data[i] === json) {
-                continue;
-            }
-            this._last_sent_data[i] = json;
-            try {
-                this._ws.send(json);
-                console.log("WS sent by execute:", i, json);
-            } catch (err) {
-                console.error("Error sending data:", err);
+                if (only_changes && this._last_sent_data[i] === json) {
+                    continue;
+                }
+                this._last_sent_data[i] = json;
+                try {
+                    this._ws.send(json);
+                    console.log("WS sent by execute:", i, json);
+                } catch (err) {
+                    console.error("Error sending data:", err);
+                }
             }
         }
 
-        for (let i = 1; i < this.outputs.length; ++i) {
-            this.setOutputData(i, this._last_received_data[i]);
-        }
+        // force update output?
+        // for (let i = 1; i < this.outputs.length; ++i) {
+        //     if(i in this._last_received_data){
+        //         this.setOutputData(i, this._last_received_data[i]);
+        //     }
+        // }
 
+        // reset color
         if (this.boxcolor === "#AFA") {
             this.boxcolor = "#6C6";
         }
@@ -38913,28 +39642,46 @@ class LGWebSocket {
 
             // TODO data.channel is i, or 1 default : this.setOutputData(i, this._last_received_data[i]);
 
+            const channelX = data.channel !== undefined ? data.channel : 1;
+            const dataData_defined = typeof(data.data) !== "undefined";
+            const dataX = dataData_defined ? data.data : data;
+            const slotX = data?.action || 0;
+            // data.type == 1 comes from unknown source: it will create a temporary LiteGraph object
             if (data?.type === 1) {
                 if (data.data?.object_class && LiteGraph[data.data.object_class]) {
                     try {
+                        console.debug("WS executing LiteGraph object:", obj, data.data);
                         const obj = new LiteGraph[data.data.object_class](data.data);
-                        this.triggerSlot(0, obj);
-                        console.debug("WS received object:", obj);
+                        // channelX = data.data.object_class;
+                        dataX = data.data.object_class;
+                        console.debug("WS created temporary LG object:", obj);
                     } catch (err) {
                         console.error("WS Error creating object:", err);
                     }
-                } else if (data.data !== undefined) {
-                    this.triggerSlot(0, data.data);
+                } else if (dataData_defined) {
                     console.debug("WS type1 received data:", data.data);
                 } else {
                     console.debug("WS type1 received UNKNOWN data:", data);
                 }
             } else {
-                if (data.data !== undefined) {
-                    this._last_received_data[data.channel !== undefined ? data.channel : 0] = data.data;
+                if (dataData_defined) {
                     console.debug("WS received channel data:", data.channel, data.data);
                 } else {
                     console.debug("WS received UNKNOWN data:", data);
                 }
+            }
+            this._last_received_data[channelX] = dataX;
+            console.debug("WS updating data and triggers:", "channelX", channelX, "dataX", dataX, "slotX", slotX);
+            // set any data to default dataRec slot
+            this.setOutputData(1, dataX);
+            // if not an action, set output data to specific channel
+            if (slotX == 0) {
+                this.setOutputData("DATA_" + channelX, dataX);
+            }
+            this.triggerSlot(0, dataX);
+            // if an action, trigger relative slot
+            if (slotX !== 0) {
+                this.triggerSlot(slotX, dataX);
             }
         };
 
@@ -38951,8 +39698,11 @@ class LGWebSocket {
 
     disconnectSocket() {
         if (this._ws) {
+            console.log("WS close connection");
             this._ws.close();
             this._ws = null;
+        } else {
+            console.log("WS no connection to close");
         }
     }
 
@@ -38985,29 +39735,221 @@ class LGWebSocket {
         const msg = JSON.stringify(oMsg);
         try {
             this._ws.send(msg);
-            console.log("WS sent by Action:", oMsg);
+            console.log("WS sent by Action:", oMsg, action, param);
         } catch (err) {
             console.error("Error sending data by action:", err);
         }
     }
 
     onGetInputs() {
+        let nIn = 1;
+        let nAct = 1;
+        this.inputs.forEach(element => {
+            console.warn(element);
+            if (element.name.startsWith("DATA_")) nIn++;
+            if (element.name.startsWith("EV_")) nAct++;
+        });
         return [
-            ["in", 0]
+            ["DATA_" + nIn, 0, {
+                nameLocked: true,
+                removable: true
+            }],
+            ["EV_" + nAct, LiteGraph.ACTION, {
+                nameLocked: true,
+                removable: true
+            }]
         ];
     }
 
     onGetOutputs() {
+        let nOut = 1;
+        let nEv = 1;
+        this.inputs.forEach(element => {
+            if (element.name.startsWith("DATA_")) nOut++;
+            if (element.name.startsWith("EV_")) nEv++;
+        });
         return [
-            ["out", 0]
+            ["DATA_" + nOut, 0, {
+                nameLocked: true,
+                removable: true
+            }],
+            ["EV_" + nEv, LiteGraph.EVENT, {
+                nameLocked: true,
+                removable: true
+            }]
         ];
     }
 
-    onRemove() {
+    onRemoved() {
         this.disconnectSocket();
     }
 }
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
+
+
+// TODO move and implement library inclusion
+// add minimum version
+// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.LibraryManager[identifier] for not modules
+// manage loaded etc
+// nodepack with inclusion aside
+// manage local script repository too
+LiteGraph.LibraryManager.registerLibrary("socket.io", "4.8.1", "socket.io", [], ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"]);
+LiteGraph.LibraryManager.loadLibrary("socket.io");
+
+class LGSocketIO {
+    static title = "Socket.IO Client";
+    static desc = "Connect to a Socket.IO server to send and receive data";
+
+    constructor() {
+        this.size = [60, 20];
+        this.addInput("SEND", LiteGraph.ACTION);
+        this.addInput("type", "string", {
+            nameLocked: true,
+            removable: false,
+            param_bind: true
+        });
+        this.addInput("content", "string", {
+            nameLocked: true,
+            removable: false,
+            param_bind: true
+        });
+        this.addOutput("onReceived", LiteGraph.EVENT);
+        this.addOutput("dataRec", 0);
+        this.properties = {
+            url: "http://127.0.0.1:3000",
+            room: null,
+            auto_send_input: false,
+            only_send_changes: true,
+            runOnServerToo: false
+        };
+        this.addProperty("type", "message", "string");
+        this.addProperty("content", "", "string");
+        this._socket = null;
+        this._last_sent_data = [];
+        this._last_received_data = [];
+        // TODO check library io is available
+    }
+
+    onPropertyChanged(name, _value) {
+        if (name === "url") {
+            this.connectSocket();
+        }
+    }
+
+    onExecute() {
+        if (!this._socket && this.properties.url) { // TODO && !this.state == "connecting") {
+            this.connectSocket();
+        }
+    }
+
+    connectSocket() {
+        try {
+            if (this._socket) {
+                this._socket.disconnect();
+            }
+
+            this.boxcolor = "#00F";
+
+            this._socket = io(this.properties.url);
+
+            this._socket.on("connect", () => {
+                console.log("Connected to Socket.IO server");
+                if (this.properties.room) {
+                    this._socket.emit("join", this.properties.room);
+                }
+                this.boxcolor = "#0F0";
+
+                const engine = this._socket.io.engine;
+                console.log(engine.transport.name); // in most cases, prints "polling"
+
+                engine.once("upgrade", () => {
+                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
+                    console.log("SocketIO", "upgrade", engine.transport.name); // in most cases, prints "websocket"
+                });
+
+                engine.on("packet", ({
+                    type,
+                    data
+                }) => {
+                    // console.debug("SockeIO", "packet", "called for each packet received", arguments);
+                });
+
+                engine.on("packetCreate", ({
+                    type,
+                    data
+                }) => {
+                    // console.debug("SockeIO", "packetCreate", "called for each packet sent", arguments);
+                });
+
+                engine.on("drain", () => {
+                    // console.debug("SockeIO", "drain", "called when the write buffer is drained", arguments);
+                });
+
+                engine.on("close", (reason) => {
+                    // console.debug("SockeIO", "close", "called when the underlying connection is closed", arguments);
+                });
+            });
+
+            this._socket.on("message", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
+            /* TODO tmp remove, use custom event and output instead */
+            this._socket.on("chatMessage", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
+
+            this._socket.on("reconnect_attempt", () => {
+                console.log("reconnect_attempt to Socket.IO server");
+                this.boxcolor = "#07F";
+            });
+
+            socket.io.on("reconnect", () => {
+                console.log("reconnect to Socket.IO server");
+                this.boxcolor = "#0F3";
+            });
+
+            this._socket.on("disconnect", () => {
+                console.log("Disconnected from Socket.IO server");
+                this.boxcolor = "#FF0";
+            });
+
+            this._socket.on("connect_error", (error) => {
+                if (socket.active) {
+                    // temporary failure, the socket will automatically try to reconnect
+                    console.log("Temporary failure Socket.IO connect, retry");
+                    this.boxcolor = "#FF0";
+                } else {
+                    // the connection was denied by the server
+                    // in that case, `socket.connect()` must be manually called in order to reconnect
+                    console.log("Error on Socket.IO connect", error.message);
+                    this.boxcolor = "#F00";
+                }
+            });
+
+        } catch (e) {
+            console?.warn("network/SocketIO", "error", e);
+            this.boxcolor = "#F00";
+        }
+    }
+
+    onAction(action, param) {
+        if (!this._socket) {
+            return;
+        }
+        if (action === "msg_w_data") {
+            this._socket.emit("message", param);
+        }
+        if (action === "SEND") {
+            this._socket.emit(this.getInputOrProperty("type"), this.getInputOrProperty("content"));
+        }
+    }
+}
+
+LiteGraph.registerNodeType("network/SocketIO", LGSocketIO);
 
 
 
@@ -39253,7 +40195,7 @@ class WebRTCNode {
         }
     }
 
-    onRemove() {
+    onRemoved() {
         if (this.peerConnection) {
             this.peerConnection.close();
         }
@@ -39268,7 +40210,6 @@ class WebRTCNode {
     // }
 }
 LiteGraph.registerNodeType("network/webrtc", WebRTCNode);
-
 
 
 // EG METHOD
@@ -39431,15 +40372,17 @@ class objPropertyWidget {
     }
 
     updateFromInput() {
-        var data = this.getInputData(0);
+        let refresh_ancestors = true;
+        var data = this.getInputData(0, refresh_ancestors);
         if (data != null) {
             this._obin = data;
             if (this._obin) { // } && typeof this._obin == "Object"){
                 // TODO should detect change or rebuild use a widget/action to refresh properties list
                 try {
                     this._objProperties = Object.keys(this._obin);
-                    if (this._objProperties && this._objProperties.sort)
+                    if (this._objProperties && this._objProperties.sort) {
                         this._objProperties = this._objProperties.sort();
+                    }
                 } catch (e) {
                     console.error?.(this.name, "updateFromInput error", e);
                 }
@@ -39468,7 +40411,7 @@ class objPropertyWidget {
         this.setOutputData(0, this._value);
     }
 
-    onConnectionChanged(connection, slot, connected, link_info) {
+    onConnectionsChange(connection, slot, connected, link_info) {
         // only process the inputs
         if (connection != LiteGraph.INPUT) {
             return;
@@ -39477,12 +40420,12 @@ class objPropertyWidget {
     }
 
     onExecute() {
-        this.updateFromInput();
+        //this.updateFromInput();
     }
 
     onAction() {
         // should probably execute on action
-        this.updateFromInput();
+        //this.updateFromInput();
     }
 
     onGetInputs() {
@@ -39550,7 +40493,8 @@ class objMethodWidget {
 
     updateFromInput(v) {
         var that = this;
-        var data = this.getInputData(0);
+        let refresh_ancestors = true;
+        var data = this.getInputData(0, refresh_ancestors);
         if (data != null) {
             this._obin = data;
             if (this._obin) { // } && typeof this._obin == "Object"){
@@ -39588,8 +40532,10 @@ class objMethodWidget {
                     }
                     if (this._methods && this._methods.sort) this._methods = this._methods.sort();
                     console.debug(this.name, "got methods", this._methods);
+                    this.boxcolor = "#0F0";
                 } catch (e) {
                     console.warn?.("Err on methods get", e);
+                    this.boxcolor = "#F00";
                 }
                 if (this._methods) {
                     // this.removeWidget();
@@ -39604,9 +40550,11 @@ class objMethodWidget {
                 console.debug?.("Invalid obj", data);
                 this._function = null;
                 this._methods = [];
+                this.boxcolor = "#F00";
             }
         } else {
             console.debug(this.name, "empty data");
+            this.boxcolor = "#000";
         }
         if (!this.widg_prop.options) this.widg_prop.options = {}; // reset widget options
         this.widg_prop.options.values = this._methods; // set widget options
@@ -39614,9 +40562,24 @@ class objMethodWidget {
         this.refreshMethodAndInputs();
     }
 
-    refreshMethodAndInputs() {
+    onConfigure() {
+        this.updateFromInput();
+        this.refreshMethodAndInputs();
+    }
+
+    onConnectionsChange(connection, slot, connected, link_info) {
+        console.debug("onConnectionsChange", this.name, connection, slot, connected);
+        // only process the inputs
+        if (connection != LiteGraph.INPUT) {
+            return;
+        }
+        this.updateFromInput();
+        this.refreshMethodAndInputs();
+    }
+
+    refreshMethodAndInputs(actVal) {
         // TODO fixthis :: property is not yet updated?
-        var actVal = this.widg_prop.value; // this.properties.method
+        actVal = actVal || this.properties.method; //this.widg_prop.value; // this.properties.method
         if (actVal && this._obin && typeof this._obin[actVal] !== "undefined") {
 
             // if changed, reset inputs
@@ -39630,7 +40593,7 @@ class objMethodWidget {
 
             // inheritance ?
             // using call or apply ?
-            // prototype �
+            // prototype ¿
             // Uncaught (in promise) TypeError: can't access private field or method: object is not the right class
             /*
             BAD
@@ -39687,7 +40650,7 @@ class objMethodWidget {
                 this.removeInput(3); // not i
             }
         }
-        this.refreshMethodAndInputs();
+        this.refreshMethodAndInputs(this.widg_prop.value);
     }
 
     onAction(action) {
@@ -39696,6 +40659,12 @@ class objMethodWidget {
         if (action == "refresh") {
             this.updateFromInput();
         } else if (action == "execute" || action == "new") {
+            if (!this._function || typeof(this._function) == "function") {
+                console.debug?.("NodeObjMethod Execute", "force recheck input and method");
+                // force check
+                this.updateFromInput();
+                this.refreshMethodAndInputs();
+            }
             if (this._function && typeof(this._function) == "function") {
 
                 var parValues = [];
@@ -39704,21 +40673,24 @@ class objMethodWidget {
                 }
 
                 // call execute
-                console.debug?.("NodeObjMethod Execute", parValues);
+                console.debug?.("NodeObjMethod Execute", this._function, this._obin, parValues);
                 try {
                     if (this._isClass) {
-                        var r = new this._function(parValues); // this._function.apply(this, parValues);
+                        var r = new this._function(...parValues); // this._function.apply(this, parValues);
                     } else {
-                        var r = this._function(parValues); // this._function.apply(this, parValues);
+                        // TODO: spread arguments
+                        var r = this._function.call(this._obin, ...parValues); // this._function.apply(this, parValues);
+                        console.debug?.("NodeObjMethod Execute", "result", r);
                     }
-                    this.triggerSlot(0);
                     this.setOutputData(2, r); // update method result
+                    this.triggerSlot(0);
                     this.boxcolor = "#0F0";
                 } catch (e) {
                     console.warn("[NodeObjMethod]", "execute error", e);
                     this.boxcolor = "#F00";
                 }
             } else {
+                console.warn?.("NodeObjMethod Execute has not method", parValues);
                 this.setOutputData(1, null);
                 this.setOutputData(2, null);
             }
@@ -39743,8 +40715,9 @@ class objMethodWidget {
     }
 
     onPropertyChanged(name, value) {
-        if (name == "value") {
+        if (name == "method") { //} "value") {
             this.widg_prop.value = value;
+            this.refreshMethodAndInputs(value);
         }
     }
 
@@ -40011,7 +40984,526 @@ class MergeObjects {
 }
 LiteGraph.registerNodeType("objects/merge_objects", MergeObjects);
 
+// WIP moved standalone, CLEAN
+// class LibraryManager {
+//     constructor() {
+//         this.libraries_known = {};  
+//         this.libraries_loaded = {}; 
+//         this.libraries_state = {};  
+//     }
 
+//     registerLibrary(key, version, files, globalObject) {
+//         this.libraries_known[key] = { key, version, files, globalObject };
+//         this.libraries_state[key] = "not_loaded";
+//     }
+
+//     async loadLibrary(key, callback) {
+//         if (!this.libraries_known[key]) {
+//             console.error(`Library ${key} not registered.`);
+//             return;
+//         }
+
+//         if (this.libraries_state[key] === "loading") {
+//             console.warn(`Library ${key} is already loading.`);
+//             return;
+//         }
+
+//         if (this.libraries_state[key] === "loaded") {
+//             console.warn(`Library ${key} is already loaded.`);
+//             callback && callback(this.libraries_loaded[key]);
+//             return;
+//         }
+
+//         this.libraries_state[key] = "loading";
+//         const library = this.libraries_known[key];
+
+//         for (const fileX of library.files) {
+//             // Detect required imports before loading
+//             const requiredImports = await this.detectRequiredImports(fileX);
+
+//             // Load only the necessary remapped files
+//             const promises = requiredImports.map(file => this.loadScript(file));
+
+//             Promise.all(promises)
+//                 .then(() => {
+//                     this.loadScript(fileX, key).then(()=>{
+//                         this.libraries_state[key] = "loaded";
+//                         this.libraries_loaded[key] = window[key] || {};
+//                         console.log(`Library ${key} loaded.`);
+//                         callback && callback(this.libraries_loaded[key]);
+//                     })
+//                     .catch(error => {
+//                         this.libraries_state[key] = "error";
+//                         console.error(`Error loading ${key}:`, error);
+//                     });
+//                 })
+//                 .catch(error => {
+//                     this.libraries_state[key] = "error";
+//                     console.error(`Error loading required imports ${key}:`, error);
+//                 });
+//         }
+//     }
+
+//     // **Detect only the required imports using the source map**
+//     async detectRequiredImports(scriptURL) {
+//         try {
+//             // Step 1: Fetch the script content
+//             const response = await fetch(scriptURL);
+//             if (!response.ok) throw new Error(`Failed to fetch ${scriptURL}`);
+//             const scriptText = await response.text();
+
+//             // Step 2: Extract all bare imports from the script
+//             const importMatches = [...scriptText.matchAll(/import\s+.*?["']([^"']+)["']/g)];
+//             const bareImports = importMatches.map(match => match[1]).filter(spec => !spec.startsWith("."));
+
+//             // Step 3: Find the source map URL
+//             const sourceMapMatch = scriptText.match(/\/\/# sourceMappingURL=(.+)/);
+//             if (!sourceMapMatch) {
+//                 console.warn(`No source map found in ${scriptURL}`);
+//                 return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+//             }
+
+//             const sourceMapURL = new URL(sourceMapMatch[1], scriptURL).href;
+//             console.log(`Found source map: ${sourceMapURL}`);
+
+//             // Step 4: Fetch the source map JSON
+//             const mapResponse = await fetch(sourceMapURL);
+//             if (!mapResponse.ok) throw new Error(`Failed to fetch source map: ${sourceMapURL}`);
+//             const sourceMap = await mapResponse.json();
+
+//             // Step 5: Correctly resolve only the required imports
+//             const resolvedFiles = bareImports
+//                 .map(importName => {
+//                     // Check if `sourcesContent` or `sources` contains the module
+//                     const exactMatch = sourceMap.sources.find(src => src.endsWith(`/${importName}.js`));
+//                     return exactMatch ? new URL(exactMatch, scriptURL).href : null;
+//                 })
+//                 .filter(Boolean); // Remove nulls
+
+//             console.log(`Correctly resolved imports:`, resolvedFiles);
+//             return resolvedFiles.length > 0 ? resolvedFiles : []; // DO NOT, return only extra : NO OLD Use original file if no matches found
+//         } catch (error) {
+//             console.error(`Error resolving imports for ${scriptURL}:`, error);
+//             return[]; // DO NOT, return only extra : [scriptURL]; // NO OLD Default to the original file
+//         }
+//     }
+
+//     // **Detect and Load JavaScript as Module or CommonJS**
+//     async loadScript(url, globalObject="lastscript") {
+//         console.debug("Load script", url, globalObject);
+//         return new Promise(async (resolve, reject) => {
+//             let isModule = await this.isESModule(url);
+//             console.debug("loadScript", isModule?"MODULE":"COMMONJS", url);
+//             if (isModule) {
+//                 let script = document.createElement("script");
+//                 script.type = "module";
+//                 script.textContent = `
+//                     import { LiteGraph } from '../src/litegraph.js';
+//                     import * as ${globalObject} from '${url}';
+//                     window.${globalObject} = ${globalObject};
+//                     LiteGraph.LibraryManager?.${globalObject} = ${globalObject};
+//                     console.warn('LOADLIBOBJECT',window.${globalObject});
+//                     // alert('loaded ${globalObject}');
+//                 `;
+//                 //alert(script.textContent);
+//                 document.head.appendChild(script);
+//                 resolve();
+//             } else {
+//                 let script = document.createElement("script");
+//                 script.type = "text/javascript";
+//                 script.src = url;
+//                 script.onload = resolve;
+//                 script.onerror = reject;
+//                 document.head.appendChild(script);
+//             }
+//         });
+//     }
+
+//     // **Check if a script is an ES Module**
+//     async isESModule(url) {
+//         try {
+//             let response = await fetch(url);
+//             let text = await response.text();
+//             return /export\s|import\s/.test(text); // Detect ES Module keywords
+//         } catch (e) {
+//             return false; // Default to CommonJS if fetch fails
+//         }
+//     }
+
+//     // Load CSS
+//     loadCSS(href) {
+//         return new Promise((resolve, reject) => {
+//             const link = document.createElement("link");
+//             link.rel = "stylesheet";
+//             link.href = href;
+//             link.onload = resolve;
+//             link.onerror = reject;
+//             document.head.appendChild(link);
+//         });
+//     }
+
+//     // Unload a library
+//     unloadLibrary(key) {
+//         if (!this.libraries_known[key]) {
+//             console.error(`Library ${key} not registered.`);
+//             return;
+//         }
+
+//         if (this.libraries_state[key] !== "loaded") {
+//             console.warn(`Library ${key} is not loaded.`);
+//             return;
+//         }
+
+//         const library = this.libraries_known[key];
+//         library.files.forEach(file => {
+//             if (file.endsWith(".js")) {
+//                 document.querySelectorAll(`script[src="${file}"]`).forEach(el => el.remove());
+//             } else if (file.endsWith(".css")) {
+//                 document.querySelectorAll(`link[href="${file}"]`).forEach(el => el.remove());
+//             }
+//         });
+
+//         this.libraries_state[key] = "not_loaded";
+//         delete this.libraries_loaded[key];
+//         console.log(`Library ${key} unloaded.`);
+//     }
+
+//     // Get the state of a library
+//     getLibraryState(key) {
+//         return this.libraries_state[key] || false; //"unknown";
+//     }
+// }
+
+// // Attach LibraryManager to LiteGraph
+// LiteGraph.LibraryManager = new LibraryManager();
+
+
+// Utility function to format names
+function camelize(str) {
+    return str.replace(/[^a-zA-Z0-9_$]/g, '_').replace(/^[0-9]/, '_$&');
+}
+
+// LiteGraph Node: CDNLibInclude
+class CDNLibInclude {
+    static title = "Lib Load";
+    static desc = "Load by LibraryManager";
+
+    constructor() {
+        this.addInput("load", LiteGraph.ACTION);
+        this.addInput("name", "string", {
+            param_bind: true
+        });
+        this.addOutput("ready", LiteGraph.EVENT);
+        this.addOutput("error", LiteGraph.EVENT);
+
+        this.addProperty("name", "", "string");
+
+        this.addWidget("string", "name", "", "name", {});
+    }
+
+    load() {
+        const that = this;
+        let name = this.getInputOrProperty("name");
+
+        this.setProperty("name", name);
+
+        LiteGraph.LibraryManager?.loadLibrary(name, () => {
+            that.on_loaded(name);
+        });
+    }
+
+    on_loaded(name) {
+        console.debug?.("Loaded library", name);
+        this.trigger("ready");
+        this.boxcolor = "#0F0";
+    }
+
+    on_error(name, e) {
+        this.trigger("error");
+        this.boxcolor = "#F00";
+        console.warn?.("Lib loading failed", name, e);
+    }
+
+    onAction(evt) {
+        if (evt === "load") {
+            this.load();
+        }
+    }
+
+    onExecute() {}
+
+    onGetInputs() {}
+
+    onGetOutputs() {}
+}
+// Register the node
+LiteGraph.registerNodeType("libraries/load", CDNLibInclude);
+
+
+class CDNLibRegister {
+    static title = "Lib Register";
+    static desc = "Register a JS library (by url or object)";
+
+    constructor() {
+        this.addInput("load", LiteGraph.ACTION);
+        this.addInput("lib_spec", "object,cdn_lib");
+        this.addInput("url", "string,url", {
+            param_bind: true
+        });
+        this.addInput("name", "string", {
+            param_bind: true
+        });
+        this.addOutput("ready", LiteGraph.EVENT);
+        this.addOutput("error", LiteGraph.EVENT);
+
+        this.addProperty("module", true, "boolean");
+        this.addProperty("url", "", "string");
+        this.addProperty("name", "", "string");
+
+        this.addWidget("string", "url", "", "url", {});
+        this.addWidget("string", "name", "", "name", {});
+        this.addWidget("toggle", "module", false, "module", {});
+    }
+
+    register() {
+        const that = this;
+        let url = this.getInputOrProperty("url");
+        let name = this.getInputOrProperty("name");
+        let lib_spec = {};
+
+        if (!url) {
+            lib_spec = this.getInputOrProperty("lib_spec");
+            if (lib_spec && typeof lib_spec === "object" && lib_spec.latest) {
+                url = lib_spec.latest;
+                name = camelize(lib_spec.name);
+            }
+        } else {
+            if (url && name) {
+                lib_spec = {
+                    name,
+                    latest: url
+                };
+            } else {
+                this.boxcolor = "#F00";
+                return;
+            }
+        }
+
+        if (lib_spec.latest) {
+            this.setProperty("name", name);
+            this.setProperty("url", url);
+
+            LiteGraph.LibraryManager?.registerLibrary(name, "latest", name, [], [url]);
+
+        } else {
+            this.boxcolor = "#F00";
+        }
+    }
+
+    on_loaded(lib_spec) {
+        console.debug?.("Loaded library", lib_spec);
+        if (lib_spec && lib_spec.name) {
+            this.trigger("ready");
+            this.boxcolor = "#0F0";
+        } else {
+            this.on_error(lib_spec);
+        }
+    }
+
+    on_error(lib_spec, e) {
+        this.trigger("error");
+        this.boxcolor = "#F00";
+        console.warn?.("Lib registration failed", lib_spec, e);
+    }
+
+    onAction(evt) {
+        if (evt === "register") {
+            this.register();
+        }
+    }
+
+    onExecute() {}
+
+    onGetInputs() {}
+
+    onGetOutputs() {}
+}
+// Register the node
+LiteGraph.registerNodeType("libraries/register", CDNLibRegister);
+
+
+class CDNLibSearch {
+    constructor() {
+        this.addInput("search", LiteGraph.ACTION);
+        this.addProperty("name", "", "string");
+        this.addOutput("ready", LiteGraph.EVENT);
+        this.addOutput("results", "array");
+        this.addOutput("first name", "string");
+        this.addOutput("first object", "object");
+        this.addOutput("error", LiteGraph.EVENT);
+
+        this.addWidget("string", "name", this.properties.name, "name");
+
+        this._data = null;
+        this._fetching = null;
+        this.base_url = "https://api.cdnjs.com/libraries";
+    }
+
+    static title = "CDN Search";
+    static desc = "Search and fetch CDN libraries";
+
+    search() {
+        const that = this;
+        let url = this.base_url;
+        const name = this.getInputOrProperty("name");
+
+        if (name && name !== "") {
+            url += "?search=" + encodeURIComponent(name);
+        }
+
+        this._fetching = fetch(url)
+            .then((resp) => {
+                if (!resp.ok) {
+                    this.boxcolor = "#F00";
+                    that.trigger("error");
+                    return null;
+                }
+                return resp.json();
+            })
+            .then((data) => {
+                if (!data || !data.results) {
+                    that.boxcolor = "#F00";
+                    that.trigger("error");
+                    return;
+                }
+
+                that._data = data;
+                that.boxcolor = "#0F0";
+
+                if (data.results.length > 0) {
+                    const firstLib = data.results[0];
+
+                    // Extract details
+                    const lib_spec = {
+                        name: firstLib.name,
+                        latest: firstLib.latest,
+                        files: [firstLib.latest] // Assuming the latest file URL is the main script
+                    };
+
+                    // Register in LibraryManager
+                    LiteGraph.LibraryManager?.registerLibrary(lib_spec.name, "latest", lib_spec.name, [], lib_spec.files);
+
+                    // Set output data
+                    that.setOutputData(1, data.results); // Full results array
+                    that.setOutputData(2, firstLib.name); // First library name
+                    that.setOutputData(3, lib_spec); // First library object
+                } else {
+                    that.setOutputData(2, null);
+                    that.setOutputData(3, null);
+                }
+
+                that.trigger("ready");
+            })
+            .catch((error) => {
+                console.error("CDN Search error:", error);
+                that.boxcolor = "#F00";
+                that.trigger("error");
+            });
+    }
+
+    onAction(evt) {
+        if (evt === "search") {
+            this.search();
+        }
+    }
+
+    onGetInputs() {
+        return [
+            ["name", "string"]
+        ];
+    }
+
+    onGetOutputs() {
+        return [
+            ["error", LiteGraph.EVENT],
+            ["results", "array"],
+            ["first name", "string"],
+            ["first object", "object"]
+        ];
+    }
+}
+
+// Register the node
+LiteGraph.registerNodeType("libraries/search_CDN_lib", CDNLibSearch);
+
+
+class CDNLibrarySelector {
+    constructor() {
+        this.addInput("refresh", LiteGraph.ACTION);
+        this.addOutput("selected lib", "object");
+        this.addOutput("libraries", "array");
+
+        this.addProperty("selectedLibrary", "", "string");
+
+        this.librariesList = this.getLibraries(); // Initial list
+
+        this.addWidget("combo", "Library", this.properties.selectedLibrary, (v) => {
+            this.properties.selectedLibrary = v;
+        }, {
+            values: this.librariesList
+        });
+
+        this.addWidget("button", "Refresh", null, () => this.refreshLibraries());
+    }
+
+    static title = "Library Selector";
+    static desc = "Select and output a registered library";
+
+    // Get list of registered libraries
+    getLibraries() {
+        return Object.keys(LiteGraph.LibraryManager?.libraries_known);
+    }
+
+    // Refresh library list
+    refreshLibraries() {
+        this.librariesList = this.getLibraries();
+        this.widgets[0].options.values = this.librariesList;
+        this.setDirtyCanvas(true);
+    }
+
+    onAction(event) {
+        if (event === "refresh") {
+            this.refreshLibraries();
+        }
+    }
+
+    onExecute() {
+        this.refreshLibraries();
+
+        const selectedLib = this.properties.selectedLibrary;
+        if (selectedLib && LiteGraph.LibraryManager?.libraries_known[selectedLib]) {
+            this.setOutputData(0, LiteGraph.LibraryManager?.libraries_known[selectedLib]);
+        }
+
+        this.setOutputData(1, this.librariesList);
+    }
+
+    onGetInputs() {
+        return [
+            ["refresh", LiteGraph.ACTION]
+        ];
+    }
+
+    onGetOutputs() {
+        return [
+            ["selected lib", "object"],
+            ["libraries", "array"]
+        ];
+    }
+}
+
+// Register the node
+LiteGraph.registerNodeType("libraries/selector", CDNLibrarySelector);
 
 /**
  * will extend a node class creating an html element for it available in this._el_cont, use this._html to set his content
@@ -40029,9 +41521,12 @@ function nodeEmpower_htmlElement(nodeX) {
             // this._el.style.pointerEvents = "";
             myGCanvas.canvas?.parentNode?.appendChild(this._el);
             this._el_cont = document.createElement("div");
-            this._el_cont.style.display = "flex";
-            // this._el_cont.style.alignItems = "center";
-            this._el_cont.style.justifyContent = "center";
+
+            // centered content
+            // this._el_cont.style.display = "flex";
+            // // this._el_cont.style.alignItems = "center";
+            // this._el_cont.style.justifyContent = "center";
+
             this._el_cont.style.overflow = "auto";
             this._el_cont.style.position = "relative";
             this._el_cont.style.width = "100%";
@@ -40120,7 +41615,7 @@ function nodeEmpower_htmlElement(nodeX) {
     });
 }
 
-class DOMSelector {
+export class DOMSelector {
 
     static title = "DOMSelector";
     static desc = "Execute a selection query on the document returning the corresponging DOM element";
@@ -40146,7 +41641,7 @@ class DOMSelector {
 }
 LiteGraph.registerNodeType("html/dom_selector", DOMSelector);
 
-class HtmlNode {
+export class HtmlNode {
 
     static title = "Html Node";
     static desc = "Have html inside a node";
@@ -40190,13 +41685,15 @@ class HtmlNode {
 }
 LiteGraph.registerNodeType("html/node_html", HtmlNode);
 
-class JsonViewerNode {
+export class JsonViewerNode {
     static title = "Json View";
     static desc = "Show and navigate a value structure";
     constructor() {
         this.addInput("value", 0);
         this.properties = {
-            html: ""
+            html: "",
+            collapsed: false,
+            max_depth: 3
         }; // scale_content: false
         this._added = false;
         this._html = "";
@@ -40207,7 +41704,7 @@ class JsonViewerNode {
     }
     refreshSlots() {
         this.htmlRefreshElement?.();
-        var sHtml = htmlJsonViewerHelper(this.getInputData(0));
+        var sHtml = htmlJsonViewerHelper(this.getInputData(0), this.properties.collapsed, this.properties.max_depth);
         if (sHtml) {
             try {
                 this.setHtml?.(sHtml); // this._html = sHtml;
@@ -40230,7 +41727,7 @@ class JsonViewerNode {
 }
 LiteGraph.registerNodeType("html/json_viewer", JsonViewerNode);
 // helper function 
-function htmlJsonViewerHelper(json, collapsible = false) {
+function htmlJsonViewerHelper(json, collapsed = false, max_depth = 6) {
     var TEMPLATES = {
         item: '<div class="json__item">' +
             '<div class="json__key">%KEY%</div>' +
@@ -40248,69 +41745,116 @@ function htmlJsonViewerHelper(json, collapsible = false) {
             '</label>'
     };
 
-    function createItem(key, value, type) {
+    function createItem(key, value, type, max_depth = 6, cur_depth = 0) {
         var element = TEMPLATES.item.replace('%KEY%', key);
-        try {
-            if (type == 'string') {
-                element = element.replace('%VALUE%', '"' + value + '"');
-            } else {
-                element = element.replace('%VALUE%', value);
+        if (value === null) {
+            element = element.replace('%VALUE%', "[NULL]");
+            element = element.replace('%TYPE%', "null");
+        } else {
+            try {
+                if (type == 'string') {
+                    element = element.replace('%VALUE%', '"' + value + '"');
+                } else {
+                    if (type === 'object' || type === 'array' || type === 'function') {
+                        if (value.constructor === Array) {
+                            value = "array [" + value.length + "]";
+                            // TODO should cut array (value)
+                        } else if (type === 'function') {
+                            value = type + " {" + value.constructor + "}";
+                        } else {
+                            value = type + " {" + Object.keys(value).length + "}";
+                        }
+                        if (cur_depth >= max_depth) {
+                            value += " [MAX_DEPTH]";
+                        }
+                    }
+                    element = element.replace('%VALUE%', value);
+                }
+                element = element.replace('%TYPE%', type);
+            } catch (e) {
+                console.warn("html createItem error", type, value, e);
+                element = element.replace('%VALUE%', "[ERR]");
+                element = element.replace('%TYPE%', type);
             }
-            element = element.replace('%TYPE%', type);
-        } catch (e) {
-            console.warn("html createItem error", type, value, e);
-            element = element.replace('%VALUE%', "[ERR]");
-            element = element.replace('%TYPE%', type);
         }
         return element;
     }
 
-    function createCollapsibleItem(key, value, type, children) {
+    function createCollapsibleItem(key, value, type, html_children) {
         var tpl = 'itemCollapsible';
-        if (collapsible) {
+        if (collapsed) {
             tpl = 'itemCollapsibleOpen';
         }
         var element = TEMPLATES[tpl].replace('%KEY%', key);
-        element = element.replace('%VALUE%', type);
+        if (value === null) {
+            type = "[NULL]";
+            value = "null";
+        } else {
+            if (typeof value === 'object') {
+                if (value.constructor === Array) {
+                    value = "array [" + value.length + "]";
+                    // TODO should cut array (value)
+                } else {
+                    value = "object {" + Object.keys(value).length + "}"
+                }
+            } else if (typeof(value) == "function") {
+                value = "function";
+            }
+        }
+        element = element.replace('%VALUE%', value);
         element = element.replace('%TYPE%', type);
-        element = element.replace('%CHILDREN%', children);
+        element = element.replace('%CHILDREN%', html_children);
         return element;
     }
 
-    function handleChildren(key, value, type, already_processed) {
+    function handleChildren(key, value, type, already_processed, max_depth = 6, cur_depth = 0) {
         if (!already_processed) already_processed = [];
-        var html = '';
+        let html = '';
+        let nItems = 0;
         for (var item in value) {
-            var _key = item,
-                _val = value[item];
+            var _key = item;
+            var _val = value[item];
             if (typeof(_val) !== "object" || !already_processed.includes(_val)) {
                 if (typeof(_val) == "object") {
                     already_processed.push(_val);
                 }
-                html += handleItem(_key, _val, already_processed);
+                html += handleItem(_key, _val, already_processed, max_depth, cur_depth + 1);
             } else {
                 html += createItem(_key, "[OBJ_CYCLE]");
             }
+            nItems++;
         }
-        return createCollapsibleItem(key, value, type, html);
+        if (nItems) {
+            return createCollapsibleItem(key, value, type, html);
+        } else {
+            return createItem(key, value, type, max_depth, cur_depth);
+        }
     }
 
-    function handleItem(key, value, already_processed) {
+    function handleItem(key, value, already_processed, max_depth = 6, cur_depth = 0) {
         if (!already_processed) already_processed = [];
         var type = typeof value;
-        if (typeof value === 'object') {
-            return handleChildren(key, value, type, already_processed);
+        if (type === 'object') {
+            // if(value.constructor === Array){
+            //     type = "array";
+            //     // TODO should cut array (value)
+            // }
+            if (cur_depth >= max_depth) {
+                // value += " [MAX_DEPTH]";
+            } else {
+                return handleChildren(key, value, type, already_processed, max_depth, cur_depth);
+            }
         }
-        return createItem(key, value, type);
+        return createItem(key, value, type, max_depth, cur_depth);
     }
 
     function parseObject(obj) {
         var _result = '<div class="html__json">';
         for (var item in obj) {
-            var key = item,
-                value = obj[item];
-
-            _result += handleItem(key, value);
+            var key = item;
+            var value = obj[item];
+            var type = typeof value;
+            _result += handleItem(key, value, false, max_depth, 0);
         }
         _result += '</div>';
         return _result;
@@ -40320,7 +41864,7 @@ function htmlJsonViewerHelper(json, collapsible = false) {
 
 
 
-class DOMSelectorAll {
+export class DOMSelectorAll {
 
     static title = "DOMSelectorAll";
     static desc = "Execute a querySelectorAll() on the document returning the corresponding Elements";
@@ -40343,7 +41887,7 @@ class DOMSelectorAll {
 LiteGraph.registerNodeType("html/dom_selector_all", DOMSelectorAll);
 
 
-class HtmlEventListener {
+export class HtmlEventListener {
 
     static title = "HTML Listener";
     static desc = "Add an event listener on an html element";
@@ -40355,6 +41899,7 @@ class HtmlEventListener {
         this.addOutput("on_event", LiteGraph.EVENT);
         this.addOutput("last_event", "");
         this.addOutput("current_event", "");
+        this.addOutput("all_listeners", "[htmlelement_listener]");
         this.addProperty("eventType", "");
         this.addWidget("combo", "eventType", this.properties["eventType"], "eventType", {
             values: ["click", "dblclick", "mouseover", "mousedown", "mouseup", "mousemove", "mouseout", "keydown", "keyup", "keypress", "load", "unload", "mousewheel", "contextmenu", "focus", "change", "blur", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerout", "pointerenter", "pointerleave", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchmove", "touchend", "touchcancel", "submit", "scroll", "resize", "hashchange"]
@@ -40369,6 +41914,10 @@ class HtmlEventListener {
             action = this.id + "_" + (action ? action : "action") + "_exectoact_" + LiteGraph.uuidv4();
             this.onAction(action, param, options);
         } else this.setOutputData(3, null);
+        var sSel = this.getInputData(0);
+        if (sSel) {
+            this.setOutputData(4, sSel.attributes["data-listeners"]);
+        }
     }
 
     onAction(action) {
@@ -40389,6 +41938,11 @@ class HtmlEventListener {
                         }
                         sSel.addEventListener(eventType, fEv);
                         sSel.attributes["data-listener-" + eventType] = fEv;
+                        if (!sSel.attributes["data-listeners"]) {
+                            sSel.attributes["data-listeners"] = [];
+                        }
+                        sSel.attributes["data-listeners"].push(eventType);
+                        that.setOutputData(4, sSel.attributes["data-listeners"]);
                     } else {
                         fEv = sSel.attributes["data-listener-" + eventType];
                     }
@@ -40397,19 +41951,20 @@ class HtmlEventListener {
                         function: fEv,
                         event: eventType
                     };
+                    console.debug("event listener added", res);
+                    this.setOutputData(0, res);
                     break;
             }
         } else {
             console.log?.("no el to add event");
             // this.setOutputData(2,null); // clean ?
         }
-        this.setOutputData(0, res);
     }
 }
 LiteGraph.registerNodeType("html/event_listener", HtmlEventListener);
 
 
-class HtmlEventListenerRemove {
+export class HtmlEventListenerRemove {
 
     static title = "HTML Remove Listener";
     static desc = "Remove an event listener by passing his reference";
@@ -40434,6 +41989,7 @@ class HtmlEventListenerRemove {
         var res = false;
         if (oLis && oLis.element && oLis.function && oLis.event && oLis.element.removeEventListener) {
             oLis.element.attributes["data-listener-" + oLis.event] = false;
+            delete(oLis.element.attributes["data-listeners"][oLis.event]);
             oLis.element.removeEventListener(oLis.event, oLis.function);
             res = true;
         } else {
@@ -40446,7 +42002,7 @@ class HtmlEventListenerRemove {
 LiteGraph.registerNodeType("html/event_listener_remove", HtmlEventListenerRemove);
 
 
-class HtmlValue {
+export class HtmlValue {
 
     static title = "HTML GET Value";
     static desc = "Get the value (or the text content) of an HTML element";
@@ -40484,7 +42040,7 @@ class HtmlValue {
 LiteGraph.registerNodeType("html/element_value", HtmlValue);
 
 
-class HtmlValueSet {
+export class HtmlValueSet {
 
     static title = "HTML SET Value";
     static desc = "Set the value (or the text content) of an HTML element";
@@ -40530,7 +42086,7 @@ class HtmlValueSet {
 LiteGraph.registerNodeType("html/element_value_set", HtmlValueSet);
 
 
-class HtmlCreateElement {
+export class HtmlCreateElement {
 
     static title = "HTML Create El";
     static desc = "Create an HTML element";
@@ -40583,7 +42139,7 @@ class HtmlCreateElement {
 LiteGraph.registerNodeType("html/create_element", HtmlCreateElement);
 
 
-class HtmlAppendChild {
+export class HtmlAppendChild {
 
     static title = "HTML Append Child";
     static desc = "Append an HTML element to another";
@@ -40619,7 +42175,7 @@ class HtmlAppendChild {
 LiteGraph.registerNodeType("html/append_child", HtmlAppendChild);
 
 
-class HtmlRemoveElement {
+export class HtmlRemoveElement {
 
     static title = "HTML Remove element";
     static desc = "Remove an HTML element";
@@ -40653,7 +42209,7 @@ class HtmlRemoveElement {
 LiteGraph.registerNodeType("html/remove_element", HtmlRemoveElement);
 
 
-class HtmlElementStyle {
+export class HtmlElementStyle {
 
     static title = "HTML Css";
     static desc = "HTML Element apply Css Style";
@@ -40930,7 +42486,7 @@ class HtmlElementStyle {
         "values": ["color", "transparent", "initial", "inherit"]
     }, {
         "property": "quotes",
-        "values": ["none", "string string string string", "initial", "inherit", "", "\"", "'", "�", "�", "�", "�", "�", "�", "�", "�", "�"]
+        "values": ["none", "string string string string", "initial", "inherit", "", "\"", "'", "‹", "›", "«", "»", "‘", "’", "“", "”", "„"]
     }, {
         "property": "perspective-origin",
         "values": ["x-axis", "y-axis", "initial", "inherit"]
@@ -41620,7 +43176,7 @@ class HtmlElementStyle {
         "values": ["color", "transparent", "initial", "inherit"]
     }, {
         "property": "quotes",
-        "values": ["none", "string string string string", "initial", "inherit", "", "\"", "'", "�", "�", "�", "�", "�", "�", "�", "�", "�"]
+        "values": ["none", "string string string string", "initial", "inherit", "", "\"", "'", "‹", "›", "«", "»", "‘", "’", "“", "”", "„"]
     }, {
         "property": "perspective-origin",
         "values": ["x-axis", "y-axis", "initial", "inherit"]
@@ -42092,6 +43648,576 @@ class HtmlElementStyle {
 }
 LiteGraph.registerNodeType("html/apply_element_css", HtmlElementStyle);
 
+class WatchValue {
+
+    static fontSize = 16;
+    static fontFamily = "Arial";
+    static lineHeight = this.fontSize + 4;
+    static padding = 10;
+
+    static COLORS = {
+        key: "#9cdcfe",
+        string: "#ce9178",
+        number: "#b5cea8",
+        boolean: "#569cd6",
+        null: "#569cd6",
+        bracket: "#d4d4d4",
+        hover: "#ffffff",
+        loadMore: "#ffa500",
+    };
+
+    // static myCanvas = null;
+
+    // canvas events
+    // myCanvas.addEventListener("wheel", e => {
+    //     this.state.scrollOffset += e.deltaY;
+    //     this.render();
+    // });
+
+    // myCanvas.addEventListener("mousemove", handleMouseMove);
+    // myCanvas.addEventListener("click", handleClick);
+
+    constructor() {
+        this.addInput("data", "", {
+            label: ""
+        });
+        this.value = null;
+        this.state = {
+            scrollOffset: 0,
+            expandedNodes: new Set(),
+            hoverNodeId: null,
+            maxChildren: 6, // Default limit for displayed children
+            expandDepth: 2, // Default depth to expand
+            loadMoreNodes: new Set(), // Tracks nodes with "Load More" clicked
+        };
+        this.clickRegions = [];
+        this.ctx = null;
+        this.properties = {
+            "clip_area": true
+        }
+        this.clip_area = true;
+    }
+
+    onExecute() {
+        // update values here
+        this.updateInputData();
+    }
+    onAction() {
+        // should probably execute on action
+    }
+    onGetInputs() {
+        // return [["in", 0]];
+    }
+    onGetOutputs() {
+        // return [["out", 0]];
+    }
+    getTitle() {
+        if (this.flags?.collapsed) {
+            return this.inputs[0].label;
+        }
+        return this.title;
+    }
+    onPropertyChanged(name, value, prev_value) {
+        // this.widget.value = value;
+        if (name == "clip_area") {
+            this.clip_area = value;
+        }
+    }
+    onMouseDown(e, pos, node) {
+        console.debug(this.title, this.id, "onMouseDown", arguments);
+        this.handleClick(pos);
+    }
+    onConnectionsChange(connection, slot, connected, link_info) {
+        // only process the inputs
+        if (connection != LiteGraph.INPUT) {
+            return;
+        }
+        this.value = this.getInputData(0, true); // force update
+    }
+    onDrawBackground(ctx, graphcanvas, canvas, pos) {
+        // render ctx
+        this.ctx = ctx;
+        // myCanvas = canvas;
+        this.render();
+    }
+
+    updateInputData() {
+        if (this.inputs[0]) {
+            this.value = this.getInputData(0);
+        }
+    }
+
+    renderJSON(data, depth = 0, offsetY = 6, parentKey = "") {
+
+        const drawText = (text, color, x, y) => {
+            this.ctx.fillStyle = color;
+            if (y < this.size[1]) {
+                this.ctx.fillText(text, x, y);
+            }
+        };
+
+        const isExpandable = (value) => ["object", "function"].indexOf(typeof(value)) > -1 && value !== null;
+
+        const renderKeyValue = (key, value, depth, y, parentKey) => {
+            if (y >= this.size[1]) {
+                return y;
+            }
+
+            const x = WatchValue.padding + depth * 20;
+
+            // console.debug("Render:",key,"::",parentKey,":value:",typeof(value),value);
+            drawText(`"${key}":`, WatchValue.COLORS.key, x, y);
+
+            if (isExpandable(value)) {
+                const nodeId = `${parentKey}-${key}`;
+                const isExpanded = this.state.expandedNodes.has(nodeId);
+
+                const toggleX = x - 15;
+                this.clickRegions.push({
+                    x: toggleX,
+                    y,
+                    width: 10,
+                    height: WatchValue.lineHeight,
+                    nodeId,
+                });
+
+                const color = this.state.hoverNodeId === nodeId ? WatchValue.COLORS.hover : WatchValue.COLORS.bracket;
+                drawText(isExpanded ? "-" : "+", color, toggleX, y);
+
+                if (isExpanded) {
+                    return this.renderJSON(value, depth + 1, y + WatchValue.lineHeight, nodeId);
+                }
+
+                if (typeof value === 'object') {
+                    if (value.constructor === Array) {
+                        value = "array [" + value.length + "]";
+                        // TODO should cut array (value)
+                    } else {
+                        if (Object.keys(value).length) {
+                            value = "object {" + Object.keys(value).length + "}"
+                        } else {
+                            value = "object " + String(value);
+                        }
+                    }
+                } else if (typeof(value) == "function") {
+                    value = "function";
+                }
+
+                drawValue(value, x + this.ctx.measureText(`"${key}": `).width, y);
+
+            } else {
+                drawValue(value, x + this.ctx.measureText(`"${key}": `).width, y);
+            }
+
+            return y + WatchValue.lineHeight;
+        };
+
+        const drawValue = (value, x, y) => {
+            if (typeof value === "string") {
+                drawText(`"${value}"`, WatchValue.COLORS.string, x, y);
+            } else if (typeof value === "number") {
+                drawText(value, WatchValue.COLORS.number, x, y);
+            } else if (typeof value === "boolean") {
+                drawText(value, WatchValue.COLORS.boolean, x, y);
+            } else if (value === null) {
+                drawText("null", WatchValue.COLORS.null, x, y);
+            }
+        };
+
+        let currentY = offsetY;
+
+        if (Array.isArray(data)) {
+            drawText("[", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+            currentY += WatchValue.lineHeight;
+
+            const nodeId = parentKey; //`${parentKey}-array`;
+            const maxChildren = this.state.loadMoreNodes.has(nodeId) ?
+                data.length :
+                this.state.maxChildren;
+
+            data.slice(0, maxChildren).forEach((item, index) => {
+                if (currentY >= this.size[1]) {
+                    return;
+                }
+                currentY = renderKeyValue(index, item, depth + 1, currentY, `${parentKey}`);
+            });
+
+            if (data.length > maxChildren && !this.state.loadMoreNodes.has(nodeId)) {
+                const loadMoreY = currentY;
+                drawText("... Load More", WatchValue.COLORS.loadMore, WatchValue.padding + (depth + 1) * 20, loadMoreY);
+                this.clickRegions.push({
+                    x: WatchValue.padding + (depth + 1) * 20,
+                    y: loadMoreY,
+                    width: this.ctx.measureText("... Load More").width,
+                    height: WatchValue.lineHeight,
+                    nodeId: `loadMore-${nodeId}`,
+                });
+                currentY += WatchValue.lineHeight;
+            }
+
+            drawText("]", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+
+        } else if (["object", "function"].indexOf(typeof(data)) > -1 && data !== null) {
+
+            drawText("{", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+            currentY += WatchValue.lineHeight;
+
+            const keys = Object.keys(data);
+            const nodeId = parentKey; //`${parentKey}-object`;
+            const maxChildren = this.state.loadMoreNodes.has(nodeId) ?
+                keys.length :
+                this.state.maxChildren;
+
+            keys.slice(0, maxChildren).forEach((key) => {
+                currentY = renderKeyValue(key, data[key], depth + 1, currentY, nodeId);
+            });
+
+            if (keys.length > maxChildren && !this.state.loadMoreNodes.has(nodeId)) {
+                const loadMoreY = currentY;
+                drawText("... Load More", WatchValue.COLORS.loadMore, WatchValue.padding + (depth + 1) * 20, loadMoreY);
+                this.clickRegions.push({
+                    x: WatchValue.padding + (depth + 1) * 20,
+                    y: loadMoreY,
+                    width: this.ctx.measureText("... Load More").width,
+                    height: WatchValue.lineHeight,
+                    nodeId: `loadMore-${nodeId}`,
+                });
+                currentY += WatchValue.lineHeight;
+            }
+
+            drawText("}", WatchValue.COLORS.bracket, WatchValue.padding + depth * 20, currentY);
+        } else {
+            let dataType = typeof(data);
+            let dataColor = WatchValue.COLORS.string;
+            if (dataType === "boolean") {
+                dataType = "bool";
+                dataColor = WatchValue.COLORS.boolean;
+            } else if (data === null) {
+                dataType = "null";
+                dataColor = WatchValue.COLORS.null;
+            } else if (dataType === "string") {
+                dataColor = WatchValue.COLORS.string;
+            } else if (dataType === "number") {
+                dataColor = WatchValue.COLORS.number;
+            }
+            if (dataType === "undefined") {
+                dataColor = WatchValue.COLORS.null;
+                dataType = "";
+            } else {
+                dataType = `"${dataType}": `;
+                drawText(dataType, dataColor, 18, currentY);
+            }
+            drawText(data, dataColor, 18 + this.ctx.measureText(dataType).width, currentY);
+        }
+
+        return currentY + WatchValue.lineHeight;
+    }
+
+    // handleMouseMove(event) {
+    //     const rect = myCanvas.getBoundingClientRect(); // Get the canvas's bounding rectangle
+    //     const offsetX = event.clientX - rect.left; // Calculate X relative to the canvas
+    //     const offsetY = event.clientY - rect.top + this.state.scrollOffset; // Calculate Y, adjusting for scroll
+
+    //     let hoverNodeId = null;
+
+    //     this.clickRegions.forEach(({ x, y, width, height, nodeId }) => {
+    //         if (
+    //             offsetX >= x &&
+    //             offsetX <= x + width &&
+    //             offsetY >= y &&
+    //             offsetY <= y + height
+    //         ) {
+    //             hoverNodeId = nodeId;
+    //         }
+    //     });
+
+    //     if (this.state.hoverNodeId !== hoverNodeId) {
+    //         this.state.hoverNodeId = hoverNodeId;
+    //         this.render();
+    //     }
+    // }
+
+    handleClick(pos) {
+        // const rect = myCanvas.getBoundingClientRect(); // Get the canvas's bounding rectangle
+        // const offsetX = event.clientX - rect.left; // Calculate X relative to the canvas
+        // const offsetY = event.clientY - rect.top + this.state.scrollOffset; // Calculate Y, adjusting for scroll
+
+        const offsetX = pos[0];
+        const offsetY = pos[1];
+
+        this.clickRegions.forEach(({
+            x,
+            y,
+            width,
+            height,
+            nodeId
+        }) => {
+            if (
+                offsetX >= x &&
+                offsetX <= x + width &&
+                offsetY >= y &&
+                offsetY <= y + height
+            ) {
+                if (nodeId.startsWith("loadMore-")) {
+                    const targetNode = nodeId.replace("loadMore-", "");
+                    this.state.loadMoreNodes.add(targetNode);
+                } else if (this.state.expandedNodes.has(nodeId)) {
+                    this.state.expandedNodes.delete(nodeId);
+                } else {
+                    this.state.expandedNodes.add(nodeId);
+                }
+                this.render();
+            }
+        });
+    }
+
+    render() {
+        // this.ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+        const ctxFont = this.ctx.font;
+        const ctxBaseline = this.ctx.textBaseline
+        this.ctx.font = `${WatchValue.fontSize}px ${WatchValue.fontFamily}`;
+        this.ctx.textBaseline = "top";
+
+        this.clickRegions = [];
+        let totalHeight = this.renderJSON(this.value, 0, 6 - this.state.scrollOffset);
+        // Scroll boundaries
+        // if (this.state.scrollOffset > totalHeight - myCanvas.height) {
+        //     this.state.scrollOffset = Math.max(totalHeight - myCanvas.height, 0);
+        // }
+        // if (this.state.scrollOffset < 0) {
+        //     this.state.scrollOffset = 0;
+        // }
+
+        // restore
+        this.ctx.font = ctxFont;
+        this.ctx.textBaseline = ctxBaseline;
+    }
+
+    expandUpToDepth(data, maxDepth, currentDepth = 0, parentKey = "") {
+        if (currentDepth >= maxDepth) return;
+
+        if (["object", "function"].indexOf(typeof(data)) > -1 && data !== null) {
+            const nodeId = `${parentKey}`;
+            this.state.expandedNodes.add(nodeId);
+
+            Object.keys(data).forEach((key, index) => {
+                const childNodeId = `${nodeId}-${key}`;
+                console.debug(currentDepth + "::" + childNodeId);
+                expandUpToDepth(data[key], maxDepth, currentDepth + 1, childNodeId);
+            });
+        }
+    }
+}
+LiteGraph.registerNodeType("watch/value", WatchValue);
+//LiteGraph library related nodes
+
+// --------------------------
+
+class LGLibrary {
+    constructor() {
+        this.addOutput("ref", "object");
+        this._value = null;
+        this._properties = [];
+        this.setOutputData(0, LiteGraph);
+    }
+    static title = "LGLib";
+    static desc = "LiteGraph object reference";
+    onExecute(param, options) {
+        this.setOutputData(0, LiteGraph);
+    };
+    onAction(action, param, options) {
+        // should probably execute on action
+    };
+    onGetInputs() {
+        //return [["in", 0]];
+    };
+    onGetOutputs() {
+        //return [["out", 0]];
+    };
+    getTitle() {
+        return "LiteGraph";
+    };
+}
+LiteGraph.registerNodeType("litegraph/litegraph", LGLibrary);
+
+
+// --------------------------
+
+class LGGraph {
+    constructor() {
+        this.addInput("start", LiteGraph.ACTION);
+        this.addInput("stop", LiteGraph.ACTION);
+        this.addInput("step", LiteGraph.ACTION);
+        this.addOutput("ref", "object");
+        this.addOutput("stepped", LiteGraph.EVENT);
+        this._value = null;
+        this._properties = [];
+        this.setOutputData(0, this.graph);
+    }
+    static title = "Graph";
+    static desc = "Graph object reference";
+    onExecute(param, options) {
+        this.setOutputData(0, this.graph);
+        this.triggerSlot(1, param, null, options);
+    };
+    onAction(action, param, options) {
+        console.debug("GraphAction", action);
+        switch (action) {
+            case "start":
+                this.graph.start();
+                console.debug("this.graph.start();", this, this.graph);
+                break;
+            case "stop":
+                this.graph.stop();
+                console.debug("this.graph.stop();", this, this.graph);
+                break;
+            case "step":
+                if (this.graph.onBeforeStep)
+                    this.graph.onBeforeStep();
+                this.graph.runStep(1, !this.graph.catch_errors);
+                console.debug("this.graph.runStep(1, !this.graph.catch_errors);", this, this.graph);
+                if (this.graph.onAfterStep)
+                    this.graph.onAfterStep();
+                break;
+        }
+    };
+    onGetInputs() {
+        //return [["in", 0]];
+    };
+    onGetOutputs() {
+        //return [["out", 0]];
+    };
+    getTitle() {
+        return "Graph";
+    };
+}
+LiteGraph.registerNodeType("litegraph/graph", LGGraph);
+/* in types :: run in console :: var s=""; LiteGraph.slot_types_in.forEach(function(el){s+=el+"\n";}); console.log?.(s); */
+
+if (typeof LiteGraph.slot_types_default_in == "undefined")
+    LiteGraph.slot_types_default_in = {}; // [];
+LiteGraph.slot_types_default_in["_event_"] = "widget/button";
+LiteGraph.slot_types_default_in["array"] = "basic/array";
+LiteGraph.slot_types_default_in["boolean"] = "basic/boolean";
+LiteGraph.slot_types_default_in["number"] = "widget/number";
+LiteGraph.slot_types_default_in["object"] = "basic/data";
+LiteGraph.slot_types_default_in["string"] = [
+    "basic/string",
+    "string/concatenate",
+];
+LiteGraph.slot_types_default_in["vec2"] = "math3d/xy-to-vec2";
+LiteGraph.slot_types_default_in["vec3"] = "math3d/xyz-to-vec3";
+LiteGraph.slot_types_default_in["vec4"] = "math3d/xyzw-to-vec4";
+
+LiteGraph.slot_types_default_in["audio"] = ["audio/source", "audio/media_source"];
+LiteGraph.slot_types_default_in["canvas"] = "graphics/canvas";
+LiteGraph.slot_types_default_in["geometry"] = ["geometry/polygon", "geometry/eval"];
+LiteGraph.slot_types_default_in["image"] = ["graphics/image", "graphics/video", "graphics/webcam"];
+LiteGraph.slot_types_default_in["mat4"] = "math3d/mat4";
+LiteGraph.slot_types_default_in["quat"] = ["math3d/quaternion", "math3d/rotation"];
+LiteGraph.slot_types_default_in["table"] = "string/toTable";
+
+/* out types :: run in console :: var s=""; LiteGraph.slot_types_out.forEach(function(el){s+=el+"\n";}); console.log?.(s); */
+if (typeof LiteGraph.slot_types_default_out == "undefined")
+    LiteGraph.slot_types_default_out = {};
+LiteGraph.slot_types_default_out["_event_"] = [
+    "logic/IF",
+    "events/sequence",
+    "events/log",
+    "events/counter",
+];
+LiteGraph.slot_types_default_out["array"] = [
+    "basic/watch",
+    "basic/set_array",
+    "basic/array[]",
+];
+LiteGraph.slot_types_default_out["boolean"] = [
+    "logic/IF",
+    "basic/watch",
+    "math/branch",
+    "math/gate",
+];
+LiteGraph.slot_types_default_out["number"] = [
+    "basic/watch",
+    {
+        node: "math/operation",
+        properties: {
+            OP: "*"
+        },
+        title: "A*B"
+    },
+    {
+        node: "math/operation",
+        properties: {
+            OP: "/"
+        },
+        title: "A/B"
+    },
+    {
+        node: "math/operation",
+        properties: {
+            OP: "+"
+        },
+        title: "A+B"
+    },
+    {
+        node: "math/operation",
+        properties: {
+            OP: "-"
+        },
+        title: "A-B"
+    },
+    {
+        node: "math/compare",
+        outputs: [
+            ["A==B", "boolean"]
+        ],
+        title: "A==B"
+    },
+    {
+        node: "math/compare",
+        outputs: [
+            ["A>B", "boolean"]
+        ],
+        title: "A>B"
+    },
+    {
+        node: "math/compare",
+        outputs: [
+            ["A<B", "boolean"]
+        ],
+        title: "A<B"
+    },
+];
+LiteGraph.slot_types_default_out["object"] = [
+    "objects/property_widget",
+    "objects/method_widget",
+    "objects/properties",
+    "objects/get_property",
+    "objects/object_keys",
+    "objects/set_property",
+    "objects/merge_objects",
+    "string/toString",
+    "basic/watch",
+];
+LiteGraph.slot_types_default_out["string"] = [
+    "basic/watch",
+    "string/compare",
+    "string/concatenate",
+    "string/contains",
+];
+LiteGraph.slot_types_default_out["vec2"] = "math3d/vec2-to-xy";
+LiteGraph.slot_types_default_out["vec3"] = "math3d/vec3-to-xyz";
+LiteGraph.slot_types_default_out["vec4"] = "math3d/vec4-to-xyzw";
+
+LiteGraph.slot_types_default_out["audio"] = ["audio/destination", "audio/mixer", "audio/analyser"];
+LiteGraph.slot_types_default_out["canvas"] = ["graphics/frame", "graphics/drawImage"];
+LiteGraph.slot_types_default_out["geometry"] = ["geometry/points_to_instances", "geometry/extrude", "geometry/eval", "geometry/connectPoints", "geometry/transform"];
+LiteGraph.slot_types_default_out["image"] = ["graphics/frame", "graphics/drawImage"];
+// LiteGraph.slot_types_default_out["mat4"] = "geometry/transform";
+LiteGraph.slot_types_default_out["quat"] = ["math3d/rotate_vec3", "math3d/rotation"];
+LiteGraph.slot_types_default_out["table"] = "string/toTable";
+
 // WIP NODE_ONLY NETWORK
 
 
@@ -42443,7 +44569,7 @@ class UDPNode {
         ];
     }
 
-    onRemove() {
+    onRemoved() {
         if (this._dgram) {
             this._dgram.close();
         }
@@ -42836,7 +44962,6 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 //     module.exports = LocalWebSocketServer;
 // }
 
-
 // Creates an interface to access extra features from a graph (like play, stop, live, etc)
 export class Editor {
 
@@ -43196,7 +45321,6 @@ export class Editor {
     }
 }
 
-
 LiteGraph.debug = true; // enable logging
 LiteGraph.logging_set_level(4); // -1 is none, 0 is error level, 5 is all up to debug, more is for verbose : will set LiteGraph.debug_level
 
@@ -43263,12 +45387,11 @@ LiteGraph.reprocess_slot_while_node_configure = true;
 
 LiteGraph.properties_allow_input_binding = true; // [true!] allow create and bind inputs, will update binded property value on node execute 
 LiteGraph.properties_allow_output_binding = true; // [true!] allow create and bind outputs, will update output slots when node executed 
+LiteGraph.properties_input_binding_check_ancestors = true; // [true!] when executing a node it will update binding, there when getting data will ensure data is updated
 /**
  * EXAMPLE EXTENSION TO AUTOCONNECT SELECTED NODES TO ANOTHER (SINGLE) NODE
  * press a than click on a node
  */
-
-
 export let registerExtension_autoconnect = function(graphcanvas) {
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
@@ -43339,16 +45462,14 @@ if (typeof(graphcanvas) !== "undefined") {
 LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct", function(oCbInfo, graphcanvas) {
     registerExtension_autoconnect(graphcanvas);
 });
-
 export let registerExtension_keyhelper = function(graphcanvas) {
 
     // enable only if debugging CallbackHandler itself
     // graphcanvas.cb_handler.debug = true;
 
     // oCbInfo is first passed parameter and contains infos about the event execution chain 
-
     let ext = "key_helper";
-    let debug = false;
+    let debug = true;
 
     // onKeyDown
     graphcanvas.registerCallbackHandler("onKeyDown", function(oCbInfo, keyEvent) {
@@ -43366,7 +45487,7 @@ export let registerExtension_keyhelper = function(graphcanvas) {
         }
 
         switch (keyEvent.keyCode) {
-            case 39: //ArrowLeft
+            case 39: //ArrowRight
                 if (nSel) {
 
                     // ---- ADD NEW NODE CONNECTED TO SELECTED ONE  ----
@@ -43589,7 +45710,6 @@ if (typeof(graphcanvas) !== "undefined") {
 LiteGraph.registerCallbackHandler("on_lgraphcanvas_construct", function(oCbInfo, graphcanvas) {
     registerExtension_keyhelper(graphcanvas);
 });
-
 export let registerExtension_renamer = function(graphcanvas) {
 
     // enable only if debugging CallbackHandler itself
