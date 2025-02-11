@@ -1,5 +1,7 @@
 // WIP NODE_ONLY NETWORK
 
+// TODO use librarymanager to include dgram
+// TODO use librarymanager to include ws
 
 /**
  * To use this WebSocket server node, ensure you have the 'ws' package installed.

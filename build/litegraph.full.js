@@ -1300,6 +1300,11 @@ export class LiteGraphClass {
             return n.toFixed(precision).replace(/(\.\d*[1-9])0+$|\.0*$/, '$1');
         }
     }
+
+    getGlobalObject = getGlobalObject;
+    setGlobalVariable = setGlobalVariable;
+    getGlobalVariable = getGlobalVariable;
+    isBrowser = isBrowser;
 }
 
 // !¿ TODO MOVE THESE HELPERS ?!
@@ -1336,6 +1341,7 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
 // export var getGlobalObject = getGlobalObject;
 // export var setGlobalVariable = setGlobalVariable;
 // export var getGlobalVariable = getGlobalVariable;
+
 
 if (!getGlobalVariable("LiteGraph")) {
     setGlobalVariable("LiteGraph", new LiteGraphClass());
@@ -15349,7 +15355,7 @@ export class LGraphNode {
         this.inputs.forEach((ob_input) => {
             if (ob_input.param_bind) {
                 LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
-                if (thisNode.properties && ob_input.name in thisNode.properties) {
+                if (thisNode.properties && typeof(thisNode.properties[ob_input.name]) !== "undefined") {
                     let inputData = thisNode.getInputData(ob_input.name, LiteGraph?.properties_input_binding_check_ancestors);
                     if (inputData !== null) {
                         // thisNode.properties[ob_input.name] = link.data;
@@ -18380,6 +18386,12 @@ export class NodeFunction extends LGraphNode {
 }
 // export const root = getGlobalObject();
 
+// node modules ::
+// path
+// fs
+// vm
+// node-fetch
+
 export class LibraryManager {
     constructor() {
         this.libraries_known = {};
@@ -18398,17 +18410,23 @@ export class LibraryManager {
 
     async importNodeModules() {
         // ERROR in NuNu when packing
-        // try {
-        //     this.fs = await import("fs").then(m => m.default || m);
-        // } catch (e) {
-        //     console.warn("Error importing 'fs':", e);
-        // }
-
-        // try {
-        //     this.path = await import("path").then(m => m.default || m);
-        // } catch (e) {
-        //     console.warn("Error importing 'path':", e);
-        // }
+        try {
+            this.fs = await import("fs").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing 'fs':", e);
+        }
+        try {
+            this.path = await import("path").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing 'path':", e);
+        }
+        try {
+            this.vm = await import("vm").then(m => m.default || m);
+            this.fetch = await import("node-fetch").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing Node.js modules:", e);
+        }
+        console.log("imported modules");
     }
 
     /**
@@ -18515,6 +18533,7 @@ export class LibraryManager {
             } catch (error) {
                 console.warn(`Failed to load local file: ${localPath}`);
             }
+            return loadedScripts;
         }
 
         for (const remoteUrl of library.remoteUrls) {
@@ -18524,10 +18543,15 @@ export class LibraryManager {
             } catch (error) {
                 console.warn(`Failed to load remote script: ${remoteUrl}`);
             }
+            return loadedScripts;
         }
 
         if (loadedScripts.length === 0) {
-            throw new Error(`Could not load any files for ${library.key}`);
+            if (library.localPaths.length == 0 && library.remoteUrls.length == 0) {
+                return []; // no files required
+            } else {
+                throw new Error(`Could not load any files for ${library.key}`);
+            }
         }
 
         return loadedScripts;
@@ -18535,45 +18559,101 @@ export class LibraryManager {
 
     // **Load all specified server files (Node.js/Bun)**
     async loadServerLibrary(library) {
-        const loadedModules = [];
+        if (!this.fs || !this.path) {
+            await this.importNodeModules();
+            if (!this.fs || !this.path) {
+                console.warn("Node.js 'fs' and 'path' modules are not available.");
+                return;
+            }
+        }
 
-        // if (this.fs && this.path) {
-        //     for (const localPath of library.localPaths) {
-        //         const resolvedPath = this.path.resolve(localPath);
-        //         if (this.fs.existsSync(resolvedPath)) {
-        //             console.log(`Loading local module: ${resolvedPath}`);
-        //             try {
-        //                 loadedModules.push(await import(resolvedPath));
-        //             } catch (error) {
-        //                 console.warn(`Failed to import local module: ${resolvedPath}`, error);
-        //             }
-        //         }
-        //     }
-        // }
+        const loadedModules = [];
+        const packageFile = "required-packages.txt";
+
+        // Read existing package list (if available)
+        let existingPackages = new Set();
+        try {
+            if (this.fs.existsSync(packageFile)) {
+                const data = this.fs.readFileSync(packageFile, "utf8");
+                existingPackages = new Set(data.split("\n").map(pkg => pkg.trim()).filter(Boolean));
+            }
+        } catch (error) {
+            console.warn("Failed to read required-packages.txt:", error);
+        }
 
         for (const npmPackage of library.npmPackages) {
             console.log(`Loading NPM package: ${npmPackage}`);
             try {
-                loadedModules.push(await import(npmPackage));
+                let modX = null;
+                modX = await import(npmPackage);
+                loadedModules.push(modX);
+                if (library.globalObject && library.globalObject !== "") {
+                    setGlobalVariable(library.globalObject, modX);
+                    // TODO save in local libs modX;
+                    console.log(`Included package: ${npmPackage} as global ${library.globalObject}`);
+                    console.log(`${modX}}`);
+                } else {
+                    console.log(`NOT Included package: ${npmPackage} as global ${library.globalObject} result ${modX} of ${loadedModules}`);
+                }
             } catch (error) {
                 console.warn(`Failed to import NPM package: ${npmPackage}`, error);
+
+                // Add missing package to the list
+                if (!existingPackages.has(npmPackage)) {
+                    existingPackages.add(npmPackage);
+                    console.warn(`Adding missing package to required-packages.txt: ${npmPackage}`);
+                }
+            }
+        }
+
+        // Write updated package list
+        if (existingPackages.length) {
+            try {
+                this.fs.writeFileSync(packageFile, [...existingPackages].join("\n") + "\n", "utf8");
+            } catch (error) {
+                console.warn("Failed to update required-packages.txt:", error);
             }
         }
 
         for (const remoteUrl of library.serverRemoteUrls) {
             console.log(`Loading remote module: ${remoteUrl}`);
             try {
-                loadedModules.push(await import(remoteUrl));
+                loadedModules.push(await this.loadServerRemoteScript(remoteUrl));
             } catch (error) {
                 console.warn(`Failed to import remote module: ${remoteUrl}`, error);
             }
         }
 
         if (loadedModules.length === 0) {
-            throw new Error(`Could not load any files for ${library.key}`);
+            if (library.localPaths.npmPackages == 0 && npmPackages && library.serverRemoteUrls.length == 0) {
+                return []; // no files required
+            } else {
+                throw new Error(`Could not import anything for ${library.key}`);
+            }
         }
 
         return loadedModules;
+    }
+
+
+    async loadServerRemoteScript(url) {
+        if (!this.fetch || !this.vm) throw new Error("Node.js modules 'fetch' and 'vm' are required.");
+
+        console.log(`Fetching remote script: ${url}`);
+        const response = await this.fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+
+        const scriptText = await response.text();
+        const script = new this.vm.Script(scriptText);
+        const sandbox = {
+            window: {},
+            module: {},
+            exports: {}
+        };
+        script.runInNewContext(sandbox);
+
+        console.log("✅ Loaded from remote:", url);
+        return sandbox.module.exports || sandbox.exports;
     }
 
     // // **Load a script dynamically in a browser**
@@ -39787,171 +39867,6 @@ class LGWebSocket {
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
 
-// TODO move and implement library inclusion
-// add minimum version
-// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.LibraryManager[identifier] for not modules
-// manage loaded etc
-// nodepack with inclusion aside
-// manage local script repository too
-LiteGraph.LibraryManager.registerLibrary("socket.io", "4.8.1", "socket.io", [], ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"]);
-LiteGraph.LibraryManager.loadLibrary("socket.io");
-
-class LGSocketIO {
-    static title = "Socket.IO Client";
-    static desc = "Connect to a Socket.IO server to send and receive data";
-
-    constructor() {
-        this.size = [60, 20];
-        this.addInput("SEND", LiteGraph.ACTION);
-        this.addInput("type", "string", {
-            nameLocked: true,
-            removable: false,
-            param_bind: true
-        });
-        this.addInput("content", "string", {
-            nameLocked: true,
-            removable: false,
-            param_bind: true
-        });
-        this.addOutput("onReceived", LiteGraph.EVENT);
-        this.addOutput("dataRec", 0);
-        this.properties = {
-            url: "http://127.0.0.1:3000",
-            room: null,
-            auto_send_input: false,
-            only_send_changes: true,
-            runOnServerToo: false
-        };
-        this.addProperty("type", "message", "string");
-        this.addProperty("content", "", "string");
-        this._socket = null;
-        this._last_sent_data = [];
-        this._last_received_data = [];
-        // TODO check library io is available
-    }
-
-    onPropertyChanged(name, _value) {
-        if (name === "url") {
-            this.connectSocket();
-        }
-    }
-
-    onExecute() {
-        if (!this._socket && this.properties.url) { // TODO && !this.state == "connecting") {
-            this.connectSocket();
-        }
-    }
-
-    connectSocket() {
-        try {
-            if (this._socket) {
-                this._socket.disconnect();
-            }
-
-            this.boxcolor = "#00F";
-
-            this._socket = io(this.properties.url);
-
-            this._socket.on("connect", () => {
-                console.log("Connected to Socket.IO server");
-                if (this.properties.room) {
-                    this._socket.emit("join", this.properties.room);
-                }
-                this.boxcolor = "#0F0";
-
-                const engine = this._socket.io.engine;
-                console.log(engine.transport.name); // in most cases, prints "polling"
-
-                engine.once("upgrade", () => {
-                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
-                    console.log("SocketIO", "upgrade", engine.transport.name); // in most cases, prints "websocket"
-                });
-
-                engine.on("packet", ({
-                    type,
-                    data
-                }) => {
-                    // console.debug("SockeIO", "packet", "called for each packet received", arguments);
-                });
-
-                engine.on("packetCreate", ({
-                    type,
-                    data
-                }) => {
-                    // console.debug("SockeIO", "packetCreate", "called for each packet sent", arguments);
-                });
-
-                engine.on("drain", () => {
-                    // console.debug("SockeIO", "drain", "called when the write buffer is drained", arguments);
-                });
-
-                engine.on("close", (reason) => {
-                    // console.debug("SockeIO", "close", "called when the underlying connection is closed", arguments);
-                });
-            });
-
-            this._socket.on("message", (data) => {
-                this._last_received_data = data;
-                this.setOutputData(1, data);
-                this.triggerSlot(0, data);
-            });
-            /* TODO tmp remove, use custom event and output instead */
-            this._socket.on("chatMessage", (data) => {
-                this._last_received_data = data;
-                this.setOutputData(1, data);
-                this.triggerSlot(0, data);
-            });
-
-            this._socket.on("reconnect_attempt", () => {
-                console.log("reconnect_attempt to Socket.IO server");
-                this.boxcolor = "#07F";
-            });
-
-            socket.io.on("reconnect", () => {
-                console.log("reconnect to Socket.IO server");
-                this.boxcolor = "#0F3";
-            });
-
-            this._socket.on("disconnect", () => {
-                console.log("Disconnected from Socket.IO server");
-                this.boxcolor = "#FF0";
-            });
-
-            this._socket.on("connect_error", (error) => {
-                if (socket.active) {
-                    // temporary failure, the socket will automatically try to reconnect
-                    console.log("Temporary failure Socket.IO connect, retry");
-                    this.boxcolor = "#FF0";
-                } else {
-                    // the connection was denied by the server
-                    // in that case, `socket.connect()` must be manually called in order to reconnect
-                    console.log("Error on Socket.IO connect", error.message);
-                    this.boxcolor = "#F00";
-                }
-            });
-
-        } catch (e) {
-            console?.warn("network/SocketIO", "error", e);
-            this.boxcolor = "#F00";
-        }
-    }
-
-    onAction(action, param) {
-        if (!this._socket) {
-            return;
-        }
-        if (action === "msg_w_data") {
-            this._socket.emit("message", param);
-        }
-        if (action === "SEND") {
-            this._socket.emit(this.getInputOrProperty("type"), this.getInputOrProperty("content"));
-        }
-    }
-}
-
-LiteGraph.registerNodeType("network/SocketIO", LGSocketIO);
-
-
 
 // HTTP Request
 class HTTPRequestNode {
@@ -40983,6 +40898,198 @@ class MergeObjects {
     }
 }
 LiteGraph.registerNodeType("objects/merge_objects", MergeObjects);
+
+class ObjectEditorNode {
+    static title = "JSON Editor+";
+    static desc = "Edit JSON and navigate/edit nested properties dynamically.";
+
+    constructor() {
+        this.addInput("set", LiteGraph.ACTION);
+        this.addOutput("data", "object");
+        this.addProperty("value", "{}"); // Entire JSON as a string
+        this.addProperty("selectedProp", ""); // Selected property path
+        this.addProperty("propValue", ""); // Selected property value
+
+        this.widget = this.addWidget("text", "JSON", "{}", "value", this.onJSONChanged.bind(this));
+
+        this.propSelector = this.addWidget("combo", "Property", this.properties.selectedProp, {
+            property: "selectedProp",
+            values: [],
+        });
+
+        this.valueEditor = null; // Will be dynamically created based on value type
+
+        // this.widgets_up = true;
+        this.size = [300, 210];
+        this._parsedValue = {};
+        this._currentPath = ""; // Tracks property path
+    }
+
+    // When JSON is edited
+    onJSONChanged(value) {
+        this.parseJSON(value);
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "value") {
+            this.parseJSON(value);
+        } else if (name === "selectedProp") {
+            this.updateSelectedProperty();
+        }
+    }
+
+    parseJSON(jsonString) {
+        try {
+            this._parsedValue = JSON.parse(jsonString);
+            this.boxcolor = "#4CAF50"; // Green for valid JSON
+            this._currentPath = ""; // Reset path when JSON is updated
+            this.updatePropertyList();
+        } catch (err) {
+            this.boxcolor = "red"; // Red for invalid JSON
+            this._parsedValue = null;
+        }
+        this.updateSelectedProperty();
+        this.setOutputData(0, this._parsedValue);
+    }
+
+    updatePropertyList() {
+        if (!this._parsedValue || typeof this._parsedValue !== "object") {
+            this.propSelector.options.values = [];
+            return;
+        }
+        const keys = Object.keys(this._parsedValue).sort();
+        this.propSelector.options.values = ["", ".."].concat(keys);
+    }
+
+    updateSelectedProperty() {
+        if (!this._parsedValue) {
+            this._currentPath = "";
+            this.properties.selectedProp = "";
+            this.updatePropertyList();
+            this.updateValueEditor("");
+            return;
+        }
+
+        const selectedPath = this.properties.selectedProp;
+
+        if (selectedPath === "..") {
+            // Go back up one level
+            // this._currentPath = this._currentPath.split('.').slice(0, -1).join('.');
+            this.properties.selectedProp = this._currentPath.split('.').slice(0, -1).join('.'); //this._currentPath.split('.').pop() || "";
+            this.updateSelectedProperty();
+            return;
+        }
+
+        this._currentPath = selectedPath;
+        if (this._currentPath == "") {
+            this.updateValueEditor(this._parsedValue);
+            this.updatePropertyList();
+            return;
+        }
+
+        const propValue = this.getValueByPath(this._parsedValue, this._currentPath);
+        if (propValue === undefined) {
+            // ? this._currentPath = ""; // Reset if path is invalid
+            // this.updatePropertyList();
+            this.updatePropertyListBasedOnPath(null);
+            this.updateValueEditor(""); // this._parsedValue
+            return;
+        }
+
+        this.updatePropertyListBasedOnPath(propValue);
+        this.updateValueEditor(propValue);
+    }
+
+    updatePropertyListBasedOnPath(propValue) {
+        console.debug("UpdateOBWidget", propValue, this.properties, this._currentPath);
+        if (typeof propValue === "object" && propValue !== null) {
+            const subKeys = Object.keys(propValue).sort();
+            if (this._currentPath && this._currentPath != "") {
+                this.propSelector.options.values = ["", ".."];
+            } else {
+                this.propSelector.options.values = [];
+            }
+            this.propSelector.options.values = this.propSelector.options.values.concat(subKeys.map(subKey => `${this._currentPath}.${subKey}`));
+        } else {
+            const precCat = this._currentPath.split(".").slice(0, -1).join(".");
+            const precValue = this.getValueByPath(this._parsedValue, precCat);
+            console.debug("UpdateOBWidget preCat", precCat, precValue);
+            if (typeof precValue === "object" && precValue !== null) {
+                const subKeys = Object.keys(precValue).sort();
+                this.propSelector.options.values = ["", ".."].concat(subKeys.map(subKey => `${precCat}.${subKey}`));
+            } else {
+                this.propSelector.options.values = ["", ".."];
+            }
+        }
+    }
+
+    updateValueEditor(propValue) {
+        if (this.valueEditor) {
+            this.widgets.splice(this.widgets.indexOf(this.valueEditor), 1); // Remove old widget
+        }
+
+        let widgetType = "text";
+        let displayValue = propValue;
+
+        if (typeof propValue === "object") {
+            widgetType = "text"; // Use text area for JSON objects
+            displayValue = JSON.stringify(propValue, null, 2);
+        }
+
+        this.valueEditor = this.addWidget(widgetType, "Edit Value", displayValue, "propValue");
+        this.properties.propValue = displayValue;
+    }
+
+    getValueByPath(obj, path) {
+        return path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    }
+
+    setValueByPath(obj, path, newValue) {
+        const keys = path.split('.');
+        let ref = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (typeof ref[keys[i]] !== "object" || ref[keys[i]] === null) {
+                ref[keys[i]] = {}; // Create sub-object if missing
+            }
+            ref = ref[keys[i]];
+        }
+
+        ref[keys[keys.length - 1]] = this.tryParseValue(newValue);
+    }
+
+    onAction(action, value) {
+        if (action == "set") {
+            this.updatePropertyValue(this.properties.propValue);
+        }
+    }
+
+    updatePropertyValue(value) {
+        if (!this._parsedValue) return;
+
+        // this.setValueByPath(this._parsedValue, this._currentPath, value);
+        this.setValueByPath(this._parsedValue, this._currentPath, value);
+        this.properties.value = JSON.stringify(this._parsedValue, null, 2);
+        this.widget.value = this.properties.value;
+        this.setOutputData(0, this._parsedValue);
+
+        this.updateSelectedProperty(); // Refresh UI
+    }
+
+    tryParseValue(value) {
+        try {
+            return JSON.parse(value);
+        } catch {
+            return value; // Keep as string if parsing fails
+        }
+    }
+
+    onExecute() {
+        this.setOutputData(0, this._parsedValue);
+    }
+}
+
+LiteGraph.registerNodeType("objects/json_editor", ObjectEditorNode);
+
 
 // WIP moved standalone, CLEAN
 // class LibraryManager {
@@ -44092,6 +44199,216 @@ class LGGraph {
     };
 }
 LiteGraph.registerNodeType("litegraph/graph", LGGraph);
+// TODO move and implement library inclusion
+// add minimum version
+// add and use global identifier :: check if exists after inclusion and tie with LiteGraph.LibraryManager[identifier] for not modules
+// manage loaded etc
+// nodepack with inclusion aside
+// manage local script repository too
+
+// LiteGraph.LibraryManager.registerLibrary("socket.io", "4.8.1", "socket.io", [], ["https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"]);
+// LiteGraph.LibraryManager.loadLibrary("socket.io");
+
+// -- client&server libraries --
+LiteGraph.LibraryManager.registerLibrary({
+    key: "socket.io-client",
+    version: "4.6.1",
+    globalObject: "ioclient",
+    browser: {
+        /*local: "/libs/socket.io.js",*/
+        remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"
+    },
+    server: {
+        npm: ["socket.io-client"],
+        /*remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"*/
+    }
+});
+LiteGraph.LibraryManager.loadLibrary("socket.io-client");
+
+class LGSocketIO {
+    static title = "Socket.IO Client";
+    static desc = "Connect to a Socket.IO server to send and receive data";
+
+    constructor() {
+        this.size = [60, 20];
+        this.properties = {
+            url: "http://127.0.0.1:3000",
+            room: null,
+            auto_send_input: false,
+            only_send_changes: true,
+            runOnServerToo: false
+        };
+        this.addProperty("type", "message", "string");
+        this.addProperty("content", "", "string");
+
+        this.addInput("SEND", LiteGraph.ACTION);
+        this.addInput("type", "string", {
+            nameLocked: true,
+            removable: false,
+            param_bind: true
+        });
+        this.addInput("content", "string", {
+            nameLocked: true,
+            removable: false,
+            param_bind: true
+        });
+        this.addOutput("onReceived", LiteGraph.EVENT);
+        this.addOutput("dataRec", 0);
+
+        this._io_client = null;
+        this._socket = null;
+        this._last_sent_data = [];
+        this._last_received_data = [];
+        // TODO check library io is available
+    }
+
+    onPropertyChanged(name, _value) {
+        if (name === "url") {
+            this.connectSocket();
+        }
+    }
+
+    onExecute() {
+        if (!this._socket && this.properties.url) { // TODO && !this.state == "connecting") {
+            this.connectSocket();
+        }
+    }
+
+    connectSocket() {
+        // if(typeof(io)=="undefined"){
+        //     return;
+        // }
+        if (!this._io_client) {
+            if (typeof(io) == "function") {
+                this._io_client = io;
+                console.debug("Got socketio lib from io", this._io_client);
+                // }else if(typeof(ioclient)=="function"){
+            } else {
+                this._io_client = LiteGraph.getGlobalVariable("ioclient");
+                console.debug("Got socketio lib from global", this._io_client);
+            }
+            // else if(typeof(io)=="object" && typeof(io.Socket)=="function"){
+            //     this._io_client = io.Socket; // should verify this, seems not working
+            // }
+            // else{
+            //     return;
+            // }
+        }
+        if (typeof(this._io_client) == "undefined") {
+            console.debug("SocketIo lib not ready");
+            return;
+        }
+        if (!LiteGraph.isBrowser()) {
+            // STOP
+            return;
+        }
+        try {
+            if (this._socket) {
+                this._socket.disconnect();
+            }
+
+            this.boxcolor = "#00F";
+
+            this._socket = this._io_client(this.properties.url);
+
+            this._socket.on("connect", () => {
+                console.log("Connected to Socket.IO server");
+                if (this.properties.room) {
+                    this._socket.emit("join", this.properties.room);
+                }
+                this.boxcolor = "#0F0";
+
+                const engine = this._socket.io.engine;
+                console.log(engine.transport.name); // in most cases, prints "polling"
+
+                engine.once("upgrade", () => {
+                    // called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket)
+                    console.log("SocketIO", "upgrade", engine.transport.name); // in most cases, prints "websocket"
+                });
+
+                engine.on("packet", ({
+                    type,
+                    data
+                }) => {
+                    // console.debug("SockeIO", "packet", "called for each packet received", arguments);
+                });
+
+                engine.on("packetCreate", ({
+                    type,
+                    data
+                }) => {
+                    // console.debug("SockeIO", "packetCreate", "called for each packet sent", arguments);
+                });
+
+                engine.on("drain", () => {
+                    // console.debug("SockeIO", "drain", "called when the write buffer is drained", arguments);
+                });
+
+                engine.on("close", (reason) => {
+                    // console.debug("SockeIO", "close", "called when the underlying connection is closed", arguments);
+                });
+            });
+
+            this._socket.on("message", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
+            /* TODO tmp remove, use custom event and output instead */
+            this._socket.on("chatMessage", (data) => {
+                this._last_received_data = data;
+                this.setOutputData(1, data);
+                this.triggerSlot(0, data);
+            });
+
+            this._socket.on("reconnect_attempt", () => {
+                console.log("reconnect_attempt to Socket.IO server");
+                this.boxcolor = "#07F";
+            });
+
+            this._socket.on("reconnect", () => {
+                console.log("reconnect to Socket.IO server");
+                this.boxcolor = "#0F3";
+            });
+
+            this._socket.on("disconnect", () => {
+                console.log("Disconnected from Socket.IO server");
+                this.boxcolor = "#FF0";
+            });
+
+            this._socket.on("connect_error", (error) => {
+                if (this._socket.active) {
+                    // temporary failure, the socket will automatically try to reconnect
+                    console.log("Temporary failure Socket.IO connect, retry");
+                    this.boxcolor = "#FF0";
+                } else {
+                    // the connection was denied by the server
+                    // in that case, `socket.connect()` must be manually called in order to reconnect
+                    console.log("Error on Socket.IO connect", error.message);
+                    this.boxcolor = "#F00";
+                }
+            });
+
+        } catch (e) {
+            console?.warn("network/SocketIO", "error", e);
+            this.boxcolor = "#F00";
+        }
+    }
+
+    onAction(action, param) {
+        if (!this._socket) {
+            return;
+        }
+        if (action === "msg_w_data") {
+            this._socket.emit("message", param);
+        }
+        if (action === "SEND") {
+            this._socket.emit(this.getInputOrProperty("type"), this.getInputOrProperty("content"));
+        }
+    }
+}
+
+LiteGraph.registerNodeType("network/SocketIO", LGSocketIO);
 /* in types :: run in console :: var s=""; LiteGraph.slot_types_in.forEach(function(el){s+=el+"\n";}); console.log?.(s); */
 
 if (typeof LiteGraph.slot_types_default_in == "undefined")

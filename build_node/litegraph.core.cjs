@@ -1300,6 +1300,11 @@ class LiteGraphClass {
             return n.toFixed(precision).replace(/(\.\d*[1-9])0+$|\.0*$/, '$1');
         }
     }
+
+    getGlobalObject = getGlobalObject;
+    setGlobalVariable = setGlobalVariable;
+    getGlobalVariable = getGlobalVariable;
+    isBrowser = isBrowser;
 }
 
 // !¿ TODO MOVE THESE HELPERS ?!
@@ -1336,6 +1341,7 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
 // var getGlobalObject = getGlobalObject;
 // var setGlobalVariable = setGlobalVariable;
 // var getGlobalVariable = getGlobalVariable;
+
 
 if (!getGlobalVariable("LiteGraph")) {
     setGlobalVariable("LiteGraph", new LiteGraphClass());
@@ -15349,7 +15355,7 @@ class LGraphNode {
         this.inputs.forEach((ob_input) => {
             if (ob_input.param_bind) {
                 LiteGraph.log_verbose("lgraphnode", "doUpdateBindedInputProperties", "has bind", ob_input, thisNode);
-                if (thisNode.properties && ob_input.name in thisNode.properties) {
+                if (thisNode.properties && typeof(thisNode.properties[ob_input.name]) !== "undefined") {
                     let inputData = thisNode.getInputData(ob_input.name, LiteGraph?.properties_input_binding_check_ancestors);
                     if (inputData !== null) {
                         // thisNode.properties[ob_input.name] = link.data;
@@ -18380,6 +18386,12 @@ class NodeFunction extends LGraphNode {
 }
 // const root = getGlobalObject();
 
+// node modules ::
+// path
+// fs
+// vm
+// node-fetch
+
 class LibraryManager {
     constructor() {
         this.libraries_known = {};
@@ -18398,17 +18410,23 @@ class LibraryManager {
 
     async importNodeModules() {
         // ERROR in NuNu when packing
-        // try {
-        //     this.fs = await import("fs").then(m => m.default || m);
-        // } catch (e) {
-        //     console.warn("Error importing 'fs':", e);
-        // }
-
-        // try {
-        //     this.path = await import("path").then(m => m.default || m);
-        // } catch (e) {
-        //     console.warn("Error importing 'path':", e);
-        // }
+        try {
+            this.fs = await import("fs").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing 'fs':", e);
+        }
+        try {
+            this.path = await import("path").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing 'path':", e);
+        }
+        try {
+            this.vm = await import("vm").then(m => m.default || m);
+            this.fetch = await import("node-fetch").then(m => m.default || m);
+        } catch (e) {
+            console.warn("Error importing Node.js modules:", e);
+        }
+        console.log("imported modules");
     }
 
     /**
@@ -18515,6 +18533,7 @@ class LibraryManager {
             } catch (error) {
                 console.warn(`Failed to load local file: ${localPath}`);
             }
+            return loadedScripts;
         }
 
         for (const remoteUrl of library.remoteUrls) {
@@ -18524,10 +18543,15 @@ class LibraryManager {
             } catch (error) {
                 console.warn(`Failed to load remote script: ${remoteUrl}`);
             }
+            return loadedScripts;
         }
 
         if (loadedScripts.length === 0) {
-            throw new Error(`Could not load any files for ${library.key}`);
+            if (library.localPaths.length == 0 && library.remoteUrls.length == 0) {
+                return []; // no files required
+            } else {
+                throw new Error(`Could not load any files for ${library.key}`);
+            }
         }
 
         return loadedScripts;
@@ -18535,45 +18559,101 @@ class LibraryManager {
 
     // **Load all specified server files (Node.js/Bun)**
     async loadServerLibrary(library) {
-        const loadedModules = [];
+        if (!this.fs || !this.path) {
+            await this.importNodeModules();
+            if (!this.fs || !this.path) {
+                console.warn("Node.js 'fs' and 'path' modules are not available.");
+                return;
+            }
+        }
 
-        // if (this.fs && this.path) {
-        //     for (const localPath of library.localPaths) {
-        //         const resolvedPath = this.path.resolve(localPath);
-        //         if (this.fs.existsSync(resolvedPath)) {
-        //             console.log(`Loading local module: ${resolvedPath}`);
-        //             try {
-        //                 loadedModules.push(await import(resolvedPath));
-        //             } catch (error) {
-        //                 console.warn(`Failed to import local module: ${resolvedPath}`, error);
-        //             }
-        //         }
-        //     }
-        // }
+        const loadedModules = [];
+        const packageFile = "required-packages.txt";
+
+        // Read existing package list (if available)
+        let existingPackages = new Set();
+        try {
+            if (this.fs.existsSync(packageFile)) {
+                const data = this.fs.readFileSync(packageFile, "utf8");
+                existingPackages = new Set(data.split("\n").map(pkg => pkg.trim()).filter(Boolean));
+            }
+        } catch (error) {
+            console.warn("Failed to read required-packages.txt:", error);
+        }
 
         for (const npmPackage of library.npmPackages) {
             console.log(`Loading NPM package: ${npmPackage}`);
             try {
-                loadedModules.push(await import(npmPackage));
+                let modX = null;
+                modX = await import(npmPackage);
+                loadedModules.push(modX);
+                if (library.globalObject && library.globalObject !== "") {
+                    setGlobalVariable(library.globalObject, modX);
+                    // TODO save in local libs modX;
+                    console.log(`Included package: ${npmPackage} as global ${library.globalObject}`);
+                    console.log(`${modX}}`);
+                } else {
+                    console.log(`NOT Included package: ${npmPackage} as global ${library.globalObject} result ${modX} of ${loadedModules}`);
+                }
             } catch (error) {
                 console.warn(`Failed to import NPM package: ${npmPackage}`, error);
+
+                // Add missing package to the list
+                if (!existingPackages.has(npmPackage)) {
+                    existingPackages.add(npmPackage);
+                    console.warn(`Adding missing package to required-packages.txt: ${npmPackage}`);
+                }
+            }
+        }
+
+        // Write updated package list
+        if (existingPackages.length) {
+            try {
+                this.fs.writeFileSync(packageFile, [...existingPackages].join("\n") + "\n", "utf8");
+            } catch (error) {
+                console.warn("Failed to update required-packages.txt:", error);
             }
         }
 
         for (const remoteUrl of library.serverRemoteUrls) {
             console.log(`Loading remote module: ${remoteUrl}`);
             try {
-                loadedModules.push(await import(remoteUrl));
+                loadedModules.push(await this.loadServerRemoteScript(remoteUrl));
             } catch (error) {
                 console.warn(`Failed to import remote module: ${remoteUrl}`, error);
             }
         }
 
         if (loadedModules.length === 0) {
-            throw new Error(`Could not load any files for ${library.key}`);
+            if (library.localPaths.npmPackages == 0 && npmPackages && library.serverRemoteUrls.length == 0) {
+                return []; // no files required
+            } else {
+                throw new Error(`Could not import anything for ${library.key}`);
+            }
         }
 
         return loadedModules;
+    }
+
+
+    async loadServerRemoteScript(url) {
+        if (!this.fetch || !this.vm) throw new Error("Node.js modules 'fetch' and 'vm' are required.");
+
+        console.log(`Fetching remote script: ${url}`);
+        const response = await this.fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+
+        const scriptText = await response.text();
+        const script = new this.vm.Script(scriptText);
+        const sandbox = {
+            window: {},
+            module: {},
+            exports: {}
+        };
+        script.runInNewContext(sandbox);
+
+        console.log("✅ Loaded from remote:", url);
+        return sandbox.module.exports || sandbox.exports;
     }
 
     // // **Load a script dynamically in a browser**

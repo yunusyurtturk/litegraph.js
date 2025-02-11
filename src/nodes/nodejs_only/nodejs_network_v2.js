@@ -1,5 +1,7 @@
 // WIP (not yet good) TESTING on NODE litegraph-executor
 
+// TODO use librarymanager to include ws
+
 // conditional include (only on server)
 // if(typeof(require)!=="undefined"){
 //     const WebSocket = require('ws');
@@ -7,6 +9,41 @@
 //>>NODEJS_ENABLE_CODE_START>>
 //const WebSocket = require('ws');
 //<<NODEJS_ENABLE_CODE_END<<
+
+// -- client only libraries --
+
+// -- client&server libraries --
+// LiteGraph.LibraryManager.registerLibrary({
+//     key: "socket.io-client",
+//     version: "4.6.1",
+//     globalObject: "ioclient",
+//     browser: { /*local: "/libs/socket.io.js",*/ remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js" },
+//     server: { npm: ["socket.io-client"], /*remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"*/ }
+// });
+// LiteGraph.LibraryManager.loadLibrary("socket.io-client");
+
+// -- server only libraries --
+LiteGraph.LibraryManager.registerLibrary({
+    key: "socket.io",
+    // version: "4.6.1",
+    globalObject: "ioserver",
+    browser: { },
+    server: { 
+        npm: "socket.io" // server-side package for Node.js
+    }
+});
+LiteGraph.LibraryManager.loadLibrary("socket.io");
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "http",
+    // version: "4.6.1",
+    globalObject: "http",
+    browser: { },
+    server: { 
+        npm: "http"
+    }
+});
+LiteGraph.LibraryManager.loadLibrary("http");
 
 class LocalWebSocketServer {
     static title = "WebSocket Server";
@@ -54,7 +91,7 @@ class LocalWebSocketServer {
 
     startServer() {
         if (typeof process === 'undefined' || process.browser) {
-            console.warn("WebSocket Server node is designed to run in Node.js, not in a browser.");
+            // console.warn("WebSocket Server node is designed to run in Node.js, not in a browser.");
             return false;
         }
         if (this.status === 'starting' || this.status === 'running') {
@@ -374,3 +411,179 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 // if(typeof module !== "undefined"){
 //     module.exports = LocalWebSocketServer;
 // }
+
+
+class SocketIOServerNode {
+    static title = "Socket.io Server";
+    static desc = "Creates a Socket.io server for real-time communication.";
+
+    constructor() {
+        this.addOutput("status", "string");
+        this.addOutput("onStarted", LiteGraph.EVENT);
+        this.addOutput("onStopped", LiteGraph.EVENT);
+        this.addOutput("message", "string");
+
+        this.properties = {
+            port: 3000,
+            should_autoconnect: true
+        };
+
+        this.server = null;
+        this.io = null;
+        this._io_server_pkg = null;
+        this.clients = new Set();
+        this.status = "stopped"; // stopped, starting, running, stopping, failed
+
+        if (typeof process === "undefined" || process.browser) {
+            console.warn("Socket.io Server Node is designed to run in Node.js.");
+            this.boxcolor = "#FF0000";
+            this.title = "Socket.io (run on server)";
+        } else if (this.properties.should_autoconnect) {
+            this.startServer();
+        }
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "port" && this.status === "running") {
+            this.stopServer(() => {
+                this.properties.port = value;
+                this.startServer();
+            });
+        } else {
+            this.properties[name] = value;
+        }
+    }
+
+    startServer() {
+        if(typeof(io) == "undefined"){
+            console.warn("please install socketio library");
+            return;
+        }
+        if (!this._io_server_pkg) {
+            if (typeof(io) == "function") {
+                this._io_server_pkg = io;
+            } else if (typeof(io) == "object" && typeof(io.Server) == "function") {
+                this._io_server_pkg = io.Server; // server constructor from socket.io package
+            // }
+            // if (typeof(ioserver) == "function") {
+            //     this._io_server_pkg = io;
+            // } else if (typeof(io) == "object" && typeof(ioserver.Server) == "function") {
+            //     this._io_server_pkg = ioserver.Server; // server constructor from socket.io package
+            } else {
+                const gloIo = LiteGraph.getGlobalVariable("ioserver");
+                console.warn("socketio library not ready");
+                if (typeof(gloIo) == "function") {
+                    this._io_server_pkg = gloIo;
+                } else if (typeof(gloIo) == "object" && typeof(gloIo.Server) == "function") {
+                    this._io_server_pkg = gloIo.Server; // server constructor from socket.io package
+                }
+            }
+        }
+        if (!this._io_server_pkg) {
+            return;
+        }
+        if (typeof process === "undefined" || process.browser) {
+            console.warn("Socket.io Server Node is designed to run in Node.js.");
+            return;
+        }
+        if (this.status === "starting" || this.status === "running") {
+            console.log("Socket.io server is already running.");
+            return;
+        }
+
+        this.status = "starting";
+        console.log(`Starting Socket.io server on port ${this.properties.port}...`);
+
+        try {
+            // const server = require("http").createServer();
+            this.io = new this._io_server_pkg(this.properties.port,{
+                cors:{
+                    origin: "*", // Allow all origins (or specify allowed domains)
+                    methods: ["GET", "POST"] // Allow specific HTTP methods
+                }
+            });
+
+            this.io.on("connection", (socket) => {
+                this.clients.add(socket);
+                console.log("New client connected:", socket.id);
+
+                socket.on("message", (data) => {
+                    console.log("Received:", data);
+                    this.triggerSlot("message", data);
+                    this.broadcast("message", data);
+                });
+
+                socket.on("disconnect", () => {
+                    this.clients.delete(socket);
+                    console.log("Client disconnected:", socket.id);
+                });
+
+                socket.emit("welcome", "Welcome to the Socket.io server!");
+            });
+
+            console.log(`Socket.io constructed ${this.io}...`);
+
+            // server.listen(this.properties.port, () => {
+            //     this.status = "running";
+            //     console.log(`Socket.io server listening on port ${this.properties.port}`);
+            //     this.triggerSlot("onStarted");
+            // });
+            // this.server = server;
+
+        } catch (e) {
+            console.error("Socket.io Server failed to start:", e);
+            this.status = "failed";
+        }
+    }
+
+    stopServer(callback) {
+        if (this.server) {
+            this.status = "stopping";
+            this.server.close(() => {
+                this.status = "stopped";
+                console.log("Socket.io server stopped.");
+                this.triggerSlot("onStopped");
+                if (callback) callback();
+            });
+        }
+    }
+
+    broadcast(event, data) {
+        if (this.io) {
+            this.io.emit(event, data);
+        }
+    }
+
+    onExecute() {
+        const port = this.getInputOrProperty("port");
+        if (port) this.properties.port = port;
+
+        if (this.status === "stopped" && this.properties.should_autoconnect) {
+            this.startServer();
+        }
+
+        this.setOutputData(0, this.status);
+    }
+
+    onGetInputs() {
+        return [["port", "number"], ["should_autoconnect", "boolean"]];
+    }
+
+    onGetOutputs() {
+        return [["status", "string"], ["onStarted", LiteGraph.EVENT], ["onStopped", LiteGraph.EVENT], ["message", "string"]];
+    }
+
+    triggerSlot(name, data) {
+        console.log(`Event triggered: ${name} ->`, data);
+    }
+}
+
+// Register for LiteGraph
+if (typeof LiteGraph !== "undefined") {
+    LiteGraph.registerNodeType("nodejs/network/socketio_server", SocketIOServerNode);
+}
+
+// Export for Node.js
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+    module.exports = SocketIOServerNode;
+}

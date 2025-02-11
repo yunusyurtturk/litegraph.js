@@ -75,12 +75,14 @@ lib_nodes_files = [
     "./src/nodes/html.js",
     "./src/nodes/watch.js",
     "./src/nodes/litegraph_nodes.js",
+    "./src/nodes/libraries/socketio.js",
     "./src/nodes/others.js",
 ]
 
 lib_nodejs_nodes_files = [
     "./src/nodes/nodejs_only/nodejs_network.js",
     "./src/nodes/nodejs_only/nodejs_network_v2.js",
+    "./src/nodes/nodejs_only/process.js",
 ]
 
 # lib_basicnodes_files = [

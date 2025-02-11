@@ -1180,7 +1180,7 @@ export class LGraphNode {
         this.inputs.forEach((ob_input) => {
             if(ob_input.param_bind){
                 LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
-                if(thisNode.properties && ob_input.name in thisNode.properties){
+                if(thisNode.properties && typeof(thisNode.properties[ob_input.name])!=="undefined"){
                     let inputData = thisNode.getInputData(ob_input.name, LiteGraph?.properties_input_binding_check_ancestors);
                     if(inputData!==null){
                         // thisNode.properties[ob_input.name] = link.data;

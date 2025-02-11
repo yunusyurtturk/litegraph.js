@@ -7,7 +7,7 @@ import { Subgraph, GraphInput, GraphOutput, NodeFunction } from "./subgraph.js";
 import { DragAndScale } from "./dragandscale.js";
 import { ContextMenu } from "./contextmenu.js";
 import { CallbackHandler } from "./callbackhandler.js";
-import { getGlobalObject, setGlobalVariable, getGlobalVariable } from './global.js';
+import { getGlobalObject, setGlobalVariable, getGlobalVariable, isBrowser, isNode, isBun, getRuntime } from './global.js';
 import { LibraryManager } from "./librarymanager.js";
 
 /**
@@ -1250,6 +1250,11 @@ export class LiteGraphClass {
             return n.toFixed(precision).replace(/(\.\d*[1-9])0+$|\.0*$/, '$1');
         }
     }
+
+    getGlobalObject = getGlobalObject; 
+    setGlobalVariable = setGlobalVariable; 
+    getGlobalVariable = getGlobalVariable; 
+    isBrowser = isBrowser;
 }
 
 // !¿ TODO MOVE THESE HELPERS ?!
@@ -1286,6 +1291,7 @@ if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
 // export var getGlobalObject = getGlobalObject;
 // export var setGlobalVariable = setGlobalVariable;
 // export var getGlobalVariable = getGlobalVariable;
+
 
 if(!getGlobalVariable("LiteGraph")){
     setGlobalVariable("LiteGraph", new LiteGraphClass());

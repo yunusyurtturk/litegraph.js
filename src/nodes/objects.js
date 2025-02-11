@@ -747,3 +747,195 @@ class MergeObjects {
     }
 }
 LiteGraph.registerNodeType("objects/merge_objects", MergeObjects);
+
+class ObjectEditorNode {
+    static title = "JSON Editor+";
+    static desc = "Edit JSON and navigate/edit nested properties dynamically.";
+
+    constructor() {
+        this.addInput("set", LiteGraph.ACTION);
+        this.addOutput("data", "object");
+        this.addProperty("value", "{}");  // Entire JSON as a string
+        this.addProperty("selectedProp", ""); // Selected property path
+        this.addProperty("propValue", ""); // Selected property value
+
+        this.widget = this.addWidget("text", "JSON", "{}", "value", this.onJSONChanged.bind(this));
+
+        this.propSelector = this.addWidget("combo", "Property", this.properties.selectedProp, {
+            property: "selectedProp",
+            values: [],
+        });
+
+        this.valueEditor = null; // Will be dynamically created based on value type
+
+        // this.widgets_up = true;
+        this.size = [300, 210];
+        this._parsedValue = {};
+        this._currentPath = ""; // Tracks property path
+    }
+
+    // When JSON is edited
+    onJSONChanged(value) {
+        this.parseJSON(value);
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "value") {
+            this.parseJSON(value);
+        } else if (name === "selectedProp") {
+            this.updateSelectedProperty();
+        }
+    }
+
+    parseJSON(jsonString) {
+        try {
+            this._parsedValue = JSON.parse(jsonString);
+            this.boxcolor = "#4CAF50"; // Green for valid JSON
+            this._currentPath = ""; // Reset path when JSON is updated
+            this.updatePropertyList();
+        } catch (err) {
+            this.boxcolor = "red"; // Red for invalid JSON
+            this._parsedValue = null;
+        }
+        this.updateSelectedProperty();
+        this.setOutputData(0, this._parsedValue);
+    }
+
+    updatePropertyList() {
+        if (!this._parsedValue || typeof this._parsedValue !== "object") {
+            this.propSelector.options.values = [];
+            return;
+        }
+        const keys = Object.keys(this._parsedValue).sort();
+        this.propSelector.options.values = ["", ".."].concat(keys);
+    }
+
+    updateSelectedProperty() {
+        if (!this._parsedValue) {
+            this._currentPath = "";
+            this.properties.selectedProp = "";
+            this.updatePropertyList();
+            this.updateValueEditor("");
+            return;
+        }
+
+        const selectedPath = this.properties.selectedProp;
+
+        if (selectedPath === "..") {
+            // Go back up one level
+            // this._currentPath = this._currentPath.split('.').slice(0, -1).join('.');
+            this.properties.selectedProp = this._currentPath.split('.').slice(0, -1).join('.'); //this._currentPath.split('.').pop() || "";
+            this.updateSelectedProperty();
+            return;
+        }
+
+        this._currentPath = selectedPath;
+        if(this._currentPath == ""){
+            this.updateValueEditor(this._parsedValue);
+            this.updatePropertyList();
+            return;
+        }
+        
+        const propValue = this.getValueByPath(this._parsedValue, this._currentPath);
+        if (propValue === undefined) {
+            // ? this._currentPath = ""; // Reset if path is invalid
+            // this.updatePropertyList();
+            this.updatePropertyListBasedOnPath(null);
+            this.updateValueEditor(""); // this._parsedValue
+            return;
+        }
+
+        this.updatePropertyListBasedOnPath(propValue);
+        this.updateValueEditor(propValue);
+    }
+
+    updatePropertyListBasedOnPath(propValue) {
+        console.debug("UpdateOBWidget",propValue,this.properties,this._currentPath);
+        if (typeof propValue === "object" && propValue !== null) {
+            const subKeys = Object.keys(propValue).sort();
+            if(this._currentPath && this._currentPath != ""){
+                this.propSelector.options.values = ["", ".."];
+            }else{
+                this.propSelector.options.values = [];
+            }
+            this.propSelector.options.values = this.propSelector.options.values.concat(subKeys.map(subKey => `${this._currentPath}.${subKey}`));
+        } else{
+            const precCat = this._currentPath.split(".").slice(0,-1).join(".");
+            const precValue = this.getValueByPath(this._parsedValue, precCat);
+            console.debug("UpdateOBWidget preCat",precCat,precValue);
+            if (typeof precValue === "object" && precValue !== null) {
+                const subKeys = Object.keys(precValue).sort();
+                this.propSelector.options.values = ["", ".."].concat(subKeys.map(subKey => `${precCat}.${subKey}`));
+            }else{
+                this.propSelector.options.values = ["", ".."];
+            }
+        }
+    }
+
+    updateValueEditor(propValue) {
+        if (this.valueEditor) {
+            this.widgets.splice(this.widgets.indexOf(this.valueEditor), 1); // Remove old widget
+        }
+
+        let widgetType = "text";
+        let displayValue = propValue;
+
+        if (typeof propValue === "object") {
+            widgetType = "text"; // Use text area for JSON objects
+            displayValue = JSON.stringify(propValue, null, 2);
+        }
+
+        this.valueEditor = this.addWidget(widgetType, "Edit Value", displayValue, "propValue");
+        this.properties.propValue = displayValue;
+    }
+
+    getValueByPath(obj, path) {
+        return path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    }
+
+    setValueByPath(obj, path, newValue) {
+        const keys = path.split('.');
+        let ref = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (typeof ref[keys[i]] !== "object" || ref[keys[i]] === null) {
+                ref[keys[i]] = {}; // Create sub-object if missing
+            }
+            ref = ref[keys[i]];
+        }
+
+        ref[keys[keys.length - 1]] = this.tryParseValue(newValue);
+    }
+
+    onAction(action, value) {
+        if(action=="set"){
+            this.updatePropertyValue(this.properties.propValue);
+        }
+    }
+
+    updatePropertyValue(value) {
+        if (!this._parsedValue) return;
+
+        // this.setValueByPath(this._parsedValue, this._currentPath, value);
+        this.setValueByPath(this._parsedValue, this._currentPath, value);
+        this.properties.value = JSON.stringify(this._parsedValue, null, 2);
+        this.widget.value = this.properties.value;
+        this.setOutputData(0, this._parsedValue);
+
+        this.updateSelectedProperty(); // Refresh UI
+    }
+
+    tryParseValue(value) {
+        try {
+            return JSON.parse(value);
+        } catch {
+            return value; // Keep as string if parsing fails
+        }
+    }
+
+    onExecute() {
+        this.setOutputData(0, this._parsedValue);
+    }
+}
+
+LiteGraph.registerNodeType("objects/json_editor", ObjectEditorNode);
+
