@@ -191,10 +191,8 @@ export class LiteGraphClass {
 
     // ,"editor_alpha" //= 1; //used for transition
 
-    canRemoveSlots = true;
-    canRemoveSlots_onlyOptional = true;
-    canRenameSlots = true;
-    canRenameSlots_onlyOptional = true;
+    canRemoveSlots = false; // use removable = true in specific slot
+    canRenameSlots = false; // use nameLocked = false in specific slot
 
     ensureNodeSingleExecution = false; // OLD this will prevent nodes to be executed more than once for step (comparing graph.iteration)
     ensureNodeSingleAction = false; // OLD this will prevent nodes to be executed more than once for action call!
