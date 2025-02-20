@@ -18,7 +18,7 @@ class OSCNode {
             localPort: 57120,
             address: "/osc/address",
             useWebSocket: true,
-            webSocketURL: "ws://localhost:8080"
+            webSocketURL: "localhost:8008"
         };
         this._osc = null;
         this._lastReceivedData = null;
@@ -149,7 +149,8 @@ class OSCNode {
                 if (this.isNode) {
                     this._osc.send(message);
                 } else {
-                    this._osc.send(JSON.stringify(message));
+                    // this._osc.send(JSON.stringify(message));
+                    this._osc.send(message);
                 }
                 console.debug("OSC message sent:", message);
             } catch (error) {

@@ -1,5 +1,8 @@
 // WIP (not yet good) TESTING on NODE litegraph-executor
 
+// const { getGlobalObject } = require("../../global");
+// import { LiteGraph } from "../../litegraph.js";
+
 // TODO use librarymanager to include ws
 
 // conditional include (only on server)
@@ -30,7 +33,8 @@ LiteGraph.LibraryManager.registerLibrary({
     browser: { },
     server: { 
         npm: "socket.io" // server-side package for Node.js
-    }
+    },
+    defaultExport: "Server"
 });
 LiteGraph.LibraryManager.loadLibrary("socket.io");
 
@@ -238,25 +242,10 @@ class LocalWebSocketServer {
     onGetOutputs() {
         return [["status", "string"], ["onStarted", LiteGraph.EVENT], ["onStopped", LiteGraph.EVENT]];
     }
-
-    // Placeholder methods to avoid errors
-    /* getInputOrProperty(name) {
-        return this.properties[name];
-    }
-
-    setOutputData(slot, data) {
-        console.log(`Output slot ${slot} set to ${data}`);
-    }
-
-    triggerSlot(eventName) {
-        console.log(`Event triggered: ${eventName}`);
-    } */
 }
 
 // Register the node type for LiteGraph
-if (typeof LiteGraph !== 'undefined') {
-    LiteGraph.registerNodeType("nodejs/network/websocket_server", LocalWebSocketServer);
-}
+LiteGraph.registerNodeType("nodejs/network/websocket_server", LocalWebSocketServer);
 
 // Export the class for Node.js
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
@@ -523,13 +512,6 @@ class SocketIOServerNode {
 
             console.log(`Socket.io constructed ${this.io}...`);
 
-            // server.listen(this.properties.port, () => {
-            //     this.status = "running";
-            //     console.log(`Socket.io server listening on port ${this.properties.port}`);
-            //     this.triggerSlot("onStarted");
-            // });
-            // this.server = server;
-
         } catch (e) {
             console.error("Socket.io Server failed to start:", e);
             this.status = "failed";
@@ -579,11 +561,298 @@ class SocketIOServerNode {
 }
 
 // Register for LiteGraph
-if (typeof LiteGraph !== "undefined") {
-    LiteGraph.registerNodeType("nodejs/network/socketio_server", SocketIOServerNode);
-}
+LiteGraph.registerNodeType("nodejs/network/socketio_server", SocketIOServerNode);
 
 // Export for Node.js
 if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
     module.exports = SocketIOServerNode;
+}
+
+
+// --------------------- OSC -----------------------
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "osc-js-node",
+    version: "2.4.1",
+    globalObject: "oscnode",
+    // browser: { remote: "https://cdn.jsdelivr.net/npm/osc-js@2.4.1/lib/osc.min.js" },
+    server: { npm: "osc-js" },
+    defaultExport: "OSC"
+});
+LiteGraph.LibraryManager.loadLibrary("osc-js-node");
+
+class OSCBridge {
+    static title = "OSC Bridge";
+    static desc = "Creates an OSC bridge";
+
+    constructor() {
+        this.addOutput("status", "string");
+        this.addOutput("onStarted", LiteGraph.EVENT);
+        this.addOutput("onStopped", LiteGraph.EVENT);
+        this.addOutput("message", "object"); // OSC messages
+
+        this.properties = {
+            UDPPort: 8001,
+            WSSPort: 8008,
+            should_autoconnect: true
+        };
+
+        this.server = null;
+        this.osc = null;
+        this.status = "stopped"; // stopped, starting, running, stopping, failed
+
+        if (typeof process === "undefined" || process.browser) {
+            console.warn("OSC Server Node is designed to run in Node.js.");
+            this.boxcolor = "#FF0000";
+            this.title = "OSC (run on server)";
+        } else if (this.properties.should_autoconnect) {
+            this.startServer();
+        }
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "port" && this.status === "running") {
+            this.stopServer(() => {
+                this.properties.port = value;
+                this.startServer();
+            });
+        } else {
+            this.properties[name] = value;
+        }
+    }
+
+    startServer() {
+        let OSC = LiteGraph.getGlobalVariable("oscnode");
+        if (typeof OSC === "undefined" || !OSC) {
+            console.warn("Please install the 'osc' library.");
+            return;
+        }
+
+        if (this.status === "starting" || this.status === "running") {
+            console.log("OSC server is already running.");
+            return;
+        }
+
+        this.status = "starting";
+        console.log(`Starting OSC server on port ${this.properties.UDPPort}...`);
+
+        try {
+            // const { UDPPort } = osc;
+            // this.server = new UDPPort({
+            //     localAddress: "0.0.0.0",
+            //     localPort: this.properties.port
+            // });
+            const config = { udpClient: { port: this.properties.UDPPort } }
+            this.server = new OSC({ plugin: new OSC.BridgePlugin(config) })
+
+            this.server.on("message", (oscMsg) => {
+                console.log("Received OSC message:", oscMsg);
+                this.triggerSlot("message", oscMsg);
+            });
+
+            this.server.on("error", (err) => {
+                console.error("OSC Server Error:", err);
+                this.status = "failed";
+            });
+
+            this.server.open();
+
+            this.server.on("ready", () => {
+                console.log(`OSC server is running on port ${this.properties.port}`);
+                this.status = "running";
+                this.triggerSlot("onStarted");
+            });
+
+        } catch (e) {
+            console.error("OSC Server failed to start:", e);
+            this.status = "failed";
+        }
+    }
+
+    stopServer(callback) {
+        if (this.server) {
+            this.status = "stopping";
+            this.server.close(() => {
+                this.status = "stopped";
+                console.log("OSC server stopped.");
+                this.triggerSlot("onStopped");
+                if (callback) callback();
+            });
+        }
+    }
+
+    onExecute() {
+        const port = this.getInputOrProperty("port");
+        if (port) this.properties.port = port;
+
+        if (this.status === "stopped" && this.properties.should_autoconnect) {
+            this.startServer();
+        }
+
+        this.setOutputData(0, this.status);
+    }
+
+    onGetInputs() {
+        return [["port", "number"], ["should_autoconnect", "boolean"]];
+    }
+
+    onGetOutputs() {
+        return [["status", "string"], ["onStarted", LiteGraph.EVENT], ["onStopped", LiteGraph.EVENT], ["message", "object"]];
+    }
+}
+
+// Register for LiteGraph
+if (typeof LiteGraph !== "undefined") {
+    LiteGraph.registerNodeType("nodejs/network/osc_bridge", OSCBridge);
+}
+// Export for Node.js
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+    module.exports = OSCBridge;
+}
+
+class OSCServerNode {
+    static title = "OSC Server";
+    static desc = "Creates an OSC server";
+
+    constructor() {
+        this.addOutput("status", "string");
+        this.addOutput("onStarted", LiteGraph.EVENT);
+        this.addOutput("onStopped", LiteGraph.EVENT);
+        this.addOutput("onMessage", LiteGraph.EVENT);
+        this.addOutput("message", "object");
+
+        this.properties = {
+            open_port: 8001,
+            open_host: "localhost",
+            send_port: 8002,
+            send_host: "localhost",
+            should_autoconnect: true
+        };
+
+        this.server = null;
+        this.osc = null;
+        this.status = "stopped"; // stopped, starting, running, stopping, failed
+
+        if (typeof process === "undefined" || process.browser) {
+            console.warn("OSC Server Node is designed to run in Node.js.");
+            this.boxcolor = "#FF0000";
+            this.title = "OSC (run on server)";
+        } else if (this.properties.should_autoconnect) {
+            this.startServer();
+        }
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "UDPPort" && this.status === "running") {
+            this.stopServer(() => {
+                this.properties.UDPPort = value;
+                this.startServer();
+            });
+        } else {
+            this.properties[name] = value;
+        }
+    }
+
+    startServer() {
+        if(LiteGraph.LibraryManager.getLibraryState("osc-js-node")!=="loaded"){
+            return;
+        }
+        const OSC = LiteGraph.getGlobalVariable("oscnode");
+        if (typeof OSC === "undefined" || !OSC) {
+            console.warn("Please install the 'osc-js' library.");
+            return;
+        }
+
+        if (this.status === "starting" || this.status === "running") {
+            console.log("OSC server is already running.");
+            return;
+        }
+
+        this.status = "starting";
+        console.log(`Starting OSC server on UDP port ${this.properties.UDPPort}...`);
+
+        try {
+            const dgramOpts = {
+                                open:{host: this.properties.open_host, port: this.properties.open_port},
+                                send:{host: this.properties.send_host, port: this.properties.send_port},
+                            };
+            this.server = new OSC({ plugin: new OSC.DatagramPlugin(dgramOpts) });
+
+            this.server.on("open", () => {
+                console.log(`OSC server is running on UDP ${this.properties.open_host} port ${this.properties.open_port}`);
+                this.status = "running";
+                this.triggerSlot("onStarted");
+            });
+
+            this.server.on("message", (message) => {
+                console.log("Received OSC message:", message);
+                this.setOutputData("message", message);
+                this.triggerSlot("onMessage");
+            });
+
+            this.server.on("*", (message) => {
+                console.log("Received OSC message:", message);
+                this.setOutputData("message", message);
+                this.triggerSlot("onMessage");
+            });
+
+            this.server.on("error", (err) => {
+                console.error("OSC Server Error:", err);
+                this.status = "failed";
+            });
+
+            this.server.open({ port: this.properties.open_port, host: this.properties.open_host});
+
+        } catch (e) {
+            console.error("OSC Server failed to start:", e);
+            this.status = "failed";
+        }
+    }
+
+    stopServer(callback) {
+        if (this.server) {
+            this.status = "stopping";
+            this.server.close(() => {
+                this.status = "stopped";
+                console.log("OSC server stopped.");
+                this.triggerSlot("onStopped");
+                if (callback) callback();
+            });
+        }
+    }
+
+    // sendOSCMessage(address, args = []) {
+    //     if (this.server && this.status === "running") {
+    //         const OSC = LiteGraph.getGlobalVariable("oscnode");
+    //         const message = new OSC.Message(address, ...args);
+    //         this.server.send(message);
+    //         console.log("Sent OSC message:", message);
+    //     } else {
+    //         console.warn("OSC server is not running. Cannot send message.");
+    //     }
+    // }
+
+    onExecute() {
+        if (this.status === "stopped" && this.properties.should_autoconnect) {
+            this.startServer();
+        }
+        this.setOutputData(0, this.status);
+    }
+
+    // onAction(){
+    //     const address = this.getInputData("send_address");
+    //     const data = this.getInputData("send_data");
+    //     if (address && data) {
+    //         this.sendOSCMessage(address, data);
+    //     }else{
+    //         console.debug("missing data to send OSC",address,data);
+    //     }
+    // }
+}
+
+// Register for LiteGraph
+LiteGraph.registerNodeType("nodejs/network/osc_server", OSCServerNode);
+// Export for Node.js
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+    module.exports = OSCServerNode;
 }
