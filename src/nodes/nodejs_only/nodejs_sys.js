@@ -44,8 +44,14 @@ LiteGraph.LibraryManager.registerLibrary({
     server: { npm: "ps-list" }
 });
 
+LiteGraph.LibraryManager.registerLibrary({
+    key: "child_process",
+    globalObject: "child_process",
+    server: { npm: "child_process" }
+});
+
 // Load libraries at runtime
-["os", "fs", "diskusage", "node-os-utils", "ps-list"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
+["os", "fs", "diskusage", "node-os-utils", "ps-list", "child_process"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
 
 /**
  * SysUtil_InfoNode - Retrieves System Information (OS, CPU, Memory, Network, Disk)
@@ -207,3 +213,133 @@ class SysUtil_ProcessListNode {
     }
 }
 LiteGraph.registerNodeType("sys/processList", SysUtil_ProcessListNode);
+
+
+class SysUtil_RunCommandNode {
+    static title = "Run Command";
+    static desc = "Executes a shell command and returns the output.";
+
+    constructor() {
+        this.addInput("run", LiteGraph.ACTION);
+        this.addInput("command", "string", { param_bind: true });
+        this.addInput("timeout", "number", { param_bind: true });
+        this.addInput("keepRunning", "boolean", { param_bind: true });
+        this.addInput("killPrevious", "boolean", { param_bind: true });
+
+        this.addOutput("stdout", "string");
+        this.addOutput("stderr", "string");
+        this.addOutput("exitCode", "number");
+        this.addOutput("processInstance", "object");
+        this.addOutput("onData", LiteGraph.EVENT);
+        this.addOutput("onClose", LiteGraph.EVENT);
+        this.addOutput("onError", LiteGraph.EVENT);
+
+        this.properties = {
+            command: "",
+            timeout: 12000, // Default timeout: 12 seconds
+            keepRunning: false,
+            killPrevious: true // Determines if previous process should be terminated
+        };
+
+        this.process = null; // Track running process
+    }
+
+    onGetOutputs() {
+        return [
+            ["stdout", "string"],
+            ["stderr", "string"],
+            ["exitCode", "number"],
+            ["processInstance", "object"],
+            ["onData", LiteGraph.EVENT],
+            ["onClose", LiteGraph.EVENT],
+            ["onError", LiteGraph.EVENT]
+        ].filter(([key]) => !this.outputs.some(o => o.name === key));
+    }
+
+    onAction(action) {
+        if (action === "run") {
+            this.executeCommand();
+        }
+    }
+
+    async executeCommand() {
+        let child_process = NodeJsSysHelper.getLib("child_process");
+        if (!child_process) {
+            NodeJsSysHelper.logError(this.title, "Missing child_process module.");
+            return;
+        }
+
+        let command = this.getInputOrProperty("command");
+        let timeout = this.getInputOrProperty("timeout") || this.properties.timeout;
+        let keepRunning = this.getInputOrProperty("keepRunning") || this.properties.keepRunning;
+        let killPrevious = this.getInputOrProperty("killPrevious") || this.properties.killPrevious;
+
+        if (!command) {
+            NodeJsSysHelper.logError(this.title, "No command specified.");
+            return;
+        }
+
+        try {
+            if (this.process && killPrevious) {
+                this.process.kill(); // Ensure any previous process is terminated
+                this.process = null;
+            }
+
+            if (keepRunning) {
+                this.runPersistentCommand(command, child_process);
+            } else {
+                this.runSingleExecution(command, timeout, child_process);
+            }
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, error);
+        }
+    }
+
+    runSingleExecution(command, timeout, child_process) {
+        child_process.exec(command, { timeout }, (error, stdout, stderr) => {
+            const out = stdout?.toString().trim() || "";
+            const err = stderr?.toString().trim() || "";
+            this.setOutputData("stdout", out);
+            this.setOutputData("stderr", err);
+            this.setOutputData("exitCode", error ? error.code : 0);
+            this.triggerSlot("onData");
+            this.triggerSlot("onClose");
+            
+            if (error) {
+                this.setOutputData("stderr", "Error "+this.title+" :: "+(error.message || error) + (err ? " :: stderr: "+err : ""));
+                this.triggerSlot("onError");
+                NodeJsSysHelper.logError(this.title, error);
+            }
+        });
+    }
+
+    runPersistentCommand(command, child_process) {
+        this.process = child_process.spawn(command, { shell: true });
+
+        this.setOutputData("processInstance", this.process);
+
+        this.process.stdout.on("data", (data) => {
+            this.setOutputData("stdout", data.toString().trim());
+            this.triggerSlot("onData");
+        });
+
+        this.process.stderr.on("data", (data) => {
+            this.setOutputData("stderr", data.toString().trim());
+            this.triggerSlot("onError");
+        });
+
+        this.process.on("close", (code) => {
+            this.setOutputData("exitCode", code);
+            this.triggerSlot("onClose");
+            this.process = null;
+        });
+
+        this.process.on("error", (error) => {
+            this.setOutputData("stderr", "Error "+this.title+" :: "+(error.message || error));
+            this.triggerSlot("onError");
+            NodeJsSysHelper.logError(this.title, error);
+            this.process = null;
+        });
+    }
+}
+LiteGraph.registerNodeType("sys/runCommand", SysUtil_RunCommandNode);
