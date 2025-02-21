@@ -343,3 +343,301 @@ class SysUtil_RunCommandNode {
     }
 }
 LiteGraph.registerNodeType("sys/runCommand", SysUtil_RunCommandNode);
+
+
+// class SysUtil_FileSystemNode {
+//     static title = "File System";
+//     static desc = "Performs file operations: Read, Write, Delete, Check Exists, List Directory";
+
+//     constructor() {
+//         this.addInput("do", LiteGraph.ACTION);
+//         this.addInput("filePath", "string", { param_bind: true });
+//         this.addInput("content", "string", { param_bind: true });
+//         this.addInput("action", "string", { param_bind: true }); // "read", "write", "delete", "exists", "list"
+
+//         this.addOutput("fileContent", "string");
+//         this.addOutput("fileList", "array");
+//         this.addOutput("exists", "boolean");
+//         this.addOutput("onSuccess", LiteGraph.EVENT);
+//         this.addOutput("onError", LiteGraph.EVENT);
+
+//         this.properties = {
+//             defaultFilePath: "",
+//             defaultContent: "",
+//             defaultAction: "read" // Default file action
+//         };
+
+//         this.fs = null; // Track File System module
+//     }
+
+//     onGetOutputs() {
+//         return [
+//             ["fileContent", "string"],
+//             ["fileList", "array"],
+//             ["exists", "boolean"],
+//             ["onSuccess", LiteGraph.EVENT],
+//             ["onError", LiteGraph.EVENT]
+//         ].filter(([key]) => !this.outputs.some(o => o.name === key));
+//     }
+
+//     onAction(action) {
+//         if (action === "do") {
+//             this.handleFileOperation();
+//         }
+//     }
+
+//     async handleFileOperation() {
+//         this.fs = NodeJsSysHelper.getLib("fs");
+//         if (!this.fs) {
+//             NodeJsSysHelper.logError(this.title, "Missing fs module.");
+//             return;
+//         }
+
+//         let filePath = this.getInputOrProperty("filePath") || this.properties.defaultFilePath;
+//         let content = this.getInputOrProperty("content") || this.properties.defaultContent;
+//         let action = this.getInputOrProperty("action") || this.properties.defaultAction;
+
+//         if (!filePath) {
+//             NodeJsSysHelper.logError(this.title, "No file path specified.");
+//             return;
+//         }
+
+//         try {
+//             switch (action) {
+//                 case "read":
+//                     this.readFile(filePath);
+//                     break;
+//                 case "write":
+//                     this.writeFile(filePath, content);
+//                     break;
+//                 case "delete":
+//                     this.deleteFile(filePath);
+//                     break;
+//                 case "exists":
+//                     this.checkFileExists(filePath);
+//                     break;
+//                 case "list":
+//                     this.listDirectory(filePath);
+//                     break;
+//                 default:
+//                     NodeJsSysHelper.logError(this.title, `Unknown action: ${action}`);
+//             }
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, error);
+//             this.triggerSlot("onError");
+//         }
+//     }
+
+//     readFile(filePath) {
+//         try {
+//             let data = this.fs.readFileSync(filePath, "utf8");
+//             this.setOutputData("fileContent", data);
+//             this.triggerSlot("onSuccess");
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, `Error reading file: ${filePath}`);
+//             this.triggerSlot("onError");
+//         }
+//     }
+
+//     writeFile(filePath, content) {
+//         try {
+//             this.fs.writeFileSync(filePath, content, "utf8");
+//             this.triggerSlot("onSuccess");
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, `Error writing to file: ${filePath}`);
+//             this.triggerSlot("onError");
+//         }
+//     }
+
+//     deleteFile(filePath) {
+//         try {
+//             if (this.fs.existsSync(filePath)) {
+//                 this.fs.unlinkSync(filePath);
+//                 this.triggerSlot("onSuccess");
+//             } else {
+//                 NodeJsSysHelper.logError(this.title, `File not found: ${filePath}`);
+//                 this.triggerSlot("onError");
+//             }
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, `Error deleting file: ${filePath}`);
+//             this.triggerSlot("onError");
+//         }
+//     }
+
+//     checkFileExists(filePath) {
+//         try {
+//             let exists = this.fs.existsSync(filePath);
+//             this.setOutputData("exists", exists);
+//             this.triggerSlot("onSuccess");
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, `Error checking file: ${filePath}`);
+//             this.triggerSlot("onError");
+//         }
+//     }
+
+//     listDirectory(filePath) {
+//         try {
+//             if (!this.fs.existsSync(filePath) || !this.fs.lstatSync(filePath).isDirectory()) {
+//                 NodeJsSysHelper.logError(this.title, `Directory not found: ${filePath}`);
+//                 this.triggerSlot("onError");
+//                 return;
+//             }
+//             let files = this.fs.readdirSync(filePath);
+//             this.setOutputData("fileList", files);
+//             this.triggerSlot("onSuccess");
+//         } catch (error) {
+//             NodeJsSysHelper.logError(this.title, `Error listing directory: ${filePath}`);
+//             this.triggerSlot("onError");
+//         }
+//     }
+// }
+// LiteGraph.registerNodeType("sys/fileSystem", SysUtil_FileSystemNode);
+
+class SysUtil_FileBaseNode {
+    constructor(actionTitle, actionDesc) {
+        this.title = actionTitle;
+        this.desc = actionDesc;
+
+        this.addInput("do", LiteGraph.ACTION);
+        this.addInput("filePath", "string", { param_bind: true });
+
+        this.addOutput("onSuccess", LiteGraph.EVENT);
+        this.addOutput("onError", LiteGraph.EVENT);
+
+        this.properties = {
+            filePath: ""
+        };
+    }
+
+    onAction(action) {
+        if (action === "do") {
+            this.handleFileOperation();
+        }
+    }
+
+    async handleFileOperation() {
+        let fs = NodeJsSysHelper.getLib("fs");
+        if (!fs) return;
+
+        let filePath = this.getInputOrProperty("filePath");
+        if (!filePath) {
+            NodeJsSysHelper.logError(this.title, "No file path specified.");
+            this.triggerSlot("onError");
+            return;
+        }
+
+        this.performOperation(fs, filePath);
+    }
+
+    performOperation(fs, filePath) {
+        throw new Error("performOperation must be implemented by subclasses");
+    }
+}
+
+class SysUtil_FileReadNode extends SysUtil_FileBaseNode {
+    constructor() {
+        super("Read File", "Reads content from a file.");
+        this.addOutput("fileContent", "string");
+    }
+
+    performOperation(fs, filePath) {
+        try {
+            let data = fs.readFileSync(filePath, "utf8");
+            this.setOutputData("fileContent", data);
+            this.triggerSlot("onSuccess");
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error reading file: ${filePath}`);
+            this.triggerSlot("onError");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/fileRead", SysUtil_FileReadNode);
+
+
+class SysUtil_FileWriteNode extends SysUtil_FileBaseNode {
+    constructor() {
+        super("Write File", "Writes content to a file.");
+        this.addInput("content", "string", { param_bind: true });
+        this.properties.content = "";
+    }
+
+    performOperation(fs, filePath) {
+        let content = this.getInputOrProperty("content");
+        try {
+            fs.writeFileSync(filePath, content, "utf8");
+            this.triggerSlot("onSuccess");
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error writing to file: ${filePath}`);
+            this.triggerSlot("onError");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/fileWrite", SysUtil_FileWriteNode);
+
+
+class SysUtil_FileDeleteNode extends SysUtil_FileBaseNode {
+    constructor() {
+        super("Delete File", "Deletes a file.");
+    }
+
+    performOperation(fs, filePath) {
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                this.triggerSlot("onSuccess");
+            } else {
+                NodeJsSysHelper.logError(this.title, `File not found: ${filePath}`);
+                this.triggerSlot("onError");
+            }
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error deleting file: ${filePath}`);
+            this.triggerSlot("onError");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/fileDelete", SysUtil_FileDeleteNode);
+
+
+class SysUtil_FileExistsNode extends SysUtil_FileBaseNode {
+    constructor() {
+        super("File Exists", "Checks if a file exists.");
+        this.addOutput("exists", "boolean");
+    }
+
+    performOperation(fs, filePath) {
+        try {
+            let exists = fs.existsSync(filePath);
+            this.setOutputData("exists", exists);
+            this.triggerSlot("onSuccess");
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error checking file: ${filePath}`);
+            this.triggerSlot("onError");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/fileExists", SysUtil_FileExistsNode);
+
+
+class SysUtil_FileListNode extends SysUtil_FileBaseNode {
+    constructor() {
+        super("List Directory", "Lists files in a directory.");
+        this.addOutput("fileList", "array");
+    }
+
+    performOperation(fs, filePath) {
+        try {
+            if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isDirectory()) {
+                NodeJsSysHelper.logError(this.title, `Directory not found: ${filePath}`);
+                this.triggerSlot("onError");
+                return;
+            }
+            let files = fs.readdirSync(filePath);
+            this.setOutputData("fileList", files);
+            this.triggerSlot("onSuccess");
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error listing directory: ${filePath}`);
+            this.triggerSlot("onError");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/fileList", SysUtil_FileListNode);
