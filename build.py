@@ -83,6 +83,7 @@ lib_nodejs_nodes_files = [
     "./src/nodes/nodejs_only/nodejs_network.js",
     "./src/nodes/nodejs_only/nodejs_network_v2.js",
     "./src/nodes/nodejs_only/process.js",
+    "./src/nodes/nodejs_only/nodejs_sys.js",
 ]
 
 # lib_basicnodes_files = [

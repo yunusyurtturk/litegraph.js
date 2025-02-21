@@ -8,6 +8,10 @@ import { getGlobalObject, setGlobalVariable, getGlobalVariable } from './global.
 // fs
 // vm
 // node-fetch
+// ws
+// http
+// socket-io
+// socket-io-client
 
 export class LibraryManager {
     constructor() {
@@ -53,7 +57,7 @@ export class LibraryManager {
         let library = {};
 
         if (typeof args[0] === "object" && !Array.isArray(args[0])) {
-            const { key, version, globalObject, browser = {}, server = {} } = args[0];
+            const { key, version, globalObject, browser = {}, server = {}, defaultExport } = args[0];
 
             library = {
                 key,
@@ -63,9 +67,10 @@ export class LibraryManager {
                 remoteUrls: this.ensureArray(browser.remote),
                 npmPackages: this.ensureArray(server.npm),
                 serverRemoteUrls: this.ensureArray(server.remote),
+                defaultExport
             };
         } else {
-            const [key, version, globalObject, localPaths, remoteUrls, npmPackages, serverRemoteUrls] = args;
+            const [key, version, globalObject, localPaths, remoteUrls, npmPackages, serverRemoteUrls, defaultExport] = args;
 
             library = {
                 key,
@@ -75,6 +80,7 @@ export class LibraryManager {
                 remoteUrls: this.ensureArray(remoteUrls),
                 npmPackages: this.ensureArray(npmPackages),
                 serverRemoteUrls: this.ensureArray(serverRemoteUrls),
+                defaultExport
             };
         }
 
@@ -197,15 +203,28 @@ export class LibraryManager {
             try {
                 let modX = null;
                 modX = await import(npmPackage);
-                loadedModules.push(modX);
+
+                modX = modX?.default ?? modX;
+
                 if (library.globalObject && library.globalObject !== "") {
+                    if(library.defaultExport && typeof(modX)=="object"){
+                        if(typeof(modX[library.defaultExport])!=="undefined"){
+                            modX = modX[library.defaultExport];
+                            console.debug(`Library ${npmPackage} got from default export`, modX);
+                        }else{
+                            console.warn(`Library ${npmPackage} NOT FOUND default export`, modX);
+                        }
+                    }
                     setGlobalVariable(library.globalObject, modX);
                     // TODO save in local libs modX;
                     console.log(`Included package: ${npmPackage} as global ${library.globalObject}`);
-                    console.log(`${modX}}`);
+                    // console.log(`${modX}}`);
                 }else{
                     console.log(`NOT Included package: ${npmPackage} as global ${library.globalObject} result ${modX} of ${loadedModules}`);
                 }
+                
+                loadedModules.push(modX);
+
             } catch (error) {
                 console.warn(`Failed to import NPM package: ${npmPackage}`, error);
 
@@ -246,6 +265,15 @@ export class LibraryManager {
         return loadedModules;
     }
 
+    getLib(libKey) {
+        if (this.getLibraryState(libKey) != "loaded") {
+            console.warn(`[NodeJsSys] Library '${libKey}' is not loaded. Attempting to load...`);
+            this.loadLibrary(libKey);
+            return null;
+        }
+        const library = this.libraries_known[libKey];
+        return library ? getGlobalVariable(library.globalObject) || null : null;
+    }
 
     async loadServerRemoteScript(url) {
         if (!this.fetch || !this.vm) throw new Error("Node.js modules 'fetch' and 'vm' are required.");
