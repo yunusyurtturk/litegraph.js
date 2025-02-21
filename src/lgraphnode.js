@@ -2909,150 +2909,128 @@ export class LGraphNode {
     }
 
     /**
-    * syncObjectByProperty will ensure using the right index for node inputs and outputs when onConfigure (de-serializing) 
-    * @param {*} ob_from 
-    * @param {*} ob_dest 
-    * @param {*} property 
-    * @param {*} optsIn 
-    * @returns {object} return the result object and differences if found
-    */
+     * syncObjectByProperty will ensure using the right index for node inputs and outputs during configuration (de-serialization).
+     * It now handles duplicate slots by grouping them by the given property, comparing their counts, and then matching accordingly.
+     * 
+     * @param {Array} ob_from - The new/source array of objects.
+     * @param {Array} ob_dest - The current/destination array of objects.
+     * @param {string} property - The property name used for matching.
+     * @param {object} optsIn - Optional parameters (e.g. fallback_checks, only_in_source behavior).
+     * @returns {object} An object containing the new destination array, a mapping of source-to-dest indices, and lists of items only in source or target.
+     */
     syncObjectByProperty(ob_from, ob_dest, property, optsIn) {
-        var optsDef = {
+        // Default options: if an object exists only in source, append it;
+        // fallback_checks is an array of alternative property names to try when direct matching fails.
+        const optsDef = {
             only_in_source: "append",
-            // only_in_dest: "keep"
-            fallback_checks: [
-                {name: "type"}
-            ]
+            fallback_checks: [{ name: "type" }]
         };
-        var opts = Object.assign({}, optsDef, optsIn);
+        const opts = Object.assign({}, optsDef, optsIn);
         
-        if (ob_from === null || !ob_from) ob_from = [];
-        if (ob_dest === null || !ob_dest) ob_dest = [];
-        var new_dest = [];
-
-        let keys_remap = {};
-
-        let only_in_target = ob_dest.filter(input => !ob_from.some(srcInput => srcInput[property] === input[property]));
-        /* if (opts.only_in_dest !== "keep") {
-            new_dest = ob_dest.filter(input => ob_from.some(srcInput => srcInput[property] === input[property]) || opts.only_in_dest === "keep");
-        } */
-
-        let sourceUsedIds = [];
-        let aNotFoundInSource = [];
-        // cycle dest, for each cycle source for matching
-        ob_dest.forEach((destInput, destIndex) => {
-            let hasChangedIndex = false;
-            let foundInSource = false;
-            ob_from.forEach((sourceInput, sourceIndex) => {
-                if(foundInSource) return;
-                if(sourceUsedIds.includes(sourceIndex)){
-                    LiteGraph.log_verbose("syncObjectByProperty", "skip used", sourceInput, sourceIndex);
-                }else if(sourceInput[property] === destInput[property]){
-                    foundInSource = true;
-                    sourceUsedIds.push(sourceIndex);
-                    new_dest[destIndex] = LiteGraph.cloneObject(sourceInput);
-                    if(destIndex!=sourceIndex){
-                        LiteGraph.log_debug("syncObjectByProperty", "push SHIFTED", destInput[property], destInput, sourceIndex, destIndex);
-                        hasChangedIndex = true;
-                        keys_remap[sourceIndex] = destIndex;
-                    }else{
-                        LiteGraph.log_verbose("syncObjectByProperty", "found ok, same index", destInput[property], sourceInput, destIndex);
-                    }
-                }
-            });
-            if(!foundInSource){ //} && !hasChangedIndex){
-                aNotFoundInSource.push({ob: destInput, index: destIndex});
-                // TODO: should check link ?!
-                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
-            }
+        // Ensure input arrays are defined
+        ob_from = ob_from || [];
+        ob_dest = ob_dest || [];
+        
+        const new_dest = [];
+        const keys_remap = {};       // Maps source index -> new destination index
+        const only_in_source = [];   // Items in source but not in dest
+        const only_in_target = [];   // Items in dest that couldn’t be matched by source
+        
+        // Group objects from both arrays by the matching property.
+        const groupFrom = {};
+        ob_from.forEach((item, index) => {
+            const keyVal = item[property];
+            if (!groupFrom[keyVal]) groupFrom[keyVal] = [];
+            groupFrom[keyVal].push({ index, item });
         });
-        if(aNotFoundInSource.length){
-            if(!opts.fallback_checks.length){
-                aNotFoundInSource.forEach((ob, i) => {
-                    LiteGraph.log_debug("syncObjectByProperty", "!using fallback checks", "push !foundInSource", ob.ob[property], ob);
-                    new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
-                });
-            }else{
-                aNotFoundInSource.forEach((ob, i) => {
-                    let destInput = ob.ob;
-                    let destIndex = ob.index;
-                    // LiteGraph.log_warn("syncObjectByProperty", "CHECKING", destIndex, destInput);
-                    let foundInSource = false;
-                    let hasChangedIndex = false;
-                    opts.fallback_checks.forEach((checkX, ckI) => {
-                        if(foundInSource) return;
-                        ob_from.forEach((sourceInput, sourceIndex) => {
-                            if(foundInSource) return;
-                            if(sourceUsedIds.includes(sourceIndex)){
-                                LiteGraph.log_verbose("syncObjectByProperty", "aNotFoundInSource skip used slot", sourceInput, sourceIndex);
-                            }else if(
-                                sourceInput[checkX.name] === destInput[checkX.name]
-                                // && (!checkX.dest_valid || )
-                            ){
-                                foundInSource = true;
-                                sourceUsedIds.push(sourceIndex);
-                                new_dest[destIndex] = LiteGraph.cloneObject(sourceInput);
-                                LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource", checkX, "push SHIFTED", destInput[checkX], destInput, sourceIndex, destIndex);
-                                hasChangedIndex = true;
-                                keys_remap[sourceIndex] = destIndex;
+        
+        const groupDest = {};
+        ob_dest.forEach((item, index) => {
+            const keyVal = item[property];
+            if (!groupDest[keyVal]) groupDest[keyVal] = [];
+            groupDest[keyVal].push({ index, item });
+        });
+        
+        // Keep track of which source indices have been used
+        const usedSource = new Set();
+        
+        // Process each group present in the destination array.
+        Object.keys(groupDest).forEach(keyVal => {
+            const destGroup = groupDest[keyVal]; // array of { index, item } in destination
+            const srcGroup = groupFrom[keyVal] || []; // corresponding group in source (may be empty)
+            const commonCount = Math.min(srcGroup.length, destGroup.length);
+            
+            // For the "common" ones, assign source items (cloned) to the corresponding destination index.
+            for (let i = 0; i < commonCount; i++) {
+                const srcEntry = srcGroup[i];
+                const destEntry = destGroup[i];
+                new_dest[destEntry.index] = LiteGraph.cloneObject(srcEntry.item);
+                keys_remap[srcEntry.index] = destEntry.index;
+                usedSource.add(srcEntry.index);
+            }
+            
+            // For extra destination slots in this group, try fallback matching:
+            if (destGroup.length > srcGroup.length) {
+                for (let i = srcGroup.length; i < destGroup.length; i++) {
+                    const destEntry = destGroup[i];
+                    let matched = false;
+                    // Search through all unmatched source items for a fallback match.
+                    for (let srcIndex = 0; srcIndex < ob_from.length; srcIndex++) {
+                        if (usedSource.has(srcIndex)) continue;
+                        const srcItem = ob_from[srcIndex];
+                        for (let fallback of opts.fallback_checks) {
+                            if (srcItem[fallback.name] === destEntry.item[fallback.name]) {
+                                new_dest[destEntry.index] = LiteGraph.cloneObject(srcItem);
+                                keys_remap[srcIndex] = destEntry.index;
+                                usedSource.add(srcIndex);
+                                matched = true;
+                                break;
                             }
-                        });
-                    });
-                    if(!foundInSource){
-                        LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource, push !foundInSource",ob.ob[property],ob);
-                        new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                        }
+                        if (matched) break;
                     }
-                });
-            }
-        }
-
-        // check only in source
-        /* let only_in_source = ob_from.filter(input => !ob_dest.some(destInput => destInput[property] === input[property]));
-        if (opts.only_in_source === "append" && only_in_source.length) {
-            LiteGraph.log_debug("syncObjectByProperty", "push only_in_source", only_in_source);
-            new_dest.push(...only_in_source);
-        } */
-        let destUsedIds = [];
-        // cycle source, for each cycle dest
-        let only_in_source = [];
-        ob_from.forEach((sourceInput, sourceIndex) => {
-            let foundInDest = false;
-            if(sourceUsedIds.includes(sourceIndex)){
-                return;
-            }
-            ob_dest.forEach((destInput, destIndex) => {
-                if(foundInDest) return;
-                if(destUsedIds.includes(destIndex)){
-                    LiteGraph.log_verbose("syncObjectByProperty", "only_in_source", "skip checked slot", sourceInput, sourceIndex);
-                }else if(sourceInput[property] === destInput[property]){
-                    destUsedIds.push(destIndex);
-                    foundInDest = true;
+                    if (!matched) {
+                        // No fallback match: retain the destination item.
+                        new_dest[destEntry.index] = LiteGraph.cloneObject(destEntry.item);
+                        only_in_target.push(destEntry.item);
+                    }
                 }
-            });
-            if(!foundInDest){
-                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
-                LiteGraph.log_debug("syncObjectByProperty", "push only_in_source", sourceInput[property], sourceInput);
-                new_dest.push(LiteGraph.cloneObject(sourceInput));
-                keys_remap[sourceIndex] = new_dest.length-1;
-                only_in_source.push(sourceInput);
             }
         });
-
-
-        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
-            only_in_source: only_in_source,
-            only_in_target: only_in_target,
-            ob_from: ob_from,
-            ob_dest: ob_dest,
-            new_dest: new_dest,
-            keys_remap: keys_remap,
+        
+        // Now, process source groups that have extra items not found in destination.
+        Object.keys(groupFrom).forEach(keyVal => {
+            const srcGroup = groupFrom[keyVal];
+            const destGroup = groupDest[keyVal] || [];
+            if (srcGroup.length > destGroup.length) {
+                // For each extra source item, if not used already, append it.
+                for (let i = destGroup.length; i < srcGroup.length; i++) {
+                    const srcEntry = srcGroup[i];
+                    if (!usedSource.has(srcEntry.index)) {
+                        if (opts.only_in_source === "append") {
+                            new_dest.push(LiteGraph.cloneObject(srcEntry.item));
+                            keys_remap[srcEntry.index] = new_dest.length - 1;
+                        }
+                        only_in_source.push(srcEntry.item);
+                    }
+                }
+            }
         });
-
+        
+        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
+            only_in_source,
+            only_in_target,
+            ob_from,
+            ob_dest,
+            new_dest,
+            keys_remap,
+        });
+        
         return {
             ob_dest: new_dest,
-            keys_remap: keys_remap,
-            only_in_source: only_in_source,
-            only_in_target: only_in_target,
+            keys_remap,
+            only_in_source,
+            only_in_target,
         };
     }
 
