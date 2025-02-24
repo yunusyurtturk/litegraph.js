@@ -260,7 +260,7 @@ LiteGraph.registerNodeType("threejs/renderer", ThreeJsRenderer);
 
 class ThreeJsCanvas extends HtmlNode {
     static title = "3js Canvas";
-    static desc = "Embed a Three.js canvas inside the node";
+    static desc = "Embed a Three.js canvas inside the ";
 
     constructor() {
         super();
@@ -700,3 +700,404 @@ class ThreeJsTransform {
     }
 }
 LiteGraph.registerNodeType("threejs/transform", ThreeJsTransform);
+
+
+class ThreeJsLoadModelNode {
+    constructor() {
+        this.title = "3jsLoadModel";
+        // Properties tied to inputs
+        this.addProperty("url", "", "string");
+        this.addProperty("format", "gltf", "enum", {values: ["gltf", "obj", "fbx"]});
+
+        // Inputs
+        this.addInput("LOAD", LiteGraph.ACTION);
+        this.addInput("url", "string", { nameLocked: true, param_bind: true });
+        this.addInput("format", "string", { nameLocked: true, param_bind: true});
+
+        // Outputs
+        this.addOutput("model", "object");
+        this.addOutput("onLoaded", LiteGraph.EVENT);
+
+        this.model = null;
+    }
+
+    onAction() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return;
+        
+        const url = this.getInputOrProperty("url");
+        const format = this.getInputOrProperty("format");
+
+        if (!url) {
+            console.warn("LoadModelNode: No URL provided.");
+            return;
+        }
+
+        let loader;
+        if (format === "gltf") {
+            loader = new THREE.GLTFLoader();
+        } else if (format === "obj") {
+            loader = new THREE.OBJLoader();
+        } else if (format === "fbx") {
+            loader = new THREE.FBXLoader();
+        } else {
+            console.error("LoadModelNode: Unsupported format:", format);
+            return;
+        }
+
+        loader.load(url, (result) => {
+            this.model = format === "gltf" ? result.scene : result;
+            this.triggerSlot(1, this.model); // Trigger onLoaded event
+            this.setDirtyCanvas(true);
+            console.log("Model loaded:", this.model);
+        });
+    }
+
+    onExecute() {
+        this.setOutputData("model", this.model);
+    }
+}
+LiteGraph.registerNodeType("threejs/LoadModel", ThreeJsLoadModelNode);
+
+
+class ThreeJsExportModelNode {
+    constructor() {
+        this.title = "3jsExportModel";
+        // Properties tied to inputs
+        this.addProperty("format", "gltf", "enum", {values: ["gltf"]});
+
+        // Inputs
+        this.addInput("EXPORT", LiteGraph.ACTION);
+        this.addInput("model", "object", { nameLocked: true, removable: false });
+        this.addInput("format", "string", { nameLocked: true, param_bind: true });
+
+        // Outputs
+        this.addOutput("onExported", LiteGraph.EVENT);
+
+        this.exporter = null;
+    }
+
+    onAction() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return
+
+        const model = this.getInputData("model");
+        const format = this.getInputOrProperty("format");
+
+        if (!model) {
+            console.warn("ExportModelNode: No model to export.");
+            return;
+        }
+
+        if (format === "gltf") {
+            this.exporter = new THREE.GLTFExporter();
+            this.exporter.parse(model, (result) => {
+                const blob = new Blob([JSON.stringify(result)], { type: "application/json" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "model.gltf";
+                link.click();
+
+                console.log("Model exported successfully.");
+                this.triggerSlot(0, model); // Trigger onExported event
+            });
+        } else {
+            console.error("ExportModelNode: Unsupported format:", format);
+        }
+    }
+}
+LiteGraph.registerNodeType("threejs/ExportModel", ThreeJsExportModelNode);
+
+class ThreeJsFindObjectAtPositionNode {
+    constructor() {
+        this.title = "3jsFindObjectAtPosition";
+        this.addInput("Find", LiteGraph.ACTION);
+        this.addInput("Scene", "object");
+        this.addInput("Position", "vec3");
+        this.addOutput("Object", "object");
+        this.addOutput("onFound", LiteGraph.EVENT);
+    }
+
+    onAction() {
+        const scene = this.getInputData(1);
+        const position = this.getInputData(2);
+
+        if (!scene || !position) return console.warn("FindObjectNode: Missing inputs.");
+
+        let closest = null;
+        let minDist = Infinity;
+
+        scene.traverse((obj) => {
+            if (obj.isMesh) {
+                const dist = obj.position.distanceTo(position);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = obj;
+                }
+            }
+        });
+
+        if (closest) {
+            this.setOutputData(0, closest);
+            this.triggerSlot(1, closest);
+        }
+    }
+}
+LiteGraph.registerNodeType("threejs/FindObjectAtPosition", ThreeJsFindObjectAtPositionNode);
+
+
+class ThreeJsGetBoundsNode {
+    constructor() {
+        this.title = "3jsGetBounds";
+        this.addInput("Object", "object");
+        this.addOutput("Bounds", "object");
+    }
+
+    onExecute() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return;
+        
+        const obj = this.getInputData(0);
+        if (!obj || !obj.geometry) return;
+
+        const box = new THREE.Box3().setFromObject(obj);
+        this.setOutputData(0, box);
+    }
+}
+LiteGraph.registerNodeType("threejs/GetBounds", ThreeJsGetBoundsNode);
+
+
+class ThreeJsCheckCollisionNode {
+    constructor() {
+        this.title = "3jsCheckCollision";
+        this.addInput("Object A", "object");
+        this.addInput("Object B", "object");
+        this.addOutput("Colliding", "boolean");
+    }
+
+    onExecute() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return;
+
+        const objA = this.getInputData(0);
+        const objB = this.getInputData(1);
+
+        if (!objA || !objB) return this.setOutputData(0, false);
+
+        const boxA = new THREE.Box3().setFromObject(objA);
+        const boxB = new THREE.Box3().setFromObject(objB);
+
+        this.setOutputData(0, boxA.intersectsBox(boxB));
+    }
+}
+LiteGraph.registerNodeType("threejs/CheckCollision", ThreeJsCheckCollisionNode);
+
+
+class ThreeJsLerpVec3Node {
+    constructor() {
+        this.title = "3jsLerpVec3";
+        // Inputs
+        this.addInput("Start", "vec3");
+        this.addInput("End", "vec3");
+        this.addInput("t", "number", { param_bind: true });
+
+        // Outputs
+        this.addOutput("Result", "vec3");
+
+        // Default properties
+        this.addProperty("t", 0.5, "number");
+
+        // Internal storage
+        this.result = null; //new THREE.Vector3();
+    }
+
+    onExecute() {
+        const start = this.getInputData(0);
+        const end = this.getInputData(1);
+        const t = this.getInputData(2) ?? this.properties.t;
+
+        if (!start || !end) return;
+
+        // Perform linear interpolation
+        this.result.lerpVectors(start, end, Math.max(0, Math.min(1, t)));
+
+        // Output result
+        this.setOutputData(0, this.result);
+    }
+}
+LiteGraph.registerNodeType("threejs/LerpVec3", ThreeJsLerpVec3Node);
+
+
+class ThreeJsLerpTransformNode {
+    constructor() {
+        this.title = "3jsLerpTransform";
+        // Inputs
+        this.addInput("Start", "object", { param_bind: true });
+        this.addInput("End", "object", { param_bind: true });
+        this.addInput("T", "number", { param_bind: true });
+
+        // Outputs
+        this.addOutput("Transform", "object");
+
+        // Default properties
+        this.addProperty("t", 0.5, "number");
+
+        // Internal storage
+        this.result = null; /*{
+            position: new THREE.Vector3(),
+            rotation: new THREE.Quaternion(),
+            scale: new THREE.Vector3(),
+        };*/
+    }
+
+    onExecute() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return;
+
+        const start = this.getInputData(0);
+        const end = this.getInputData(1);
+        const t = this.getInputData(2) ?? this.properties.t;
+
+        if (!start || !end) return;
+
+        // Lerp Position
+        this.result.position = new THREE.Vector3();
+        this.result.position.lerpVectors(start.position, end.position, Math.max(0, Math.min(1, t)));
+
+        // Slerp Rotation (Quaternion interpolation)
+        this.result.rotation = new THREE.Quaternion();
+        this.result.rotation.copy(start.quaternion);
+        this.result.rotation.slerp(end.quaternion, Math.max(0, Math.min(1, t)));
+
+        // Lerp Scale
+        this.result.scale = new THREE.Vector3();
+        this.result.scale.lerpVectors(start.scale, end.scale, Math.max(0, Math.min(1, t)));
+
+        // Output the result transform
+        this.setOutputData(0, this.result);
+    }
+}
+LiteGraph.registerNodeType("threejs/LerpTransform", ThreeJsLerpTransformNode);
+
+
+class ThreeJsObjectPropertiesGet {
+    constructor() {
+        this.title = "3jsObjectPropertiesGet";
+        this.addInput("Object", "object");
+
+        // Default properties for dynamic selection
+        this.availableProperties = [
+            "position",
+            "rotation",
+            "quaternion",
+            "scale",
+            "visible",
+            "uuid",
+            "name",
+            "type",
+            "castShadow",
+            "receiveShadow",
+            "matrix",
+            "matrixWorld",
+            "parent",
+            "children",
+            "layers",
+            "frustumCulled",
+            "renderOrder",
+            "userData",
+            "isObject3D",
+        ];
+
+        this.properties = { selectedProperties: [] };
+    }
+
+    onExecute() {
+        const obj = this.getInputData(0);
+        if (!obj) return;
+
+        // Set output for selected properties
+        this.outputs.forEach((output, index) => {
+            const prop = output.name;
+            if (obj[prop] !== undefined) {
+                this.setOutputData(index, obj[prop]);
+            }
+        });
+    }
+
+    onGetOutputs() {
+        // Filter out already present outputs
+        const existingOutputs = this.outputs.map((o) => o.name);
+        return this.availableProperties
+            .filter((prop) => !existingOutputs.includes(prop))
+            .map((prop) => [prop, "any"]);
+    }
+}
+LiteGraph.registerNodeType("threejs/ObjectPropertiesGet", ThreeJsObjectPropertiesGet);
+
+
+class ThreeJsObjectPropertiesSet {
+    constructor() {
+        this.title = "3jsObjectPropertiesSet";
+        this.addInput("Object", "object");
+        this.addInput("Update", LiteGraph.ACTION);
+        this.addOutput("onUpdated", LiteGraph.EVENT);
+
+        // Properties available for modification
+        this.availableProperties = [
+            "position",
+            "rotation",
+            "quaternion",
+            "scale",
+            "visible",
+            "castShadow",
+            "receiveShadow",
+            "frustumCulled",
+            "renderOrder",
+            "userData",
+        ];
+    }
+
+    onAction() {
+        const obj = this.getInputData(0);
+        if (!obj) return console.warn("ObjectPropertiesSet: No object to update.");
+
+        let updated = false;
+
+        // Loop through inputs and apply changes
+        this.inputs.forEach((input, index) => {
+            const prop = input.name;
+            if (prop === "Object" || prop === "Update") return; // Skip main inputs
+
+            const value = this.getInputData(index);
+            if (value === undefined || value === null) return;
+
+            // Ensure correct method usage (set functions)
+            if (prop === "position" || prop === "rotation" || prop === "scale") {
+                obj[prop].set(value.x, value.y, value.z);
+            } else if (prop === "quaternion") {
+                obj[prop].set(value.x, value.y, value.z, value.w);
+            } else {
+                obj[prop] = value;
+            }
+
+            updated = true;
+        });
+
+        if (updated) {
+            this.triggerSlot(0, obj); // Fire onUpdated event
+            console.log("Object updated:", obj);
+        }
+    }
+
+    onGetInputs() {
+        let THREE = ThreeJsHelper.checkLib();
+        if (!THREE) return;
+
+        // Filter out already present inputs
+        const existingInputs = this.inputs.map((i) => i.name);
+        return this.availableProperties
+            .filter((prop) => !existingInputs.includes(prop))
+            .map((prop) => [prop, prop === "quaternion" ? "quat" : typeof new THREE.Object3D()[prop]]);
+    }
+}
+LiteGraph.registerNodeType("threejs/ObjectPropertiesSet", ThreeJsObjectPropertiesSet);

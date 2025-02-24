@@ -689,7 +689,7 @@ export class LiteGraphClass {
         const base_class = this.registered_node_types[type] ?? null;
 
         if (!base_class) {
-            this.log_debug(`GraphNode type "${type}" not registered.`);
+            this.log_warn(`GraphNode type "${type}" not registered.`);
             return null;
         }
 
@@ -703,6 +703,7 @@ export class LiteGraphClass {
             try {
                 node = new base_class(title);
             } catch (err) {
+                console.warn("[ERR] createNode",err);
                 this.log_error("createNode",err);
                 return null;
             }

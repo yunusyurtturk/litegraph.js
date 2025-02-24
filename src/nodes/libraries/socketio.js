@@ -10,13 +10,13 @@
 
 // -- client&server libraries --
 LiteGraph.LibraryManager.registerLibrary({
-    key: "socket.io-client",
+    key: "io",
     version: "4.6.1",
     globalObject: "ioclient",
     browser: { /*local: "/libs/socket.io.js",*/ remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js" },
     server: { npm: ["socket.io-client"], /*remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"*/ }
 });
-LiteGraph.LibraryManager.loadLibrary("socket.io-client");
+LiteGraph.LibraryManager.loadLibrary("io");
 
 class LGSocketIO {
     static title = "Socket.IO Client";
@@ -35,8 +35,8 @@ class LGSocketIO {
         this.addProperty("content", "", "string");
 
         this.addInput("SEND", LiteGraph.ACTION);
-        this.addInput("type", "string", { nameLocked: true, removable: false, param_bind: true });
-        this.addInput("content", "string", { nameLocked: true, removable: false, param_bind: true });
+        this.addInput("type", "string", { param_bind: true });
+        this.addInput("content", "string", { param_bind: true });
         this.addOutput("onReceived", LiteGraph.EVENT);
         this.addOutput("dataRec", 0);
 

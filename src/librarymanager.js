@@ -52,40 +52,74 @@ export class LibraryManager {
 
     /**
      * Register a library with flexible options (structured object or simple format).
+     * If the library is already registered, merge new data with the existing one.
+     * Options:
+     *  - key, version, globalObject, defaultExport
+     *  - browser: { local, remote, target } where target can be "client", "both"
+     *  - server: { npm, remote, target } where target can be "server", "both"
      */
     registerLibrary(...args) {
-        let library = {};
-
+        let newLib = {};
         if (typeof args[0] === "object" && !Array.isArray(args[0])) {
             const { key, version, globalObject, browser = {}, server = {}, defaultExport } = args[0];
-
-            library = {
+            newLib = {
                 key,
                 version,
                 globalObject,
                 localPaths: this.ensureArray(browser.local),
                 remoteUrls: this.ensureArray(browser.remote),
+                browserTarget: browser.target || "both",
                 npmPackages: this.ensureArray(server.npm),
                 serverRemoteUrls: this.ensureArray(server.remote),
+                serverTarget: server.target || "both",
                 defaultExport
             };
         } else {
             const [key, version, globalObject, localPaths, remoteUrls, npmPackages, serverRemoteUrls, defaultExport] = args;
-
-            library = {
+            newLib = {
                 key,
                 version,
                 globalObject,
                 localPaths: this.ensureArray(localPaths),
                 remoteUrls: this.ensureArray(remoteUrls),
+                browserTarget: "both",
                 npmPackages: this.ensureArray(npmPackages),
                 serverRemoteUrls: this.ensureArray(serverRemoteUrls),
+                serverTarget: "both",
                 defaultExport
             };
         }
 
-        this.libraries_known[library.key] = library;
-        this.libraries_state[library.key] = "not_loaded";
+        // If already registered, merge configurations.
+        if (this.libraries_known[newLib.key]) {
+            const existing = this.libraries_known[newLib.key];
+            // Merge arrays using a Set to ensure uniqueness.
+            existing.localPaths = Array.from(new Set([...existing.localPaths, ...newLib.localPaths]));
+            existing.remoteUrls = Array.from(new Set([...existing.remoteUrls, ...newLib.remoteUrls]));
+            existing.npmPackages = Array.from(new Set([...existing.npmPackages, ...newLib.npmPackages]));
+            existing.serverRemoteUrls = Array.from(new Set([...existing.serverRemoteUrls, ...newLib.serverRemoteUrls]));
+            // Optionally update version if provided new value (here we override if different).
+            if (newLib.version && existing.version !== newLib.version) {
+                existing.version = newLib.version;
+            }
+            // Merge target flags: if they differ, default to "both"
+            if (existing.browserTarget !== newLib.browserTarget) {
+                existing.browserTarget = "both";
+            }
+            if (existing.serverTarget !== newLib.serverTarget) {
+                existing.serverTarget = "both";
+            }
+            // Update default export if provided.
+            if (newLib.defaultExport) {
+                existing.defaultExport = newLib.defaultExport;
+            }
+            // Do not change the load state if already loaded.
+            this.libraries_known[newLib.key] = existing;
+        } else {
+            // First registration: simply add it.
+            this.libraries_known[newLib.key] = newLib;
+            this.libraries_state[newLib.key] = "not_loaded";
+        }
     }
 
     /**
@@ -275,6 +309,31 @@ export class LibraryManager {
         return library ? getGlobalVariable(library.globalObject) || null : null;
     }
 
+     /**
+     * Wait for a library to be loaded.
+     * @param {string} libKey - The key of the library.
+     * @param {number} timeout - Maximum wait time in milliseconds.
+     * @returns {Promise<any>} Resolves with the global object for the library.
+     */
+    waitForLib(libKey, timeout = 9000) {
+        return new Promise((resolve, reject) => {
+            const checkInterval = 50;
+            let elapsed = 0;
+            const intervalId = setInterval(() => {
+                if (this.getLibraryState(libKey) === "loaded") {
+                    clearInterval(intervalId);
+                    resolve(getGlobalVariable(this.libraries_known[libKey].globalObject));
+                } else {
+                    elapsed += checkInterval;
+                    if (timeout && elapsed >= timeout) {
+                        clearInterval(intervalId);
+                        reject(new Error(`Library ${libKey} did not load within ${timeout}ms`));
+                    }
+                }
+            }, checkInterval);
+        });
+    }
+
     async loadServerRemoteScript(url) {
         if (!this.fetch || !this.vm) throw new Error("Node.js modules 'fetch' and 'vm' are required.");
 
@@ -409,6 +468,104 @@ export class LibraryManager {
     // **Get the state of a library**
     getLibraryState(key) {
         return this.libraries_state[key] || false;
+    }
+
+    /**
+     * Check if all registered libraries are loaded.
+     * @returns {boolean} True if every library's state is "loaded", false otherwise.
+     */
+    areAllLibrariesLoaded() {
+        for (const key in this.libraries_state) {
+            if (this.libraries_state[key] !== "loaded") {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Attempt to install NPM packages required for a library.
+     * This method is only supported in Node.js or Bun environments.
+     * @param {string} libKey The key of the library.
+     * @returns {Promise<string>} The stdout from the npm install command.
+     */
+    async npmInstall(libKey, command="npm install") {
+        if (!isNode() && !isBun()) {
+            console.warn('npmInstall is only supported in Node.js or Bun environments.');
+            return;
+        }
+        if (!this.libraries_known[libKey]) {
+            console.error(`Library ${libKey} not registered.`);
+            return;
+        }
+        const library = this.libraries_known[libKey];
+        if (!library.npmPackages || library.npmPackages.length === 0) {
+            console.warn(`Library ${libKey} has no npm packages to install.`);
+            return;
+        }
+        let child_process;
+        try {
+            child_process = await import("child_process").then(m => m.default || m);
+        } catch (e) {
+            console.error("Failed to import child_process:", e);
+            return;
+        }
+        const packages = library.npmPackages.join(" ");
+        const cmd = command + ` ${packages}`;
+        return new Promise((resolve, reject) => {
+            child_process.exec(cmd, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error installing npm packages for ${libKey}:`, error);
+                    reject(error);
+                    return;
+                }
+                console.log(`npm install output for ${libKey}:`, stdout);
+                resolve(stdout);
+            });
+        });
+    }
+
+    /**
+     * Wait until all registered libraries have been loaded.
+     * @returns {Promise<void>} Resolves when all libraries are in the "loaded" state.
+     */
+    async waitAllLibrariesLoaded() {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (this.areAllLibrariesLoaded()) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+
+    /**
+     * Load all registered libraries concurrently.
+     * @returns {Promise<void>} Resolves when all libraries have attempted to load.
+     */
+    async loadAllLibraries() {
+        const keys = Object.keys(this.libraries_known);
+        await Promise.all(keys.map(key => this.loadLibrary(key)));
+    }
+
+    /**
+     * Unload all loaded libraries.
+     */
+    unloadAllLibraries() {
+        Object.keys(this.libraries_known).forEach(key => {
+            if (this.libraries_state[key] === "loaded") {
+                this.unloadLibrary(key);
+            }
+        });
+    }
+
+    /**
+     * Get a list of all registered library keys.
+     * @returns {string[]} An array of registered library keys.
+     */
+    getRegisteredLibraries() {
+        return Object.keys(this.libraries_known);
     }
 }
 

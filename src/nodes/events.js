@@ -85,19 +85,15 @@ class EvSequence {
         if (this.outputs) {
             options = options || {};
             for (var i = 0; i < this.outputs.length; ++i) {
+                // console.debug(this.title, "step", i);
                 // needs more info about this...
                 if (options.action_call)
                     // CREATE A NEW ID FOR THE ACTION
-                    options.action_call = options.action_call + "_seq_" + i;
+                    options.action_call = options.action_call + "_seq_" + i + "_" + Math.floor(Math.random() * 9999);
                 else
                     options.action_call =
-                        this.id +
-                        "_" +
-                        (action ? action : "action") +
-                        "_seq_" +
-                        i +
-                        "_" +
-                        Math.floor(Math.random() * 9999);
+                        this.id + "_" + (action ? action : "action") +
+                        "_seq_" + i + "_" + Math.floor(Math.random() * 9999);
                 this.triggerSlot(i, param, null, options);
             }
         }

@@ -6,7 +6,7 @@ class NodeJsSysHelper {
         return LiteGraph.LibraryManager.getLib(libKey);
     }
     static logError(nodeTitle, error) {
-        console.warn(`SysUtil Error: ${nodeTitle}: ${error.message || error} (line ${error.lineNumber || "?"})`);
+        console.warn(`SysUtil Error: ${nodeTitle}: ${error.message || error} (line ${error.line || "?"})`);
     }
 }
 
@@ -50,8 +50,26 @@ LiteGraph.LibraryManager.registerLibrary({
     server: { npm: "child_process" }
 });
 
+LiteGraph.LibraryManager.registerLibrary({
+    key: "chalk",
+    globalObject: "chalk",
+    server: { npm: "chalk" }
+});
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "node-windows",
+    globalObject: "nodeWindows",
+    server: { npm: "node-windows" }
+});
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "node-linux-systemd",
+    globalObject: "nodeLinuxSystemd",
+    server: { npm: "node-linux-systemd" }
+});
+
 // Load libraries at runtime
-["os", "fs", "diskusage", "node-os-utils", "ps-list", "child_process"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
+["os", "fs", "diskusage", "node-os-utils", "ps-list", "child_process", "chalk"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
 
 /**
  * SysUtil_InfoNode - Retrieves System Information (OS, CPU, Memory, Network, Disk)
@@ -641,3 +659,630 @@ class SysUtil_FileListNode extends SysUtil_FileBaseNode {
     }
 }
 LiteGraph.registerNodeType("sys/fileList", SysUtil_FileListNode);
+
+
+// Ensure required Node.js `child_process` library is available
+LiteGraph.LibraryManager.registerLibrary({
+    key: "child_process",
+    globalObject: "child_process",
+    server: { npm: "child_process" }
+});
+LiteGraph.LibraryManager.loadLibrary("child_process");
+
+class SysUtil_ProcessControlNode {
+    static title = "Process Control";
+    static desc = "Controls system processes: Start, Kill, Restart, Check Status";
+
+    constructor() {
+        this.addInput("start", LiteGraph.ACTION);
+        this.addInput("kill", LiteGraph.ACTION);
+        this.addInput("restart", LiteGraph.ACTION);
+        this.addInput("processCommand", "string", { param_bind: true });
+        this.addInput("args", "array", { param_bind: true });
+        this.addInput("envVars", "object", { param_bind: true });
+
+        this.addOutput("processInstance", "object");
+        this.addOutput("stdout", "string");
+        this.addOutput("stderr", "string");
+        this.addOutput("status", "string");
+        this.addOutput("exitCode", "number");
+        this.addOutput("onStarted", LiteGraph.EVENT);
+        this.addOutput("onStopped", LiteGraph.EVENT);
+        this.addOutput("onRestarted", LiteGraph.EVENT);
+        this.addOutput("onSuccess", LiteGraph.EVENT);
+        this.addOutput("onError", LiteGraph.EVENT);
+        this.addOutput("onDataUpdate", LiteGraph.EVENT);
+
+        this.properties = {
+            processCommand: "",
+            args: [],
+            envVars: {}
+        };
+
+        this.process = null; // Track process instance
+        this.updateProcessStatus();
+    }
+
+    onGetOutputs() {
+        return [
+            ["processInstance", "object"],
+            ["stdout", "string"],
+            ["stderr", "string"],
+            ["status", "string"],
+            ["exitCode", "number"],
+            ["onStarted", LiteGraph.EVENT],
+            ["onStopped", LiteGraph.EVENT],
+            ["onRestarted", LiteGraph.EVENT],
+            ["onSuccess", LiteGraph.EVENT],
+            ["onError", LiteGraph.EVENT],
+            ["onDataUpdate", LiteGraph.EVENT]
+        ].filter(([key]) => !this.outputs.some(o => o.name === key));
+    }
+
+    onExecute() {
+        // Ensure process status is up-to-date every frame
+        this.updateProcessStatus();
+    }
+
+    onAction(action) {
+        let child_process = NodeJsSysHelper.getLib("child_process");
+        if (!child_process) {
+            NodeJsSysHelper.logError(this.title, "Missing child_process module.");
+            return;
+        }
+
+        let processCommand = this.getInputOrProperty("processCommand");
+        let args = this.getInputOrProperty("args");
+        let envVars = this.getInputOrProperty("envVars");
+
+        if (!processCommand && action === "start") {
+            NodeJsSysHelper.logError(this.title, "No process command specified.");
+            return;
+        }
+
+        try {
+            switch (action) {
+                case "start":
+                    this.startProcess(child_process, processCommand, args, envVars);
+                    break;
+                case "kill":
+                    this.killProcess();
+                    break;
+                case "restart":
+                    this.restartProcess(child_process, processCommand, args, envVars);
+                    break;
+                default:
+                    NodeJsSysHelper.logError(this.title, `Unknown action: ${action}`);
+            }
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, error);
+            this.triggerSlot("onError");
+        }
+    }
+
+    async startProcess(child_process, command, args, envVars) {
+        try {
+            this.process = await child_process.spawn(command, args, {
+                env: { ...process.env, ...envVars },
+                shell: true
+            });
+            
+            this.setOutputData("processInstance", this.process);
+            this.updateProcessStatus();
+            this.triggerSlot("onStarted");
+            this.triggerSlot("onSuccess");
+
+            this.process.stdout.on("data", (data) => {
+                this.setOutputData("stdout", data.toString().trim());
+                this.triggerSlot("onDataUpdate");
+            });
+
+            this.process.stderr.on("data", (data) => {
+                this.setOutputData("stderr", data.toString().trim());
+                this.triggerSlot("onDataUpdate");
+            });
+
+            this.process.on("close", (code) => {
+                this.process = null;
+                this.updateProcessStatus();
+                this.setOutputData("exitCode", code);
+                this.setOutputData("status", "stopped");
+                this.triggerSlot("onStopped");
+                this.triggerSlot("onSuccess");
+            });
+
+            this.process.on("error", (error) => {
+                NodeJsSysHelper.logError(this.title, error);
+                this.process = null;
+                this.updateProcessStatus();
+                this.setOutputData("status", "error");
+                this.triggerSlot("onError");
+            });
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, error);
+            this.triggerSlot("onError");
+        }
+    }
+
+    async killProcess() {
+        try {
+            if (this.process) {
+                await this.process.kill();
+                this.process = null;
+                this.updateProcessStatus();
+                this.setOutputData("status", "killed");
+                this.triggerSlot("onStopped");
+                this.triggerSlot("onSuccess");
+            } else {
+                NodeJsSysHelper.logError(this.title, "No running process to kill.");
+                this.triggerSlot("onError");
+            }
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, `Error killing process.`);
+            this.triggerSlot("onError");
+        }
+    }
+
+    async restartProcess(child_process, command, args, envVars) {
+        await this.killProcess();
+        await this.startProcess(child_process, command, args, envVars);
+        this.triggerSlot("onRestarted");
+    }
+
+    updateProcessStatus() {
+        if (this.process) {
+            this.setOutputData("status", "running");
+        } else {
+            this.setOutputData("status", "stopped");
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/processControl", SysUtil_ProcessControlNode);
+
+
+class SysUtil_LogNode {
+    static title = "Log";
+    static desc = "Structured logging with console styling and optional file writing.";
+
+    constructor() {
+        this.addInput("log", LiteGraph.ACTION);
+        this.addInput("message", "any", { param_bind: true });
+        // this.addInput("logToFile", "boolean", { param_bind: true });
+        this.addInput("filePath", "string", { param_bind: true });
+
+        this.addOutput("onLogged", LiteGraph.EVENT);
+        this.addOutput("formattedLog", "string");
+
+        this.addProperty("message", "log message", "string");
+        this.addProperty("level", "info", "enum", { values: ["info", "warn", "error", "debug"] });
+        this.addProperty("truncateConsoleOutput", true, "boolean");
+        this.addProperty("truncateLength", 500, "number"); // Cutoff for console display
+        this.addProperty("logToFile", false, "boolean");
+        this.addProperty("filePath", "logs/system.log", "string");
+
+        this.fs = null;
+        this.chalk = null;
+
+        this.updateNodeStyle();
+    }
+
+    updateNodeStyle() {
+        const levelColors = {
+            info: "#3498db", // Blue
+            warn: "#f1c40f", // Yellow
+            error: "#e74c3c", // Red
+            debug: "#9b59b6" // Purple
+        };
+        this.color = levelColors[this.properties.level] || "#bdc3c7"; // Default gray
+        this.title = `Log (${this.properties.level.toUpperCase()})`;
+    }
+
+    onPropertyChanged(name, value) {
+        if (name === "level") {
+            this.updateNodeStyle();
+        }
+        return true;
+    }
+
+    onGetOutputs() {
+        return [
+            ["onLogged", LiteGraph.EVENT],
+            ["formattedLog", "string"]
+        ].filter(([key]) => !this.outputs.some(o => o.name === key));
+    }
+
+    onAction(action) {
+        if (action === "log") {
+            this.writeLog();
+        }
+    }
+
+    async writeLog() {
+        this.fs = NodeJsSysHelper.getLib("fs");
+        this.chalk = NodeJsSysHelper.getLib("chalk");
+
+        if (!this.chalk && typeof console !== "undefined") {
+            console.warn("SysUtil_LogNode: Chalk library is missing, proceeding without styling.");
+        }
+
+        let message = this.getInputOrProperty("message"); // Message can be any data type
+        let level = this.properties.level.toLowerCase();
+        let logToFile = this.getInputOrProperty("logToFile");
+        let filePath = this.getInputOrProperty("filePath");
+
+        if (message === undefined) {
+            NodeJsSysHelper.logError(this.title, "No message provided for logging.");
+            return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const logLevels = {
+            info: this.chalk ? this.chalk.blue("[INFO]") : "[INFO]",
+            warn: this.chalk ? this.chalk.yellow("[WARN]") : "[WARN]",
+            error: this.chalk ? this.chalk.red("[ERROR]") : "[ERROR]",
+            debug: this.chalk ? this.chalk.magenta("[DEBUG]") : "[DEBUG]"
+        };
+
+        let logLevelTag = logLevels[level] || logLevels.info;
+        let formattedLog = `${timestamp} ${logLevelTag} ${this.formatMessage(message)}`;
+
+        // Print to console (with truncation for long data)
+        if (typeof console !== "undefined") {
+            if (this.properties.truncateConsoleOutput && formattedLog.length > this.properties.truncateLength) {
+                console.log(formattedLog.substring(0, this.properties.truncateLength) + " ... (truncated)");
+            } else {
+                console.log(formattedLog);
+            }
+        }
+
+        this.setOutputData("formattedLog", formattedLog);
+        this.triggerSlot("onLogged");
+
+        // Save full log to file
+        if (logToFile && this.fs) {
+            try {
+                this.fs.appendFileSync(filePath, formattedLog + "\n", "utf8");
+            } catch (error) {
+                NodeJsSysHelper.logError(this.title, `Error writing log to file: ${filePath}`);
+            }
+        }
+    }
+
+    formatMessage(message) {
+        if (typeof message === "object") {
+            try {
+                return JSON.stringify(message, null, 2);
+            } catch {
+                return "[Invalid JSON]";
+            }
+        }
+        return String(message);
+    }
+}
+LiteGraph.registerNodeType("sys/log", SysUtil_LogNode);
+
+
+class SysUtil_ServiceManagerNode {
+    static title = "Service Manager";
+    static desc = "Manages system services (start, stop, restart) across Windows, Linux, and MacOS";
+
+    constructor() {
+        this.addInput("start", LiteGraph.ACTION);
+        this.addInput("stop", LiteGraph.ACTION);
+        this.addInput("restart", LiteGraph.ACTION);
+        this.addInput("serviceName", "string", { param_bind: true });
+
+        this.addOutput("serviceStatus", "string");
+        this.addOutput("responseLog", "string");
+        this.addOutput("onStarted", LiteGraph.EVENT);
+        this.addOutput("onStopped", LiteGraph.EVENT);
+        this.addOutput("onRestarted", LiteGraph.EVENT);
+        this.addOutput("onError", LiteGraph.EVENT);
+
+        this.properties = { serviceName: "" };
+        this.currentStatus = "unknown";
+
+        // Prevent execution in browsers
+        if (typeof process === "undefined" || process.browser) {
+            console.warn(`${this.title}: Running in browser. Service management is disabled.`);
+            return;
+        }
+
+        this.platform = process.platform;
+        this.windowsService = null;
+        this.linuxService = null;
+        this.initializeLibrary();
+    }
+
+    async initializeLibrary() {
+        if (typeof process === "undefined") return;
+        if (this.platform === "win32") {
+            this.windowsService = NodeJsSysHelper.getLib("node-windows");
+        } else if (this.platform === "linux" || this.platform === "darwin") {
+            this.linuxService = NodeJsSysHelper.getLib("nodeLinuxSystemd");
+        }
+    }
+
+    onExecute() {
+        if (typeof process === "undefined") return;
+        let serviceName = this.getInputOrProperty("serviceName");
+        if (serviceName) {
+            this.updateServiceStatus(serviceName);
+        }
+    }
+
+    onAction(action) {
+        if (typeof process === "undefined") {
+            console.warn(`${this.title}: Running in browser. Actions are disabled.`);
+            return;
+        }
+
+        let serviceName = this.getInputOrProperty("serviceName");
+        if (!serviceName) {
+            NodeJsSysHelper.logError(this.title, "No service name provided.");
+            return;
+        }
+
+        try {
+            switch (action) {
+                case "start":
+                    this.controlService(serviceName, "start");
+                    break;
+                case "stop":
+                    this.controlService(serviceName, "stop");
+                    break;
+                case "restart":
+                    this.controlService(serviceName, "restart");
+                    break;
+                default:
+                    NodeJsSysHelper.logError(this.title, `Unknown action: ${action}`);
+            }
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, error);
+            this.triggerSlot("onError");
+        }
+    }
+
+    controlService(serviceName, action) {
+        if (this.platform === "win32") {
+            this.controlWindowsService(serviceName, action);
+        } else {
+            this.controlLinuxService(serviceName, action);
+        }
+    }
+
+    controlWindowsService(serviceName, action) {
+        if (!this.windowsService) {
+            NodeJsSysHelper.logError(this.title, "Windows service management library not available.");
+            return;
+        }
+
+        const Service = this.windowsService.Service;
+        const svc = new Service({ name: serviceName });
+
+        svc[action]();
+        this.currentStatus = action === "start" ? "running" : "stopped";
+        this.setOutputData("serviceStatus", this.currentStatus);
+        this.setOutputData("responseLog", `Windows service ${serviceName} ${action} executed.`);
+        this.triggerEvent(action);
+    }
+
+    controlLinuxService(serviceName, action) {
+        if (!this.linuxService) {
+            NodeJsSysHelper.logError(this.title, "Linux service management library not available.");
+            return;
+        }
+
+        this.linuxService[action](serviceName)
+            .then(() => {
+                this.currentStatus = action === "start" ? "running" : "stopped";
+                this.setOutputData("serviceStatus", this.currentStatus);
+                this.setOutputData("responseLog", `Linux service ${serviceName} ${action} executed.`);
+                this.triggerEvent(action);
+            })
+            .catch((error) => {
+                NodeJsSysHelper.logError(this.title, `Error controlling service ${serviceName}: ${error}`);
+                this.triggerSlot("onError");
+            });
+    }
+}
+LiteGraph.registerNodeType("sys/serviceManager", SysUtil_ServiceManagerNode);
+
+
+class SysUtil_ServiceListNode {
+    static title = "Service List";
+    static desc = "Lists system services on Windows, Linux, and MacOS";
+
+    constructor() {
+        this.addInput("refresh", LiteGraph.ACTION);
+        this.addInput("filter", "string", { param_bind: true });
+
+        this.addOutput("services", "array");
+        this.addOutput("onListed", LiteGraph.EVENT);
+        this.addOutput("onError", LiteGraph.EVENT);
+
+        this.properties = { filter: "" };
+
+        if (typeof process === "undefined" || process.browser) {
+            console.warn(`${this.title}: Running in browser. Service listing is disabled.`);
+            return;
+        }
+
+        this.platform = process.platform;
+        this.windowsService = null;
+        this.linuxService = null;
+        this.initializeLibrary();
+    }
+
+    async initializeLibrary() {
+        if (typeof process === "undefined") return;
+        if (this.platform === "win32") {
+            this.windowsService = NodeJsSysHelper.getLib("node-windows");
+        } else if (this.platform === "linux" || this.platform === "darwin") {
+            this.linuxService = NodeJsSysHelper.getLib("nodeLinuxSystemd");
+        }
+    }
+
+    onAction(action) {
+        if (typeof process === "undefined") {
+            console.warn(`${this.title}: Running in browser. Actions are disabled.`);
+            return;
+        }
+
+        if (action === "refresh") {
+            this.listServices();
+        }
+    }
+
+    async listServices() {
+        if (typeof process === "undefined") return;
+
+        try {
+            let services = [];
+            if (this.platform === "win32") {
+                services = await this.listWindowsServices();
+            } else {
+                services = await this.listLinuxServices();
+            }
+
+            let filter = this.getInputOrProperty("filter");
+            if (filter) {
+                services = services.filter(svc => svc.name.toLowerCase().includes(filter.toLowerCase()));
+            }
+
+            this.setOutputData("services", services);
+            this.triggerSlot("onListed");
+        } catch (error) {
+            NodeJsSysHelper.logError(this.title, error);
+            this.triggerSlot("onError");
+        }
+    }
+
+    async listWindowsServices() {
+        return new Promise((resolve, reject) => {
+            let nodeWindows = NodeJsSysHelper.getLib("nodeWindows");
+    
+            if (nodeWindows && nodeWindows.list) {
+                try {
+                    nodeWindows.list((error, services) => {
+                        if (error) {
+                            NodeJsSysHelper.logError(this.title, `node-windows service list error: ${error.message}`);
+                            return this.fallbackListWindowsServices().then(resolve).catch(reject);
+                        }
+    
+                        if (!Array.isArray(services)) {
+                            NodeJsSysHelper.logError(this.title, "Unexpected format from node-windows.");
+                            return reject("Invalid service list format.");
+                        }
+    
+                        let formattedServices = services
+                            .filter(service => service && typeof service === "object")
+                            .map(service => ({
+                                name: service.name || "Unknown",
+                                displayName: service.displayName || service.name || "Unknown",
+                                status: service.status || "unknown",
+                                description: service.description || "No description"
+                            }));
+    
+                        resolve(formattedServices);
+                    });
+                } catch (error) {
+                    NodeJsSysHelper.logError(this.title, `node-windows service list error: ${error.message}`);
+                    this.fallbackListWindowsServices().then(resolve).catch(reject);
+                }
+            } else {
+                console.warn(`${this.title}: node-windows not available. Using fallback method.`);
+                this.fallbackListWindowsServices().then(resolve).catch(reject);
+            }
+        });
+    }
+    
+    
+    fallbackListWindowsServices() {
+        return new Promise((resolve, reject) => {
+            let child_process = NodeJsSysHelper.getLib("child_process");
+            if (!child_process) {
+                // reject("Missing child_process module.");
+                return;
+            }
+    
+            child_process.exec("sc query type= service", (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr || error.message);
+                    return;
+                }
+    
+                let services = [];
+                let serviceBlocks = stdout.split("\n\n"); // Split each service block
+    
+                serviceBlocks.forEach((block) => {
+                    let nameMatch = block.match(/SERVICE_NAME:\s+(.+)/);
+                    let displayNameMatch = block.match(/DISPLAY_NAME:\s+(.+)/);
+                    let stateMatch = block.match(/STATE\s+:\s+\d+\s+(.+)/);
+    
+                    if (nameMatch && stateMatch) {
+                        services.push({
+                            name: nameMatch[1].trim(),
+                            displayName: displayNameMatch ? displayNameMatch[1].trim() : nameMatch[1].trim(),
+                            status: stateMatch[1].trim().split(" ")[0] // Extract RUNNING, STOPPED, etc.
+                        });
+                    }
+                });
+    
+                resolve(services);
+            });
+        });
+    }
+
+    listLinuxServices() {
+        return new Promise((resolve, reject) => {
+            let child_process = NodeJsSysHelper.getLib("child_process");
+            if (!child_process) {
+                // reject("Missing child_process module.");
+                return;
+            }
+
+            let command = this.commandExists("systemctl") ? "systemctl list-units --type=service --no-pager" :
+                this.commandExists("service") ? "service --status-all" : null;
+
+            if (!command) {
+                reject("No valid command found for listing services.");
+                return;
+            }
+
+            child_process.exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr || error.message);
+                    return;
+                }
+
+                let services = [];
+                const lines = stdout.split("\n").filter(line => line.trim() !== "");
+
+                lines.forEach(line => {
+                    let parts = line.trim().split(/\s+/);
+                    if (command.includes("systemctl")) {
+                        let status = parts[2] === "running" ? "running" : "stopped";
+                        services.push({ name: parts[0], status });
+                    } else if (command.includes("service")) {
+                        let name = parts.slice(1).join(" ");
+                        let status = parts[0] === "+" ? "running" : "stopped";
+                        services.push({ name, status });
+                    }
+                });
+
+                resolve(services);
+            });
+        });
+    }
+
+    commandExists(cmd) {
+        try {
+            require("child_process").execSync(`command -v ${cmd}`, { stdio: "ignore" });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+}
+LiteGraph.registerNodeType("sys/serviceList", SysUtil_ServiceListNode);
