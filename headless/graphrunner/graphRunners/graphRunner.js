@@ -13,15 +13,41 @@ const logger = createLogger({ level: 'info', logFile: 'custom.log' });
 const workflowPath = workerData;
 logger.info(`[GR] GraphRunner starting for ${workflowPath}`);
 
-// Redirect console methods to our dedicated logger.
-console.log = (...args) => logger.info(args.join(" "));
-console.info = (...args) => logger.info(args.join(" "));
-console.error = (...args) => logger.error(args.join(" "));
-console.warn = (...args) => logger.warn(args.join(" "));
+// Helper function to pipe messages to parent.
+function pipeConsoleEvent(level, ...args) {
+  const message = args.join(" ");
+  // Send the message to parent (UI) along with its log level.
+  if (parentPort) {
+    parentPort.postMessage({ event: 'console', level, message });
+  }
+}
+
+// Redirect console methods to our dedicated logger and pipe events.
+console.log = (...args) => {
+  const msg = args.join(" ");
+  logger.info(msg);
+  pipeConsoleEvent('info', msg);
+};
+console.info = (...args) => {
+  const msg = args.join(" ");
+  logger.info(msg);
+  pipeConsoleEvent('info', msg);
+};
+console.error = (...args) => {
+  const msg = args.join(" ");
+  logger.error(msg);
+  pipeConsoleEvent('error', msg);
+};
+console.warn = (...args) => {
+  const msg = args.join(" ");
+  logger.warn(msg);
+  pipeConsoleEvent('warn', msg);
+};
 
 // Handle uncaught exceptions.
 process.on('uncaughtException', (err) => {
   logger.error(`[GR] Uncaught Exception: ${err.message}`);
+  pipeConsoleEvent('error', `[GR] Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
 
@@ -37,6 +63,7 @@ function safeLoadGraph() {
     logger.info(`[GR] GraphRunner initialized for ${workflowPath}`);
   } catch (error) {
     logger.error(`[GR] Error loading graph from ${workflowPath}: ${error.message}`);
+    pipeConsoleEvent('error', `[GR] Error loading graph from ${workflowPath}: ${error.message}`);
     process.exit(1);
   }
 }
@@ -48,6 +75,7 @@ graph.onExecute = function () {
     parentPort.postMessage({ event: 'graphExecuted' });
   } catch (error) {
     logger.error(`[GR] Execution error: ${error.message}`);
+    pipeConsoleEvent('error', `[GR] Execution error: ${error.message}`);
   }
 };
 
@@ -70,5 +98,6 @@ parentPort.on('message', (message) => {
     }
   } catch (error) {
     logger.error(`[GR] GraphRunner error processing command: ${error.message}`);
+    pipeConsoleEvent('error', `[GR] GraphRunner error processing command: ${error.message}`);
   }
 });

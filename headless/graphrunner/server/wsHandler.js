@@ -7,12 +7,26 @@ import {
   requestSync, 
   getCurrentProcesses, 
   isGraphRunning,
-  unloadGraph
+  unloadGraph,
+  setConsolePipeCallback
 } from './graphManager.js';
 import { logger } from '../logger.js';
 
 export function setupWebSocket(server) {
   const wss = new WebSocketServer({ server });
+
+  // Register a callback to pipe console events from workers to all clients.
+  setConsolePipeCallback((graphId, level, message) => {
+    const consoleMsg = JSON.stringify({
+      type: "console",
+      data: { graphId, level, message }
+    });
+    wss.clients.forEach(client => {
+      if (client.readyState === client.OPEN) {
+        client.send(consoleMsg);
+      }
+    });
+  });
 
   // Helper: Broadcast a message to all connected clients.
   function broadcast(messageObj) {

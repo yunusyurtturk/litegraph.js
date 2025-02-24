@@ -14,8 +14,8 @@ const WORKFLOWS_DIR = process.env.WORKFLOWS_DIR ||
 
 /* ===================== In‑Memory Graph Functions (Visualization) ===================== */
 
-// Storage for graphs used for visualization & sync.
-// Key: graphId (which is the full relative file path) -> { graph, status, file }
+// Storage for visualization graphs.
+// Key: graphId (the relative file path) -> { graph, status, file }
 const graphs = {};
 
 /**
@@ -84,7 +84,7 @@ export function requestSync(graphId, logger) {
 /* ===================== Worker‑Based Graph Functions (Execution) ===================== */
 
 // Storage for graphs running in worker threads.
-// Key: graphId (the same as in visualization) -> worker instance
+// Key: graphId (same as in visualization) -> worker instance
 const graphRunners = new Map();
 
 /**
@@ -107,11 +107,15 @@ export function loadGraph(file, logger) {
     );
     runner.on('message', (message) => {
       logger.info(`Worker graph ${graphId} message: ${JSON.stringify(message)}`);
+      // Pipe console events if received from worker.
+      if (message.event === 'console' && typeof consolePipeCallback === 'function') {
+        consolePipeCallback(graphId, message.level, message.message);
+      }
     });
     runner.on('exit', (code) => {
       logger.warn(`Worker graph ${graphId} exited with code ${code}`);
       graphRunners.delete(graphId);
-      // Optionally, you could trigger an update to active graphs.
+      // Optionally trigger UI updates here.
     });
     runner.on('error', (error) => {
       logger.error(`Worker graph ${graphId} encountered an error: ${error.message}`);
@@ -187,4 +191,18 @@ export function stopAllGraphs(logger) {
     unloadGraph(graphId, logger);
   }
   logger.info("All worker graphs have been stopped.");
+}
+
+/* ===================== Console Piping ===================== */
+
+// A callback that will be invoked when a worker sends a console event.
+// The callback receives (graphId, level, message).
+let consolePipeCallback = null;
+
+/**
+ * setConsolePipeCallback(callback)
+ * Registers a callback to receive console events from worker threads.
+ */
+export function setConsolePipeCallback(callback) {
+  consolePipeCallback = callback;
 }

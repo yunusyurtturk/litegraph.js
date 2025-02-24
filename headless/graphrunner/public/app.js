@@ -106,9 +106,10 @@ class FileExplorer {
 
 /* =================== Tab Manager =================== */
 class TabManager {
-  constructor(elementId) {
+  constructor(elementId, onLastTabClosed) {
     this.element = document.getElementById(elementId);
     this.tabs = {};
+    this.onLastTabClosed = onLastTabClosed;
   }
 
   addTab(tabId, title, state, onClickCallback) {
@@ -119,7 +120,7 @@ class TabManager {
     const a = document.createElement("a");
     a.className = "nav-link";
     a.href = "#";
-    // The tab displays the visualization state (always "paused")
+    // Visualization state is always "paused"
     a.innerHTML = `${title} <span class="badge bg-secondary">paused</span>`;
     a.onclick = (e) => {
       e.preventDefault();
@@ -133,7 +134,6 @@ class TabManager {
     closeBtn.onclick = (e) => {
       e.stopPropagation();
       this.removeTab(tabId);
-      // Optionally, send an "unload_graph" command to the server.
     };
 
     li.appendChild(a);
@@ -143,7 +143,6 @@ class TabManager {
   }
 
   updateTabState(tabId, state) {
-    // Update the tab's badge (for visualization, this might remain "paused").
     if (this.tabs[tabId]) {
       const regex = /<span.*<\/span>/;
       this.tabs[tabId].a.innerHTML = this.tabs[tabId].a.innerHTML.replace(
@@ -157,6 +156,10 @@ class TabManager {
     if (this.tabs[tabId]) {
       this.element.removeChild(this.tabs[tabId].li);
       delete this.tabs[tabId];
+    }
+    // If no tabs remain, clear the canvas.
+    if (Object.keys(this.tabs).length === 0 && typeof clearCanvas === "function") {
+      clearCanvas();
     }
   }
 
@@ -203,6 +206,15 @@ class GraphViewer {
     }
     return "Unknown";
   }
+
+  clearCanvas() {
+    if (this.canvas.getContext) {
+      const ctx = this.canvas.getContext("2d");
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    this.graph = null;
+    this.editor = null;
+  }
 }
 
 /* =================== Graph Controls =================== */
@@ -234,9 +246,15 @@ class ConsoleLogger {
 
   log(message) {
     const div = document.createElement("div");
-    div.textContent = message;
+    // Prepend a timestamp to each message.
+    const now = new Date().toLocaleTimeString();
+    div.textContent = `[${now}] ${message}`;
     this.element.appendChild(div);
     this.element.scrollTop = this.element.scrollHeight;
+  }
+
+  clear() {
+    this.element.innerHTML = "";
   }
 }
 
@@ -261,7 +279,7 @@ class ActiveGraphsList {
         </div>
       `;
       const [startBtn, stopBtn, unloadBtn] = li.querySelectorAll("button");
-      // Send the proper commands: "start" to execute, "stop" to pause.
+      // Send commands: "start" to run, "stop" to pause.
       startBtn.onclick = () => this.wsClient.send("control_graph", { graphId, action: "start" });
       stopBtn.onclick = () => this.wsClient.send("control_graph", { graphId, action: "stop" });
       unloadBtn.onclick = () => this.wsClient.send("unload_graph", { graphId });
@@ -279,11 +297,16 @@ const wsClient = new WebSocketClient("ws://localhost:3000", handleWebSocketMessa
 const fileExplorer = new FileExplorer("filesList", (file) =>
   wsClient.send("open_graph", { file })
 );
-const tabManager = new TabManager("tabs");
+const tabManager = new TabManager("tabs", clearCanvas);
 const graphViewer = new GraphViewer("graphCanvas");
 const graphControls = new GraphControls("runBtn", "pauseBtn", "toggleBtn");
 const consoleLogger = new ConsoleLogger("consoleOutput");
 const activeGraphsList = new ActiveGraphsList("graphsList", wsClient);
+
+/* Global function to clear the canvas when no tabs are open */
+function clearCanvas() {
+  graphViewer.clearCanvas();
+}
 
 /* =================== WebSocket Message Handler =================== */
 function handleWebSocketMessage(message) {
@@ -293,7 +316,7 @@ function handleWebSocketMessage(message) {
       break;
     case "graph_opened": {
       const { graphId, serializedGraph } = message.data;
-      // Normalize graphId to be the same across visualization and worker.
+      // Normalize graphId across visualization and execution.
       graphsStore[graphId] = { serializedGraph, status: "paused" };
       tabManager.addTab(graphId, graphId, "paused", () => {
         currentGraphId = graphId;
@@ -306,10 +329,11 @@ function handleWebSocketMessage(message) {
     }
     case "graph_status": {
       const { graphId, status } = message.data;
-      // Update the execution status in the Active Graphs list.
+      // Update Active Graphs list with execution state.
       if (graphsStore[graphId]) {
         graphsStore[graphId].status = status;
-        tabManager.updateTabState(graphId, "paused"); // Visualization remains "paused"
+        // The visualization (tab) remains "paused" but execution state is shown in the list.
+        tabManager.updateTabState(graphId, "paused");
         consoleLogger.log(`Graph ${graphId} execution status: ${status}`);
       }
       break;
@@ -322,9 +346,15 @@ function handleWebSocketMessage(message) {
       }
       break;
     }
-    case "console":
-      consoleLogger.log(message.data.message);
+    case "console": {
+      // Display console events with optional graphId filtering.
+      let msg = message.data.message;
+      if (message.data.graphId) {
+        msg = `[${message.data.graphId}] ${msg}`;
+      }
+      consoleLogger.log(msg);
       break;
+    }
     case "error":
       consoleLogger.log("Error: " + message.data.message);
       break;
@@ -336,7 +366,6 @@ function handleWebSocketMessage(message) {
 /* =================== Controls Events =================== */
 graphControls.onRun(() => {
   if (!currentGraphId) return;
-  // Send the proper command to the worker.
   wsClient.send("control_graph", { graphId: currentGraphId, action: "start" });
 });
 graphControls.onPause(() => {
@@ -347,6 +376,18 @@ graphControls.onToggle(() => {
   const mode = graphViewer.toggleReadOnly();
   consoleLogger.log(`Graph canvas is now ${mode}`);
 });
+
+/* =================== Additional Control Buttons =================== */
+// Stop All button: sends a "stop_all_graphs" command.
+document.getElementById("stopAllBtn").onclick = () => {
+  wsClient.send("stop_all_graphs", {});
+  consoleLogger.log("Sent stop_all_graphs command to server.");
+};
+
+// Clear Console button: clears the console output area.
+document.getElementById("clearConsoleBtn").onclick = () => {
+  consoleLogger.clear();
+};
 
 /* Optionally, periodically refresh active graphs */
 setInterval(() => {
