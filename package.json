@@ -10,9 +10,12 @@
         "build": "python3 build.py",
         "docs": "jsdoc -c ./docs/.jsdoc.config -d ./docs -r --verbose --debug",
         "server": "nodemon server.js",
+        "graphrunner": "nodemon --exec node headless/graphrunner/server/index.js",
+        "start": "concurrently \"npm run server\" \"npm run graphrunner\"",
         "test": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js",
         "lint": "npx eslint src",
-        "lint:fix": "npx eslint --fix src"
+        "lint:fix": "npx eslint --fix src",
+        "nodemon": "nodemon"
     },
     "repository": {
         "type": "git",
@@ -32,9 +35,10 @@
     "devDependencies": {
         "@stylistic/eslint-plugin": "^2.1.0",
         "@types/jest": "^28.1.3",
-        "eslint": "^8.37.0 ",
+        "concurrently": "^7.6.0",
+        "eslint": "^8.37.0",
         "eslint-plugin-jest": "^27.2.1",
-        "express": "^4.17.1",
+        "express": "^4.21.2",
         "jest-cli": "^28.1.3",
         "jsdoc": "^4.0.3",
         "jsdom": "^17.0.0",
@@ -44,12 +48,33 @@
     "keywords": [
         "flow",
         "graph",
+        "node",
         "editor",
-        "web"
+        "web",
+        "js",
+        "node.js",
+        "visual programming",
+        "visual scripting"
     ],
     "dependencies": {
+        "chalk": "^5.4.1",
+        "child_process": "^1.0.2",
+        "diskusage": "^1.2.0",
+        "dotenv": "^16.4.7",
+        "fs": "^0.0.1-security",
+        "http": "^0.0.1-security",
         "js-beautify": "^1.15.1",
+        "node-fetch": "^3.3.2",
+        "node-os-utils": "^1.3.7",
+        "node-windows": "^1.0.0-beta.8",
         "osc": "^2.4.4",
-        "uglifyjs": "^2.4.11"
+        "osc-js": "^2.4.1",
+        "path": "^0.12.7",
+        "ps-list": "^8.1.1",
+        "socket.io": "^4.8.1",
+        "socket.io-client": "^4.8.1",
+        "uglifyjs": "^2.4.11",
+        "vm": "^0.1.0",
+        "winston": "^3.17.0"
     }
 }
