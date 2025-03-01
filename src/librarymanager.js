@@ -238,8 +238,6 @@ export class LibraryManager {
                 let modX = null;
                 modX = await import(npmPackage);
 
-                modX = modX?.default ?? modX;
-
                 if (library.globalObject && library.globalObject !== "") {
                     if(library.defaultExport && typeof(modX)=="object"){
                         if(typeof(modX[library.defaultExport])!=="undefined"){
@@ -248,6 +246,9 @@ export class LibraryManager {
                         }else{
                             console.warn(`Library ${npmPackage} NOT FOUND default export`, modX);
                         }
+                    }else{
+                        // RECHECK WHEN AND IF NEEDED (could use defaultExport? mod to get deep property)
+                        // modX = modX?.default ?? modX;
                     }
                     setGlobalVariable(library.globalObject, modX);
                     // TODO save in local libs modX;

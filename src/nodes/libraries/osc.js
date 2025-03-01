@@ -9,14 +9,14 @@ LiteGraph.LibraryManager.registerLibrary({
 LiteGraph.LibraryManager.loadLibrary("osc-js-browser");
 
 class OSCClientNode {
-    static title = "OSC Client";
-    static desc = "Send and receive OSC messages via WebSocket.";
+    static title = "WS Client for OSCBridge";
+    static desc = "Send and receive OSC messages via and WebSocket Bridge.";
 
     constructor() {
         this.size = [80, 40];
         this.properties = {
             host: "127.0.0.1", // Default WebSocket server for OSC
-            port: 8008,
+            port: 8002,
             address: "/example",
             auto_send_input: false,
         };

@@ -1104,7 +1104,7 @@ export class LGraphNode {
             var node = this.graph.getNodeById(link_info.target_id);
             if (!node) {
                 // node not found?
-                LiteGraph.log_debug("lgraphNODE", "triggerSlot", "link has not node", link_info, output, slot, param);
+                LiteGraph.log_warn("lgraphNODE", "triggerSlot", "link has not node", link_info, output, slot, param);
                 continue;
             }
             var target_slot = node.inputs[link_info.target_slot];
@@ -1126,7 +1126,7 @@ export class LGraphNode {
                 
                 // METHOD 1 ancestors
                 if (LiteGraph.refreshAncestorsOnActions){
-                    LiteGraph.log_debug("lgraphNODE", "triggerSlot", "refreshAncestorsOnActions", target_connection.name, output, slot, options);
+                    LiteGraph.log_verbose("lgraphNODE", "triggerSlot", "refreshAncestorsOnActions", target_connection.name, output, slot, options);
                     node.refreshAncestors({action: target_connection.name, param: param, options: options});
                 }
 
@@ -1134,16 +1134,17 @@ export class LGraphNode {
                 if(LiteGraph.use_deferred_actions && node.onExecute) {
                     node._waiting_actions ??= [];
                     node._waiting_actions.push([target_connection.name, param, options, link_info.target_slot]);
-                    LiteGraph.log_debug("lgraphnode", "triggerSlot","push to deferred", target_connection.name, param, options, link_info.target_slot);//+this.id+":"+this.order+" :: "+target_connection.name);
+                    LiteGraph.log_verbose("lgraphnode", "triggerSlot","push to deferred", target_connection.name, param, options, link_info.target_slot);//+this.id+":"+this.order+" :: "+target_connection.name);
                 } else {
                     // trigger now the action
                     // wrap node.onAction(target_connection.name, param);
-                    LiteGraph.log_debug("lgraphnode", "triggerSlot","call actionDo", node, target_connection.name, param, options, link_info.target_slot);
+                    LiteGraph.log_verbose("lgraphnode", "triggerSlot","call actionDo", node, target_connection.name, param, options, link_info.target_slot);
                     node.actionDo( target_connection.name, param, options, link_info.target_slot );
                 }
             } else {
                 // TODO CHECK
-                LiteGraph.log_debug("lgraphnode", "triggerSlot","not executing node, what to do with this Node Mode on slot triggered?", node.mode, this);
+                // LiteGraph.log_verbose("lgraphnode", "triggerSlot","not executing node, what to do with this Node Mode on slot triggered?", node.mode, this);
+                LiteGraph.log_debug("lgraphnode", "triggerSlot", "onAction not implemented on node for triggeringSlot", target_slot, node.title);
             }
         }
     }
@@ -2909,128 +2910,154 @@ export class LGraphNode {
     }
 
     /**
-     * syncObjectByProperty will ensure using the right index for node inputs and outputs during configuration (de-serialization).
-     * It now handles duplicate slots by grouping them by the given property, comparing their counts, and then matching accordingly.
-     * 
-     * @param {Array} ob_from - The new/source array of objects.
-     * @param {Array} ob_dest - The current/destination array of objects.
-     * @param {string} property - The property name used for matching.
-     * @param {object} optsIn - Optional parameters (e.g. fallback_checks, only_in_source behavior).
-     * @returns {object} An object containing the new destination array, a mapping of source-to-dest indices, and lists of items only in source or target.
+     * syncObjectByProperty ensures that duplicate slots are merged in a controlled way:
+     * - For each unique slot (as defined by the given property), the total count in the result
+     *   will be the maximum number of occurrences found in either the source or destination.
+     * - When a slot appears in both arrays, the destination order is preserved for those slots.
+     *   However, if the source array provides extra copies (or a different order), those items are
+     *   used (or appended) so that the new order reflects any changes from the source.
+     * - If a destination slot has no matching source item, fallback checks (if provided) are applied.
+     *
+     * @param {Array} ob_from - The source array (new configuration).
+     * @param {Array} ob_dest - The destination array (current configuration).
+     * @param {string} property - The property name used for matching (e.g. a slot name).
+     * @param {object} optsIn - Optional parameters. Options include:
+     *    - only_in_source: "append" (if extra source slots exist, append them)
+     *    - fallback_checks: an array of alternative property checks (e.g. [{name:"type"}])
+     *
+     * @returns {object} An object containing:
+     *   - ob_dest: the new merged array.
+     *   - keys_remap: a mapping from each source item’s original index to its new index.
+     *   - only_in_source: any items found only in the source.
+     *   - only_in_target: any items found only in the destination.
      */
     syncObjectByProperty(ob_from, ob_dest, property, optsIn) {
-        // Default options: if an object exists only in source, append it;
-        // fallback_checks is an array of alternative property names to try when direct matching fails.
+        // Default options.
         const optsDef = {
             only_in_source: "append",
             fallback_checks: [{ name: "type" }]
         };
         const opts = Object.assign({}, optsDef, optsIn);
-        
-        // Ensure input arrays are defined
+
+        // Ensure we have arrays to work with.
         ob_from = ob_from || [];
         ob_dest = ob_dest || [];
-        
-        const new_dest = [];
-        const keys_remap = {};       // Maps source index -> new destination index
-        const only_in_source = [];   // Items in source but not in dest
-        const only_in_target = [];   // Items in dest that couldn’t be matched by source
-        
-        // Group objects from both arrays by the matching property.
+
+        // Compute the unique keys (slots) in order.
+        // Start with the order from destination, then add any keys from source that aren’t already included.
+        const keyOrder = [];
+        const seenKeys = new Set();
+        ob_dest.forEach(item => {
+            const keyVal = item[property];
+            if (!seenKeys.has(keyVal)) {
+                keyOrder.push(keyVal);
+                seenKeys.add(keyVal);
+            }
+        });
+        ob_from.forEach(item => {
+            const keyVal = item[property];
+            if (!seenKeys.has(keyVal)) {
+                keyOrder.push(keyVal);
+                seenKeys.add(keyVal);
+            }
+        });
+
+        // Group items by their key.
         const groupFrom = {};
-        ob_from.forEach((item, index) => {
+        ob_from.forEach((item, idx) => {
             const keyVal = item[property];
             if (!groupFrom[keyVal]) groupFrom[keyVal] = [];
-            groupFrom[keyVal].push({ index, item });
+            groupFrom[keyVal].push({ idx, item });
         });
-        
         const groupDest = {};
-        ob_dest.forEach((item, index) => {
+        ob_dest.forEach((item, idx) => {
             const keyVal = item[property];
             if (!groupDest[keyVal]) groupDest[keyVal] = [];
-            groupDest[keyVal].push({ index, item });
+            groupDest[keyVal].push({ idx, item });
         });
-        
-        // Keep track of which source indices have been used
+
+        // Global set to record which source indices have been used.
         const usedSource = new Set();
-        
-        // Process each group present in the destination array.
-        Object.keys(groupDest).forEach(keyVal => {
-            const destGroup = groupDest[keyVal]; // array of { index, item } in destination
-            const srcGroup = groupFrom[keyVal] || []; // corresponding group in source (may be empty)
-            const commonCount = Math.min(srcGroup.length, destGroup.length);
-            
-            // For the "common" ones, assign source items (cloned) to the corresponding destination index.
-            for (let i = 0; i < commonCount; i++) {
-                const srcEntry = srcGroup[i];
-                const destEntry = destGroup[i];
-                new_dest[destEntry.index] = LiteGraph.cloneObject(srcEntry.item);
-                keys_remap[srcEntry.index] = destEntry.index;
-                usedSource.add(srcEntry.index);
-            }
-            
-            // For extra destination slots in this group, try fallback matching:
-            if (destGroup.length > srcGroup.length) {
-                for (let i = srcGroup.length; i < destGroup.length; i++) {
-                    const destEntry = destGroup[i];
-                    let matched = false;
-                    // Search through all unmatched source items for a fallback match.
-                    for (let srcIndex = 0; srcIndex < ob_from.length; srcIndex++) {
-                        if (usedSource.has(srcIndex)) continue;
-                        const srcItem = ob_from[srcIndex];
-                        for (let fallback of opts.fallback_checks) {
-                            if (srcItem[fallback.name] === destEntry.item[fallback.name]) {
-                                new_dest[destEntry.index] = LiteGraph.cloneObject(srcItem);
-                                keys_remap[srcIndex] = destEntry.index;
-                                usedSource.add(srcIndex);
-                                matched = true;
-                                break;
+        // Mapping from source index to new index.
+        const keys_remap = {};
+        // The new merged destination array.
+        const new_dest = [];
+
+        // Process each unique key in the order defined by destination (with extras from source appended).
+        keyOrder.forEach(keyVal => {
+            const srcGroup = groupFrom[keyVal] || [];
+            const destGroup = groupDest[keyVal] || [];
+            // Allowed number is the greatest count in either array.
+            const allowedCount = Math.max(srcGroup.length, destGroup.length);
+            // For each copy of this slot…
+            for (let i = 0; i < allowedCount; i++) {
+                let chosen = null;
+                if (i < destGroup.length) {
+                    // This slot exists in destination.
+                    if (i < srcGroup.length) {
+                        // Prefer the source item to update the slot.
+                        chosen = LiteGraph.cloneObject(srcGroup[i].item);
+                        usedSource.add(srcGroup[i].idx);
+                        keys_remap[srcGroup[i].idx] = new_dest.length;
+                    } else {
+                        // No matching source item in this position.
+                        // Try fallback matching: search all unused source items for a match on any fallback property.
+                        let fallbackMatched = false;
+                        const destItem = destGroup[i].item;
+                        if (opts.fallback_checks && opts.fallback_checks.length) {
+                            for (const check of opts.fallback_checks) {
+                                for (let j = 0; j < ob_from.length; j++) {
+                                    if (usedSource.has(j)) continue;
+                                    if (ob_from[j][check.name] === destItem[check.name]) {
+                                        chosen = LiteGraph.cloneObject(ob_from[j]);
+                                        usedSource.add(j);
+                                        keys_remap[j] = new_dest.length;
+                                        fallbackMatched = true;
+                                        break;
+                                    }
+                                }
+                                if (fallbackMatched) break;
                             }
                         }
-                        if (matched) break;
-                    }
-                    if (!matched) {
-                        // No fallback match: retain the destination item.
-                        new_dest[destEntry.index] = LiteGraph.cloneObject(destEntry.item);
-                        only_in_target.push(destEntry.item);
-                    }
-                }
-            }
-        });
-        
-        // Now, process source groups that have extra items not found in destination.
-        Object.keys(groupFrom).forEach(keyVal => {
-            const srcGroup = groupFrom[keyVal];
-            const destGroup = groupDest[keyVal] || [];
-            if (srcGroup.length > destGroup.length) {
-                // For each extra source item, if not used already, append it.
-                for (let i = destGroup.length; i < srcGroup.length; i++) {
-                    const srcEntry = srcGroup[i];
-                    if (!usedSource.has(srcEntry.index)) {
-                        if (opts.only_in_source === "append") {
-                            new_dest.push(LiteGraph.cloneObject(srcEntry.item));
-                            keys_remap[srcEntry.index] = new_dest.length - 1;
+                        // If no fallback match, retain the destination item.
+                        if (!fallbackMatched) {
+                            chosen = LiteGraph.cloneObject(destItem);
                         }
-                        only_in_source.push(srcEntry.item);
                     }
+                } else {
+                    // i >= destGroup.length: destination had fewer copies than source.
+                    if (i < srcGroup.length) {
+                        chosen = LiteGraph.cloneObject(srcGroup[i].item);
+                        usedSource.add(srcGroup[i].idx);
+                        keys_remap[srcGroup[i].idx] = new_dest.length;
+                    }
+                }
+                if (chosen !== null) {
+                    new_dest.push(chosen);
                 }
             }
         });
-        
-        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
-            only_in_source,
-            only_in_target,
+
+        // Compute any items present only in source (unused items) and only in destination.
+        const only_in_source = ob_from.filter((item, idx) => !usedSource.has(idx));
+        const only_in_target = ob_dest.filter(destItem =>
+            !ob_from.some(srcItem => srcItem[property] === destItem[property])
+        );
+
+        LiteGraph.log_verbose("syncObjectByProperty", "Merge Result", {
             ob_from,
             ob_dest,
             new_dest,
             keys_remap,
+            only_in_source,
+            only_in_target
         });
-        
+
         return {
             ob_dest: new_dest,
-            keys_remap,
-            only_in_source,
-            only_in_target,
+            keys_remap: keys_remap,
+            only_in_source: only_in_source,
+            only_in_target: only_in_target
         };
     }
 

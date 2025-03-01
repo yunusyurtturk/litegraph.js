@@ -28,6 +28,8 @@ export function openGraph(file, logger) {
   const filePath = path.join(WORKFLOWS_DIR, file);
   try {
     const data = fs.readFileSync(filePath, "utf8");
+    
+    // load graph in this thread
     const json = JSON.parse(data);
     const graph = new LiteGraph.LGraph();
     try {
@@ -35,9 +37,13 @@ export function openGraph(file, logger) {
     } catch (e) {
       logger.error("Graph configuration error for " + filePath + ": " + e.message);
     }
+    
     // Use the relative file path as the graphId for consistency.
     const graphId = file;
+    
     graphs[graphId] = { graph, status: "paused", file };
+    // graphs[graphId] = { graph: data, status: "paused", file };
+
     logger.info("Graph loaded for visualization from " + filePath);
 
     // Spawn an external worker to execute the graph.

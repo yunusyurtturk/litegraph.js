@@ -1008,7 +1008,7 @@ class Console {
             console.error(msg,param);
         }else{
             console.info("[ConsoleNode]",msg,param);
-            console.verbose("[ConsoleNode]",msg,param,"options:",options);
+            console.debug("[ConsoleNode]",msg,param,"options:",options);
         }
     }
 

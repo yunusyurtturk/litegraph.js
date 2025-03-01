@@ -25,7 +25,7 @@ class LGSocketIO {
     constructor() {
         this.size = [60, 20];
         this.properties = {
-            url: "http://127.0.0.1:3000",
+            url: "http://127.0.0.1:3030",
             room: null,
             auto_send_input: false,
             only_send_changes: true,

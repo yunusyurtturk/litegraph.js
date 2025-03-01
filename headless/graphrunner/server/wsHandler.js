@@ -104,7 +104,11 @@ function handleOpenGraph(ws, payload, logger) {
   if (result.error) {
     ws.send(JSON.stringify({ type: "error", data: { message: result.error } }));
   } else {
+    // if returning objGraph
     ws.send(JSON.stringify({ type: "graph_opened", data: result }));
+    // if returning jsonGraph
+    // const sSend = '{ type: "graph_opened", data: '+result+' }';
+    // ws.send(sSend);
     logger.info(`Graph ${result.graphId} opened by a client`);
   }
 }

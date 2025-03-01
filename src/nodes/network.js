@@ -1,43 +1,51 @@
 import { LiteGraph } from "../litegraph.js";
 
 class LGWebSocket {
-
     static title = "WS Client";
     static desc = "Connect to a WebSocket to send and receive data";
 
     constructor() {
         this.size = [60, 20];
-        this.addInput("msg_w_data", LiteGraph.ACTION, {nameLocked: true, removable: false});
-        this.addInput("DATA_1", 0, {nameLocked: false, removable: true});
-        this.addInput("EV_1", LiteGraph.ACTION, {nameLocked: false, removable: true});
+        // Fixed inputs and outputs
+        this.addInput("msg_w_data", LiteGraph.ACTION, { nameLocked: true, removable: false });
+        this.addInput("DATA_1", 0, { nameLocked: false, removable: true });
+        this.addInput("EV_1", LiteGraph.ACTION, { nameLocked: false, removable: true });
         this.addOutput("onReceived", LiteGraph.EVENT);
-        this.addOutput("dataRec", 0, {nameLocked: true, removable: false});
-        this.addOutput("DATA_1", 0, {nameLocked: false, removable: true});
-        this.addOutput("EV_1", LiteGraph.EVENT, {nameLocked: false, removable: true});
+        this.addOutput("dataRec", 0, { nameLocked: true, removable: false });
+        this.addOutput("DATA_1", 0, { nameLocked: false, removable: true });
+        this.addOutput("EV_1", LiteGraph.EVENT, { nameLocked: false, removable: true });
+
+        // Configurable properties
         this.properties = {
-            url: "ws://127.0.0.1:8080",
+            url: "ws://127.0.0.1:8010",
             room: null,
             auto_send_input: false,
             only_send_changes: true,
-            runOnServerToo: false
+            runOnServerToo: false,
+            auto_reconnect: true, // New property: attempt reconnection if disconnected
+            reconnectInterval: 3000 // milliseconds before trying to reconnect
         };
+
         this._ws = null;
         this._last_sent_data = [];
         this._last_received_data = [];
-        this._hasWarned = false; // To ensure warning is only logged once
+        this._hasWarned = false; // To warn only once in server mode
     }
 
     onPropertyChanged(name, _value) {
         if (name === "url") {
             this.connectSocket();
         }
+        // For any property change, you could consider reconnecting if needed.
     }
 
     onExecute() {
-        if (!this._ws && this.properties.url && !this._ws?.readyState == WebSocket.CONNECTING) {
+        // If no websocket exists or if it is closed, attempt to connect.
+        if (!this._ws || this._ws.readyState === WebSocket.CLOSED) {
             this.connectSocket();
         }
 
+        // Only proceed if the socket is open.
         if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
@@ -45,55 +53,48 @@ class LGWebSocket {
         const room = this.properties.room;
         const only_changes = this.properties.only_send_changes;
 
-        if(this.properties.auto_send_input){
+        if (this.properties.auto_send_input) {
+            // Loop through dynamic data inputs (starting at index 1)
             for (let i = 1; i < this.inputs.length; ++i) {
                 const data = this.getInputData(i);
-                if (data == null) {
-                    continue;
-                }
+                if (data == null) continue;
 
-                let json;
+                let payload;
                 try {
-                    json = {
+                    payload = {
                         type: 0,
                         channel: i,
                         data: data,
                     };
-                    if (room) json.room = room;
-                    json = JSON.stringify(json);
+                    if (room) payload.room = room;
+                    payload = JSON.stringify(payload);
                 } catch (err) {
                     console.error("Error stringifying data:", err);
                     continue;
                 }
 
-                if (only_changes && this._last_sent_data[i] === json) {
+                if (only_changes && this._last_sent_data[i] === payload) {
                     continue;
                 }
-                this._last_sent_data[i] = json;
+                this._last_sent_data[i] = payload;
                 try {
-                    this._ws.send(json);
-                    console.log("WS sent by execute:", i, json);
+                    this._ws.send(payload);
+                    console.log("WS sent by execute:", i, payload);
                 } catch (err) {
                     console.error("Error sending data:", err);
                 }
             }
         }
 
-        // force update output?
-        // for (let i = 1; i < this.outputs.length; ++i) {
-        //     if(i in this._last_received_data){
-        //         this.setOutputData(i, this._last_received_data[i]);
-        //     }
-        // }
-
-        // reset color
+        // Reset box color if needed.
         if (this.boxcolor === "#AFA") {
             this.boxcolor = "#6C6";
         }
     }
 
     connectSocket() {
-        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        // In Node.js, only allow connection if runOnServerToo is true.
+        if (typeof process !== "undefined" && process.versions && process.versions.node) {
             if (!this.properties.runOnServerToo) {
                 if (!this._hasWarned) {
                     console.warn("WsClient: not allowed to run on the server. Set 'runOnServerToo' to true to enable.");
@@ -103,13 +104,30 @@ class LGWebSocket {
             }
         }
 
+        // If already connected, close existing connection.
         if (this._ws) {
             this._ws.close();
         }
 
+        // Ensure a proper WebSocket constructor is available.
+        let WSConstructor = typeof WebSocket !== "undefined" ? WebSocket : null;
+        if (!WSConstructor && typeof require !== "undefined") {
+            try {
+                WSConstructor = require("ws");
+            } catch (err) {
+                console.error("WebSocket module not found:", err);
+                return;
+            }
+        }
+        if (!WSConstructor) {
+            console.error("WebSocket is not available in this environment.");
+            return;
+        }
+
+        // Ensure URL has ws:// or wss:// prefix.
         const url = this.properties.url.startsWith("ws") ? this.properties.url : "ws://" + this.properties.url;
         try {
-            this._ws = new WebSocket(url);
+            this._ws = new WSConstructor(url);
         } catch (err) {
             console.error("Error creating WebSocket:", err);
             return;
@@ -123,10 +141,9 @@ class LGWebSocket {
         this._ws.onmessage = (e) => {
             this.boxcolor = "#AFA";
             console.info("WS on message:", e.data);
-
             let data = e.data;
 
-            if (typeof data === 'string') {
+            if (typeof data === "string") {
                 try {
                     data = JSON.parse(data);
                 } catch (err) {
@@ -135,10 +152,9 @@ class LGWebSocket {
             } else if (data instanceof ArrayBuffer) {
                 console.log("Received binary data");
                 const byteArray = new Uint8Array(data);
-                const binaryString = new TextDecoder('utf-8').decode(byteArray);
+                const binaryString = new TextDecoder("utf-8").decode(byteArray);
                 console.log("Binary data as string:", binaryString);
-                const binaryBase64 = btoa(String.fromCharCode.apply(null, byteArray));
-                console.log("Binary data as base64:", binaryBase64);
+                // Optionally, you can also convert binary data to Base64.
                 data = binaryString;
             }
 
@@ -146,48 +162,47 @@ class LGWebSocket {
                 console.debug("WS: received message for different room");
                 return;
             }
-            
-            // TODO data.channel is i, or 1 default : this.setOutputData(i, this._last_received_data[i]);
 
             const channelX = data.channel !== undefined ? data.channel : 1;
-            const dataData_defined = typeof(data.data) !== "undefined";
-            const dataX = dataData_defined ? data.data : data;
-            const slotX = data?.action || 0;
-            // data.type == 1 comes from unknown source: it will create a temporary LiteGraph object
-            if (data?.type === 1) {
-                if (data.data?.object_class && LiteGraph[data.data.object_class]) {
+            const dataDefined = typeof data.data !== "undefined";
+            let dataX = dataDefined ? data.data : data;
+            let slotX = data && data.action ? data.action : 0;
+
+            // Handle type 1 messages (intended to create temporary LiteGraph objects)
+            if (data && data.type === 1) {
+                if (data.data && data.data.object_class && LiteGraph[data.data.object_class]) {
                     try {
-                        console.debug("WS executing LiteGraph object:", obj, data.data);
                         const obj = new LiteGraph[data.data.object_class](data.data);
-                        // channelX = data.data.object_class;
-                        dataX = data.data.object_class;
                         console.debug("WS created temporary LG object:", obj);
+                        dataX = obj;
                     } catch (err) {
                         console.error("WS Error creating object:", err);
                     }
-                } else if (dataData_defined) {
+                } else if (dataDefined) {
                     console.debug("WS type1 received data:", data.data);
+                    dataX = data.data;
                 } else {
                     console.debug("WS type1 received UNKNOWN data:", data);
                 }
             } else {
-                if (dataData_defined) {
+                if (dataDefined) {
                     console.debug("WS received channel data:", data.channel, data.data);
                 } else {
                     console.debug("WS received UNKNOWN data:", data);
                 }
             }
             this._last_received_data[channelX] = dataX;
-            console.debug("WS updating data and triggers:", "channelX", channelX, "dataX", dataX, "slotX", slotX);
-            // set any data to default dataRec slot
-            this.setOutputData(1, dataX);
-            // if not an action, set output data to specific channel
-            if(slotX==0){
-                this.setOutputData("DATA_"+channelX, dataX);
+            console.debug("WS updating data and triggers:", "channel", channelX, "data:", dataX, "slot:", slotX);
+            // Set default output (dataRec)
+            this.setOutputData("dataRec", dataX);
+            // Set dynamic output if defined (for channel-specific data)
+            if (slotX === 0) {
+                this.setOutputData("DATA_" + channelX, dataX);
             }
+            // Trigger default event slot
             this.triggerSlot(0, dataX);
-            // if an action, trigger relative slot
-            if(slotX!==0){
+            // If an action is specified, trigger that slot
+            if (slotX !== 0) {
                 this.triggerSlot(slotX, dataX);
             }
         };
@@ -200,6 +215,13 @@ class LGWebSocket {
         this._ws.onclose = () => {
             console.log("WS connection closed");
             this.boxcolor = "#000";
+            // Optionally, auto-reconnect if enabled.
+            if (this.properties.auto_reconnect) {
+                setTimeout(() => {
+                    console.log("Attempting to reconnect WS...");
+                    this.connectSocket();
+                }, this.properties.reconnectInterval);
+            }
         };
     }
 
@@ -208,7 +230,7 @@ class LGWebSocket {
             console.log("WS close connection");
             this._ws.close();
             this._ws = null;
-        }else{
+        } else {
             console.log("WS no connection to close");
         }
     }
@@ -217,7 +239,8 @@ class LGWebSocket {
         if (!this._ws || this._ws.readyState !== WebSocket.OPEN) {
             return;
         }
-        const msg = { type: 1, data: data }; //JSON.stringify();
+        const msgObj = { type: 1, data: data };
+        const msg = JSON.stringify(msgObj);
         try {
             this._ws.send(msg);
             console.log("WS sent:", msg);
@@ -245,35 +268,23 @@ class LGWebSocket {
         }
     }
 
+    // Return additional dynamic input slots only if they exist beyond the fixed ones.
     onGetInputs() {
-        let nIn = 1;
-        let nAct = 1;
-        this.inputs.forEach(element => {
-            console.warn(element);
-            if(element.name.startsWith("DATA_")) nIn++;
-            if(element.name.startsWith("EV_")) nAct++;
-        });
-        return [["DATA_"+nIn, 0, {nameLocked: true, removable: true}]
-                , ["EV_"+nAct, LiteGraph.ACTION, {nameLocked: true, removable: true}]
-            ];
+        // Fixed inputs are: "msg_w_data", "DATA_1", "EV_1" (total 3)
+        return this.inputs.length > 3 ? this.inputs.slice(3) : [];
     }
 
+    // Return additional dynamic output slots only if they exist beyond the fixed ones.
     onGetOutputs() {
-        let nOut = 1;
-        let nEv = 1;
-        this.inputs.forEach(element => {
-            if(element.name.startsWith("DATA_")) nOut++;
-            if(element.name.startsWith("EV_")) nEv++;
-        });
-        return [["DATA_"+nOut, 0, {nameLocked: true, removable: true}]
-                , ["EV_"+nEv, LiteGraph.EVENT, {nameLocked: true, removable: true}]
-            ];
+        // Fixed outputs are: "onReceived", "dataRec", "DATA_1", "EV_1" (total 4)
+        return this.outputs && this.outputs.length > 4 ? this.outputs.slice(4) : [];
     }
 
     onRemoved() {
         this.disconnectSocket();
     }
 }
+
 LiteGraph.registerNodeType("network/websocket", LGWebSocket);
 
 

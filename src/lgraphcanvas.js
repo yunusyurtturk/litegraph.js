@@ -8054,7 +8054,7 @@ export class LGraphCanvas {
     }
 
     static getPropertyPrintableValue(value, values) {
-        if(!values)
+        if(!values){
             if( typeof(value)=="number"){
                 return parseFloat(value.toFixed(5));
             // TODO add option to format numbers in string
@@ -8062,6 +8062,7 @@ export class LGraphCanvas {
             //     return parseFloat(Number(value).toFixed(5));
             }
             return String(value);
+        }
 
         if(values.constructor === Array) {
             return String(value);
