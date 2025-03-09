@@ -17,7 +17,9 @@ export class LibraryManager {
     constructor() {
         this.libraries_known = {};
         this.libraries_loaded = {};
+        this.libraries_to_load = [];
         this.libraries_state = {};
+        this.loading_promises = {};
         this.fs = null;
         this.path = null;
 
@@ -133,44 +135,56 @@ export class LibraryManager {
         return str.replace(/[^a-zA-Z0-9_$]/g, '_').replace(/^[0-9]/, '_$&');
     }
 
-    // **Load a library dynamically (includes all specified files)**
     async loadLibrary(key, callback) {
         if (!this.libraries_known[key]) {
             console.error(`Library ${key} not registered.`);
             return;
         }
 
-        if (this.libraries_state[key] === "loading") {
-            console.warn(`Library ${key} is already loading.`);
-            return;
-        }
-
+        // If the library is already loaded, return it immediately
         if (this.libraries_state[key] === "loaded") {
             console.warn(`Library ${key} is already loaded.`);
             callback && callback(this.libraries_loaded[key]);
-            return;
+            return this.libraries_loaded[key];
         }
 
+        // If the library is currently loading, wait for its completion
+        if (this.libraries_state[key] === "loading") {
+            console.warn(`Library ${key} is already loading. Waiting for completion...`);
+            return this.loading_promises[key]; // Return the existing promise
+        }
+
+        // Start loading process
+        this.libraries_to_load.push(key);
         this.libraries_state[key] = "loading";
-        const library = this.libraries_known[key];
 
-        try {
-            let loadedModules = [];
+        // Store the promise in case others try to load it simultaneously
+        this.loading_promises[key] = new Promise(async (resolve, reject) => {
+            try {
+                let loadedModules = [];
 
-            if (isBrowser()) {
-                loadedModules = await this.loadBrowserLibrary(library);
-            } else if (isNode() || isBun()) {
-                loadedModules = await this.loadServerLibrary(library);
+                if (isBrowser()) {
+                    loadedModules = await this.loadBrowserLibrary(this.libraries_known[key]);
+                } else if (isNode() || isBun()) {
+                    loadedModules = await this.loadServerLibrary(this.libraries_known[key]);
+                }
+
+                this.libraries_state[key] = "loaded";
+                this.libraries_loaded[key] = loadedModules;
+
+                console.log(`Library processed: ${key}`);
+                callback && callback(loadedModules);
+                resolve(loadedModules);
+            } catch (error) {
+                this.libraries_state[key] = "error";
+                console.error(`Failed to load library ${key}:`, error);
+                reject(error);
+            } finally {
+                delete this.loading_promises[key]; // Clean up after loading is complete
             }
+        });
 
-            this.libraries_state[key] = "loaded";
-            this.libraries_loaded[key] = loadedModules;
-            console.log(`Library ${key} loaded.`);
-            callback && callback(loadedModules);
-        } catch (error) {
-            this.libraries_state[key] = "error";
-            console.error(`Failed to load library ${key}:`, error);
-        }
+        return this.loading_promises[key];
     }
 
     // **Load all specified browser files**
@@ -248,11 +262,17 @@ export class LibraryManager {
                         }
                     }else{
                         // RECHECK WHEN AND IF NEEDED (could use defaultExport? mod to get deep property)
-                        // modX = modX?.default ?? modX;
+                        if(typeof(modX.default)!=="undefined" && (library.defaultExport === true)){
+                            console.debug(`Module has default for package: ${npmPackage}`, modX);
+                            modX = modX.default;
+                            console.debug(`Exporting default for package: ${npmPackage}`, modX);
+                        }else{
+                            console.debug(`Using module standard import package: ${npmPackage}`, modX);
+                        }
                     }
                     setGlobalVariable(library.globalObject, modX);
                     // TODO save in local libs modX;
-                    console.log(`Included package: ${npmPackage} as global ${library.globalObject}`);
+                    console.log(`Included package: ${npmPackage} as global ${library.globalObject}`, modX);
                     // console.log(`${modX}}`);
                 }else{
                     console.log(`NOT Included package: ${npmPackage} as global ${library.globalObject} result ${modX} of ${loadedModules}`);
@@ -300,8 +320,12 @@ export class LibraryManager {
         return loadedModules;
     }
 
+    isLibraryLoaded(libKey){
+        return this.getLibraryState(libKey) === "loaded";
+    }
+
     getLib(libKey) {
-        if (this.getLibraryState(libKey) != "loaded") {
+        if (!this.isLibraryLoaded(libKey)) {
             console.warn(`[NodeJsSys] Library '${libKey}' is not loaded. Attempting to load...`);
             this.loadLibrary(libKey);
             return null;
@@ -472,12 +496,13 @@ export class LibraryManager {
     }
 
     /**
-     * Check if all registered libraries are loaded.
+     * Check if all libraries to load are loaded.
      * @returns {boolean} True if every library's state is "loaded", false otherwise.
      */
     areAllLibrariesLoaded() {
-        for (const key in this.libraries_state) {
-            if (this.libraries_state[key] !== "loaded") {
+        for (const iL in this.libraries_to_load) {
+            let key = this.libraries_to_load[iL];
+            if (this.libraries_state[key] !== "loaded" && this.libraries_state[key] !== "error") {
                 return false;
             }
         }

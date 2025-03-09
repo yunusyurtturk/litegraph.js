@@ -1,3 +1,5 @@
+
+
 class UDPClientNode {
     static title = "UDP Client";
     static desc = "Sends and receives raw UDP datagrams (uses dgram in Node.js and WebTransport in browser)";
@@ -9,7 +11,7 @@ class UDPClientNode {
         remoteHost: "127.0.0.1",
         remotePort: 41234,
         // For Browser: the URL to a WebTransport server that proxies UDP traffic.
-        udpUrl: "https://example.com:443/udp",
+        udpUrl: "https://127.0.0.1:443/udp",
       };
       this._isNode = (typeof process !== "undefined" && process.versions && process.versions.node);
       this._socket = null;

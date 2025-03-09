@@ -4,14 +4,15 @@ LiteGraph.LibraryManager.registerLibrary({
     globalObject: "http",
     server: { npm: "http" }
 });
-LiteGraph.LibraryManager.loadLibrary("http");
+// deferred LiteGraph.LibraryManager.loadLibrary("http");
 
 LiteGraph.LibraryManager.registerLibrary({
     key: "ws",
     globalObject: "ws",
-    server: { npm: "ws" }
+    server: { npm: "ws" },
+    // defaultExport: "WebSocketServer"
 });
-LiteGraph.LibraryManager.loadLibrary("ws");
+// deferred LiteGraph.LibraryManager.loadLibrary("ws");
 
 LiteGraph.LibraryManager.registerLibrary({
     key: "socket.io",
@@ -19,7 +20,21 @@ LiteGraph.LibraryManager.registerLibrary({
     server: { npm: "socket.io" },
     defaultExport: "Server"
 });
-LiteGraph.LibraryManager.loadLibrary("socket.io");
+// deferred LiteGraph.LibraryManager.loadLibrary("socket.io");
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "dgram",
+    globalObject: "dgram",
+    server: { npm: "dgram" }
+});
+// deferred LiteGraph.LibraryManager.loadLibrary("dgram");
+
+LiteGraph.LibraryManager.registerLibrary({
+    key: "osc-js",
+    globalObject: "oscnode",
+    server: { npm: "osc-js" }
+});
+// deferred LiteGraph.LibraryManager.loadLibrary("osc-js");
 
 // ----------------------------
 // BaseServer Class (common)
@@ -54,19 +69,19 @@ class BaseServer {
         console.error(`[${this._getServerName()}]`, ...args);
     }
     log_once(first) {
-        if(!this._logged_once.includes(first)){
+        if (!this._logged_once.includes(first)) {
             this._logged_once.push(first);
             return this.log(...arguments);
         }
     }
     warn_once(first) {
-        if(!this._logged_once.includes(first)){
+        if (!this._logged_once.includes(first)) {
             this._logged_once.push(first);
             return this.warn(...arguments);
         }
     }
     error_once(first) {
-        if(!this._logged_once.includes(first)){
+        if (!this._logged_once.includes(first)) {
             this._logged_once.push(first);
             return this.log(...arguments);
         }
@@ -117,11 +132,19 @@ class BaseServer {
     stopServer(callback) {
         if (this.server) {
             this.status = "stopping";
-            this.server.close(() => {
-                this.status = "stopped";
-                this.log("Server stopped.");
-                if (callback) callback();
-            });
+            try {
+                this.server.close(() => {
+                    this.status = "stopped";
+                    this.log("Server stopped.");
+                    // Clear the server instance.
+                    this.server = null;
+                    if (callback) callback();
+                });
+            } catch (err) {
+                this.error("Error closing server:", err);
+                this.status = "failed";
+                if (callback) callback(err);
+            }
         }
     }
 
@@ -156,15 +179,15 @@ class BaseServer {
     }
 
     onStarted() {
-        this.log("Server started.");
+        this.log(this.name, "Server started.");
     }
     onStopped() {
-        this.log("Server stopped.");
+        this.log(this.name, "Server stopped.");
     }
 
     onRemoved() {
         if (this.server) {
-            this.server.close();
+            this.stopServer();
         }
     }
 }
@@ -178,6 +201,7 @@ class WebSocketServer extends BaseServer {
 
     constructor() {
         super();
+        this.libraries = ["ws"];
         // Set default properties specific to WebSocket.
         this.properties.port = 8010;
         this.properties.only_send_changes = true;
@@ -206,7 +230,7 @@ class WebSocketServer extends BaseServer {
         let WebSocketPkg = LiteGraph.LibraryManager.getLib("ws");
         if (!WebSocketPkg) {
             throw new Error("WebSocket library not available");
-        }else{
+        } else {
             this.log("Got WebSocket package", WebSocketPkg);
         }
         this.log("Creating WebSocket server instance on port", this.properties.port);
@@ -264,7 +288,7 @@ class WebSocketServer extends BaseServer {
             this.log("Message is not JSON formatted; processing as raw text.");
         }
         this._last_received_data = data;
-        this.triggerSlot("received", data);
+        this.triggerSlot("onMessage", data);
         // Broadcast to all clients except the sender if enabled.
         if (this.properties.broadcast) {
             this.sendToAllClients(data);
@@ -301,7 +325,7 @@ class WebSocketServer extends BaseServer {
             this.log(`Autoconnect triggered on execute, port ${this.properties.port}`);
             this.startServer();
         }
-        const inputMessage = this.getInputData("in");
+        const inputMessage = this.getInputData("dataIn");
         if (inputMessage != null && this.properties.broadcast) {
             let jsonMessage;
             try {
@@ -334,7 +358,7 @@ class WebSocketServer extends BaseServer {
     onAction(action, param) {
         if (!this.server || this.server.readyState !== this.server.OPEN) return;
         if (action === "doSend") {
-            const data = this.getInputData("in");
+            const data = this.getInputData("dataIn");
             if (data != null) {
                 let msg;
                 try {
@@ -352,29 +376,28 @@ class WebSocketServer extends BaseServer {
     onGetInputs() {
         return [
             ["doSend", LiteGraph.ACTION],
-            ["in", 0],
+            ["dataIn", 0],
             ["port", "number"],
-            ["should_autoconnect", "boolean"]
         ];
     }
 
     onGetOutputs() {
         return [
+            ["onMessage", LiteGraph.EVENT],
+            ["dataOut", 0],
             ["status", "string"],
             ["onStarted", LiteGraph.EVENT],
-            ["onStopped", LiteGraph.EVENT],
-            ["received", LiteGraph.EVENT],
-            ["dataOut", 0]
+            ["onStopped", LiteGraph.EVENT]
         ];
     }
 
     onStarted() {
-        this.log("Server started");
+        this.log("WSServer started");
         this.triggerSlot("onStarted");
     }
 
     onStopped() {
-        this.log("Server stopped");
+        this.log("WSServer stopped");
         this.triggerSlot("onStopped");
     }
 }
@@ -394,6 +417,7 @@ class SocketIOServerNode extends BaseServer {
 
     constructor() {
         super();
+        this.libraries = ["socket.io"];
         // Set child-specific defaults.
         this.properties.port = 3030;
         // Initialize internal state.
@@ -444,8 +468,9 @@ class SocketIOServerNode extends BaseServer {
             this.clients.add(socket);
             this.log("New client connected:", socket.id);
             socket.on("message", (data) => {
-                this.log("Received message:", data);
-                this.triggerSlot("message", data);
+                this.log("SocketIO Received message:", data);
+                this.setOutputData("dataOut", data);
+                this.triggerSlot("onMessage", data);
                 this.broadcast("message", data);
             });
             socket.on("disconnect", () => {
@@ -480,12 +505,22 @@ class SocketIOServerNode extends BaseServer {
         this.setOutputData("status", this.status);
     }
 
+    onStarted() {
+        this.log("SocketIOServer started");
+        this.triggerSlot("onStarted");
+    }
+
+    onStopped() {
+        this.log("SocketIOServer stopped");
+        this.triggerSlot("onStopped");
+    }
+
     onGetInputs() {
-        return [["port", "number"], ["should_autoconnect", "boolean"]];
+        
     }
 
     onGetOutputs() {
-        return [["status", "string"], ["onStarted", LiteGraph.EVENT], ["onStopped", LiteGraph.EVENT], ["onMessage", LiteGraph.EVENT], ["message", "string"]];
+        return [["onMessage", LiteGraph.EVENT], ["dataOut", 0], ["status", "string"], ["onStarted", LiteGraph.EVENT], ["onStopped", LiteGraph.EVENT]];
     }
 }
 
@@ -504,6 +539,7 @@ class OSCBridge extends BaseServer {
 
     constructor() {
         super();
+        this.libraries = ["ws", "osc-js"];
         // Define child-specific default properties.
         this.properties.udpServer_host = "localhost";
         this.properties.udpServer_port = 41234;
@@ -557,6 +593,7 @@ class OSCBridge extends BaseServer {
         });
         this.server.on("message", (oscMsg) => {
             this.log("Received OSC message:", oscMsg);
+            this.setOutputData("dataOut", oscMsg);
             this.triggerSlot("onMessage", oscMsg);
         });
         this.server.on("error", (err) => {
@@ -577,16 +614,26 @@ class OSCBridge extends BaseServer {
     }
 
     onGetInputs() {
-        return [["should_autoconnect", "boolean"]];
+        
     }
 
     onGetOutputs() {
         return [
+            ["dataOut", 0],
             ["status", "string"],
             ["onStarted", LiteGraph.EVENT],
-            ["onStopped", LiteGraph.EVENT],
-            ["message", "object"]
+            ["onStopped", LiteGraph.EVENT]
         ];
+    }
+    
+    onStarted() {
+        this.log("OscBridgeServer started");
+        this.triggerSlot("onStarted");
+    }
+
+    onStopped() {
+        this.log("OscBridgeServer stopped");
+        this.triggerSlot("onStopped");
     }
 }
 
@@ -613,11 +660,11 @@ class OSCServerNode extends BaseServer {
         this.properties.send_port = 9002;
         this.properties.send_host = "localhost";
         // Fixed outputs and action inputs can be added via LiteGraph API.
+        this.addOutput("onMessage", LiteGraph.EVENT);
+        this.addOutput("dataOut", 0);
         this.addOutput("status", "string");
         this.addOutput("onStarted", LiteGraph.EVENT);
         this.addOutput("onStopped", LiteGraph.EVENT);
-        this.addOutput("onMessage", LiteGraph.EVENT);
-        this.addOutput("message", "object");
         this.addInput("start", LiteGraph.ACTION);
         this.addInput("stop", LiteGraph.ACTION);
 
@@ -711,92 +758,101 @@ if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
 class UDPServerNode extends BaseServer {
     static title = "UDP Server";
     static desc = "Receives data through UDP";
-  
+
     constructor() {
-      super();
-      this.size = [60, 20];
-      // Add outputs only – no sending inputs needed.
-      this.addOutput("onReceived", LiteGraph.EVENT);
-      this.addOutput("data", 0);
-  
-      // Set UDP-specific default properties.
-      this.properties.host = "127.0.0.1";
-      this.properties.port = 41234;
-      this.properties.auto_reconnect = true;
-      this.properties.reconnectTimeout = 5000;
-  
-      // Internal state for message tracking.
-      this._last_received_data = null;
-  
-      // Only run in Node.js environment.
-      if (typeof process !== "undefined" && process.versions && process.versions.node) {
-        // OK
-      } else {
-        this.warn_once("UDPServerNode can only run on Node.js server");
-        this.boxcolor = "#FF0000";
-        this.title = "UDP Server (run on server)";
-      }
+        super();
+        this.size = [60, 20];
+        // Add outputs only – no sending inputs needed.
+        this.addOutput("onMessage", LiteGraph.EVENT);
+        this.addOutput("dataOut", 0);
+
+        // Set UDP-specific default properties.
+        this.properties.host = "127.0.0.1";
+        this.properties.port = 41234;
+        this.properties.auto_reconnect = true;
+        this.properties.reconnectTimeout = 5000;
+
+        // Internal state for message tracking.
+        this._last_received_data = null;
+
+        // Only run in Node.js environment.
+        if (typeof process !== "undefined" && process.versions && process.versions.node) {
+            // OK
+        } else {
+            this.warn_once("UDPServerNode can only run on Node.js server");
+            this.boxcolor = "#FF0000";
+            this.title = "UDP Server (run on server)";
+        }
     }
-  
+
     // Create the UDP socket.
     _createServer() {
-      const dgram = require("dgram");
-      return dgram.createSocket("udp4");
+        let dgramPkg = LiteGraph.LibraryManager.getLib("dgram");
+        if (!dgramPkg) {
+            throw new Error("dgram library not available");
+        } else {
+            this.log("Got dgram package", dgramPkg);
+        }
+        try {
+            return dgramPkg.createSocket("udp4");
+        } catch (e) {
+            this.error(e.message ?? e);
+        }
     }
-  
+
     // Set up UDP event listeners.
     _setupServerListeners() {
-      if (!this.server) return;
-      this.server.on("message", (msg, rinfo) => {
-        let msgStr = msg.toString();
-        let parsed;
-        try {
-          parsed = JSON.parse(msgStr);
-        } catch (err) {
-          this.error("Error parsing UDP message:", err);
-          parsed = msgStr;
-        }
-        this._last_received_data = parsed;
-        if (this.triggerSlot) {
-          this.triggerSlot("onReceived", parsed);
-        }
-        this.log("UDP message received:", msgStr, "from", rinfo);
-      });
-      this.server.on("error", (err) => {
-        this.error("UDP error:", err);
-        this.server.close();
-        if (this.properties.auto_reconnect) {
-          this.log(`Reconnecting UDP socket in ${this.properties.reconnectTimeout}ms`);
-          setTimeout(() => {
-            this.startServer();
-          }, this.properties.reconnectTimeout);
-        }
-      });
-      this.server.on("listening", () => {
-        const address = this.server.address();
-        this.log(`UDP server listening on ${address.address}:${address.port}`);
-      });
-      // Bind the socket to the specified port.
-      this.server.bind(this.properties.port);
+        if (!this.server) return;
+        this.server.on("message", (msg, rinfo) => {
+            let msgStr = msg.toString();
+            let parsed;
+            try {
+                parsed = JSON.parse(msgStr);
+            } catch (err) {
+                this.error("Error parsing UDP message:", err);
+                parsed = msgStr;
+            }
+            this._last_received_data = parsed;
+            this.setOutputData("dataOut", this._last_received_data);
+            this.triggerSlot("onMessage", this._last_received_data);
+            this.log("UDP message received:", msgStr, "from", rinfo);
+        });
+        this.server.on("error", (err) => {
+            this.error("UDP error:", err);
+            this.server.close();
+            if (this.properties.auto_reconnect) {
+                this.log(`Reconnecting UDP socket in ${this.properties.reconnectTimeout}ms`);
+                setTimeout(() => {
+                    this.startServer();
+                }, this.properties.reconnectTimeout);
+            }
+        });
+        this.server.on("listening", () => {
+            const address = this.server.address();
+            this.log(`UDP server listening on ${address.address}:${address.port}`);
+        });
+        // Bind the socket to the specified port.
+        this.server.bind(this.properties.port);
     }
-  
+
     // onExecute simply updates the output with the latest received data.
     onExecute() {
-      if (typeof process == "undefined" || process.browser) {
-        return;
-      }
-      if (!this.server) {
-        this.startServer();
-      }
-      this.setOutputData("data", this._last_received_data);
+        if (typeof process == "undefined" || process.browser) {
+            return;
+        }
+        if (!this.server) {
+            this.startServer();
+        }
+        this.setOutputData("dataOut", this._last_received_data);
+        this.setOutputData("status", this.status);
     }
-  
+
     onGetInputs() {
-      return [];
+        return [];
     }
-  
+
     onGetOutputs() {
-      return [["data", 0], ["onReceived", LiteGraph.EVENT]];
+        return [["onMessage", LiteGraph.EVENT], ["dataOut", 0]];
     }
 }
 // Register UDP Server node.

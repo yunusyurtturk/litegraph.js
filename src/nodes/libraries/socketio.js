@@ -16,13 +16,14 @@ LiteGraph.LibraryManager.registerLibrary({
     browser: { /*local: "/libs/socket.io.js",*/ remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js" },
     server: { npm: ["socket.io-client"], /*remote: "https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"*/ }
 });
-LiteGraph.LibraryManager.loadLibrary("io");
+// deferred LiteGraph.LibraryManager.loadLibrary("io");
 
 class LGSocketIO {
     static title = "Socket.IO Client";
     static desc = "Connect to a Socket.IO server to send and receive data";
 
     constructor() {
+        this.libraries = ["io"];
         this.size = [60, 20];
         this.properties = {
             url: "http://127.0.0.1:3030",

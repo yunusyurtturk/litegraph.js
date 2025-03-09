@@ -1,5 +1,6 @@
 import { LiteGraph } from "./litegraph.js";
 import { CallbackHandler } from "./callbackhandler.js";
+import { getRuntime } from "./global.js";
 
 /*
 title: string
@@ -74,11 +75,14 @@ export class LGraphNode {
         this.post_constructor(...arguments);
     }
 
-    post_constructor(){
+    async post_constructor(){
 
         this.size ??= LiteGraph.NODE_MIN_SIZE; //this.size ??= [LiteGraph.NODE_WIDTH, 60];
         this.size_basic ??= this.size;
         this.graph ??= null;
+
+        this.runtime ??= this.runtime;  // Specify where this node can execute, "node", "browser", *any
+        this.libraries ??= this.libraries;  // List of required libraries
 
         this._pos ??= new Float32Array(10, 10);
 
@@ -100,6 +104,15 @@ export class LGraphNode {
 
         this.flags ??= {};
 
+        // Validate runtime environment
+        if (!this.validateRuntime()) {
+            console.debug(`Node "${this.title}" will not run in the current environment: ${getRuntime()}`);
+            this.mode = LiteGraph.NEVER;
+        }else{
+            // Load required libraries
+            await this.loadLibraries();
+        }
+
         // DBG EXCESS LiteGraph.log_verbose("lgraphNODE", "postconstruct",this,...arguments);
         // register CallbackHandler methods on this
         this.callbackhandler_setup();
@@ -110,6 +123,30 @@ export class LGraphNode {
         LiteGraph.processCallbackHandlers("on_lgraphnode_construct",{
             def_cb: LiteGraph.on_lgraphnode_construct
         }, this);
+    }
+
+    validateRuntime() {
+        const currentRuntime = getRuntime();
+        const isValid = !this.runtime || this.runtime === "*" || this.runtime === "any" || this.runtime === currentRuntime;
+        if(!isValid){
+            this.wrong_environment = true;
+        }
+        return isValid;
+    }
+
+    async loadLibraries() {
+        if(!Array.isArray(this.libraries)){
+            return;
+        }
+        if(Array.isArray(this.libraries) && this.libraries.length){
+            this.loading_lib = true;
+            for (const lib of this.libraries) {
+                if (!LiteGraph.LibraryManager.isLibraryLoaded(lib)) {
+                    await LiteGraph.LibraryManager.loadLibrary(lib);
+                }
+            }
+            delete(this.loading_lib);
+        }
     }
 
     callbackhandler_setup(){
@@ -1144,7 +1181,7 @@ export class LGraphNode {
             } else {
                 // TODO CHECK
                 // LiteGraph.log_verbose("lgraphnode", "triggerSlot","not executing node, what to do with this Node Mode on slot triggered?", node.mode, this);
-                LiteGraph.log_debug("lgraphnode", "triggerSlot", "onAction not implemented on node for triggeringSlot", target_slot, node.title);
+                LiteGraph.log_debug("lgraphnode", "triggerSlot", "onAction not implemented on node for triggeringSlot", target_slot, node.title, "arguments", slot, param, link_id, options);
             }
         }
     }
