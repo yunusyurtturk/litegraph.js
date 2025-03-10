@@ -32,14 +32,15 @@ class LGSocketIO {
             only_send_changes: true,
             runOnServerToo: false
         };
-        this.addProperty("type", "message", "string");
-        this.addProperty("content", "", "string");
+        this.addProperty("eventOut", "message", "string");
+        this.addProperty("dataOut", "", "string");
 
         this.addInput("SEND", LiteGraph.ACTION);
-        this.addInput("type", "string", { param_bind: true });
-        this.addInput("content", "string", { param_bind: true });
+        this.addInput("eventOut", "string", { param_bind: true });
+        this.addInput("dataOut", "string", { param_bind: true });
         this.addOutput("onReceived", LiteGraph.EVENT);
-        this.addOutput("dataRec", 0);
+        this.addOutput("eventIn", 0);
+        this.addOutput("dataIn", 0);
 
         this._io_client = null;
         this._socket = null;
@@ -129,16 +130,14 @@ class LGSocketIO {
                 });
             });
 
-            this._socket.on("message", (data) => {
-                this._last_received_data = data;
-                this.setOutputData(1, data);
-                this.triggerSlot(0, data);
-            });
-            /* TODO tmp remove, use custom event and output instead */
-            this._socket.on("chatMessage", (data) => {
-                this._last_received_data = data;
-                this.setOutputData(1, data);
-                this.triggerSlot(0, data);
+            this._socket.onAny((event, ...args) => {
+                let data = args?.length == 1 ? args[0] : args;
+                if(typeof(data)=="object"&&Object.keys(data).length==1&&typeof(data["0"])!=="undefined"){
+                    data = data["0"];
+                }
+                this.setOutputData("event", event);
+                this.setOutputData("dataIn", data);
+                this.triggerSlot("onReceived", {"event": event, "data": data});
             });
 
             this._socket.on("reconnect_attempt", () => {
@@ -176,14 +175,17 @@ class LGSocketIO {
     }
 
     onAction(action, param) {
+        if (!this._socket && this.properties.url){
+            this.connectSocket();
+        }
         if (!this._socket){
             return;
         }
         if (action === "msg_w_data") {
-            this._socket.emit("message", param);
+            this._socket.emit("data", param);
         }
         if (action === "SEND") {
-            this._socket.emit(this.getInputOrProperty("type"), this.getInputOrProperty("content"));
+            this._socket.emit(this.getInputOrProperty("eventOut"), this.getInputOrProperty("dataOut"));
         }
     }
 }

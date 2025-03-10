@@ -473,6 +473,12 @@ class SocketIOServerNode extends BaseServer {
                 this.triggerSlot("onMessage", data);
                 this.broadcast("message", data);
             });
+            socket.onAny((event, ...args) => {
+                this.log(`SocketIO Received event: ${event} with data:`, args);
+                this.setOutputData("dataOut", arguments);
+                this.triggerSlot("onMessage", event);
+                this.broadcast(event, args);
+            });
             socket.on("disconnect", () => {
                 this.clients.delete(socket);
                 this.log("Client disconnected:", socket.id);

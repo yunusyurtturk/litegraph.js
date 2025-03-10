@@ -9059,6 +9059,9 @@ export class LGraphCanvas {
                         ? "Cannot remove"
                         : { content: "Remove Slot", slot: slot });
                 }
+                if (LiteGraph.canSetSlotsLabels) {
+                    menu_info.push({ content: "Rename Label", slot: slot });
+                }
                 if (_slot.nameLocked===false || LiteGraph.canRenameSlots) {
                     menu_info.push({ content: "Rename Slot", slot: slot });
                 }
@@ -9149,6 +9152,45 @@ export class LGraphCanvas {
                     : node.getOutputInfo(info.slot);
                 var dialog = that.createDialog(
                     "<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>",
+                    options,
+                );
+                var input = dialog.querySelector("input");
+                if (input && slot_info) {
+                    input.value = slot_info.name || "";
+                }
+                var inner = function() {
+                    node.graph.beforeChange();
+                    if (input.value) {
+                        if (slot_info) {
+                            slot_info.name = input.value;
+                        }
+                        that.setDirty(true);
+                    }
+                    dialog.close();
+                    node.graph.afterChange();
+                }
+                dialog.querySelector("button").addEventListener("click", inner);
+                input.addEventListener("keydown", function(e) {
+                    dialog.is_modified = true;
+                    if (e.keyCode == 27) {
+                        // ESC
+                        dialog.close();
+                    } else if (e.keyCode == 13) {
+                        inner(); // save
+                    } else if (e.keyCode != 13 && e.target.localName != "textarea") {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                input.focus();
+            } else if (v.content == "Rename Label") {
+                info = v.slot;
+                var slot_info = info.input
+                    ? node.getInputInfo(info.slot)
+                    : node.getOutputInfo(info.slot);
+                var dialog = that.createDialog(
+                    "<span class='name'>Label</span><input autofocus type='text'/><button>OK</button>",
                     options,
                 );
                 var input = dialog.querySelector("input");

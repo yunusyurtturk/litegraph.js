@@ -194,6 +194,8 @@ export class LiteGraphClass {
 
     // ,"editor_alpha" //= 1; //used for transition
 
+    canSetSlotsLabels = true; // setting the label should be safe
+
     canRemoveSlots = false; // use removable = true in specific slot
     canRenameSlots = false; // use nameLocked = false in specific slot
 
@@ -896,10 +898,12 @@ export class LiteGraphClass {
      * @return {Boolean} true if they can be connected
      */
     isValidConnection(type_a, type_b) {
+        type_a = type_a===0?"*":type_a;
+        type_b = type_b===0?"*":type_b;
         if (!type_a || !type_b) return true; // Empty types are universal
 
         // Handle wildcard cases
-        if (type_a === "*" || type_b === "*") return true;
+        if ((type_a === "*" && type_b != LiteGraph.EVENT) || (type_b === "*" && type_a != LiteGraph.EVENT)) return true;
         if (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION) return true;
 
         // Normalize type strings (lowercase, split multiple types by `|` or `,`)

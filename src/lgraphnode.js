@@ -36,8 +36,8 @@ supported callbacks:
     + onMouseLeave
     + onExecute: execute the node
     + onPropertyChanged: when a property is changed in the panel (return true to skip default behaviour)
-    + onGetInputs: returns an array of possible inputs
-    + onGetOutputs: returns an array of possible outputs
+    + onGetInputs: returns an array of possible extra inputs
+    + onGetOutputs: returns an array of possible extra outputs
     + onBounding: in case this node has a bigger bounding than the node itself (the callback receives the bounding as [x,y,w,h])
     + onDblClick: double clicked in the node
     + onInputDblClick: input slot double clicked (can be used to automatically create a node connected)
