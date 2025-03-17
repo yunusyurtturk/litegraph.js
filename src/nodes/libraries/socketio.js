@@ -135,7 +135,7 @@ class LGSocketIO {
                 if(typeof(data)=="object"&&Object.keys(data).length==1&&typeof(data["0"])!=="undefined"){
                     data = data["0"];
                 }
-                this.setOutputData("event", event);
+                this.setOutputData("eventIn", event);
                 this.setOutputData("dataIn", data);
                 this.triggerSlot("onReceived", {"event": event, "data": data});
             });

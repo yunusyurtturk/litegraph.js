@@ -33,7 +33,7 @@ class LGWebSocket {
     }
 
     onPropertyChanged(name, _value) {
-        if (name === "url") {
+        if (name === "url" && this.properties.url !== _value) {
             this.connectSocket();
         }
         // For any property change, you could consider reconnecting if needed.
@@ -42,6 +42,7 @@ class LGWebSocket {
     onExecute() {
         // If no websocket exists or if it is closed, attempt to connect.
         if (!this._ws || this._ws.readyState === WebSocket.CLOSED) {
+            console.debug("WSClient try to connect", this._ws?.readyState, this._ws);
             this.connectSocket();
         }
 
@@ -218,8 +219,10 @@ class LGWebSocket {
             // Optionally, auto-reconnect if enabled.
             if (this.properties.auto_reconnect) {
                 setTimeout(() => {
-                    console.log("Attempting to reconnect WS...");
-                    this.connectSocket();
+                    if (!this._ws || this._ws.readyState === WebSocket.CLOSED) {
+                        console.log("Attempting to reconnect WS...");
+                        this.connectSocket();
+                    }
                 }, this.properties.reconnectInterval);
             }
         };
