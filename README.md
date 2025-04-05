@@ -2,13 +2,18 @@
 
 A fork of the ecceptional litegraph.js library. This is unofficial and unsupported.
 
+-- 2025 --
+
+Having been await for a time, had few time to make things progress. Anyway the interest is here.
+Let's get in touch.
+
+
 -- 2024 --
 
 Recent works regards moving LG to a new step. Actual state should be almost compatible but many things have been touched.
-Thanks to Daniel Lewis for separate the library into classes, ES6 conversion and code refactoring. He's actually trying better ways to organize things in a new modern form.
-Meanwhile I've been working in many aspect, maybe the most important one is allowing to register multiple callbacks maintaining compatibility with previous method.
-There are few working extensions making use of this method ment to be an experiment while improving QOL in the library usage.
-Objective is to gather LG contributors together and make wonderful things.
+Thanks to @daniel-lewis-ab for separate the library into classes, ES6 conversion and code refactoring. He's actually trying better ways to organize things in a new modern form. https://github.com/litegraph-tsx/
+Meanwhile I've been working in many aspect, one of them is allowing to register multiple structured callbacks with priority level maintaining compatibility with previous method. There are few working extensions making use of this method that while needs improvements already shows improving potential in expanding possibilities and expanding modularization.
+There has been the first effort in gathering people using and interested in improving LiteGraph.
 
 MODS
 

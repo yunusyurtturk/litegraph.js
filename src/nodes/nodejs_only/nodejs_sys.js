@@ -69,7 +69,7 @@ LiteGraph.LibraryManager.registerLibrary({
 });
 
 // Load libraries at runtime
-["os", "fs", "diskusage", "node-os-utils", "ps-list", "child_process", "chalk"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
+// ["os", "fs", "diskusage", "node-os-utils", "ps-list", "child_process", "chalk"].forEach(lib => LiteGraph.LibraryManager.loadLibrary(lib));
 
 /**
  * SysUtil_InfoNode - Retrieves System Information (OS, CPU, Memory, Network, Disk)
@@ -79,6 +79,8 @@ class SysUtil_InfoNode {
     static desc = "Get OS, CPU, Memory, Uptime, Disk, Network, and system details";
 
     constructor() {
+        this.runtime = "node";
+        this.libraries = ["os","diskusage","node-os-utils"];
         this.addInput("refresh", LiteGraph.ACTION);
         this.addOutput("onRefresh", LiteGraph.EVENT);
         this.addOutput("info", "object");
@@ -171,6 +173,8 @@ class SysUtil_ProcessListNode {
     static desc = "Lists running processes with CPU and Memory usage";
 
     constructor() {
+        this.runtime = "node";
+        this.libraries = ["ps-list"];
         this.addInput("refresh", LiteGraph.ACTION);
         this.addInput("filterByName", "string", { param_bind: true });
 
@@ -238,6 +242,8 @@ class SysUtil_RunCommandNode {
     static desc = "Executes a shell command and returns the output.";
 
     constructor() {
+        this.runtime = "node";
+        this.libraries = ["child_process"];
         this.addInput("run", LiteGraph.ACTION);
         this.addInput("command", "string", { param_bind: true });
         this.addInput("timeout", "number", { param_bind: true });
@@ -513,6 +519,8 @@ LiteGraph.registerNodeType("sys/runCommand", SysUtil_RunCommandNode);
 
 class SysUtil_FileBaseNode {
     constructor(actionTitle, actionDesc) {
+        this.runtime = "node";
+        this.libraries = ["fs"];
         this.title = actionTitle;
         this.desc = actionDesc;
 
@@ -674,6 +682,8 @@ class SysUtil_ProcessControlNode {
     static desc = "Controls system processes: Start, Kill, Restart, Check Status";
 
     constructor() {
+        this.runtime = "node";
+        this.libraries = ["child_process"];
         this.addInput("start", LiteGraph.ACTION);
         this.addInput("kill", LiteGraph.ACTION);
         this.addInput("restart", LiteGraph.ACTION);
@@ -845,8 +855,10 @@ class SysUtil_LogNode {
     static desc = "Structured logging with console styling and optional file writing.";
 
     constructor() {
+        this.runtime = "node";
+        this.libraries = ["fs", "chalk"];
         this.addInput("log", LiteGraph.ACTION);
-        this.addInput("message", "any", { param_bind: true });
+        this.addInput("message", "*", { param_bind: true });
         // this.addInput("logToFile", "boolean", { param_bind: true });
         this.addInput("filePath", "string", { param_bind: true });
 
@@ -967,6 +979,12 @@ class SysUtil_ServiceManagerNode {
     static desc = "Manages system services (start, stop, restart) across Windows, Linux, and MacOS";
 
     constructor() {
+        this.runtime = "node";
+        if (this.platform === "win32") {
+            this.libraries = ["node-windows"];
+        } else if (this.platform === "linux" || this.platform === "darwin") {
+            this.libraries = ["node-linux-systemd"];
+        }
         this.addInput("start", LiteGraph.ACTION);
         this.addInput("stop", LiteGraph.ACTION);
         this.addInput("restart", LiteGraph.ACTION);
@@ -999,7 +1017,7 @@ class SysUtil_ServiceManagerNode {
         if (this.platform === "win32") {
             this.windowsService = NodeJsSysHelper.getLib("node-windows");
         } else if (this.platform === "linux" || this.platform === "darwin") {
-            this.linuxService = NodeJsSysHelper.getLib("nodeLinuxSystemd");
+            this.linuxService = NodeJsSysHelper.getLib("node-linux-systemd");
         }
     }
 
@@ -1094,6 +1112,12 @@ class SysUtil_ServiceListNode {
     static desc = "Lists system services on Windows, Linux, and MacOS";
 
     constructor() {
+        this.runtime = "node";
+        if (this.platform === "win32") {
+            this.libraries = ["node-windows"];
+        } else if (this.platform === "linux" || this.platform === "darwin") {
+            this.libraries = ["node-linux-systemd"];
+        }
         this.addInput("refresh", LiteGraph.ACTION);
         this.addInput("filter", "string", { param_bind: true });
 
@@ -1119,7 +1143,7 @@ class SysUtil_ServiceListNode {
         if (this.platform === "win32") {
             this.windowsService = NodeJsSysHelper.getLib("node-windows");
         } else if (this.platform === "linux" || this.platform === "darwin") {
-            this.linuxService = NodeJsSysHelper.getLib("nodeLinuxSystemd");
+            this.linuxService = NodeJsSysHelper.getLib("node-linux-systemd");
         }
     }
 
@@ -1160,7 +1184,7 @@ class SysUtil_ServiceListNode {
 
     async listWindowsServices() {
         return new Promise((resolve, reject) => {
-            let nodeWindows = NodeJsSysHelper.getLib("nodeWindows");
+            let nodeWindows = NodeJsSysHelper.getLib("node-windows");
     
             if (nodeWindows && nodeWindows.list) {
                 try {

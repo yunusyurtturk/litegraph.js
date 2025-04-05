@@ -53,6 +53,9 @@ export class LiteGraphClass {
     NODE_DEFAULT_COLOR = "#333";
     NODE_DEFAULT_BGCOLOR = "#353535";
     NODE_DEFAULT_BOXCOLOR = "#666";
+    NODE_BGCOLOR_LOADINGLIB = "#353565";
+    NODE_BGCOLOR_WRONGENV = "#653535";
+    NODE_BGCOLOR_ERROR = "#F33";
     NODE_DEFAULT_SHAPE = "box";
     NODE_BOX_OUTLINE_COLOR = "#FFF";
     DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)";
@@ -190,6 +193,8 @@ export class LiteGraphClass {
     context_menu_filter_enabled = false; // FIX event handler removal
 
     // ,"editor_alpha" //= 1; //used for transition
+
+    canSetSlotsLabels = true; // setting the label should be safe
 
     canRemoveSlots = false; // use removable = true in specific slot
     canRenameSlots = false; // use nameLocked = false in specific slot
@@ -893,10 +898,12 @@ export class LiteGraphClass {
      * @return {Boolean} true if they can be connected
      */
     isValidConnection(type_a, type_b) {
+        type_a = type_a===0?"*":type_a;
+        type_b = type_b===0?"*":type_b;
         if (!type_a || !type_b) return true; // Empty types are universal
 
         // Handle wildcard cases
-        if (type_a === "*" || type_b === "*") return true;
+        if ((type_a === "*" && type_b != LiteGraph.EVENT) || (type_b === "*" && type_a != LiteGraph.EVENT)) return true;
         if (type_a === LiteGraph.EVENT && type_b === LiteGraph.ACTION) return true;
 
         // Normalize type strings (lowercase, split multiple types by `|` or `,`)

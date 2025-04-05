@@ -1,4 +1,7 @@
 // graphRunners/graphRunner.js
+
+// This is LiteGraph runner
+
 import { parentPort, workerData } from 'worker_threads';
 import fs from 'fs';
 import { createLogger } from '../logger.js'; // Our dedicated logger factory.
@@ -61,9 +64,11 @@ function safeLoadGraph() {
     const graphData = JSON.parse(fs.readFileSync(workflowPath, 'utf8'));
     graph.configure(graphData);
     logger.info(`[GR] GraphRunner initialized for ${workflowPath}`);
+    parentPort.postMessage({ event: 'graphInitialized' });
   } catch (error) {
     logger.error(`[GR] Error loading graph from ${workflowPath}: ${error.message}`);
     pipeConsoleEvent('error', `[GR] Error loading graph from ${workflowPath}: ${error.message}`);
+    parentPort.postMessage({ event: 'graphLoadFailed' });
     process.exit(1);
   }
 }
@@ -92,6 +97,10 @@ parentPort.on('message', (message) => {
         break;
       case 'status':
         parentPort.postMessage({ event: 'graphStatus', running: graph.running });
+        break;
+      case 'clear':
+        graph.clear();
+        parentPort.postMessage({ event: 'graphCleared' });
         break;
       default:
         parentPort.postMessage({ event: 'unknownCommand', command: message.action });

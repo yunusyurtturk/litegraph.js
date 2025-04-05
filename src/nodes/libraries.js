@@ -465,7 +465,7 @@ class CDNLibrarySelector {
 
     // Get list of registered libraries
     getLibraries() {
-        return Object.keys(LiteGraph.LibraryManager?.libraries_known);
+        return Object.keys(LiteGraph.LibraryManager?.libraries_known || {});
     }
 
     // Refresh library list

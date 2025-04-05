@@ -28,6 +28,8 @@ export function openGraph(file, logger) {
   const filePath = path.join(WORKFLOWS_DIR, file);
   try {
     const data = fs.readFileSync(filePath, "utf8");
+    
+    // load graph in this thread
     const json = JSON.parse(data);
     const graph = new LiteGraph.LGraph();
     try {
@@ -35,9 +37,13 @@ export function openGraph(file, logger) {
     } catch (e) {
       logger.error("Graph configuration error for " + filePath + ": " + e.message);
     }
+    
     // Use the relative file path as the graphId for consistency.
     const graphId = file;
+    
     graphs[graphId] = { graph, status: "paused", file };
+    // graphs[graphId] = { graph: data, status: "paused", file };
+
     logger.info("Graph loaded for visualization from " + filePath);
 
     // Spawn an external worker to execute the graph.
@@ -111,6 +117,19 @@ export function loadGraph(file, logger) {
       if (message.event === 'console' && typeof consolePipeCallback === 'function') {
         consolePipeCallback(graphId, message.level, message.message);
       }
+      // TODO should implement hear all message from Runner
+      // eg. state changes confirmation
+      // callback and logs
+      /*
+      graphInitialized
+      graphLoadFailed
+      graphExecuted
+      graphStarted
+      graphStopped
+      graphStatus
+      graphCleared
+      unknownCommand
+      */
     });
     runner.on('exit', (code) => {
       logger.warn(`Worker graph ${graphId} exited with code ${code}`);
@@ -158,9 +177,13 @@ export function unloadGraph(graphId, logger) {
     return;
   }
   try {
-    runner.terminate();
-    graphRunners.delete(graphId);
-    logger.info(`Worker graph ${graphId} has been unloaded.`);
+    runner.postMessage({ action: "clear" });
+    // TODO should wait graphCleared event
+    setTimeout(()=>{
+      runner.terminate();
+      graphRunners.delete(graphId);
+      logger.info(`Worker graph ${graphId} has been unloaded.`);
+    },1000);
   } catch (error) {
     logger.error(`Failed to unload worker graph ${graphId}: ${error.message}`);
   }

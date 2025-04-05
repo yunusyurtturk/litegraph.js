@@ -26,7 +26,7 @@ export let registerExtension_autoconnect = function(graphcanvas){
             
                 // skip if shift o ctrl
                 if(keyEvent.shiftKey || keyEvent.ctrlKey){
-                    if(debug) console.verbose(ext, "skip shift or ctlr", ...arguments);
+                    if(debug) console.debug(ext, "skip shift or ctlr", ...arguments);
                     break;
                 }
 

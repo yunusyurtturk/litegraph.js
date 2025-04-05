@@ -4,13 +4,15 @@ import { LiteGraph } from "../litegraph.js";
 // Ensure jQuery is loaded using LibraryManager
 LiteGraph.LibraryManager.registerLibrary("jquery", "latest", "jQuery", [], ["https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"]);
 
-LiteGraph.LibraryManager.loadLibrary("jquery", () => {
-    console.log("jQuery Loaded Successfully");
-});
+// deferred loading
+// LiteGraph.LibraryManager.loadLibrary("jquery", () => {
+//     console.log("jQuery Loaded Successfully");
+// });
 
 // Base class for jQuery nodes
 export class JQueryBaseNode {
     constructor() {
+        this.libraries = ["jquery"];
         this.addInput("selector", "string|jQObject"); // Accepts selector string or jQuery object
         this.addOutput("elements", "jQObject"); // Always return elements for chaining
         this.addProperty("selector", "");

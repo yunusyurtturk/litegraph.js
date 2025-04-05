@@ -3251,8 +3251,9 @@ export class LGraphCanvas {
                         this.node_dragged.pos[0] = this.graph_mouse[0] - 5;
                         this.node_dragged.pos[1] = this.graph_mouse[1] - 5;
                         this.graph.afterChange();
-                    } else
+                    } else {
                         LiteGraph.log_error("graph input node not found:", type);
+                    }
                 }
                 ctx.fillStyle = "#9C9";
                 ctx.beginPath();
@@ -3321,8 +3322,9 @@ export class LGraphCanvas {
                         this.node_dragged.pos[0] = this.graph_mouse[0] - 5;
                         this.node_dragged.pos[1] = this.graph_mouse[1] - 5;
                         this.graph.afterChange();
-                    } else
+                    } else {
                         LiteGraph.log_error("graph input node not found:", type);
+                    }
                 }
                 ctx.fillStyle = "#9C9";
                 ctx.beginPath();
@@ -3679,8 +3681,14 @@ export class LGraphCanvas {
         }
 
         // draw shape
+        if (node.loading_lib) {
+            bgcolor = LiteGraph.NODE_BGCOLOR_LOADINGLIB;
+        }
+        if (node.wrong_environment) {
+            bgcolor = LiteGraph.NODE_BGCOLOR_WRONGENV;
+        }
         if (node.has_errors) {
-            bgcolor = "red";
+            bgcolor = LiteGraph.NODE_BGCOLOR_ERROR;
         }
         this.drawNodeShape(
             node,
@@ -4466,6 +4474,57 @@ export class LGraphCanvas {
         if (node.execute_triggered>0) node.execute_triggered--;
         if (node.action_triggered>0) node.action_triggered--;
     }
+
+    // TODO should implement correct getBounding to do it
+    // drawNodeOutsideBorder(title_mode, fgcolor) {
+    //     var shape = node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE;
+    //     if (title_mode == LiteGraph.TRANSPARENT_TITLE) {
+    //         area[1] -= LiteGraph.NODE_TITLE_HEIGHT;
+    //         area[3] += LiteGraph.NODE_TITLE_HEIGHT;
+    //     }
+    //     ctx.lineWidth = 1;
+    //     ctx.globalAlpha = 0.8;
+    //     ctx.beginPath();
+    //     if (shape == LiteGraph.BOX_SHAPE) {
+    //         ctx.rect(
+    //             -6 + area[0],
+    //             -6 + area[1],
+    //             12 + area[2],
+    //             12 + area[3],
+    //         );
+    //     } else if (
+    //         shape == LiteGraph.ROUND_SHAPE ||
+    //         (shape == LiteGraph.CARD_SHAPE && node.flags.collapsed)
+    //     ) {
+    //         ctx.roundRect(
+    //             -6 + area[0],
+    //             -6 + area[1],
+    //             12 + area[2],
+    //             12 + area[3],
+    //             [this.round_radius * 2],
+    //         );
+    //     } else if (shape == LiteGraph.CARD_SHAPE) {
+    //         ctx.roundRect(
+    //             -6 + area[0],
+    //             -6 + area[1],
+    //             12 + area[2],
+    //             12 + area[3],
+    //             [this.round_radius * 2,2,this.round_radius * 2,2],
+    //         );
+    //     } else if (shape == LiteGraph.CIRCLE_SHAPE) {
+    //         ctx.arc(
+    //             size[0] * 0.5,
+    //             size[1] * 0.5,
+    //             size[0] * 0.5 + 6,
+    //             0,
+    //             Math.PI * 2,
+    //         );
+    //     }
+    //     ctx.strokeStyle = LiteGraph.NODE_BOX_OUTLINE_COLOR;
+    //     ctx.stroke();
+    //     ctx.strokeStyle = fgcolor;
+    //     ctx.globalAlpha = 1;
+    // }
 
     /**
      * draws every connection visible in the canvas
@@ -8054,7 +8113,7 @@ export class LGraphCanvas {
     }
 
     static getPropertyPrintableValue(value, values) {
-        if(!values)
+        if(!values){
             if( typeof(value)=="number"){
                 return parseFloat(value.toFixed(5));
             // TODO add option to format numbers in string
@@ -8062,6 +8121,7 @@ export class LGraphCanvas {
             //     return parseFloat(Number(value).toFixed(5));
             }
             return String(value);
+        }
 
         if(values.constructor === Array) {
             return String(value);
@@ -8999,6 +9059,9 @@ export class LGraphCanvas {
                         ? "Cannot remove"
                         : { content: "Remove Slot", slot: slot });
                 }
+                if (LiteGraph.canSetSlotsLabels) {
+                    menu_info.push({ content: "Rename Label", slot: slot });
+                }
                 if (_slot.nameLocked===false || LiteGraph.canRenameSlots) {
                     menu_info.push({ content: "Rename Slot", slot: slot });
                 }
@@ -9089,6 +9152,45 @@ export class LGraphCanvas {
                     : node.getOutputInfo(info.slot);
                 var dialog = that.createDialog(
                     "<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>",
+                    options,
+                );
+                var input = dialog.querySelector("input");
+                if (input && slot_info) {
+                    input.value = slot_info.name || "";
+                }
+                var inner = function() {
+                    node.graph.beforeChange();
+                    if (input.value) {
+                        if (slot_info) {
+                            slot_info.name = input.value;
+                        }
+                        that.setDirty(true);
+                    }
+                    dialog.close();
+                    node.graph.afterChange();
+                }
+                dialog.querySelector("button").addEventListener("click", inner);
+                input.addEventListener("keydown", function(e) {
+                    dialog.is_modified = true;
+                    if (e.keyCode == 27) {
+                        // ESC
+                        dialog.close();
+                    } else if (e.keyCode == 13) {
+                        inner(); // save
+                    } else if (e.keyCode != 13 && e.target.localName != "textarea") {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                input.focus();
+            } else if (v.content == "Rename Label") {
+                info = v.slot;
+                var slot_info = info.input
+                    ? node.getInputInfo(info.slot)
+                    : node.getOutputInfo(info.slot);
+                var dialog = that.createDialog(
+                    "<span class='name'>Label</span><input autofocus type='text'/><button>OK</button>",
                     options,
                 );
                 var input = dialog.querySelector("input");

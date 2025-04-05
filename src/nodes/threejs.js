@@ -37,6 +37,8 @@ class ThreeJsObject {
         this.addProperty("visible", true, "bool");
 
         this._object = null;
+
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -194,6 +196,7 @@ class ThreeJsScene {
     constructor() {
         this.addOutput("scene", "3jsScene");
         this._scene = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -225,6 +228,7 @@ class ThreeJsRenderer {
         this.addOutput("canvas", "canvas");
 
         this._renderer = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -271,6 +275,7 @@ class ThreeJsCanvas extends HtmlNode {
         this.properties.html = "<canvas id='threejs-canvas' style='width:100%; height:100%;'></canvas>";
         this._renderer = null;
         this._canvas = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -401,6 +406,7 @@ class ThreeJsAddObject {
 
         this._object = null;
         this._parent = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -467,6 +473,7 @@ class ThreeJsMaterial {
         this.addProperty("shininess", 30, "number"); // Used in Phong
 
         this._material = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -560,6 +567,7 @@ class ThreeJsTexture {
         this._image = null;
         this._lastUrl = null;
         this.size = [210, 140]; // Default node size
+        this.libraries = ["threejs"];
     }
 
     onAdded() {
@@ -662,6 +670,7 @@ class ThreeJsTransform {
         this.addProperty("scale", [1, 1, 1], "vec3");
 
         this._object = null;
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -719,6 +728,7 @@ class ThreeJsLoadModelNode {
         this.addOutput("onLoaded", LiteGraph.EVENT);
 
         this.model = null;
+        this.libraries = ["threejs"];
     }
 
     onAction() {
@@ -775,6 +785,7 @@ class ThreeJsExportModelNode {
         this.addOutput("onExported", LiteGraph.EVENT);
 
         this.exporter = null;
+        this.libraries = ["threejs"];
     }
 
     onAction() {
@@ -816,6 +827,7 @@ class ThreeJsFindObjectAtPositionNode {
         this.addInput("Position", "vec3");
         this.addOutput("Object", "object");
         this.addOutput("onFound", LiteGraph.EVENT);
+        this.libraries = ["threejs"];
     }
 
     onAction() {
@@ -851,6 +863,7 @@ class ThreeJsGetBoundsNode {
         this.title = "3jsGetBounds";
         this.addInput("Object", "object");
         this.addOutput("Bounds", "object");
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -873,6 +886,7 @@ class ThreeJsCheckCollisionNode {
         this.addInput("Object A", "object");
         this.addInput("Object B", "object");
         this.addOutput("Colliding", "boolean");
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -909,6 +923,7 @@ class ThreeJsLerpVec3Node {
 
         // Internal storage
         this.result = null; //new THREE.Vector3();
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -948,6 +963,7 @@ class ThreeJsLerpTransformNode {
             rotation: new THREE.Quaternion(),
             scale: new THREE.Vector3(),
         };*/
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -1009,6 +1025,7 @@ class ThreeJsObjectPropertiesGet {
         ];
 
         this.properties = { selectedProperties: [] };
+        this.libraries = ["threejs"];
     }
 
     onExecute() {
@@ -1055,6 +1072,7 @@ class ThreeJsObjectPropertiesSet {
             "renderOrder",
             "userData",
         ];
+        this.libraries = ["threejs"];
     }
 
     onAction() {

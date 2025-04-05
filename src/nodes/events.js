@@ -593,3 +593,57 @@ class DataStore {
     }
 }
 LiteGraph.registerNodeType("basic/data_store", DataStore);
+
+class EventSwitch {
+
+    static title = "Switch";
+    static desc = "Switch trigger on data";
+
+    constructor() {
+        this.addInput("in", 0, {param_bind: true});
+        this.addProperty("in");
+        this.addOutput("default", LiteGraph.EVENT);
+        this.selected = 0;
+        this.clip_area = true;
+    }
+
+    onDrawBackground(ctx) {
+        if (this.flags.collapsed) {
+            return;
+        }
+        ctx.fillStyle = "#AFB";
+        const y = (this.selected) * LiteGraph.NODE_SLOT_HEIGHT + 6;
+        const x = this.size[0];
+        ctx.beginPath();
+        ctx.moveTo(x - 50, y);
+        ctx.lineTo(x - 50, y + LiteGraph.NODE_SLOT_HEIGHT);
+        ctx.lineTo(x - 34, y + LiteGraph.NODE_SLOT_HEIGHT * 0.5);
+        ctx.fill();
+    }
+
+    onExecute() {
+        // var sel = this.getInputData("in");
+        const sel = this.getInputOrProperty("in");
+        let found = false;
+        for(let iS in this.outputs){
+            let outSlot = this.outputs[iS];
+            if(outSlot.type == LiteGraph.EVENT && outSlot.name == String(sel)){
+                this.selected = iS;
+                found = true;
+                this.triggerSlot(iS);
+                break;
+            }
+        }
+        if(!found){
+            this.selected = 0;
+            this.triggerSlot("default");
+        }
+    }
+
+    onGetOutputs() {
+        return [
+            ["val", LiteGraph.EVENT, {removable: true, nameLocked: false}]
+        ];
+    }
+}
+LiteGraph.registerNodeType("events/switch", EventSwitch);
