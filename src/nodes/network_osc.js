@@ -1,10 +1,22 @@
+// src/nodes/network_osc.js
+
 // Note: This node requires the 'osc' library to be integrate in both cases: running in browser or Node.js.
 // To install, run: npm install osc
 // there are two node libraries: osc and osc-js, using osc here because have browser counterpart
 
+// Load OSC-JS library for both browser and server
+LiteGraph.LibraryManager.registerLibrary({
+    key: "osc-js",
+    version: "2.4.1",
+    globalObject: "OSC",
+    browser: { remote: "https://cdn.jsdelivr.net/npm/osc-js@2.4.1/lib/osc.min.js" },
+    server: { npm: "osc-js" }
+});
+LiteGraph.LibraryManager.loadLibrary("osc-js");
+
 class OSCNode {
     static title = "OSC";
-    static desc = "Send and receive data through OSC";
+    static desc = "Send and receive data through OSC using UDP (in browser we rely on WS expecting a OscWsBridge on the server).";
 
     constructor() {
         this.size = [100, 60];

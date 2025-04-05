@@ -1,3 +1,5 @@
+// src/nodes/device.js
+
 class MobileOrientationNode {
     constructor() {
         this.addOutput("alpha", "number");

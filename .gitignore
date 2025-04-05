@@ -11,3 +11,9 @@ coverage/*
 !/.vscode/extensions.json
 *.bak
 .project
+
+# Server
+*.log
+
+# Conf
+.env

@@ -1,12 +1,12 @@
-// Load OSC-JS library for browser
+// Load OSC-JS library for both browser and server
 LiteGraph.LibraryManager.registerLibrary({
-    key: "osc-js-browser",
+    key: "osc-js",
     version: "2.4.1",
     globalObject: "OSC",
     browser: { remote: "https://cdn.jsdelivr.net/npm/osc-js@2.4.1/lib/osc.min.js" },
-    // server: { npm: "osc-js" }
+    server: { npm: "osc-js" }
 });
-LiteGraph.LibraryManager.loadLibrary("osc-js-browser");
+LiteGraph.LibraryManager.loadLibrary("osc-js");
 
 class OSCClientNode {
     static title = "OSC Client";

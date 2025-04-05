@@ -1,5 +1,8 @@
+// src/lgraphnode.js
+
 import { LiteGraph } from "./litegraph.js";
 import { CallbackHandler } from "./callbackhandler.js";
+import { getRuntime, isBrowser, isNode } from "./global.js";
 
 /*
 title: string
@@ -62,19 +65,53 @@ supported callbacks:
 export class LGraphNode {
 
     cb_handler = false;
+    executionEnvironment = "all"; // 'browser', 'node', 'all'
+    requiredLibraries = []; // List of library keys
 
     // TODO check when is this called: a default node from the ones included will have his constructor
     // should every node extend this istead of 
     constructor(title = "") {
         // a custom registered node will have his custom constructor
-        LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor",this,title);
+        LiteGraph.log_verbose("lgraphNODE", "ORIGINAL constructor not been replaced",this,title);
 
         this.title = title;
 
         this.post_constructor(...arguments);
     }
 
+    validateExecutionEnvironment() {
+        const runtime = getRuntime();
+        if (this.executionEnvironment !== "both" && runtime !== this.executionEnvironment) {
+            throw new Error(`Node ${this.title} cannot run in ${runtime} environment.`);
+        }
+    }
+
+    loadRequiredLibraries() {
+        for (const libKey of this.requiredLibraries) {
+            const libInfo = LiteGraph.LibraryManager.getLibrary(libKey);
+            if (!libInfo) {
+                console.warn(`Library ${libKey} not found for node ${this.title}`);
+                continue;
+            }
+
+            if ((isBrowser() && libInfo.browser) || (isNode() && libInfo.server)) {
+                try {
+                    LiteGraph.LibraryManager.loadLibrary(libKey); // async
+                } catch (error) {
+                    console.error(`Failed to load library ${libKey} for node ${this.title}:`, error);
+                }
+            } else {
+                console.debug(`Library ${libKey} is not available for the current environment for node ${this.title}.`);
+            }
+        }
+    }
+
     post_constructor(){
+
+        if(!this.validateExecutionEnvironment()){
+            LiteGraph.log_debug("lgraphNODE", "Node not in his environment",this.title);
+            return;
+        }
 
         this.size ??= LiteGraph.NODE_MIN_SIZE; //this.size ??= [LiteGraph.NODE_WIDTH, 60];
         this.size_basic ??= this.size;
@@ -103,6 +140,9 @@ export class LGraphNode {
         // DBG EXCESS LiteGraph.log_verbose("lgraphNODE", "postconstruct",this,...arguments);
         // register CallbackHandler methods on this
         this.callbackhandler_setup();
+
+        this.loadRequiredLibraries();
+        
         // this cbhandler is probably not registered by a node that does not inherit default contructor, if that has not called callbackhandler_setup yet
         this.processCallbackHandlers("onPostConstruct",{
             def_cb: this.onPostConstruct
