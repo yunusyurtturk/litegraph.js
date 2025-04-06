@@ -604,39 +604,41 @@ class EventSwitch {
         this.addProperty("in");
         this.addOutput("default", LiteGraph.EVENT);
         this.selected = 0;
-        this.clip_area = true;
+        // this.clip_area = true;
     }
 
-    onDrawBackground(ctx) {
-        if (this.flags.collapsed) {
-            return;
-        }
-        ctx.fillStyle = "#AFB";
-        const y = (this.selected) * LiteGraph.NODE_SLOT_HEIGHT + 6;
-        const x = this.size[0];
-        ctx.beginPath();
-        ctx.moveTo(x - 50, y);
-        ctx.lineTo(x - 50, y + LiteGraph.NODE_SLOT_HEIGHT);
-        ctx.lineTo(x - 34, y + LiteGraph.NODE_SLOT_HEIGHT * 0.5);
-        ctx.fill();
-    }
+    // onDrawBackground(ctx) {
+    //     if (this.flags.collapsed) {
+    //         return;
+    //     }
+    //     ctx.fillStyle = "#AFB";
+    //     const y = (this.selected) * LiteGraph.NODE_SLOT_HEIGHT + 6;
+    //     const x = this.size[0];
+    //     ctx.beginPath();
+    //     ctx.moveTo(x - 50, y);
+    //     ctx.lineTo(x - 50, y + LiteGraph.NODE_SLOT_HEIGHT);
+    //     ctx.lineTo(x - 34, y + LiteGraph.NODE_SLOT_HEIGHT * 0.5);
+    //     ctx.fill();
+    // }
 
     onExecute() {
         // var sel = this.getInputData("in");
-        const sel = this.getInputOrProperty("in");
+        const sel = String(this.getInputOrProperty("in"));
         let found = false;
         for(let iS in this.outputs){
             let outSlot = this.outputs[iS];
-            if(outSlot.type == LiteGraph.EVENT && outSlot.name == String(sel)){
-                this.selected = iS;
+            if(outSlot.type == LiteGraph.EVENT && (outSlot.name == sel || outSlot.label == sel)){
+                this.selected = outSlot.name; //iS;
                 found = true;
-                this.triggerSlot(iS);
+                this.triggerSlot(outSlot.name); //iS);
+                console.debug("SWITCH FoundAndTrigger", sel, outSlot.name);
                 break;
             }
         }
         if(!found){
             this.selected = 0;
             this.triggerSlot("default");
+            console.debug("SWITCH NotFound", sel);
         }
     }
 

@@ -113,7 +113,7 @@ export class LGraph {
         this.starttime = 0;
 
         this.catch_errors = true;
-
+        
         // savings
         this.history = {
             actionHistory: [],
@@ -134,6 +134,8 @@ export class LGraph {
         this.change();
 
         this.sendActionToCanvas("clear");
+        
+        LiteGraph.log_debug("lgraph","graph CLEARED");
     }
 
     /**
@@ -1726,15 +1728,16 @@ export class LGraph {
         // TAG: EXTENSION, COULD extract and MOVE history to feature ?
         if(opts.doSave && LiteGraph.actionHistory_enabled) {
 
-            LiteGraph.log_debug("LG_history","onGraphChanged SAVE :: "+opts.action); // debug history
-
+            LiteGraph.log_debug("LG_history","onGraphChanged couldSAVE :: "+opts.action); // debug history
+            
             var oHistory = { actionName: opts.action };
             if(opts.doSaveGraph) {
                 // this seems a heavy method, but the alternative is way more complex: every action has to have its contrary
                 oHistory = Object.assign(oHistory, { graphSave: this.serialize() });
+                LiteGraph.log_debug("LG_history","onGraphChanged SAVED",oHistory); // debug history
             }
 
-            var obH = this.history;
+            let obH = this.history;
 
             // check if pointer has gone back: remove newest
             while(obH.actionHistoryPtr < obH.actionHistoryVersions.length-1) {
@@ -1757,7 +1760,7 @@ export class LGraph {
 
             this.onGraphSaved({ iVersion: obH.actionHistoryPtr });
 
-            LiteGraph.log_debug("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName); // debug history
+            LiteGraph.log_debug("LG_history","saved: "+obH.actionHistoryPtr,oHistory.actionName,obH.actionHistoryPtr); // debug history
         }
     }
 

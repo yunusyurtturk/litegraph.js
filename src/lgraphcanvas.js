@@ -2230,7 +2230,7 @@ export class LGraphCanvas {
                 }
             }
         }
-        LiteGraph.log_verbose("copyToClipboard",clipboard_info);
+        LiteGraph.log_debug("lgraphcanvas","copyToClipboard",clipboard_info);
         localStorage.setItem( "litegrapheditor_clipboard", JSON.stringify(clipboard_info), );
     }
 
@@ -2240,6 +2240,7 @@ export class LGraphCanvas {
             return;
         }
         var data = localStorage.getItem("litegrapheditor_clipboard");
+        LiteGraph.log_debug("lgraphcanvas","pasteFromClipboard",data);
         if (!data) {
             return;
         }
@@ -7362,12 +7363,13 @@ export class LGraphCanvas {
                                 iS = options.node_from.findOutputSlot(options.slot_from);
                                 break;
                             case "object":
-                                if (options.slot_from.name) {
+                                if (options.slot_from.name||options.slot_from.name==="") {
                                     iS = options.node_from.findOutputSlot(options.slot_from.name);
                                 }else{
                                     iS = -1;
                                 }
                                 if (iS==-1 && typeof options.slot_from.slot_index !== "undefined") iS = options.slot_from.slot_index;
+                                LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "slotindexfromobject search", "iS", iS, "ofFromOut", options.node_from.outputs, options.slot_from);
                                 break;
                             case "number":
                                 iS = options.slot_from;
@@ -7380,7 +7382,7 @@ export class LGraphCanvas {
                                 options.node_from.connectByType( iS, node, options.node_from.outputs[iS].type );
                             }
                         }else{
-                            LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "cant find slot node_from to join using from slot type", options.slot_from, options.node_from.outputs);
+                            LiteGraph.log_warn("lgraphcanvas", "showSearchBox", "select", "cant find slot node_from to join using from slot type", "iS", iS, "ofFromOut", options.node_from.outputs, options.slot_from);
                         }
                     }
                     if (options.node_to) {
@@ -9050,6 +9052,12 @@ export class LGraphCanvas {
             if(r!==null && (typeof(r)=="object" && typeof(r.return_value) == "object")){
                 menu_info = r.return_value;
             } else {
+                if (LiteGraph.canSetSlotsLabels) {
+                    menu_info.push({ content: "Set Label", slot: slot });
+                }
+                if (_slot.nameLocked===false || LiteGraph.canRenameSlots) {
+                    menu_info.push({ content: "Rename Slot", slot: slot });
+                }
                 if (slot?.output?.links?.length || slot.input?.link) {
                     menu_info.push({ content: "Disconnect Links", slot: slot });
                 }
@@ -9059,13 +9067,6 @@ export class LGraphCanvas {
                         ? "Cannot remove"
                         : { content: "Remove Slot", slot: slot });
                 }
-                if (LiteGraph.canSetSlotsLabels) {
-                    menu_info.push({ content: "Rename Label", slot: slot });
-                }
-                if (_slot.nameLocked===false || LiteGraph.canRenameSlots) {
-                    menu_info.push({ content: "Rename Slot", slot: slot });
-                }
-
             }
             var slotOb = slot.input || slot.output;
             options.title = slotOb.type || "*";
