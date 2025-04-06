@@ -248,7 +248,7 @@ export class LGraphNode {
             if(LiteGraph.reprocess_slot_while_node_configure){
                 // process inputs and outputs, checking for name to handle node changes
                 if(key === "inputs" || key === "outputs"){
-                    LiteGraph.log_debug("lgraphnode", "syncObjectByProperty", key, info[key], this[key]);
+                    LiteGraph.log_debug("lgraphnode", "syncObjectByProperty", key, JSON.stringify(info[key]), JSON.stringify(this[key]));
                     const resSync = this.syncObjectByProperty(info[key], this[key], "name");
                     this[key] = resSync.ob_dest;
                     if(resSync.keys_remap && Object.keys(resSync.keys_remap).length){
@@ -353,6 +353,7 @@ export class LGraphNode {
 
         // special case for when there were errors
         if (this.constructor === LGraphNode && this.last_serialization) {
+            LiteGraph.log_debug("lgraphnode", "serialize using last_serialization on LGraphNode");
             return this.last_serialization;
         }
 
@@ -398,7 +399,8 @@ export class LGraphNode {
         let r = this.processCallbackHandlers("onSerialize",{
             def_cb: this.onSerialize
         }, o);
-        // DBG EXCESS LiteGraph.log_verbose("lgraphnode", "serialize", "onSerialize", o, r);
+        // DBG EXCESS
+        LiteGraph.log_verbose("lgraphnode", "serialize", "onSerialize", o, r);
 
         if(r!==null && (typeof(r)=="object" && r.return_value!==null)){
             LiteGraph.log_warn("lgraphnode", "onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter");
@@ -1969,7 +1971,7 @@ export class LGraphNode {
             return -1;
         }
         for (var i = 0, l = this.inputs.length; i < l; ++i) {
-            if (name == this.inputs[i].name) {
+            if (name === this.inputs[i].name) {
                 return !returnObj ? i : this.inputs[i];
             }
         }
@@ -1988,7 +1990,7 @@ export class LGraphNode {
             return -1;
         }
         for (var i = 0, l = this.outputs.length; i < l; ++i) {
-            if (name == this.outputs[i].name) {
+            if (name === this.outputs[i].name) {
                 return !returnObj ? i : this.outputs[i];
             }
         }
@@ -3011,7 +3013,7 @@ export class LGraphNode {
      *   - only_in_source: any items found only in the source.
      *   - only_in_target: any items found only in the destination.
      */
-    syncObjectByProperty(ob_from, ob_dest, property, optsIn) {
+    syncObjectByProperty_NEW_DISABLED_WIP(ob_from, ob_dest, property, optsIn) {
         // Default options.
         const optsDef = {
             only_in_source: "append",
@@ -3032,6 +3034,7 @@ export class LGraphNode {
             if (!seenKeys.has(keyVal)) {
                 keyOrder.push(keyVal);
                 seenKeys.add(keyVal);
+                LiteGraph.log_verbose("lgraphnode","syncObjectByProperty","ob_dest seen",keyVal,item);
             }
         });
         ob_from.forEach(item => {
@@ -3039,6 +3042,7 @@ export class LGraphNode {
             if (!seenKeys.has(keyVal)) {
                 keyOrder.push(keyVal);
                 seenKeys.add(keyVal);
+                LiteGraph.log_verbose("lgraphnode","syncObjectByProperty","ob_from seen",keyVal,item);
             }
         });
 
@@ -3049,12 +3053,14 @@ export class LGraphNode {
             if (!groupFrom[keyVal]) groupFrom[keyVal] = [];
             groupFrom[keyVal].push({ idx, item });
         });
+        LiteGraph.log_warn("lgraphnode","syncObjectByProperty","groupFrom",JSON.stringify(groupFrom));
         const groupDest = {};
         ob_dest.forEach((item, idx) => {
             const keyVal = item[property];
             if (!groupDest[keyVal]) groupDest[keyVal] = [];
             groupDest[keyVal].push({ idx, item });
         });
+        LiteGraph.log_warn("lgraphnode","syncObjectByProperty","groupDest",JSON.stringify(groupDest));
 
         // Global set to record which source indices have been used.
         const usedSource = new Set();
@@ -3074,16 +3080,19 @@ export class LGraphNode {
                 let chosen = null;
                 if (i < destGroup.length) {
                     // This slot exists in destination.
+                    LiteGraph.log_warn("lgraphnode","syncObjectByProperty","slot exists in destination (i?)",i);
                     if (i < srcGroup.length) {
                         // Prefer the source item to update the slot.
                         chosen = LiteGraph.cloneObject(srcGroup[i].item);
                         usedSource.add(srcGroup[i].idx);
                         keys_remap[srcGroup[i].idx] = new_dest.length;
+                        LiteGraph.log_warn("lgraphnode","syncObjectByProperty","prefer source",i,chosen);
                     } else {
                         // No matching source item in this position.
                         // Try fallback matching: search all unused source items for a match on any fallback property.
                         let fallbackMatched = false;
                         const destItem = destGroup[i].item;
+                        LiteGraph.log_warn("lgraphnode","syncObjectByProperty","no matching (i?)",destItem);
                         if (opts.fallback_checks && opts.fallback_checks.length) {
                             for (const check of opts.fallback_checks) {
                                 for (let j = 0; j < ob_from.length; j++) {
@@ -3096,12 +3105,18 @@ export class LGraphNode {
                                         break;
                                     }
                                 }
-                                if (fallbackMatched) break;
+                                if (fallbackMatched){
+                                    LiteGraph.log_warn("lgraphnode","syncObjectByProperty","fallbackMatched",i,chosen);
+                                    break;
+                                }else{
+                                    LiteGraph.log_warn("lgraphnode","syncObjectByProperty","fallback NOT Matched");
+                                }
                             }
                         }
                         // If no fallback match, retain the destination item.
                         if (!fallbackMatched) {
                             chosen = LiteGraph.cloneObject(destItem);
+                            LiteGraph.log_warn("lgraphnode","syncObjectByProperty","fallback NOT Matched chosen is dest",chosen);
                         }
                     }
                 } else {
@@ -3110,10 +3125,13 @@ export class LGraphNode {
                         chosen = LiteGraph.cloneObject(srcGroup[i].item);
                         usedSource.add(srcGroup[i].idx);
                         keys_remap[srcGroup[i].idx] = new_dest.length;
+                        LiteGraph.log_warn("lgraphnode","syncObjectByProperty","destination had fewer copies than source",i,chosen,srcGroup[i].idx,usedSource);
                     }
                 }
                 if (chosen !== null) {
                     new_dest.push(chosen);
+                }else{
+                    LiteGraph.log_verbose("lgraphnode","syncObjectByProperty","destination had fewer copies than source",i,chosen);
                 }
             }
         });
@@ -3141,5 +3159,151 @@ export class LGraphNode {
         };
     }
 
+    /**
+    * syncObjectByProperty will ensure using the right index for node inputs and outputs when onConfigure (de-serializing) 
+    * @param {*} ob_from 
+    * @param {*} ob_dest 
+    * @param {*} property 
+    * @param {*} optsIn 
+    * @returns {object} return the result object and differences if found
+    */
+    syncObjectByProperty(ob_from, ob_dest, property, optsIn) {
+        var optsDef = {
+            only_in_source: "append",
+            // only_in_dest: "keep"
+            fallback_checks: [
+                {name: "type"}
+            ]
+        };
+        var opts = Object.assign({}, optsDef, optsIn);
+        
+        if (ob_from === null || !ob_from) ob_from = [];
+        if (ob_dest === null || !ob_dest) ob_dest = [];
+        var new_dest = [];
 
+        let keys_remap = {};
+
+        let only_in_target = ob_dest.filter(input => !ob_from.some(srcInput => srcInput[property] === input[property]));
+        /* if (opts.only_in_dest !== "keep") {
+            new_dest = ob_dest.filter(input => ob_from.some(srcInput => srcInput[property] === input[property]) || opts.only_in_dest === "keep");
+        } */
+
+        let sourceUsedIds = [];
+        let aNotFoundInSource = [];
+        // cycle dest, for each cycle source for matching
+        ob_dest.forEach((destInput, destIndex) => {
+            let hasChangedIndex = false;
+            let foundInSource = false;
+            ob_from.forEach((sourceInput, sourceIndex) => {
+                if(foundInSource) return;
+                if(sourceUsedIds.includes(sourceIndex)){
+                    LiteGraph.log_verbose("syncObjectByProperty", "skip used", sourceInput, sourceIndex);
+                }else if(sourceInput[property] === destInput[property]){
+                    foundInSource = true;
+                    sourceUsedIds.push(sourceIndex);
+                    new_dest[destIndex] = LiteGraph.cloneObject(sourceInput);
+                    if(destIndex!=sourceIndex){
+                        LiteGraph.log_debug("syncObjectByProperty", "push SHIFTED", destInput[property], destInput, sourceIndex, destIndex);
+                        hasChangedIndex = true;
+                        keys_remap[sourceIndex] = destIndex;
+                    }else{
+                        LiteGraph.log_verbose("syncObjectByProperty", "found ok, same index", destInput[property], sourceInput, destIndex);
+                    }
+                }
+            });
+            if(!foundInSource){ //} && !hasChangedIndex){
+                aNotFoundInSource.push({ob: destInput, index: destIndex});
+                // TODO: should check link ?!
+                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
+            }
+        });
+        if(aNotFoundInSource.length){
+            if(!opts.fallback_checks.length){
+                aNotFoundInSource.forEach((ob, i) => {
+                    LiteGraph.log_debug("syncObjectByProperty", "!using fallback checks", "push !foundInSource", ob.ob[property], ob);
+                    new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                });
+            }else{
+                aNotFoundInSource.forEach((ob, i) => {
+                    let destInput = ob.ob;
+                    let destIndex = ob.index;
+                    // LiteGraph.log_warn("syncObjectByProperty", "CHECKING", destIndex, destInput);
+                    let foundInSource = false;
+                    let hasChangedIndex = false;
+                    opts.fallback_checks.forEach((checkX, ckI) => {
+                        if(foundInSource) return;
+                        ob_from.forEach((sourceInput, sourceIndex) => {
+                            if(foundInSource) return;
+                            if(sourceUsedIds.includes(sourceIndex)){
+                                LiteGraph.log_verbose("syncObjectByProperty", "aNotFoundInSource skip used slot", sourceInput, sourceIndex);
+                            }else if(
+                                sourceInput[checkX.name] === destInput[checkX.name]
+                                // && (!checkX.dest_valid || )
+                            ){
+                                foundInSource = true;
+                                sourceUsedIds.push(sourceIndex);
+                                new_dest[destIndex] = LiteGraph.cloneObject(sourceInput);
+                                LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource", checkX, "push SHIFTED", destInput[checkX], destInput, sourceIndex, destIndex);
+                                hasChangedIndex = true;
+                                keys_remap[sourceIndex] = destIndex;
+                            }
+                        });
+                    });
+                    if(!foundInSource){
+                        LiteGraph.log_debug("syncObjectByProperty", "aNotFoundInSource, push !foundInSource",ob.ob[property],ob);
+                        new_dest[ob.index] = LiteGraph.cloneObject(ob.ob);
+                    }
+                });
+            }
+        }
+
+        // check only in source
+        /* let only_in_source = ob_from.filter(input => !ob_dest.some(destInput => destInput[property] === input[property]));
+        if (opts.only_in_source === "append" && only_in_source.length) {
+            LiteGraph.log_debug("syncObjectByProperty", "push only_in_source", only_in_source);
+            new_dest.push(...only_in_source);
+        } */
+        let destUsedIds = [];
+        // cycle source, for each cycle dest
+        let only_in_source = [];
+        ob_from.forEach((sourceInput, sourceIndex) => {
+            let foundInDest = false;
+            if(sourceUsedIds.includes(sourceIndex)){
+                return;
+            }
+            ob_dest.forEach((destInput, destIndex) => {
+                if(foundInDest) return;
+                if(destUsedIds.includes(destIndex)){
+                    LiteGraph.log_verbose("syncObjectByProperty", "only_in_source", "skip checked slot", sourceInput, sourceIndex);
+                }else if(sourceInput[property] === destInput[property]){
+                    destUsedIds.push(destIndex);
+                    foundInDest = true;
+                }
+            });
+            if(!foundInDest){
+                // TODO: should try to connect by type before than pushing, check AUDIO example (has invalid link or bad behavior?)
+                LiteGraph.log_debug("syncObjectByProperty", "push only_in_source", sourceInput[property], sourceInput);
+                new_dest.push(LiteGraph.cloneObject(sourceInput));
+                keys_remap[sourceIndex] = new_dest.length-1;
+                only_in_source.push(sourceInput);
+            }
+        });
+
+
+        LiteGraph.log_verbose("lgraphnode", "syncByProperty", {
+            only_in_source: only_in_source,
+            only_in_target: only_in_target,
+            ob_from: ob_from,
+            ob_dest: ob_dest,
+            new_dest: new_dest,
+            keys_remap: keys_remap,
+        });
+
+        return {
+            ob_dest: new_dest,
+            keys_remap: keys_remap,
+            only_in_source: only_in_source,
+            only_in_target: only_in_target,
+        };
+    }
 }

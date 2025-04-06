@@ -349,6 +349,7 @@ class WebSocketServer extends BaseServer {
 
     restartServer() {
         if (this.server) {
+            this.log("Restarting WSServer");
             this.stopServer(() => {
                 this.startServer();
             });
