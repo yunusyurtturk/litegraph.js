@@ -81,8 +81,10 @@ export class LGraphNode {
 
     validateExecutionEnvironment() {
         const runtime = getRuntime();
-        if (this.executionEnvironment !== "both" && runtime !== this.executionEnvironment) {
-            throw new Error(`Node ${this.title} cannot run in ${runtime} environment.`);
+        if(this.executionEnvironment){
+            if (this.executionEnvironment !== "both" && this.executionEnvironment !== "all" && runtime !== this.executionEnvironment) {
+                throw new Error(`Node ${this.name||this.title||this} cannot run ${this.executionEnvironment} in ${runtime} environment.`);
+            }
         }
     }
 
@@ -106,7 +108,7 @@ export class LGraphNode {
         }
     }
 
-    post_constructor(){
+    async post_constructor(){
 
         if(!this.validateExecutionEnvironment()){
             LiteGraph.log_debug("lgraphNODE", "Node not in his environment",this.title);
@@ -1254,6 +1256,7 @@ export class LGraphNode {
 
     doUpdateBindedInputProperties(){
         let thisNode = this;
+        if(!this.inputs) return;
         this.inputs.forEach((ob_input) => {
             if(ob_input.param_bind){
                 LiteGraph.log_verbose("lgraphnode","doUpdateBindedInputProperties","has bind",ob_input,thisNode);
@@ -1273,6 +1276,7 @@ export class LGraphNode {
     
     doUpdateBindedOutputProperties(){
         let thisNode = this;
+        if(!this.outputs) return;
         this.outputs.forEach((ob_output) => {
             if(ob_output.param_bind){
                 LiteGraph.log_verbose("lgraphnode","doUpdateBindedOutputProperties","has bind",ob_output,thisNode);
